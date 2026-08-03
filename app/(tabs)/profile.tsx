@@ -14,6 +14,10 @@ interface Profile {
   phone: string;
 }
 
+function isProfileEmpty(profile: Profile): boolean {
+  return !profile.name.trim() && !profile.email.trim() && !profile.phone.trim();
+}
+
 async function fetchProfile(): Promise<Profile> {
   await new Promise((r) => setTimeout(r, 1000));
 
@@ -36,7 +40,9 @@ function ProfileField({ label, value }: { label: string; value: string }) {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { data, isLoading, isError, error, refetch } = useAsync(fetchProfile);
+  const { data, isLoading, isError, isEmpty, error, refetch } = useAsync(fetchProfile, {
+    isEmpty: isProfileEmpty,
+  });
   const bg = useThemeColor('background');
 
   return (
@@ -50,6 +56,12 @@ export default function ProfileScreen() {
       onRetry={refetch}
       errorSecondaryLabel="Giriş Yap"
       onErrorSecondaryAction={() => router.push('/login' as never)}
+      isEmpty={isEmpty}
+      emptyVariant="generic"
+      emptyTitle="Profil bilgisi bulunamadı"
+      emptyDescription="Şu anda hesap bilgileri gösterilemiyor."
+      emptyActionLabel="Tekrar Dene"
+      onEmptyAction={refetch}
       scrollable
     >
       {data ? (
