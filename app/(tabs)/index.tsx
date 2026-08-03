@@ -1,118 +1,102 @@
-/**
- * İlanlar sayfası — LoadingState / EmptyState / ErrorState örneği
- *
- * Gerçek API bağlandığında yalnızca `fetchListings` fonksiyonunu değiştirin;
- * ScreenWrapper tüm durumları otomatik yönetir.
- */
-import React from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ScreenWrapper } from '@/components/ui';
-import { useAsync } from '@/hooks/useAsync';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { useRouter } from 'expo-router';
 
-// ── Tip ──────────────────────────────────────────────────────────────────────
-interface ListingItem {
-  id: string;
-  title: string;
-  price: number;
-  location: string;
-}
+// ── Demo durumları ────────────────────────────────────────────────────────────
+type DemoMode = 'loading' | 'empty' | 'error';
 
-// ── Sahte API (gerçek API entegrasyonuna kadar) ───────────────────────────────
-async function fetchListings(): Promise<ListingItem[]> {
-  await new Promise((r) => setTimeout(r, 1400));
-
-  // Durumu test etmek için bu satırı değiştirin:
-  // throw new Error('Ağ bağlantısı kesildi');
-  // return [];
-
-  return [
-    { id: '1', title: 'Safkan Arap Kısrak', price: 280_000, location: 'İstanbul' },
-    { id: '2', title: 'İngiliz Doru Aygır', price: 450_000, location: 'Ankara' },
-    { id: '3', title: 'Haflinger Kısrak 7 Yaş', price: 95_000, location: 'Bursa' },
-  ];
-}
-
-// ── Kart bileşeni ─────────────────────────────────────────────────────────────
-function ListingCard({ item }: { item: ListingItem }) {
+// ── Seçici buton ─────────────────────────────────────────────────────────────
+function ModeButton({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  const primary = useThemeColor('primary');
   const surface = useThemeColor('surface');
   const border = useThemeColor('border');
   const text = useThemeColor('text');
-  const textSecondary = useThemeColor('textSecondary');
-  const primary = useThemeColor('primary');
 
   return (
-    <View style={[styles.card, { backgroundColor: surface, borderColor: border }]}>
-      <Text style={[styles.cardTitle, { color: text }]}>{item.title}</Text>
-      <Text style={[styles.cardLocation, { color: textSecondary }]}>
-        📍 {item.location}
+    <TouchableOpacity
+      style={[
+        styles.modeBtn,
+        { borderColor: active ? primary : border, backgroundColor: active ? primary : surface },
+      ]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <Text style={[styles.modeBtnText, { color: active ? '#fff' : text }]}>
+        {label}
       </Text>
-      <Text style={[styles.cardPrice, { color: primary }]}>
-        ₺{item.price.toLocaleString('tr-TR')}
-      </Text>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 // ── Sayfa ─────────────────────────────────────────────────────────────────────
-export default function ListingsScreen() {
-  const router = useRouter();
-  const { data, isLoading, isError, isEmpty, error, refetch } =
-    useAsync(fetchListings, {
-      isEmpty: (d) => d.length === 0,
-    });
+export default function DemoScreen() {
+  const [mode, setMode] = useState<DemoMode>('loading');
+  const bg = useThemeColor('background');
+  const border = useThemeColor('border');
 
   return (
-    <ScreenWrapper
-      isLoading={isLoading}
-      isError={isError}
-      isEmpty={isEmpty}
-      loadingVariant="cards"
-      loadingCount={4}
-      // --- error ---
-      errorVariant="network"
-      errorMessage={error}
-      onRetry={refetch}
-      // --- empty ---
-      emptyVariant="listing"
-      emptyTitle="Henüz ilan yok"
-      emptyDescription="Şu an gösterilecek ilan bulunamadı. Daha sonra tekrar kontrol edin."
-      emptyActionLabel="Yenile"
-      onEmptyAction={refetch}
-      scrollable={false}
-    >
-      <FlatList
-        data={data ?? []}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <ListingCard item={item} />}
-        contentContainerStyle={styles.list}
-      />
-    </ScreenWrapper>
+    <View style={[styles.screen, { backgroundColor: bg }]}>
+      {/* Üst buton çubuğu */}
+      <View style={[styles.bar, { borderBottomColor: border }]}>
+        <ModeButton label="⏳ Loading" active={mode === 'loading'} onPress={() => setMode('loading')} />
+        <ModeButton label="📭 Empty"   active={mode === 'empty'}   onPress={() => setMode('empty')}   />
+        <ModeButton label="⚠️ Error"   active={mode === 'error'}   onPress={() => setMode('error')}   />
+      </View>
+
+      {/* State gösterimi */}
+      <ScreenWrapper
+        isLoading={mode === 'loading'}
+        loadingVariant="cards"
+        loadingCount={3}
+
+        isEmpty={mode === 'empty'}
+        emptyVariant="listing"
+        emptyTitle="Henüz ilan yok"
+        emptyDescription="Şu an gösterilecek ilan bulunamadı. Daha sonra tekrar kontrol edin."
+        emptyActionLabel="Yenile"
+        onEmptyAction={() => setMode('loading')}
+
+        isError={mode === 'error'}
+        errorVariant="network"
+        errorMessage="Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edin."
+        onRetry={() => setMode('loading')}
+
+        scrollable={false}
+      >
+        <View />
+      </ScreenWrapper>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  list: {
-    padding: 16,
-    gap: 12,
+  screen: {
+    flex: 1,
   },
-  card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
-    gap: 6,
+  bar: {
+    flexDirection: 'row',
+    gap: 8,
+    padding: 12,
+    borderBottomWidth: 1,
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+  modeBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    alignItems: 'center',
   },
-  cardLocation: {
+  modeBtnText: {
     fontSize: 13,
-  },
-  cardPrice: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginTop: 4,
+    fontWeight: '600',
   },
 });
