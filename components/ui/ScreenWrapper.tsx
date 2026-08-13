@@ -1,6 +1,9 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  type Edge,
+} from 'react-native-safe-area-context';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { LoadingState, LoadingVariant } from './LoadingState';
 import { EmptyState, EmptyVariant } from './EmptyState';
@@ -35,6 +38,8 @@ interface ScreenWrapperProps {
 
   /** İçerik scroll'lanabilir mi? (varsayılan: true) */
   scrollable?: boolean;
+  /** Safe area kenarları (varsayılan: tüm kenarlar) */
+  edges?: readonly Edge[];
   /** Ek kapsayıcı stili */
   style?: ViewStyle;
 
@@ -83,15 +88,17 @@ export function ScreenWrapper({
   errorSecondaryLabel,
   onErrorSecondaryAction,
   scrollable = true,
+  edges,
   style,
   children,
 }: ScreenWrapperProps) {
   const bg = useThemeColor('background');
+  const safeEdges = edges ?? (['top', 'right', 'bottom', 'left'] as const);
 
   // Öncelik: loading > error > empty > içerik
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.flex, { backgroundColor: bg }]}>
+      <SafeAreaView edges={safeEdges} style={[styles.flex, { backgroundColor: bg }]}>
         <LoadingState variant={loadingVariant} count={loadingCount} />
       </SafeAreaView>
     );
@@ -99,7 +106,7 @@ export function ScreenWrapper({
 
   if (isError) {
     return (
-      <SafeAreaView style={[styles.flex, { backgroundColor: bg }]}>
+      <SafeAreaView edges={safeEdges} style={[styles.flex, { backgroundColor: bg }]}>
         <ErrorState
           variant={errorVariant}
           title={errorTitle}
@@ -114,7 +121,7 @@ export function ScreenWrapper({
 
   if (isEmpty) {
     return (
-      <SafeAreaView style={[styles.flex, { backgroundColor: bg }]}>
+      <SafeAreaView edges={safeEdges} style={[styles.flex, { backgroundColor: bg }]}>
         <EmptyState
           variant={emptyVariant}
           title={emptyTitle}
@@ -134,14 +141,14 @@ export function ScreenWrapper({
 
   if (!scrollable) {
     return (
-      <SafeAreaView style={[styles.flex, { backgroundColor: bg }]}>
+      <SafeAreaView edges={safeEdges} style={[styles.flex, { backgroundColor: bg }]}>
         {content}
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.flex, { backgroundColor: bg }]}>
+    <SafeAreaView edges={safeEdges} style={[styles.flex, { backgroundColor: bg }]}>
       <ScrollView
         style={styles.flex}
         contentContainerStyle={styles.scrollContent}

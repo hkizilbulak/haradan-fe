@@ -5,7 +5,6 @@ import React from 'react';
 import { ScreenWrapper } from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
 import { useRouter } from 'expo-router';
-import { Text, View } from 'react-native';
 
 async function fetchFavorites(): Promise<string[]> {
   await new Promise((r) => setTimeout(r, 800));
@@ -33,8 +32,7 @@ export default function FavoritesScreen() {
       emptyActionLabel="İlanlara Göz At"
       onEmptyAction={() => router.push('/')}
     >
-      {/* Favoriler yüklenip doluysa burada liste gösterilir */}
-      <View />
+      {null}
     </ScreenWrapper>
   );
 }

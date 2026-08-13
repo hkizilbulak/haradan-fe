@@ -58,7 +58,6 @@ export function EmptyState({
   const text = useThemeColor('text');
   const textSecondary = useThemeColor('textSecondary');
   const primary = useThemeColor('primary');
-  const primaryLight = useThemeColor('primaryLight');
 
   const icon = ICONS[variant] ?? ICONS.generic;
 

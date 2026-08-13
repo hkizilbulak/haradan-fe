@@ -1,0 +1,199 @@
+import React, { memo, useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
+import { Radius } from '@/constants/Radius';
+import { Spacing } from '@/constants/Spacing';
+import { useThemeColor } from '@/hooks/useThemeColor';
+import type { PublicMediaItem } from '@/types';
+
+const EASE = Easing.bezier(0.22, 1, 0.36, 1);
+
+type AdvertGalleryProps = {
+  items: PublicMediaItem[];
+  height?: number;
+};
+
+export const AdvertGallery = memo(function AdvertGallery({
+  items,
+  height = 420,
+}: AdvertGalleryProps) {
+  const [index, setIndex] = useState(0);
+  const fade = useRef(new Animated.Value(1)).current;
+  const skeleton = useThemeColor('skeleton');
+  const border = useThemeColor('border');
+  const header = useThemeColor('header');
+  const surface = useThemeColor('surface');
+
+  const current = items[index] ?? items[0];
+  const paused = useRef(false);
+
+  useEffect(() => {
+    fade.setValue(0.35);
+    Animated.timing(fade, {
+      toValue: 1,
+      duration: 320,
+      easing: EASE,
+      useNativeDriver: true,
+    }).start();
+  }, [index, fade]);
+
+  // Sırayla otomatik geçiş
+  useEffect(() => {
+    if (items.length < 2) return;
+    const timer = setInterval(() => {
+      if (paused.current) return;
+      setIndex((i) => (i + 1) % items.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [items.length]);
+
+  const go = (dir: 1 | -1) => {
+    if (items.length < 2) return;
+    setIndex((i) => (i + dir + items.length) % items.length);
+  };
+
+  if (!current) return null;
+
+  return (
+    <Pressable
+      style={styles.wrap}
+      onHoverIn={() => {
+        paused.current = true;
+      }}
+      onHoverOut={() => {
+        paused.current = false;
+      }}
+      // Hover only — dokunma galeriyi seçmesin
+      accessible={false}
+    >
+      <View style={[styles.main, { height, backgroundColor: surface }]}>
+        <Animated.View style={[styles.mainInner, { opacity: fade }]}>
+          <Image
+            source={current.publicUrl}
+            style={[styles.mainImg, { backgroundColor: skeleton }]}
+            contentFit="cover"
+            transition={280}
+            priority="high"
+            cachePolicy="memory-disk"
+            recyclingKey={current.assetId}
+          />
+        </Animated.View>
+
+        {items.length > 1 ? (
+          <>
+            <Pressable
+              onPress={() => go(-1)}
+              accessibilityLabel="Önceki görsel"
+              style={({ pressed }) => [
+                styles.nav,
+                styles.navLeft,
+                { backgroundColor: surface, opacity: pressed ? 0.85 : 1 },
+              ]}
+            >
+              <Ionicons name="chevron-back" size={18} color={header} />
+            </Pressable>
+            <Pressable
+              onPress={() => go(1)}
+              accessibilityLabel="Sonraki görsel"
+              style={({ pressed }) => [
+                styles.nav,
+                styles.navRight,
+                { backgroundColor: surface, opacity: pressed ? 0.85 : 1 },
+              ]}
+            >
+              <Ionicons name="chevron-forward" size={18} color={header} />
+            </Pressable>
+          </>
+        ) : null}
+      </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.thumbs}
+      >
+        {items.map((item, i) => {
+          const active = i === index;
+          return (
+            <Pressable
+              key={item.assetId}
+              onPress={() => setIndex(i)}
+              style={[
+                styles.thumb,
+                {
+                  borderColor: active ? header : border,
+                  borderWidth: active ? 2 : 1,
+                  ...Platform.select({
+                    web: {
+                      transition: 'border-color 180ms ease',
+                      cursor: 'pointer' as const,
+                    },
+                    default: {},
+                  }),
+                },
+              ]}
+            >
+              <Image
+                source={item.publicUrl}
+                style={[styles.thumbImg, { backgroundColor: skeleton }]}
+                contentFit="cover"
+                transition={180}
+                priority="low"
+                cachePolicy="memory-disk"
+              />
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </Pressable>
+  );
+});
+
+const styles = StyleSheet.create({
+  wrap: { gap: Spacing.md },
+  main: {
+    borderRadius: Radius.sheet,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  mainInner: { flex: 1 },
+  mainImg: { width: '100%', height: '100%' },
+  nav: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -18,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      web: { boxShadow: '0 4px 14px rgba(15,23,42,0.08)' },
+      default: {
+        shadowColor: '#000',
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 2,
+      },
+    }),
+  },
+  navLeft: { left: 12 },
+  navRight: { right: 12 },
+  thumbs: { gap: 10, paddingVertical: 2 },
+  thumb: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  thumbImg: { width: '100%', height: '100%' },
+});

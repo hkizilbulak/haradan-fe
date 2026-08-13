@@ -1,69 +1,8 @@
-import React, { useEffect, useRef } from 'react';
-import {
-  Animated,
-  DimensionValue,
-  StyleSheet,
-  View,
-  ViewStyle,
-} from 'react-native';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { Skeleton, SkeletonPulse } from './Skeleton';
 
-interface SkeletonBoxProps {
-  width: DimensionValue;
-  height: number;
-  borderRadius?: number;
-  style?: ViewStyle;
-}
-
-/** Tek bir shimmer dikdörtgen */
-function SkeletonBox({
-  width,
-  height,
-  borderRadius = 8,
-  style,
-}: SkeletonBoxProps) {
-  const base = useThemeColor('skeleton');
-  const highlight = useThemeColor('skeletonHighlight');
-
-  const anim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(anim, {
-          toValue: 1,
-          duration: 900,
-          useNativeDriver: false,
-        }),
-        Animated.timing(anim, {
-          toValue: 0,
-          duration: 900,
-          useNativeDriver: false,
-        }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [anim]);
-
-  const bgColor = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [base, highlight],
-  });
-
-  return (
-    <Animated.View
-      style={[
-        { width, height, borderRadius, backgroundColor: bgColor },
-        style,
-      ]}
-    />
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Hazır iskelet kartı – ilanlar gibi liste öğeleri için
-// ---------------------------------------------------------------------------
 function ListingCardSkeleton() {
   const surface = useThemeColor('surface');
   const border = useThemeColor('border');
@@ -75,27 +14,23 @@ function ListingCardSkeleton() {
         { backgroundColor: surface, borderColor: border },
       ]}
     >
-      <SkeletonBox width="100%" height={180} borderRadius={12} />
+      <Skeleton width="100%" height={180} borderRadius={12} />
       <View style={styles.cardBody}>
-        <SkeletonBox width="70%" height={16} />
-        <SkeletonBox width="40%" height={14} style={{ marginTop: 8 }} />
+        <Skeleton width="70%" height={16} />
+        <Skeleton width="40%" height={14} style={{ marginTop: 8 }} />
         <View style={styles.cardFooter}>
-          <SkeletonBox width={80} height={20} borderRadius={10} />
-          <SkeletonBox width={60} height={14} />
+          <Skeleton width={80} height={20} borderRadius={10} />
+          <Skeleton width={60} height={14} />
         </View>
       </View>
     </View>
   );
 }
 
-// ---------------------------------------------------------------------------
-// LoadingState
-// ---------------------------------------------------------------------------
-
 export type LoadingVariant =
-  | 'cards'   // ilan listesi gibi kart skeleton
-  | 'rows'    // profil alanları gibi satır skeleton
-  | 'detail'; // tek içerik detay skeleton
+  | 'cards'
+  | 'rows'
+  | 'detail';
 
 interface LoadingStateProps {
   variant?: LoadingVariant;
@@ -104,10 +39,6 @@ interface LoadingStateProps {
 
 /**
  * Bekleme ekranı — sayfa içeriği yüklenirken gösterilir.
- *
- * @example
- * // İlan listesi yükleniyor
- * <LoadingState variant="cards" count={3} />
  */
 export function LoadingState({
   variant = 'cards',
@@ -115,44 +46,39 @@ export function LoadingState({
 }: LoadingStateProps) {
   const bg = useThemeColor('background');
 
-  if (variant === 'cards') {
-    return (
-      <View style={[styles.container, { backgroundColor: bg }]}>
-        {Array.from({ length: count }).map((_, i) => (
-          <ListingCardSkeleton key={i} />
-        ))}
-      </View>
-    );
-  }
-
-  if (variant === 'rows') {
-    return (
-      <View style={[styles.container, { backgroundColor: bg }]}>
-        {Array.from({ length: count }).map((_, i) => (
-          <View key={i} style={styles.row}>
-            <SkeletonBox width={40} height={40} borderRadius={20} />
-            <View style={styles.rowLines}>
-              <SkeletonBox width="60%" height={14} />
-              <SkeletonBox width="40%" height={12} style={{ marginTop: 6 }} />
-            </View>
-          </View>
-        ))}
-      </View>
-    );
-  }
-
-  // detail
   return (
-    <View style={[styles.container, { backgroundColor: bg }]}>
-      <SkeletonBox width="100%" height={260} borderRadius={0} />
-      <View style={styles.detailBody}>
-        <SkeletonBox width="80%" height={22} />
-        <SkeletonBox width="50%" height={18} style={{ marginTop: 10 }} />
-        <SkeletonBox width="100%" height={14} style={{ marginTop: 20 }} />
-        <SkeletonBox width="90%" height={14} style={{ marginTop: 8 }} />
-        <SkeletonBox width="75%" height={14} style={{ marginTop: 8 }} />
-      </View>
-    </View>
+    <SkeletonPulse>
+      {variant === 'cards' ? (
+        <View style={[styles.container, { backgroundColor: bg }]}>
+          {Array.from({ length: count }).map((_, i) => (
+            <ListingCardSkeleton key={i} />
+          ))}
+        </View>
+      ) : variant === 'rows' ? (
+        <View style={[styles.container, { backgroundColor: bg }]}>
+          {Array.from({ length: count }).map((_, i) => (
+            <View key={i} style={styles.row}>
+              <Skeleton width={40} height={40} borderRadius={20} />
+              <View style={styles.rowLines}>
+                <Skeleton width="60%" height={14} />
+                <Skeleton width="40%" height={12} style={{ marginTop: 6 }} />
+              </View>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <View style={[styles.container, { backgroundColor: bg }]}>
+          <Skeleton width="100%" height={260} borderRadius={0} />
+          <View style={styles.detailBody}>
+            <Skeleton width="80%" height={22} />
+            <Skeleton width="50%" height={18} style={{ marginTop: 10 }} />
+            <Skeleton width="100%" height={14} style={{ marginTop: 20 }} />
+            <Skeleton width="90%" height={14} style={{ marginTop: 8 }} />
+            <Skeleton width="75%" height={14} style={{ marginTop: 8 }} />
+          </View>
+        </View>
+      )}
+    </SkeletonPulse>
   );
 }
 

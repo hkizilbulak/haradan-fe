@@ -1,102 +1,139 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { ScreenWrapper } from '@/components/ui';
+import React, { useCallback, useState } from 'react';
+import { Platform, StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import Head from 'expo-router/head';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppHeader, useHeaderDrawers } from '@/components/layout';
+import { HomeFeed } from '@/components/home';
+import { ErrorState } from '@/components/ui';
+import { useHomepageFeed } from '@/hooks/useHomepageFeed';
+import { useAuthSession } from '@/hooks/useAuthSession';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { prepareListingWizardEntry } from '@/services/listing';
+import type { ActiveBannerItem, CategoryTreeNode } from '@/types';
 
-// ── Demo durumları ────────────────────────────────────────────────────────────
-type DemoMode = 'loading' | 'empty' | 'error';
+const SEO = {
+  title: 'Haradan.com | At İlanları',
+  description:
+    'Satılık atlar, at hizmetleri ve aşım ilanları — Haradan.com.',
+  url: 'https://haradan.com',
+};
 
-// ── Seçici buton ─────────────────────────────────────────────────────────────
-function ModeButton({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  const primary = useThemeColor('primary');
-  const surface = useThemeColor('surface');
-  const border = useThemeColor('border');
-  const text = useThemeColor('text');
-
-  return (
-    <TouchableOpacity
-      style={[
-        styles.modeBtn,
-        { borderColor: active ? primary : border, backgroundColor: active ? primary : surface },
-      ]}
-      onPress={onPress}
-      activeOpacity={0.8}
-    >
-      <Text style={[styles.modeBtnText, { color: active ? '#fff' : text }]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-// ── Sayfa ─────────────────────────────────────────────────────────────────────
-export default function DemoScreen() {
-  const [mode, setMode] = useState<DemoMode>('loading');
+/**
+ * Shell: header anında.
+ * Feed: cache-first ATF + viewport lazy BTF.
+ */
+export default function HomeScreen() {
+  const router = useRouter();
   const bg = useThemeColor('background');
-  const border = useThemeColor('border');
+  const { isLoggedIn } = useAuthSession();
+  const drawers = useHeaderDrawers();
+
+  const {
+    data,
+    isError,
+    error,
+    refetch,
+    categoryRoots,
+    urgent,
+    trending,
+    specialOffers,
+    toggleFavorite,
+  } = useHomepageFeed();
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetch]);
+
+  const onProductPress = useCallback((id: string) => {
+    router.push(`/advert/${id}`);
+  }, [router]);
+
+  const onBannerPress = useCallback((slide: ActiveBannerItem) => {
+    if (__DEV__) console.log('[home] banner', slide.targetUrl ?? slide.id);
+  }, []);
+
+  const onCategorySelect = useCallback((cat: CategoryTreeNode) => {
+    router.push(`/listings?category=${encodeURIComponent(cat.slug)}`);
+  }, [router]);
+
+  const onPostAdPress = useCallback(() => {
+    prepareListingWizardEntry();
+    router.push('/post');
+  }, [router]);
+
+  const onLoginPress = useCallback(() => {
+    router.push('/auth/login');
+  }, [router]);
+
+  const onSignupPress = useCallback(() => {
+    router.push('/auth/signup');
+  }, [router]);
+
+  const onProfilePress = useCallback(() => {
+    router.push('/profile');
+  }, [router]);
+
+  const onOpenFavorites = useCallback(() => {
+    drawers?.openFavorites();
+  }, [drawers]);
 
   return (
-    <View style={[styles.screen, { backgroundColor: bg }]}>
-      {/* Üst buton çubuğu */}
-      <View style={[styles.bar, { borderBottomColor: border }]}>
-        <ModeButton label="⏳ Loading" active={mode === 'loading'} onPress={() => setMode('loading')} />
-        <ModeButton label="📭 Empty"   active={mode === 'empty'}   onPress={() => setMode('empty')}   />
-        <ModeButton label="⚠️ Error"   active={mode === 'error'}   onPress={() => setMode('error')}   />
-      </View>
+    <View style={[styles.root, { backgroundColor: bg }]}>
+      {Platform.OS === 'web' ? (
+        <Head>
+          <title>{SEO.title}</title>
+          <meta name="description" content={SEO.description} />
+          <meta name="robots" content="index,follow" />
+          <meta property="og:title" content={SEO.title} />
+          <meta property="og:description" content={SEO.description} />
+          <link rel="canonical" href={SEO.url} />
+        </Head>
+      ) : null}
 
-      {/* State gösterimi */}
-      <ScreenWrapper
-        isLoading={mode === 'loading'}
-        loadingVariant="cards"
-        loadingCount={3}
+      <AppHeader
+        brandName="Haradan.com"
+        isLoggedIn={isLoggedIn}
+        onFavoritesPress={onOpenFavorites}
+        onLoginPress={onLoginPress}
+        onSignupPress={onSignupPress}
+        onProfilePress={onProfilePress}
+        onPostAdPress={onPostAdPress}
+      />
 
-        isEmpty={mode === 'empty'}
-        emptyVariant="listing"
-        emptyTitle="Henüz ilan yok"
-        emptyDescription="Şu an gösterilecek ilan bulunamadı. Daha sonra tekrar kontrol edin."
-        emptyActionLabel="Yenile"
-        onEmptyAction={() => setMode('loading')}
+      <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.flex}>
+        {isError ? (
+          <ErrorState variant="network" message={error} onRetry={refetch} />
+        ) : (
+          <HomeFeed
+            data={data}
+            categoryRoots={categoryRoots}
+            urgent={urgent}
+            trending={trending}
+            specialOffers={specialOffers}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            onProductPress={onProductPress}
+            onBannerPress={onBannerPress}
+            onCategorySelect={onCategorySelect}
+            onPostAdPress={onPostAdPress}
+            onToggleFavorite={toggleFavorite}
+          />
+        )}
+      </SafeAreaView>
 
-        isError={mode === 'error'}
-        errorVariant="network"
-        errorMessage="Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edin."
-        onRetry={() => setMode('loading')}
-
-        scrollable={false}
-      >
-        <View />
-      </ScreenWrapper>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  bar: {
-    flexDirection: 'row',
-    gap: 8,
-    padding: 12,
-    borderBottomWidth: 1,
-  },
-  modeBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    alignItems: 'center',
-  },
-  modeBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
+  root: { flex: 1, position: 'relative' },
+  flex: { flex: 1 },
 });
