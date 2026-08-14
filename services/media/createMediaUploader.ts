@@ -1,3 +1,4 @@
+import { resolveApiBaseUrl } from '@/services/http';
 import type { IMediaUploader } from './MediaUploader';
 import { HttpMediaUploader } from './HttpMediaUploader';
 import { LocalMediaUploader } from './LocalMediaUploader';
@@ -8,7 +9,7 @@ import { LocalMediaUploader } from './LocalMediaUploader';
  */
 export function createMediaUploader(): IMediaUploader {
   const useHttp = process.env.EXPO_PUBLIC_USE_HTTP_MEDIA === '1';
-  const baseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  const baseUrl = resolveApiBaseUrl();
   if (useHttp && baseUrl) {
     return new HttpMediaUploader(baseUrl);
   }

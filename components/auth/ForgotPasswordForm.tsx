@@ -1,24 +1,19 @@
 import React, { useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import { Link, useRouter } from 'expo-router';
+import { Link } from 'expo-router';
+import { AuthSubmitButton } from './AuthSubmitButton';
 import { AuthTextField } from './AuthTextField';
-import { Button } from '@/components/ui';
+import { useAuthTheme } from './AuthThemeContext';
+import { AUTH_FORM_MAX_WIDTH } from '@/constants/AuthTheme';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useAuth } from '@/hooks/useAuth';
-import { useThemeColor } from '@/hooks/useThemeColor';
 
 export function ForgotPasswordForm() {
-  const router = useRouter();
   const { forgotPassword, loading, error, clearError } = useAuth();
+  const { tokens } = useAuthTheme();
   const [email, setEmail] = useState('');
   const [doneMessage, setDoneMessage] = useState<string | null>(null);
-
-  const text = useThemeColor('text');
-  const textSecondary = useThemeColor('textSecondary');
-  const primary = useThemeColor('primary');
-  const errorColor = useThemeColor('error');
-  const success = useThemeColor('success');
 
   const handleSubmit = async () => {
     clearError();
@@ -30,17 +25,17 @@ export function ForgotPasswordForm() {
 
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.title, { color: text }]}>Forgot password?</Text>
-      <Text style={[styles.sub, { color: textSecondary }]}>
-        Enter your email and we&apos;ll send reset instructions.{' '}
-        <Link href="/auth/login" style={[styles.link, { color: primary }]}>
-          Back to sign in
+      <Text style={[styles.title, { color: tokens.text }]}>Parolamı unuttum</Text>
+      <Text style={[styles.sub, { color: tokens.textSecondary }]}>
+        E-posta adresinizi girin; hesap varsa sıfırlama talimatı gönderilir.{' '}
+        <Link href="/auth/login" style={[styles.link, { color: tokens.text }]}>
+          Girişe dön
         </Link>
       </Text>
 
       <AuthTextField
-        label="Email"
-        placeholder="Email"
+        label="E-posta"
+        placeholder="E-posta"
         value={email}
         onChangeText={(v) => {
           clearError();
@@ -56,28 +51,22 @@ export function ForgotPasswordForm() {
       />
 
       {error ? (
-        <Text style={[styles.banner, { color: errorColor }]}>{error}</Text>
+        <Text style={[styles.banner, { color: tokens.error }]}>{error}</Text>
       ) : null}
       {doneMessage ? (
-        <Text style={[styles.banner, { color: success }]}>{doneMessage}</Text>
+        <Text style={[styles.banner, { color: tokens.text }]}>{doneMessage}</Text>
       ) : null}
 
-      <Button
+      <AuthSubmitButton
+        label="Sıfırlama bağlantısı gönder"
         onPress={handleSubmit}
         loading={loading}
         disabled={!email.trim()}
-        style={styles.submit}
-      >
-        Send reset link
-      </Button>
+      />
 
-      <Button
-        variant="ghost"
-        onPress={() => router.replace('/auth/login')}
-        style={styles.back}
-      >
-        Return to sign in
-      </Button>
+      <Link href="/auth/login" style={[styles.link, { color: tokens.text }]}>
+        Girişe dön
+      </Link>
     </View>
   );
 }
@@ -85,14 +74,15 @@ export function ForgotPasswordForm() {
 const styles = StyleSheet.create({
   wrap: {
     gap: Spacing.lg,
-    maxWidth: 400,
     width: '100%',
-    alignSelf: 'center',
+    maxWidth: AUTH_FORM_MAX_WIDTH,
   },
   title: {
     ...Typography.h1,
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 32,
+    lineHeight: 38,
+    fontWeight: '700',
+    letterSpacing: -0.4,
   },
   sub: {
     ...Typography.body,
@@ -108,13 +98,5 @@ const styles = StyleSheet.create({
   },
   banner: {
     ...Typography.small,
-  },
-  submit: {
-    borderRadius: 12,
-    minHeight: 52,
-    width: '100%',
-  },
-  back: {
-    minHeight: 44,
   },
 });

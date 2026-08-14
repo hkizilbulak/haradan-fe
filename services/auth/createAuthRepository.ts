@@ -1,17 +1,18 @@
+import { resolveApiBaseUrl } from '@/services/http';
 import type { IAuthRepository } from './AuthRepository';
 import { HttpAuthRepository } from './HttpAuthRepository';
 import { MockAuthRepository } from './MockAuthRepository';
 
 /**
- * Varsayılan: mock.
- * HTTP: EXPO_PUBLIC_USE_HTTP_AUTH=1 ve EXPO_PUBLIC_API_URL.
+ * Varsayılan: EXPO_PUBLIC_API_URL varsa HTTP.
+ * Mock: EXPO_PUBLIC_USE_MOCK_AUTH=1 veya URL yok.
  */
 export function createAuthRepository(): IAuthRepository {
-  const useHttp = process.env.EXPO_PUBLIC_USE_HTTP_AUTH === '1';
-  const baseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
-  if (useHttp && baseUrl) {
-    return new HttpAuthRepository(baseUrl);
+  if (process.env.EXPO_PUBLIC_USE_MOCK_AUTH === '1') {
+    return new MockAuthRepository();
   }
+  const baseUrl = resolveApiBaseUrl();
+  if (baseUrl) return new HttpAuthRepository(baseUrl);
   return new MockAuthRepository();
 }
 

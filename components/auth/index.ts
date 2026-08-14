@@ -4,7 +4,6 @@ export { AuthHeroPanel, AUTH_HERO_IMAGE } from './AuthHeroPanel';
 export { AuthTextField } from './AuthTextField';
 export { AuthCheckbox } from './AuthCheckbox';
 export { AuthSubmitButton } from './AuthSubmitButton';
-export { SocialAuthButtons } from './SocialAuthButtons';
 export { AuthThemeProvider, useAuthTheme } from './AuthThemeContext';
 export { LoginForm } from './LoginForm';
 export { SignupForm } from './SignupForm';

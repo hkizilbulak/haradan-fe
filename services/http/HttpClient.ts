@@ -1,12 +1,13 @@
 import { ApiError } from './ApiError';
+import { parseBeErrorBody, userFacingBeMessage } from './errorResponse';
 
 type RequestOptions = RequestInit & {
   accessToken?: string;
 };
 
 /**
- * Paylaşılan HTTP istemcisi — listing / TJK / media.
- * Auth repo kendi istemcisini korur; yeni servisler buradan geçer.
+ * Paylaşılan HTTP istemcisi.
+ * Base URL OpenAPI server (`…/api`); path’ler `/v1/...`.
  */
 export class HttpClient {
   constructor(private readonly baseUrl: string) {}
@@ -20,10 +21,13 @@ export class HttpClient {
     try {
       res = await fetch(url, {
         ...rest,
+        method: rest.method ?? 'GET',
         body,
+        credentials: 'omit',
+        mode: 'cors',
         headers: {
           Accept: 'application/json',
-          ...(isForm ? null : { 'Content-Type': 'application/json' }),
+          ...(body && !isForm ? { 'Content-Type': 'application/json' } : null),
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : null),
           ...headers,
         },
@@ -33,18 +37,36 @@ export class HttpClient {
     }
 
     if (!res.ok) {
-      throw new ApiError(await readErrorMessage(res), res.status, 'HTTP');
+      const parsed = await readBeError(res);
+      throw new ApiError(
+        parsed.message,
+        res.status,
+        parsed.code,
+        parsed.traceId
+      );
     }
     if (res.status === 204) return undefined as T;
-    return (await res.json()) as T;
+    const text = await res.text();
+    if (!text) return undefined as T;
+    return JSON.parse(text) as T;
   }
 }
 
-async function readErrorMessage(res: Response): Promise<string> {
+async function readBeError(
+  res: Response
+): Promise<{ message: string; code: string; traceId?: string }> {
   try {
-    const body = (await res.json()) as { message?: string; error?: string };
-    return body.message ?? body.error ?? `İstek başarısız (${res.status}).`;
+    const raw: unknown = await res.json();
+    const body = parseBeErrorBody(raw);
+    return {
+      message: userFacingBeMessage(res.status, body),
+      code: body?.code ?? 'HTTP',
+      traceId: body?.traceId,
+    };
   } catch {
-    return `İstek başarısız (${res.status}).`;
+    return {
+      message: userFacingBeMessage(res.status, null),
+      code: 'HTTP',
+    };
   }
 }

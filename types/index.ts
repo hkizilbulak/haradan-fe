@@ -44,15 +44,18 @@ export type {
 } from './catalog';
 export type {
   ClientContext,
+  FeClientContext,
   LoginRequest,
   RegisterUserRequest,
   AuthTokenResponse,
   GenericAuthMessageResponse,
   EmailRequest,
+  TokenRequest,
   AuthSession,
   AuthUser,
+  RefreshSessionRequest,
   RefreshTokenRequest,
-  LogoutRequest,
+  MyProfileResponse,
 } from './auth';
 export type {
   ListingWizardStep,

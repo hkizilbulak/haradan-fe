@@ -1,3 +1,4 @@
+import { resolveApiBaseUrl } from '@/services/http';
 import type { IListingRepository } from './ListingRepository';
 import { HttpListingRepository } from './HttpListingRepository';
 import { MockListingRepository } from './MockListingRepository';
@@ -8,7 +9,7 @@ import { MockListingRepository } from './MockListingRepository';
  */
 export function createListingRepository(): IListingRepository {
   const useHttp = process.env.EXPO_PUBLIC_USE_HTTP_LISTING === '1';
-  const baseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  const baseUrl = resolveApiBaseUrl();
   if (useHttp && baseUrl) {
     return new HttpListingRepository(baseUrl);
   }

@@ -1,3 +1,4 @@
+import { resolveApiBaseUrl } from '@/services/http';
 import type { ITjkRepository } from './TjkRepository';
 import { HttpTjkRepository } from './HttpTjkRepository';
 import { MockTjkRepository } from './MockTjkRepository';
@@ -8,7 +9,7 @@ import { MockTjkRepository } from './MockTjkRepository';
  */
 export function createTjkRepository(): ITjkRepository {
   const useHttp = process.env.EXPO_PUBLIC_USE_HTTP_TJK === '1';
-  const baseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  const baseUrl = resolveApiBaseUrl();
   if (useHttp && baseUrl) {
     return new HttpTjkRepository(baseUrl);
   }

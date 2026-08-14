@@ -90,9 +90,9 @@ export function HeaderDrawersProvider({
   }, [isLoggedIn]);
 
   const onLogout = useCallback(() => {
-    void logout(session?.refreshToken ?? null);
+    void logout(session?.accessToken ?? null);
     closeAll();
-  }, [logout, session?.refreshToken, closeAll]);
+  }, [logout, session?.accessToken, closeAll]);
 
   const onNavigate = useCallback(
     (action: ProfileDrawerAction) => {

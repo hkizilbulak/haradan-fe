@@ -69,6 +69,13 @@ export default function RootLayout() {
             title: 'İlanlarım | Haradan.com',
           }}
         />
+        <Stack.Screen
+          name="verify-email"
+          options={{
+            headerShown: false,
+            title: 'E-posta doğrula | Haradan.com',
+          }}
+        />
         <Stack.Screen name="+not-found" options={{ title: 'Sayfa bulunamadı' }} />
         </Stack>
         <StatusBar style="auto" />

@@ -4,12 +4,12 @@ import { Link, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { AuthCheckbox } from './AuthCheckbox';
 import { AuthSubmitButton } from './AuthSubmitButton';
 import { AuthTextField } from './AuthTextField';
-import { SocialAuthButtons } from './SocialAuthButtons';
 import { useAuthTheme } from './AuthThemeContext';
 import { AUTH_FORM_MAX_WIDTH } from '@/constants/AuthTheme';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useAuth } from '@/hooks/useAuth';
+import { isHttpAuthEnabled } from '@/services/http';
 
 type LoginFormProps = {
   onSuccess?: () => void;
@@ -22,18 +22,39 @@ function safeNextPath(raw: string | string[] | undefined): string | null {
   return value;
 }
 
+function firstParam(raw: string | string[] | undefined): string | null {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return value?.trim() || null;
+}
+
 export function LoginForm({ onSuccess }: LoginFormProps) {
   const router = useRouter();
-  const params = useLocalSearchParams<{ next?: string | string[] }>();
-  const { login, loading, error, clearError } = useAuth();
+  const params = useLocalSearchParams<{
+    next?: string | string[];
+    registered?: string | string[];
+    verified?: string | string[];
+  }>();
+  const { login, resendVerification, loading, error, errorCode, clearError } =
+    useAuth();
   const { tokens } = useAuthTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [info, setInfo] = useState<string | null>(() => {
+    if (firstParam(params.verified) === '1') {
+      return 'E-posta adresiniz doğrulandı. Giriş yapabilirsiniz.';
+    }
+    if (firstParam(params.registered) === '1') {
+      return 'Kayıt alındı. E-posta doğrulama talimatlarını kontrol edin, ardından giriş yapın.';
+    }
+    return null;
+  });
+  const [resendNote, setResendNote] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     clearError();
+    setResendNote(null);
     const session = await login(email.trim(), password);
     if (!session) return;
     if (remember && typeof localStorage !== 'undefined') {
@@ -49,21 +70,32 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     else router.replace('/');
   };
 
+  const handleResend = async () => {
+    const result = await resendVerification(email.trim());
+    if (result) setResendNote(result.message);
+  };
+
+  const needsVerify = errorCode === 'EMAIL_NOT_VERIFIED';
+
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.title, { color: tokens.text }]}>Welcome back</Text>
+      <Text style={[styles.title, { color: tokens.text }]}>Giriş yap</Text>
 
       <Text style={[styles.sub, { color: tokens.textSecondary }]}>
-        Don&apos;t have an account?{' '}
+        Hesabınız yok mu?{' '}
         <Link href="/auth/signup" style={[styles.link, { color: tokens.text }]}>
-          Create an account
+          Hesap oluştur
         </Link>
       </Text>
 
+      {info ? (
+        <Text style={[styles.info, { color: tokens.text }]}>{info}</Text>
+      ) : null}
+
       <View style={styles.fields}>
         <AuthTextField
-          label="Email"
-          placeholder="Email"
+          label="E-posta"
+          placeholder="E-posta"
           value={email}
           onChangeText={(v) => {
             clearError();
@@ -76,8 +108,8 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           returnKeyType="next"
         />
         <AuthTextField
-          label="Password"
-          placeholder="Password"
+          label="Parola"
+          placeholder="Parola"
           value={password}
           onChangeText={(v) => {
             clearError();
@@ -95,7 +127,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
       <View style={styles.utility}>
         <AuthCheckbox
-          label="Remember for 30 days"
+          label="Beni hatırla"
           checked={remember}
           onChange={setRemember}
         />
@@ -103,36 +135,34 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           href="/auth/forgot-password"
           style={[styles.forgot, { color: tokens.text }]}
         >
-          Forgot password?
+          Parolamı unuttum
         </Link>
       </View>
 
       {error ? (
         <Text style={[styles.errorText, { color: tokens.error }]}>{error}</Text>
       ) : null}
+      {resendNote ? (
+        <Text style={[styles.info, { color: tokens.text }]}>{resendNote}</Text>
+      ) : null}
+
+      {needsVerify ? (
+        <AuthSubmitButton
+          label="Doğrulama e-postasını gönder"
+          onPress={handleResend}
+          loading={loading}
+          disabled={!email.trim()}
+        />
+      ) : null}
 
       <AuthSubmitButton
-        label="Sign In"
+        label="Giriş yap"
         onPress={handleSubmit}
         loading={loading}
         disabled={!email.trim() || !password}
       />
 
-      <View style={styles.dividerRow}>
-        <View style={[styles.dividerLine, { backgroundColor: tokens.divider }]} />
-        <Text style={[styles.dividerText, { color: tokens.textMuted }]}>
-          or continue with
-        </Text>
-        <View style={[styles.dividerLine, { backgroundColor: tokens.divider }]} />
-      </View>
-
-      <SocialAuthButtons
-        onPress={(provider) => {
-          if (__DEV__) console.log('[auth] social', provider);
-        }}
-      />
-
-      {__DEV__ ? (
+      {__DEV__ && !isHttpAuthEnabled() ? (
         <Pressable
           onPress={() => {
             setEmail('demo@cartzilla.com');
@@ -174,6 +204,9 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
+  info: {
+    ...Typography.small,
+  },
   fields: {
     gap: Spacing.md,
   },
@@ -190,18 +223,6 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   errorText: {
-    ...Typography.small,
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
     ...Typography.small,
   },
   demoHint: {

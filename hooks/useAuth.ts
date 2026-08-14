@@ -2,35 +2,41 @@ import { useCallback, useState } from 'react';
 import { Platform } from 'react-native';
 import {
   authRepository,
+  resolveFeClientContext,
   type IAuthRepository,
 } from '@/services/auth';
 import { setAuthSession } from '@/services/auth/sessionStore';
 import type {
   AuthSession,
-  ClientContext,
   GenericAuthMessageResponse,
 } from '@/types';
-
-function resolveClientContext(): ClientContext {
-  return Platform.OS === 'web' ? 'PUBLIC_WEB' : 'MOBILE';
-}
 
 export function useAuth(repo: IAuthRepository = authRepository) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
 
-  const clearError = useCallback(() => setError(null), []);
+  const clearError = useCallback(() => {
+    setError(null);
+    setErrorCode(null);
+  }, []);
 
   const run = useCallback(
     async <T,>(fn: () => Promise<T>): Promise<T | null> => {
       setLoading(true);
       setError(null);
+      setErrorCode(null);
       try {
         return await fn();
       } catch (err) {
         const message =
           err instanceof Error ? err.message : 'Bir hata oluştu.';
+        const code =
+          err && typeof err === 'object' && 'code' in err
+            ? String((err as { code?: string }).code)
+            : null;
         setError(message);
+        setErrorCode(code);
         return null;
       } finally {
         setLoading(false);
@@ -43,9 +49,9 @@ export function useAuth(repo: IAuthRepository = authRepository) {
     async (email: string, password: string): Promise<AuthSession | null> => {
       const session = await run(() =>
         repo.login({
-          email,
+          email: email.trim(),
           password,
-          clientContext: resolveClientContext(),
+          clientContext: resolveFeClientContext(Platform.OS),
         })
       );
       if (session) setAuthSession(session);
@@ -62,23 +68,46 @@ export function useAuth(repo: IAuthRepository = authRepository) {
       lastName: string;
       phone?: string | null;
     }): Promise<GenericAuthMessageResponse | null> => {
-      return run(() => repo.register(input));
+      const phone = input.phone?.trim();
+      return run(() =>
+        repo.register({
+          email: input.email.trim(),
+          password: input.password,
+          firstName: input.firstName.trim(),
+          lastName: input.lastName.trim(),
+          ...(phone ? { phone } : {}),
+        })
+      );
     },
     [repo, run]
   );
 
   const forgotPassword = useCallback(
     async (email: string): Promise<GenericAuthMessageResponse | null> => {
-      return run(() => repo.forgotPassword({ email }));
+      return run(() => repo.forgotPassword({ email: email.trim() }));
+    },
+    [repo, run]
+  );
+
+  const resendVerification = useCallback(
+    async (email: string): Promise<GenericAuthMessageResponse | null> => {
+      return run(() => repo.resendVerification({ email: email.trim() }));
+    },
+    [repo, run]
+  );
+
+  const verifyEmail = useCallback(
+    async (token: string): Promise<GenericAuthMessageResponse | null> => {
+      return run(() => repo.verifyEmail({ token: token.trim() }));
     },
     [repo, run]
   );
 
   const logout = useCallback(
-    async (refreshToken: string | null): Promise<void> => {
-      if (refreshToken) {
+    async (accessToken: string | null): Promise<void> => {
+      if (accessToken) {
         try {
-          await repo.logout({ refreshToken });
+          await repo.logout(accessToken);
         } catch {
           /* oturumu yine de kapat */
         }
@@ -91,10 +120,13 @@ export function useAuth(repo: IAuthRepository = authRepository) {
   return {
     loading,
     error,
+    errorCode,
     clearError,
     login,
     register,
     forgotPassword,
+    resendVerification,
+    verifyEmail,
     logout,
   };
 }

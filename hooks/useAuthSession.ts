@@ -5,6 +5,7 @@ import {
   setAuthSession,
   subscribeAuthSession,
 } from '@/services/auth/sessionStore';
+import { hydrateFreshSession } from '@/services/auth/tokenRefresh';
 import type { AuthSession } from '@/types';
 
 /** Login sonrası header / profil için oturum durumu. */
@@ -13,7 +14,14 @@ export function useAuthSession() {
     getAuthSession()
   );
 
-  useEffect(() => subscribeAuthSession(() => setSessionState(getAuthSession())), []);
+  useEffect(
+    () => subscribeAuthSession(() => setSessionState(getAuthSession())),
+    []
+  );
+
+  useEffect(() => {
+    void hydrateFreshSession();
+  }, []);
 
   const setSession = useCallback((next: AuthSession | null) => {
     setAuthSession(next);

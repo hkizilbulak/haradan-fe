@@ -3,7 +3,6 @@ import { Platform, StyleSheet, Text, View } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { AuthSubmitButton } from './AuthSubmitButton';
 import { AuthTextField } from './AuthTextField';
-import { SocialAuthButtons } from './SocialAuthButtons';
 import { useAuthTheme } from './AuthThemeContext';
 import { AUTH_FORM_MAX_WIDTH } from '@/constants/AuthTheme';
 import { Spacing } from '@/constants/Spacing';
@@ -30,11 +29,15 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
     clearError();
     setFieldError(null);
     if (password !== confirm) {
-      setFieldError('Passwords do not match.');
+      setFieldError('Parolalar eşleşmiyor.');
       return;
     }
     if (password.length < 8) {
-      setFieldError('Password must be at least 8 characters.');
+      setFieldError('Parola en az 8 karakter olmalıdır.');
+      return;
+    }
+    if (firstName.trim().length > 100 || lastName.trim().length > 100) {
+      setFieldError('Ad ve soyad en fazla 100 karakter olabilir.');
       return;
     }
     const result = await register({
@@ -53,11 +56,11 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
 
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.title, { color: tokens.text }]}>Create account</Text>
+      <Text style={[styles.title, { color: tokens.text }]}>Hesap oluştur</Text>
       <Text style={[styles.sub, { color: tokens.textSecondary }]}>
-        Already have an account?{' '}
+        Zaten hesabınız var mı?{' '}
         <Link href="/auth/login" style={[styles.link, { color: tokens.text }]}>
-          Sign in
+          Giriş yap
         </Link>
       </Text>
 
@@ -65,8 +68,8 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
         <View style={styles.nameRow}>
           <View style={styles.nameCol}>
             <AuthTextField
-              label="First name"
-              placeholder="First name"
+              label="Ad"
+              placeholder="Ad"
               value={firstName}
               onChangeText={(v) => {
                 clearError();
@@ -78,8 +81,8 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
           </View>
           <View style={styles.nameCol}>
             <AuthTextField
-              label="Last name"
-              placeholder="Last name"
+              label="Soyad"
+              placeholder="Soyad"
               value={lastName}
               onChangeText={(v) => {
                 clearError();
@@ -91,8 +94,8 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
           </View>
         </View>
         <AuthTextField
-          label="Email"
-          placeholder="Email"
+          label="E-posta"
+          placeholder="E-posta"
           value={email}
           onChangeText={(v) => {
             clearError();
@@ -104,8 +107,8 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
           textContentType="emailAddress"
         />
         <AuthTextField
-          label="Password"
-          placeholder="Min. 8 characters"
+          label="Parola"
+          placeholder="En az 8 karakter"
           value={password}
           onChangeText={(v) => {
             clearError();
@@ -119,8 +122,8 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
           onRightIconPress={() => setShowPassword((s) => !s)}
         />
         <AuthTextField
-          label="Confirm password"
-          placeholder="Confirm password"
+          label="Parola tekrar"
+          placeholder="Parolayı doğrulayın"
           value={confirm}
           onChangeText={(v) => {
             setFieldError(null);
@@ -141,7 +144,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
       ) : null}
 
       <AuthSubmitButton
-        label="Create account"
+        label="Hesap oluştur"
         onPress={handleSubmit}
         loading={loading}
         disabled={
@@ -151,20 +154,6 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
           !password ||
           !confirm
         }
-      />
-
-      <View style={styles.dividerRow}>
-        <View style={[styles.dividerLine, { backgroundColor: tokens.divider }]} />
-        <Text style={[styles.dividerText, { color: tokens.textMuted }]}>
-          or continue with
-        </Text>
-        <View style={[styles.dividerLine, { backgroundColor: tokens.divider }]} />
-      </View>
-
-      <SocialAuthButtons
-        onPress={(provider) => {
-          if (__DEV__) console.log('[auth] social signup', provider);
-        }}
       />
     </View>
   );
@@ -206,18 +195,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   errorText: {
-    ...Typography.small,
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
     ...Typography.small,
   },
 });

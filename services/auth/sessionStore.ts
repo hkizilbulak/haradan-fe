@@ -1,17 +1,20 @@
 import type { AuthSession } from '@/types';
 
 function normalizeSession(raw: AuthSession): AuthSession {
-  if (raw.user?.email) return raw;
-  const email = raw.email ?? raw.user?.email ?? '';
+  const email = raw.user?.email ?? raw.email ?? '';
   return {
     ...raw,
     email,
+    issuedAt: raw.issuedAt ?? 0,
+    expiresIn: raw.expiresIn ?? 0,
+    tokenType: 'Bearer',
     user: {
       id: raw.user?.id ?? '',
       email,
       firstName: raw.user?.firstName ?? '',
       lastName: raw.user?.lastName ?? '',
       phone: raw.user?.phone ?? null,
+      emailVerified: raw.user?.emailVerified === true,
     },
   };
 }
@@ -49,7 +52,6 @@ function writeStorage(next: AuthSession | null) {
   }
 }
 
-/** İlk okumada localStorage’dan yükle (web). */
 export function hydrateAuthSession(): AuthSession | null {
   if (!hydrated) {
     session = readStorage();
@@ -68,6 +70,12 @@ export function setAuthSession(next: AuthSession | null): void {
   hydrated = true;
   writeStorage(session);
   notify();
+}
+
+export function patchAuthSession(partial: Partial<AuthSession>): void {
+  const current = getAuthSession();
+  if (!current) return;
+  setAuthSession({ ...current, ...partial });
 }
 
 export function clearAuthSession(): void {

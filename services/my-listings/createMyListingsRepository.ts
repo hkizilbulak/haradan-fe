@@ -1,3 +1,4 @@
+import { resolveApiBaseUrl } from '@/services/http';
 import type { IMyListingsRepository } from './MyListingsRepository';
 import { HttpMyListingsRepository } from './HttpMyListingsRepository';
 import { MockMyListingsRepository } from './MockMyListingsRepository';
@@ -8,7 +9,7 @@ import { MockMyListingsRepository } from './MockMyListingsRepository';
  */
 export function createMyListingsRepository(): IMyListingsRepository {
   const useHttp = process.env.EXPO_PUBLIC_USE_HTTP_MY_LISTINGS === '1';
-  const baseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  const baseUrl = resolveApiBaseUrl();
   if (useHttp && baseUrl) {
     return new HttpMyListingsRepository(baseUrl);
   }

@@ -1,11 +1,13 @@
-/** OpenAPI: ClientContext */
+/** OpenAPI: ClientContext — FE yalnız PUBLIC_WEB / MOBILE gönderir. */
 export type ClientContext = 'PUBLIC_WEB' | 'MOBILE' | 'ADMIN_BO';
+
+export type FeClientContext = Exclude<ClientContext, 'ADMIN_BO'>;
 
 /** OpenAPI: LoginRequest */
 export type LoginRequest = {
   email: string;
   password: string;
-  clientContext: ClientContext;
+  clientContext: FeClientContext;
 };
 
 /** OpenAPI: RegisterUserRequest */
@@ -17,7 +19,7 @@ export type RegisterUserRequest = {
   phone?: string | null;
 };
 
-/** OpenAPI: AuthTokenResponse */
+/** OpenAPI: AuthTokenResponse — user yok; profil GET /v1/me. */
 export type AuthTokenResponse = {
   accessToken: string;
   refreshToken: string;
@@ -31,32 +33,49 @@ export type GenericAuthMessageResponse = {
   message: string;
 };
 
-/** OpenAPI: EmailRequest (forgot password) */
+/** OpenAPI: EmailRequest */
 export type EmailRequest = {
   email: string;
 };
 
-export type AuthSession = AuthTokenResponse & {
-  email: string;
-  user: AuthUser;
+/** OpenAPI: TokenRequest (verify-email, confirm email change) */
+export type TokenRequest = {
+  token: string;
 };
 
-/** Oturumdaki kullanıcı — GET /v1/auth/me ile aynı şekil. */
+/** OpenAPI: RefreshSessionRequest */
+export type RefreshSessionRequest = {
+  refreshToken: string;
+  clientContext: FeClientContext;
+};
+
+/** @deprecated OpenAPI logout body yok; Bearer access token. */
+export type RefreshTokenRequest = RefreshSessionRequest;
+
 export type AuthUser = {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
   phone?: string | null;
+  emailVerified?: boolean;
 };
 
-/** OpenAPI: RefreshTokenRequest */
-export type RefreshTokenRequest = {
-  refreshToken: string;
-  clientContext: ClientContext;
+/** OpenAPI: MyProfileResponse (ACCOUNT-01) */
+export type MyProfileResponse = {
+  id: string;
+  email: string;
+  emailVerified: boolean;
+  firstName: string;
+  lastName: string;
+  phone?: string | null;
+  role: string;
+  status: string;
 };
 
-/** OpenAPI: LogoutRequest */
-export type LogoutRequest = {
-  refreshToken: string;
+export type AuthSession = AuthTokenResponse & {
+  email: string;
+  user: AuthUser;
+  /** Access token basım anı (epoch ms) — yenileme için. */
+  issuedAt: number;
 };
