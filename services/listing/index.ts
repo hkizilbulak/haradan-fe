@@ -6,6 +6,7 @@ export {
   listingRepository,
 } from './createListingRepository';
 export { LISTING_PACKAGES } from './listingPackages';
+export { mapPublicPackage } from './mapPackage';
 export {
   isHorseListing,
   typeStepComplete,
@@ -15,7 +16,7 @@ export {
   canEnterStep,
 } from './validateListingDraft';
 export type { ListingFieldErrors } from './validateListingDraft';
-export { mapDraftToRequest } from './mapDraftToRequest';
+export { mapDraftToCreateAdvert } from './mapDraftToRequest';
 export {
   getListingWizardState,
   setListingWizardState,

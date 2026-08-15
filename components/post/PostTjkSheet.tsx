@@ -25,7 +25,7 @@ type PostTjkSheetProps = {
   initialMode?: TjkSheetMode;
   onClose: () => void;
   onSkip: () => void;
-  onSelect: (tjkId: string) => void;
+  onSelect: (horseId: string) => void;
 };
 
 export function PostTjkSheet({
@@ -44,7 +44,7 @@ export function PostTjkSheet({
   const header = useThemeColor('header');
   const [mode, setMode] = useState<TjkSheetMode>(initialMode);
   const [query, setQuery] = useState('');
-  const { results, loading } = useTjkSearch(mode === 'search' ? query : '');
+  const { results, loading, error } = useTjkSearch(mode === 'search' ? query : '');
 
   useEffect(() => {
     if (visible) {
@@ -68,7 +68,7 @@ export function PostTjkSheet({
   const handlePick = (item: TjkHorseSummary) => {
     setMode('ask');
     setQuery('');
-    onSelect(item.tjkId);
+    onSelect(item.horseId);
   };
 
   return (
@@ -120,14 +120,14 @@ export function PostTjkSheet({
             <>
               <Text style={[styles.title, { color: text }]}>TJK kaydı</Text>
               <Text style={[styles.lead, { color: secondary }]}>
-                Atınızın TJK’da kayıtlı adını giriniz.
+                At adı veya TJK sicil numarası ile arayın.
               </Text>
               <View style={[styles.search, { borderColor: border }]}>
                 <Ionicons name="search-outline" size={18} color={muted} />
                 <TextInput
                   value={query}
                   onChangeText={setQuery}
-                  placeholder="Atınızın TJK’da kayıtlı adını giriniz"
+                  placeholder="At adı veya sicil no"
                   placeholderTextColor={muted}
                   autoFocus
                   style={[styles.searchInput, { color: text }]}
@@ -143,7 +143,7 @@ export function PostTjkSheet({
               >
                 {results.map((item) => (
                   <Pressable
-                    key={item.tjkId}
+                    key={item.horseId}
                     onPress={() => handlePick(item)}
                     style={({ pressed }) => [
                       styles.result,
@@ -155,14 +155,18 @@ export function PostTjkSheet({
                         {item.registeredName}
                       </Text>
                       <Text style={[styles.resultMeta, { color: secondary }]}>
-                        {item.gender} · {item.breed} · {item.birthYear} ·{' '}
-                        {item.coatColor}
+                        {item.tjkNumber}
+                        {item.birthYear ? ` · ${item.birthYear}` : ''}
+                        {item.sireName ? ` · ${item.sireName}` : ''}
                       </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={16} color={muted} />
                   </Pressable>
                 ))}
-                {query.trim().length >= 2 && !loading && results.length === 0 ? (
+                {error ? (
+                  <Text style={[styles.empty, { color: secondary }]}>{error}</Text>
+                ) : null}
+                {query.trim().length >= 2 && !loading && !error && results.length === 0 ? (
                   <Text style={[styles.empty, { color: secondary }]}>
                     Eşleşen kayıt yok. Farklı bir ad deneyin.
                   </Text>

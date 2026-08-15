@@ -17,7 +17,8 @@ import {
   priceHint,
 } from '@/components/listings/filterConfig';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { locationLookup } from '@/services/location/LocationLookup';
+import { locationLookup } from '@/services/location';
+import { useProvinces } from '@/hooks/useLocation';
 import type { CatalogFacetGroup, CatalogFacetOption, CatalogFacets } from '@/types';
 
 if (
@@ -220,7 +221,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
   resultCount,
 }: ListingsFilterSidebarProps) {
   const groups = facets?.groups ?? [];
-  const provinces = useMemo(() => locationLookup.listProvinces(), []);
+  const { items: provinces } = useProvinces();
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     'listing-type': true,

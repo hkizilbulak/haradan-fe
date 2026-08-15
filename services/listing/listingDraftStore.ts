@@ -1,7 +1,6 @@
 import type {
   ListingDraft,
   ListingDraftDetails,
-  ListingPaymentInstructions,
   ListingWizardStep,
 } from '@/types/listing';
 
@@ -15,7 +14,7 @@ export type ListingWizardState = {
   tjkPromptSeen: boolean;
   detailsAttempted: boolean;
   submittedDraftId: string | null;
-  payment: ListingPaymentInstructions | null;
+  submittedStatus: string | null;
 };
 
 const STORAGE_KEY = 'haradan.listingDraft';
@@ -26,6 +25,7 @@ export function createEmptyDetails(): ListingDraftDetails {
     description: '',
     priceTl: '',
     provinceId: null,
+    districtId: null,
     gender: null,
     birthDate: '',
     age: '',
@@ -35,7 +35,8 @@ export function createEmptyDetails(): ListingDraftDetails {
     dam: '',
     damsire: '',
     registeredName: '',
-    tjkId: null,
+    horseId: null,
+    tjkNumber: null,
     tjkSkipped: false,
     ownersText: '',
     breeder: '',
@@ -64,19 +65,28 @@ function createInitialState(): ListingWizardState {
     tjkPromptSeen: false,
     detailsAttempted: false,
     submittedDraftId: null,
-    payment: null,
+    submittedStatus: null,
   };
 }
 
 let state: ListingWizardState = hydrate();
 const listeners = new Set<() => void>();
 
+function normalizeStep(raw: unknown): ListingWizardStep {
+  if (raw === 'review' || raw === 'payment') return 'review';
+  if (raw === 'details' || raw === 'package' || raw === 'type') return raw;
+  return 'type';
+}
+
 function hydrate(): ListingWizardState {
   if (typeof sessionStorage === 'undefined') return createInitialState();
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return createInitialState();
-    const parsed = JSON.parse(raw) as ListingWizardState;
+    const parsed = JSON.parse(raw) as ListingWizardState & {
+      payment?: unknown;
+      draft?: ListingDraft & { details?: ListingDraftDetails & { tjkId?: string } };
+    };
     if (!parsed?.draft) return createInitialState();
     const media = (parsed.draft.media ?? []).filter(
       (m) => m.uri && !m.uri.startsWith('blob:')
@@ -90,21 +100,34 @@ function hydrate(): ListingWizardState {
         : rawPhase === 'breed'
           ? 'category'
           : 'root';
+    const details = parsed.draft.details ?? createEmptyDetails();
+    const horseId =
+      details.horseId ??
+      (typeof (details as { tjkId?: string }).tjkId === 'string'
+        ? (details as { tjkId?: string }).tjkId ?? null
+        : null);
     return {
       ...createInitialState(),
       ...parsed,
+      step: normalizeStep(parsed.step),
       selectedRootSlug,
       typePhase:
         typePhase === 'category' && !selectedRootSlug && !parsed.draft.type
           ? 'root'
           : typePhase,
-      payment: parsed.payment ?? null,
       submittedDraftId: parsed.submittedDraftId ?? null,
+      submittedStatus: parsed.submittedStatus ?? null,
       detailsAttempted: parsed.detailsAttempted === true,
       draft: {
         ...createEmptyDraft(),
         ...parsed.draft,
-        details: { ...createEmptyDetails(), ...parsed.draft.details },
+        details: {
+          ...createEmptyDetails(),
+          ...details,
+          horseId,
+          districtId: details.districtId ?? null,
+          tjkNumber: details.tjkNumber ?? null,
+        },
         media,
       },
     };
@@ -153,11 +176,7 @@ export function resetListingWizard(): void {
 export function isListingWizardComplete(
   snapshot: ListingWizardState = state
 ): boolean {
-  return (
-    snapshot.step === 'payment' &&
-    snapshot.submittedDraftId != null &&
-    snapshot.payment != null
-  );
+  return snapshot.step === 'review' && snapshot.submittedDraftId != null;
 }
 
 /** İlan Ver: süreç bitmemişse taslağı silip başa alır. */

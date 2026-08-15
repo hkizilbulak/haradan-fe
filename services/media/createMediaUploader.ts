@@ -1,17 +1,12 @@
-import { resolveApiBaseUrl } from '@/services/http';
+import { isHttpApiEnabled, resolveApiBaseUrl } from '@/services/http';
 import type { IMediaUploader } from './MediaUploader';
 import { HttpMediaUploader } from './HttpMediaUploader';
 import { LocalMediaUploader } from './LocalMediaUploader';
 
-/**
- * Varsayılan: yerel.
- * HTTP: EXPO_PUBLIC_USE_HTTP_MEDIA=1 ve EXPO_PUBLIC_API_URL.
- */
 export function createMediaUploader(): IMediaUploader {
-  const useHttp = process.env.EXPO_PUBLIC_USE_HTTP_MEDIA === '1';
-  const baseUrl = resolveApiBaseUrl();
-  if (useHttp && baseUrl) {
-    return new HttpMediaUploader(baseUrl);
+  if (isHttpApiEnabled(process.env.EXPO_PUBLIC_USE_MOCK_MEDIA)) {
+    const baseUrl = resolveApiBaseUrl();
+    if (baseUrl) return new HttpMediaUploader(baseUrl);
   }
   return new LocalMediaUploader();
 }

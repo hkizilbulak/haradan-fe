@@ -74,8 +74,8 @@ export function useMyListingEdit(
   }, []);
 
   const applyTjk = useCallback(
-    async (tjkId: string) => {
-      const horse = await tjk.getById(tjkId);
+    async (horseId: string) => {
+      const horse = await tjk.getById(horseId);
       if (!horse) return;
       setDraft((prev) =>
         prev

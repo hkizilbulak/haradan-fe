@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { locationLookup } from '@/services/location/LocationLookup';
+import { locationLookup } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
 import { formatViewCount } from '@/utils/formatViewCount';
 import { WishlistButton } from '@/components/advert/WishlistButton';

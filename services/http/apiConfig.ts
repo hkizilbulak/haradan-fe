@@ -17,3 +17,10 @@ export function isHttpAuthEnabled(): boolean {
   if (process.env.EXPO_PUBLIC_USE_MOCK_AUTH === '1') return false;
   return resolveApiBaseUrl() != null;
 }
+
+/** Auth ile aynı kural: URL varsa HTTP; EXPO_PUBLIC_USE_MOCK_API=1 mock’a zorlar. */
+export function isHttpApiEnabled(serviceMockFlag?: string): boolean {
+  if (serviceMockFlag === '1') return false;
+  if (process.env.EXPO_PUBLIC_USE_MOCK_API === '1') return false;
+  return resolveApiBaseUrl() != null;
+}

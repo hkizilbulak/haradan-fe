@@ -4,19 +4,20 @@ import { PostWizardShell } from './PostWizardShell';
 import { PostTypeStep } from './PostTypeStep';
 import { PostDetailsStep } from './PostDetailsStep';
 import { PostPackagesStep } from './PostPackagesStep';
-import { PostPaymentStep } from './PostPaymentStep';
+import { PostReviewStep } from './PostReviewStep';
 import { useCatalogFacets } from '@/hooks/useCatalogFacets';
 import { useListingPackages } from '@/hooks/useListingPackages';
 import { useListingWizard } from '@/hooks/useListingWizard';
 import { useListingWizardBack } from '@/hooks/useListingWizardBack';
 import { useAuthSession } from '@/hooks/useAuthSession';
+import { getValidAccessToken } from '@/services/auth';
 import { parseInternationalPhone } from '@/services/phone';
 import type { ListingWizardStep } from '@/types/listing';
 
 export function PostWizardView() {
   const router = useRouter();
   const { session, isLoggedIn } = useAuthSession();
-  const { categoryTree } = useCatalogFacets();
+  const { categoryTree, error: catalogError, loading: catalogLoading } = useCatalogFacets();
   const { packages, error: packageError } = useListingPackages();
   const wizard = useListingWizard();
   const [submitting, setSubmitting] = useState(false);
@@ -48,29 +49,42 @@ export function PostWizardView() {
   const onNext = useCallback(async () => {
     setSubmitError(null);
     if (wizard.step === 'package') {
-      if (!isLoggedIn || !session) {
+      if (!isLoggedIn) {
         router.push('/auth/login?next=/post');
         return;
       }
       setSubmitting(true);
       try {
-        await wizard.submitDraft(session.accessToken);
+        const token = await getValidAccessToken();
+        if (!token) {
+          router.push('/auth/login?next=/post');
+          return;
+        }
+        await wizard.publishListing(token);
       } catch (err) {
-        setSubmitError(
-          err instanceof Error ? err.message : 'Taslak oluşturulamadı.'
-        );
+        const code =
+          err && typeof err === 'object' && 'code' in err
+            ? String((err as { code?: string }).code)
+            : null;
+        if (code === 'EMAIL_NOT_VERIFIED') {
+          setSubmitError(
+            'E-posta adresiniz doğrulanmadan ilan gönderilemez. Gelen kutusundaki bağlantıyı kullanın.'
+          );
+        } else {
+          setSubmitError(
+            err instanceof Error ? err.message : 'İlan gönderilemedi.'
+          );
+        }
       } finally {
         setSubmitting(false);
       }
       return;
     }
     wizard.goNext();
-  }, [wizard, isLoggedIn, session, router]);
+  }, [wizard, isLoggedIn, router]);
 
-  const nextLabel = wizard.step === 'package' ? 'Ödemeye geç' : 'Devam et';
-
-  const showBack =
-    wizard.step !== 'type' || wizard.typePhase !== 'root';
+  const nextLabel = wizard.step === 'package' ? 'İncelemeye gönder' : 'Devam et';
+  const showBack = wizard.step !== 'type' || wizard.typePhase !== 'root';
   const showNext = wizard.step === 'details' || wizard.step === 'package';
 
   return (
@@ -92,6 +106,8 @@ export function PostWizardView() {
           categoryTree={categoryTree}
           selectedRootSlug={wizard.selectedRootSlug}
           selectedType={wizard.draft.type}
+          loading={catalogLoading}
+          error={catalogError}
           onSelectRoot={wizard.selectRoot}
           onSelectType={wizard.selectType}
         />
@@ -113,16 +129,17 @@ export function PostWizardView() {
         <PostPackagesStep
           packages={packages}
           selected={wizard.draft.packageCode}
-          error={submitError ?? packageError}
+          error={submitError ?? packageError ?? catalogError}
           onSelect={wizard.selectPackage}
         />
       ) : null}
-      {wizard.step === 'payment' ? (
-        <PostPaymentStep
-          payment={wizard.payment}
-          loading={submitting}
-          draftId={wizard.submittedDraftId}
-          accessToken={session?.accessToken ?? null}
+      {wizard.step === 'review' ? (
+        <PostReviewStep
+          advertId={wizard.submittedDraftId}
+          status={wizard.submittedStatus}
+          title={wizard.draft.details.title}
+          onGoListings={() => router.replace('/my-listings')}
+          onGoHome={() => router.replace('/')}
         />
       ) : null}
     </PostWizardShell>

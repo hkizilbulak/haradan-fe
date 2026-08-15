@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { locationLookup } from '@/services/location/LocationLookup';
+import { locationLookup } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
 import { formatViewCount } from '@/utils/formatViewCount';
 import type { CatalogProductCard } from '@/types';

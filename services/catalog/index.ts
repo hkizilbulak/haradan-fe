@@ -1,10 +1,12 @@
 export type { ICatalogRepository } from './CatalogRepository';
 export { createCachedCatalogRepository } from './CachedCatalogRepository';
 export { mapCategoryTreeToFacets } from './mapCategoryTreeToFacets';
+export { MockCatalogRepository } from './MockCatalogRepository';
+export { HttpCatalogRepository } from './HttpCatalogRepository';
 export {
-  MockCatalogRepository,
+  createCatalogRepository,
   catalogRepository,
-} from './MockCatalogRepository';
+} from './createCatalogRepository';
 export {
   findCategoryBySlug,
   findCategoryById,

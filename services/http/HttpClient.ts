@@ -5,6 +5,13 @@ type RequestOptions = RequestInit & {
   accessToken?: string;
 };
 
+function isAbortError(err: unknown): boolean {
+  return (
+    (err instanceof DOMException && err.name === 'AbortError') ||
+    (err instanceof Error && err.name === 'AbortError')
+  );
+}
+
 /**
  * Paylaşılan HTTP istemcisi.
  * Base URL OpenAPI server (`…/api`); path’ler `/v1/...`.
@@ -16,6 +23,10 @@ export class HttpClient {
     const { accessToken, headers, body, ...rest } = init;
     const url = `${this.baseUrl.replace(/\/$/, '')}${path}`;
     const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
+    const isBinary =
+      typeof Blob !== 'undefined' && body instanceof Blob
+        ? true
+        : typeof ArrayBuffer !== 'undefined' && body instanceof ArrayBuffer;
 
     let res: Response;
     try {
@@ -27,12 +38,15 @@ export class HttpClient {
         mode: 'cors',
         headers: {
           Accept: 'application/json',
-          ...(body && !isForm ? { 'Content-Type': 'application/json' } : null),
+          ...(body && !isForm && !isBinary
+            ? { 'Content-Type': 'application/json' }
+            : null),
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : null),
           ...headers,
         },
       });
-    } catch {
+    } catch (err) {
+      if (isAbortError(err)) throw err;
       throw new ApiError('Sunucuya ulaşılamadı.', 0, 'NETWORK');
     }
 

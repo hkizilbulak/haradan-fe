@@ -4,33 +4,29 @@ import {
   detailsErrors,
   detailsStepComplete,
   getListingWizardState,
-  mapDraftToRequest,
-  packageStepComplete,
   setListingWizardState,
   subscribeListingWizard,
   listingRepository,
   type IListingRepository,
   type ListingTypePhase,
 } from '@/services/listing';
-import { mediaUploader, type IMediaUploader } from '@/services/media';
 import { tjkRepository, type ITjkRepository } from '@/services/tjk';
 import type {
   ListingDraftDetails,
   ListingMediaSlot,
   ListingPackageCode,
-  ListingPaymentInstructions,
   ListingTypeSelection,
   ListingWizardStep,
+  PublishListingResult,
   TjkHorseProfile,
 } from '@/types/listing';
 
 type Deps = {
   listingRepo?: IListingRepository;
-  media?: IMediaUploader;
   tjk?: ITjkRepository;
 };
 
-const STEPS: ListingWizardStep[] = ['type', 'details', 'package', 'payment'];
+const STEPS: ListingWizardStep[] = ['type', 'details', 'package', 'review'];
 
 export function applyTjkProfile(
   details: ListingDraftDetails,
@@ -50,7 +46,8 @@ export function applyTjkProfile(
     ownersText: horse.owners.join(', '),
     breeder: horse.breeder,
     trainer: horse.trainer,
-    tjkId: horse.tjkId,
+    horseId: horse.horseId,
+    tjkNumber: horse.tjkNumber,
     tjkSkipped: false,
     title: details.title.trim() || horse.registeredName,
   };
@@ -58,7 +55,6 @@ export function applyTjkProfile(
 
 export function useListingWizard(deps: Deps = {}) {
   const listingRepo = deps.listingRepo ?? listingRepository;
-  const media = deps.media ?? mediaUploader;
   const tjk = deps.tjk ?? tjkRepository;
 
   const state = useSyncExternalStore(
@@ -75,7 +71,7 @@ export function useListingWizard(deps: Deps = {}) {
     tjkPromptSeen,
     detailsAttempted,
     submittedDraftId,
-    payment,
+    submittedStatus,
   } = state;
   const fieldErrors = useMemo(
     () => (detailsAttempted ? detailsErrors(draft) : {}),
@@ -85,9 +81,9 @@ export function useListingWizard(deps: Deps = {}) {
   const canNext = useMemo(() => {
     if (step === 'type') return false;
     if (step === 'details') return true;
-    if (step === 'package') return packageStepComplete(draft);
+    if (step === 'package') return true;
     return submittedDraftId != null;
-  }, [draft, step, submittedDraftId]);
+  }, [step, submittedDraftId]);
 
   const patchDraft = useCallback(
     (partial: Partial<typeof draft>) => {
@@ -95,7 +91,7 @@ export function useListingWizard(deps: Deps = {}) {
         ...prev,
         draft: { ...prev.draft, ...partial },
         submittedDraftId: null,
-        payment: null,
+        submittedStatus: null,
       }));
     },
     []
@@ -118,7 +114,7 @@ export function useListingWizard(deps: Deps = {}) {
       typePhase: 'category',
       selectedRootSlug: root.categorySlug,
       submittedDraftId: null,
-      payment: null,
+      submittedStatus: null,
       draft: { ...prev.draft, type: null, breed: null },
     }));
   }, []);
@@ -131,7 +127,7 @@ export function useListingWizard(deps: Deps = {}) {
       tjkPromptSeen: false,
       detailsAttempted: false,
       submittedDraftId: null,
-      payment: null,
+      submittedStatus: null,
       draft: { ...prev.draft, type, breed: null },
     }));
   }, []);
@@ -174,8 +170,8 @@ export function useListingWizard(deps: Deps = {}) {
     setListingWizardState((prev) => ({ ...prev, tjkPromptSeen: true }));
   }, []);
 
-  const applyTjk = useCallback(async (tjkId: string) => {
-    const horse = await tjk.getById(tjkId);
+  const applyTjk = useCallback(async (horseId: string) => {
+    const horse = await tjk.getById(horseId);
     if (!horse) return;
     setListingWizardState((prev) => ({
       ...prev,
@@ -193,7 +189,12 @@ export function useListingWizard(deps: Deps = {}) {
       tjkPromptSeen: true,
       draft: {
         ...prev.draft,
-        details: { ...prev.draft.details, tjkSkipped: true, tjkId: null },
+        details: {
+          ...prev.draft.details,
+          tjkSkipped: true,
+          horseId: null,
+          tjkNumber: null,
+        },
       },
     }));
   }, []);
@@ -244,45 +245,19 @@ export function useListingWizard(deps: Deps = {}) {
     });
   }, []);
 
-  const submitDraft = useCallback(
-    async (accessToken: string): Promise<ListingPaymentInstructions> => {
+  const publishListing = useCallback(
+    async (accessToken: string): Promise<PublishListingResult> => {
       const current = getListingWizardState();
-      const uploaded = await Promise.all(
-        current.draft.media.map(async (slot) => {
-          if (slot.assetId) return slot;
-          const res = await media.upload(
-            {
-              uri: slot.uri,
-              mimeType: slot.mimeType,
-              fileName: slot.fileName,
-            },
-            accessToken
-          );
-          return { ...slot, assetId: res.assetId, uri: res.publicUrl };
-        })
-      );
+      const created = await listingRepo.publish(current.draft, accessToken);
       setListingWizardState((prev) => ({
         ...prev,
-        draft: { ...prev.draft, media: uploaded },
+        submittedDraftId: created.advertId,
+        submittedStatus: created.status,
+        step: 'review',
       }));
-      const payload = mapDraftToRequest({
-        ...current.draft,
-        media: uploaded,
-      });
-      const created = await listingRepo.createDraft(payload, accessToken);
-      const payment = await listingRepo.getPaymentInstructions(
-        created.draftId,
-        accessToken
-      );
-      setListingWizardState((prev) => ({
-        ...prev,
-        submittedDraftId: created.draftId,
-        payment,
-        step: 'payment',
-      }));
-      return payment;
+      return created;
     },
-    [listingRepo, media]
+    [listingRepo]
   );
 
   return {
@@ -293,7 +268,7 @@ export function useListingWizard(deps: Deps = {}) {
     tjkPromptSeen,
     detailsAttempted,
     submittedDraftId,
-    payment,
+    submittedStatus,
     fieldErrors,
     canNext,
     setStep,
@@ -309,6 +284,6 @@ export function useListingWizard(deps: Deps = {}) {
     skipTjk,
     goNext,
     goBack,
-    submitDraft,
+    publishListing,
   };
 }

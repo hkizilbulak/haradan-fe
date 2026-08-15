@@ -1,6 +1,6 @@
 import type { ListingPackage } from '@/types/listing';
 
-/** Katalog fiyatları — BE gelince GET /v1/listing-packages ile değişir. */
+/** Mock paket kataloğu — HTTP kapalıyken kullanılır. */
 export const LISTING_PACKAGES: ListingPackage[] = [
   {
     code: 'STANDARD',

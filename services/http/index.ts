@@ -1,6 +1,6 @@
 export { ApiError } from './ApiError';
 export { HttpClient } from './HttpClient';
-export { resolveApiBaseUrl, isHttpAuthEnabled } from './apiConfig';
+export { resolveApiBaseUrl, isHttpAuthEnabled, isHttpApiEnabled } from './apiConfig';
 export {
   parseBeErrorBody,
   userFacingBeMessage,

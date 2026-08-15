@@ -69,11 +69,9 @@ export type {
   ListingPackageFeature,
   ListingPackage,
   ListingDraft,
-  CreateListingHorsePayload,
-  CreateListingRequest,
-  ListingDraftStatus,
-  CreateListingResponse,
-  ListingPaymentInstructions,
+  CreateAdvertDraftRequest,
+  OwnerAdvertResponse,
+  PublishListingResult,
 } from './listing';
 export { MAX_LISTING_IMAGES } from './listing';
 export type { PhoneCountry, IPhoneCountryCatalog } from './phone';

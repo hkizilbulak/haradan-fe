@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { locationLookup } from '@/services/location/LocationLookup';
+import { locationLookup } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
 import type { CatalogProductCard } from '@/types';
 

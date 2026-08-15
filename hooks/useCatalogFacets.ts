@@ -19,10 +19,14 @@ export function useCatalogFacets(
     () => repo.getCachedCategoryTree() ?? []
   );
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(
+    () => repo.getCachedCategoryTree() == null
+  );
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      setLoading(true);
       try {
         const [nextFacets, tree] = await Promise.all([
           repo.getFacets(),
@@ -35,6 +39,8 @@ export function useCatalogFacets(
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : 'Katalog yüklenemedi.');
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     })();
     return () => {
@@ -46,6 +52,7 @@ export function useCatalogFacets(
     facets,
     categoryTree,
     error,
+    loading,
     isReady: facets != null,
   };
 }

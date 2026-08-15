@@ -1,25 +1,20 @@
 import type {
-  CreateListingRequest,
-  CreateListingResponse,
+  ListingDraft,
   ListingPackage,
-  ListingPaymentInstructions,
+  PublishListingResult,
 } from '@/types/listing';
 
 /**
- * İlan taslağı + paketler + ödeme talimatı.
- * GET  /v1/listing-packages
- * POST /v1/listings/drafts
- * GET  /v1/listings/drafts/:id/payment
+ * İlan taslağı + paketler.
+ * GET  /v1/packages
+ * POST /v1/me/adverts
+ * POST /v1/me/adverts/{id}/submit
  */
 export interface IListingRepository {
   getPackages(): Promise<ListingPackage[]>;
   getCachedPackages(): ListingPackage[] | null;
-  createDraft(
-    payload: CreateListingRequest,
+  publish(
+    draft: ListingDraft,
     accessToken: string
-  ): Promise<CreateListingResponse>;
-  getPaymentInstructions(
-    draftId: string,
-    accessToken: string
-  ): Promise<ListingPaymentInstructions>;
+  ): Promise<PublishListingResult>;
 }

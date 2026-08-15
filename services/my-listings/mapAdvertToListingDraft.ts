@@ -44,6 +44,7 @@ export function mapAdvertToListingDraft(
           ? formatTlGrouped(String(Math.round(detail.price.amountMinor / 100)))
           : '',
       provinceId: detail.provinceId,
+      districtId: detail.districtId ?? null,
       gender: horse.gender,
       birthDate: horse.birthDate,
       age: String(horse.age),
@@ -53,7 +54,8 @@ export function mapAdvertToListingDraft(
       dam: horse.dam,
       damsire: horse.damsire,
       registeredName: horse.registeredName,
-      tjkId: null,
+      tjkNumber: null,
+      horseId: null,
       tjkSkipped: true,
       ownersText: horse.owners.join(', '),
       breeder: horse.breeder,

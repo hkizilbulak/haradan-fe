@@ -4,10 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { PostField } from './PostField';
 import { PostMediaGrid } from './PostMediaGrid';
 import { PostPhoneField } from './PostPhoneField';
-import { PostProvinceSheet } from './PostProvinceSheet';
+import { PostPlaceSheet } from './PostPlaceSheet';
 import { PostTjkSheet } from './PostTjkSheet';
 import { formatTlGrouped } from '@/services/phone';
-import { locationLookup } from '@/services/location/LocationLookup';
+import { locationLookup } from '@/services/location';
+import { useDistricts, useProvinces } from '@/hooks/useLocation';
 import { isHorseListing } from '@/services/listing';
 import type { ListingFieldErrors } from '@/services/listing';
 import type { HorseGender } from '@/types';
@@ -28,7 +29,7 @@ type PostDetailsStepProps = {
   onUpdate: (partial: Partial<ListingDraft['details']>) => void;
   onMediaChange: (items: ListingMediaSlot[]) => void;
   onSetCover: (localId: string) => void;
-  onApplyTjk: (tjkId: string) => void;
+  onApplyTjk: (horseId: string) => void;
   onSkipTjk: () => void;
   onMarkTjkSeen: () => void;
 };
@@ -54,11 +55,17 @@ export function PostDetailsStep({
   const border = useThemeColor('border');
   const header = useThemeColor('header');
   const errorColor = useThemeColor('error');
-  const horse = isHorseListing(draft.type?.categorySlug);
-  const locked = Boolean(draft.details.tjkId);
+  const horse = isHorseListing(draft.type);
+  const d = draft.details;
+  const locked = Boolean(d.horseId);
   const [tjkOpen, setTjkOpen] = useState(false);
   const [tjkMode, setTjkMode] = useState<'ask' | 'search'>('ask');
   const [provinceOpen, setProvinceOpen] = useState(false);
+  const [districtOpen, setDistrictOpen] = useState(false);
+  const { items: provinces, loading: provincesLoading, error: provincesError, retry: retryProvinces } =
+    useProvinces();
+  const { items: districts, loading: districtsLoading, error: districtsError, retry: retryDistricts } =
+    useDistricts(d.provinceId);
 
   useEffect(() => {
     if (horse && !tjkPromptSeen) {
@@ -72,10 +79,16 @@ export function PostDetailsStep({
     setTjkOpen(true);
   };
 
-  const d = draft.details;
-  const provinceName = d.provinceId
-    ? locationLookup.getProvinceName(d.provinceId)
-    : '';
+  const provinceName =
+    (d.provinceId &&
+      (provinces.find((p) => p.id === d.provinceId)?.name ||
+        locationLookup.getProvinceName(d.provinceId))) ||
+    '';
+  const districtName =
+    (d.districtId &&
+      (districts.find((x) => x.id === d.districtId)?.name ||
+        locationLookup.getDistrictName(d.districtId))) ||
+    '';
 
   return (
     <View style={styles.wrap}>
@@ -105,8 +118,8 @@ export function PostDetailsStep({
         >
           <Ionicons name="ribbon-outline" size={18} color="#fff" />
           <Text style={styles.tjkCtaLabel}>
-            {d.tjkId
-              ? `TJK: ${d.registeredName}`
+            {d.horseId
+              ? `TJK: ${d.registeredName}${d.tjkNumber ? ` · ${d.tjkNumber}` : ''}`
               : 'TJK’dan bilgilerimi getir'}
           </Text>
           <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
@@ -164,6 +177,46 @@ export function PostDetailsStep({
           </Pressable>
           {errors.provinceId ? (
             <Text style={[styles.err, { color: errorColor }]}>{errors.provinceId}</Text>
+          ) : provincesError ? (
+            <Pressable onPress={retryProvinces}>
+              <Text style={[styles.err, { color: errorColor }]}>
+                {provincesError} · Yenile
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+        <View style={styles.fieldBlock}>
+          <Text style={[styles.fieldLabel, { color: secondary }]}>İlçe</Text>
+          <Pressable
+            onPress={() => d.provinceId && setDistrictOpen(true)}
+            style={[
+              styles.select,
+              {
+                borderColor: errors.districtId ? errorColor : border,
+                backgroundColor: surface,
+                opacity: d.provinceId ? 1 : 0.55,
+              },
+            ]}
+          >
+            <Text
+              style={{
+                color: districtName ? text : muted,
+                ...Typography.body,
+                flex: 1,
+              }}
+            >
+              {districtName || (d.provinceId ? 'İlçe seçin' : 'Önce il seçin')}
+            </Text>
+            <Ionicons name="chevron-down" size={16} color={muted} />
+          </Pressable>
+          {errors.districtId ? (
+            <Text style={[styles.err, { color: errorColor }]}>{errors.districtId}</Text>
+          ) : districtsError ? (
+            <Pressable onPress={retryDistricts}>
+              <Text style={[styles.err, { color: errorColor }]}>
+                {districtsError} · Yenile
+              </Text>
+            </Pressable>
           ) : null}
         </View>
       </View>
@@ -325,11 +378,25 @@ export function PostDetailsStep({
           void onApplyTjk(id);
         }}
       />
-      <PostProvinceSheet
+      <PostPlaceSheet
         visible={provinceOpen}
+        title="İl seçin"
+        items={provinces}
         selectedId={d.provinceId}
+        loading={provincesLoading}
+        emptyText={provincesError || 'İl listesi yüklenemedi. Yeniden deneyin.'}
         onClose={() => setProvinceOpen(false)}
-        onSelect={(id) => onUpdate({ provinceId: id })}
+        onSelect={(id) => onUpdate({ provinceId: id, districtId: null })}
+      />
+      <PostPlaceSheet
+        visible={districtOpen}
+        title="İlçe seçin"
+        items={districts}
+        selectedId={d.districtId}
+        loading={districtsLoading}
+        emptyText={districtsError || 'Bu il için ilçe bulunamadı.'}
+        onClose={() => setDistrictOpen(false)}
+        onSelect={(id) => onUpdate({ districtId: id })}
       />
     </View>
   );

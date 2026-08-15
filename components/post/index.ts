@@ -4,5 +4,6 @@ export { PostStepper } from './PostStepper';
 export { PostTypeStep } from './PostTypeStep';
 export { PostDetailsStep } from './PostDetailsStep';
 export { PostPackagesStep } from './PostPackagesStep';
-export { PostPaymentStep } from './PostPaymentStep';
+export { PostReviewStep } from './PostReviewStep';
+export { PostPlaceSheet } from './PostPlaceSheet';
 export { PostFormShell } from './PostFormShell';

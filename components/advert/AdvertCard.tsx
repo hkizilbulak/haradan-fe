@@ -13,7 +13,7 @@ import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { locationLookup } from '@/services/location/LocationLookup';
+import { locationLookup } from '@/services/location';
 import { formatRelativeTime } from '@/utils/formatRelativeTime';
 import type { PublishedAdvertCard } from '@/types';
 import { PriceBlock } from './PriceBlock';

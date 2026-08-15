@@ -8,7 +8,7 @@ const ITEMS: { key: ListingWizardStep; label: string }[] = [
   { key: 'type', label: 'Tür' },
   { key: 'details', label: 'Detay' },
   { key: 'package', label: 'Paket' },
-  { key: 'payment', label: 'Ödeme' },
+  { key: 'review', label: 'Gönder' },
 ];
 
 type PostStepperProps = {

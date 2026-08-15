@@ -1,19 +1,33 @@
-import type {
-  CreateListingRequest,
-  CreateListingResponse,
-  ListingPackage,
-  ListingPaymentInstructions,
-} from '@/types/listing';
 import { HttpClient } from '@/services/http';
+import { mediaUploader } from '@/services/media/createMediaUploader';
+import type { IMediaUploader } from '@/services/media/MediaUploader';
+import type {
+  ListingDraft,
+  ListingPackage,
+  OwnerAdvertResponse,
+  PublishListingResult,
+} from '@/types/listing';
 import type { IListingRepository } from './ListingRepository';
+import { mapDraftToCreateAdvert } from './mapDraftToRequest';
+import {
+  mapPublicPackage,
+  type PublicPackageListResponse,
+} from './mapPackage';
 
-/** HTTP listing — EXPO_PUBLIC_USE_HTTP_LISTING=1 */
+type AdvertMediaCollectionResponse = {
+  advertId: string;
+  mediaVersion: number;
+};
+
+/** ADVERT-OWNER-01/07 + PACKAGE-PUBLIC-01 + MEDIA-04 */
 export class HttpListingRepository implements IListingRepository {
   private readonly http: HttpClient;
   private cached: ListingPackage[] | null = null;
+  private readonly media: IMediaUploader;
 
-  constructor(baseUrl: string) {
+  constructor(baseUrl: string, media: IMediaUploader = mediaUploader) {
     this.http = new HttpClient(baseUrl);
+    this.media = media;
   }
 
   getCachedPackages(): ListingPackage[] | null {
@@ -21,32 +35,74 @@ export class HttpListingRepository implements IListingRepository {
   }
 
   async getPackages(): Promise<ListingPackage[]> {
-    const items = await this.http.request<ListingPackage[]>(
-      '/v1/listing-packages',
+    const res = await this.http.request<PublicPackageListResponse>(
+      '/v1/packages',
       { method: 'GET' }
     );
-    this.cached = items;
-    return items;
+    this.cached = (res.items ?? []).map(mapPublicPackage);
+    return this.cached;
   }
 
-  createDraft(
-    payload: CreateListingRequest,
+  async publish(
+    draft: ListingDraft,
     accessToken: string
-  ): Promise<CreateListingResponse> {
-    return this.http.request<CreateListingResponse>('/v1/listings/drafts', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-      accessToken,
-    });
-  }
-
-  getPaymentInstructions(
-    draftId: string,
-    accessToken: string
-  ): Promise<ListingPaymentInstructions> {
-    return this.http.request<ListingPaymentInstructions>(
-      `/v1/listings/drafts/${encodeURIComponent(draftId)}/payment`,
-      { method: 'GET', accessToken }
+  ): Promise<PublishListingResult> {
+    const uploaded = await Promise.all(
+      draft.media.map(async (slot) => {
+        if (slot.assetId) return slot;
+        const res = await this.media.upload(
+          {
+            uri: slot.uri,
+            mimeType: slot.mimeType,
+            fileName: slot.fileName,
+          },
+          accessToken
+        );
+        return { ...slot, assetId: res.assetId };
+      })
     );
+
+    const created = await this.http.request<OwnerAdvertResponse>(
+      '/v1/me/adverts',
+      {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(mapDraftToCreateAdvert(draft)),
+      }
+    );
+
+    let mediaVersion = created.mediaVersion;
+    const ordered = [
+      ...uploaded.filter((m) => m.isCover),
+      ...uploaded.filter((m) => !m.isCover),
+    ];
+    for (let i = 0; i < ordered.length; i += 1) {
+      const slot = ordered[i];
+      if (!slot.assetId) continue;
+      const attached = await this.http.request<AdvertMediaCollectionResponse>(
+        `/v1/me/adverts/${created.id}/media`,
+        {
+          method: 'POST',
+          accessToken,
+          body: JSON.stringify({
+            assetId: slot.assetId,
+            expectedMediaVersion: mediaVersion,
+            displayOrder: i,
+          }),
+        }
+      );
+      mediaVersion = attached.mediaVersion;
+    }
+
+    const submitted = await this.http.request<OwnerAdvertResponse>(
+      `/v1/me/adverts/${created.id}/submit`,
+      {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify({ expectedVersion: created.version }),
+      }
+    );
+
+    return { advertId: submitted.id, status: submitted.status };
   }
 }

@@ -77,9 +77,13 @@ export default function EditListingScreen() {
             onUpdate={edit.updateDetails}
             onMediaChange={edit.setMedia}
             onSetCover={edit.setCover}
-            onApplyTjk={(tjkId) => void edit.applyTjk(tjkId)}
+            onApplyTjk={(horseId) => void edit.applyTjk(horseId)}
             onSkipTjk={() =>
-              edit.updateDetails({ tjkSkipped: true, tjkId: null })
+              edit.updateDetails({
+                tjkSkipped: true,
+                horseId: null,
+                tjkNumber: null,
+              })
             }
             onMarkTjkSeen={() => undefined}
           />

@@ -33,9 +33,10 @@ export function PostPackagesStep({
     <View style={styles.wrap}>
       <View style={styles.intro}>
         <Text style={[styles.kicker, { color: muted }]}>Adım 3 · Paket</Text>
-        <Text style={[styles.title, { color: text }]}>Yayın paketi</Text>
+        <Text style={[styles.title, { color: text }]}>Yayın paketini seçin</Text>
         <Text style={[styles.lead, { color: secondary }]}>
-          İçerik ve fiyat aynı kalır. Seçiminiz yeşil çerçeve ile işaretlenir.
+          Görünürlük ve süre pakete göre değişir. İstediğinizi işaretleyip devam
+          edin.
         </Text>
       </View>
       {error ? (

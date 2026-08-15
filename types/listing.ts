@@ -2,7 +2,7 @@ import type { HorseGender } from './advertDetail';
 import type { Money } from './money';
 
 /** 4 adımlı ilan verme süreci. */
-export type ListingWizardStep = 'type' | 'details' | 'package' | 'payment';
+export type ListingWizardStep = 'type' | 'details' | 'package' | 'review';
 
 export type ListingTypeSelection = {
   categoryId: string;
@@ -17,13 +17,17 @@ export type ListingBreedSelection = {
   label: string;
 };
 
+/** HORSE-01 HorseSelectionItem + UI alanları. */
 export type TjkHorseSummary = {
-  tjkId: string;
+  horseId: string;
+  tjkNumber: string;
   registeredName: string;
-  birthYear: number;
-  gender: HorseGender;
+  birthYear: number | null;
+  gender: HorseGender | null;
   breed: string;
   coatColor: string;
+  sireName?: string | null;
+  damName?: string | null;
 };
 
 export type TjkHorseProfile = TjkHorseSummary & {
@@ -36,7 +40,7 @@ export type TjkHorseProfile = TjkHorseSummary & {
   owners: string[];
   breeder: string;
   trainer: string;
-  handicap: number;
+  handicap: number | null;
 };
 
 export type ListingMediaSlot = {
@@ -53,6 +57,7 @@ export type ListingDraftDetails = {
   description: string;
   priceTl: string;
   provinceId: string | null;
+  districtId: string | null;
   gender: HorseGender | null;
   birthDate: string;
   age: string;
@@ -62,17 +67,19 @@ export type ListingDraftDetails = {
   dam: string;
   damsire: string;
   registeredName: string;
-  tjkId: string | null;
+  /** BE horse UUID (HORSE-02). */
+  horseId: string | null;
+  tjkNumber: string | null;
   tjkSkipped: boolean;
   ownersText: string;
   breeder: string;
   trainer: string;
-  /** ISO 3166-1 alpha-2 — TR, DE… */
   phoneCountryIso: string;
   sellerPhone: string;
 };
 
-export type ListingPackageCode = 'STANDARD' | 'PREMIUM' | 'ULTIMATE';
+/** BE PackageCode — kapalı enum değil. */
+export type ListingPackageCode = string;
 
 export type ListingPackageFeature = {
   id: string;
@@ -99,56 +106,34 @@ export type ListingDraft = {
   packageCode: ListingPackageCode | null;
 };
 
-export type CreateListingHorsePayload = {
-  tjkId: string | null;
-  registeredName: string;
-  breed: string | null;
-  gender: HorseGender | null;
-  birthDate: string | null;
-  age: number | null;
-  coatColor: string | null;
-  heightCm: number | null;
-  sire: string | null;
-  dam: string | null;
-  damsire: string | null;
-  owners: string[];
-  breeder: string | null;
-  trainer: string | null;
+/** OpenAPI: CreateAdvertDraftRequest */
+export type CreateAdvertDraftRequest = {
+  categoryId?: string | null;
+  districtId?: string | null;
+  horseId?: string | null;
+  title?: string | null;
+  description?: string | null;
+  price?: Money | null;
 };
 
-/** POST /v1/listings/drafts */
-export type CreateListingRequest = {
-  categoryId: string;
-  breedSlug: string | null;
-  title: string;
-  description: string;
+/** OpenAPI: OwnerAdvertResponse (özet) */
+export type OwnerAdvertResponse = {
+  id: string;
+  status: string;
+  version: number;
+  mediaVersion: number;
+  categoryId: string | null;
+  districtId: string | null;
+  horseId: string | null;
+  title: string | null;
+  description: string | null;
   price: Money | null;
-  provinceId: string;
-  sellerPhone: string | null;
-  horse: CreateListingHorsePayload | null;
-  mediaAssetIds: string[];
-  coverAssetId: string;
-  packageCode: ListingPackageCode;
+  properties: Record<string, unknown>;
 };
 
-export type ListingDraftStatus = 'PENDING_PAYMENT' | 'PUBLISHED';
-
-export type CreateListingResponse = {
-  draftId: string;
-  status: ListingDraftStatus;
-};
-
-/** GET /v1/listings/drafts/:id/payment */
-export type ListingPaymentInstructions = {
-  draftId: string;
-  bankName: string;
-  accountHolder: string;
-  iban: string;
-  referenceCode: string;
-  whatsappPhone: string;
-  amount: Money;
-  packageName: string;
-  listingTitle: string;
+export type PublishListingResult = {
+  advertId: string;
+  status: string;
 };
 
 export const MAX_LISTING_IMAGES = 5;

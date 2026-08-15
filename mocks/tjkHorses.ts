@@ -3,7 +3,8 @@ import type { TjkHorseProfile } from '@/types/listing';
 /** TJK mock kataloğu — HTTP gelince kaldırılır. */
 export const MOCK_TJK_HORSES: TjkHorseProfile[] = [
   {
-    tjkId: 'tjk-1001',
+    horseId: 'tjk-1001',
+    tjkNumber: '1001',
     registeredName: 'Bold Pilot',
     birthYear: 2018,
     birthDate: '2018-03-12',
@@ -21,7 +22,8 @@ export const MOCK_TJK_HORSES: TjkHorseProfile[] = [
     handicap: 62,
   },
   {
-    tjkId: 'tjk-1002',
+    horseId: 'tjk-1002',
+    tjkNumber: '1002',
     registeredName: 'Grand Ekinoks',
     birthYear: 2017,
     birthDate: '2017-02-04',
@@ -39,7 +41,8 @@ export const MOCK_TJK_HORSES: TjkHorseProfile[] = [
     handicap: 68,
   },
   {
-    tjkId: 'tjk-1003',
+    horseId: 'tjk-1003',
+    tjkNumber: '1003',
     registeredName: 'Nadas',
     birthYear: 2019,
     birthDate: '2019-04-21',
@@ -57,7 +60,8 @@ export const MOCK_TJK_HORSES: TjkHorseProfile[] = [
     handicap: 58,
   },
   {
-    tjkId: 'tjk-1004',
+    horseId: 'tjk-1004',
+    tjkNumber: '1004',
     registeredName: 'Gülbahar',
     birthYear: 2020,
     birthDate: '2020-01-18',
@@ -75,7 +79,8 @@ export const MOCK_TJK_HORSES: TjkHorseProfile[] = [
     handicap: 54,
   },
   {
-    tjkId: 'tjk-1005',
+    horseId: 'tjk-1005',
+    tjkNumber: '1005',
     registeredName: 'Sultana',
     birthYear: 2016,
     birthDate: '2016-05-09',
@@ -93,7 +98,8 @@ export const MOCK_TJK_HORSES: TjkHorseProfile[] = [
     handicap: 60,
   },
   {
-    tjkId: 'tjk-1006',
+    horseId: 'tjk-1006',
+    tjkNumber: '1006',
     registeredName: 'Demirhan',
     birthYear: 2015,
     birthDate: '2015-03-30',
@@ -111,7 +117,8 @@ export const MOCK_TJK_HORSES: TjkHorseProfile[] = [
     handicap: 64,
   },
   {
-    tjkId: 'tjk-1007',
+    horseId: 'tjk-1007',
+    tjkNumber: '1007',
     registeredName: 'Pırlanta',
     birthYear: 2021,
     birthDate: '2021-02-14',
@@ -129,7 +136,8 @@ export const MOCK_TJK_HORSES: TjkHorseProfile[] = [
     handicap: 52,
   },
   {
-    tjkId: 'tjk-1008',
+    horseId: 'tjk-1008',
+    tjkNumber: '1008',
     registeredName: 'Alaz',
     birthYear: 2018,
     birthDate: '2018-06-02',
@@ -147,7 +155,8 @@ export const MOCK_TJK_HORSES: TjkHorseProfile[] = [
     handicap: 0,
   },
   {
-    tjkId: 'tjk-1009',
+    horseId: 'tjk-1009',
+    tjkNumber: '1009',
     registeredName: 'Yavuz Sultan',
     birthYear: 2014,
     birthDate: '2014-04-11',
@@ -165,7 +174,8 @@ export const MOCK_TJK_HORSES: TjkHorseProfile[] = [
     handicap: 66,
   },
   {
-    tjkId: 'tjk-1010',
+    horseId: 'tjk-1010',
+    tjkNumber: '1010',
     registeredName: 'Kafkasör',
     birthYear: 2019,
     birthDate: '2019-03-08',
@@ -183,7 +193,8 @@ export const MOCK_TJK_HORSES: TjkHorseProfile[] = [
     handicap: 56,
   },
   {
-    tjkId: 'tjk-1011',
+    horseId: 'tjk-1011',
+    tjkNumber: '1011',
     registeredName: 'Lalezar',
     birthYear: 2020,
     birthDate: '2020-05-22',
@@ -201,7 +212,8 @@ export const MOCK_TJK_HORSES: TjkHorseProfile[] = [
     handicap: 50,
   },
   {
-    tjkId: 'tjk-1012',
+    horseId: 'tjk-1012',
+    tjkNumber: '1012',
     registeredName: 'Çelebi',
     birthYear: 2017,
     birthDate: '2017-01-27',

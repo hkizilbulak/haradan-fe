@@ -1,7 +1,6 @@
 import type { CatalogFacets, CategoryTreeNode } from '@/types';
 import { MOCK_CATEGORIES } from '@/mocks/homepage';
 import type { ICatalogRepository } from './CatalogRepository';
-import { createCachedCatalogRepository } from './CachedCatalogRepository';
 import { mapCategoryTreeToFacets } from './mapCategoryTreeToFacets';
 
 /**
@@ -25,6 +24,3 @@ export class MockCatalogRepository implements ICatalogRepository {
     return MOCK_CATEGORIES;
   }
 }
-
-export const catalogRepository: ICatalogRepository =
-  createCachedCatalogRepository(new MockCatalogRepository());

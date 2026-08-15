@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PostChoiceCard } from './PostChoiceCard';
+import { LISTING_GROUP_SLUGS } from '@/constants/listingCatalog';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -9,11 +10,13 @@ import type { CategoryTreeNode } from '@/types';
 import type { ListingTypeSelection } from '@/types/listing';
 import type { ListingTypePhase } from '@/services/listing';
 
-const POST_GROUP_SLUGS = [
-  'satilik-atlar',
-  'at-hizmetleri',
-  'asim-hizmetleri',
-] as const;
+function pickRoots(tree: CategoryTreeNode[]): CategoryTreeNode[] {
+  const bySlug = new Map(tree.map((node) => [node.slug, node]));
+  const preferred = LISTING_GROUP_SLUGS.map((slug) => bySlug.get(slug)).filter(
+    (node): node is CategoryTreeNode => node != null
+  );
+  return preferred.length > 0 ? preferred : tree;
+}
 
 const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   'satilik-atlar': 'trophy-outline',
@@ -36,6 +39,8 @@ type PostTypeStepProps = {
   categoryTree: CategoryTreeNode[];
   selectedRootSlug: string | null;
   selectedType: ListingTypeSelection | null;
+  loading?: boolean;
+  error?: string | null;
   onSelectRoot: (root: ListingTypeSelection) => void;
   onSelectType: (type: ListingTypeSelection) => void;
 };
@@ -57,21 +62,15 @@ export function PostTypeStep({
   categoryTree,
   selectedRootSlug,
   selectedType,
+  loading = false,
+  error = null,
   onSelectRoot,
   onSelectType,
 }: PostTypeStepProps) {
   const text = useThemeColor('text');
   const secondary = useThemeColor('textSecondary');
 
-  const roots = useMemo(
-    () =>
-      categoryTree.filter((node) =>
-        POST_GROUP_SLUGS.includes(
-          node.slug as (typeof POST_GROUP_SLUGS)[number]
-        )
-      ),
-    [categoryTree]
-  );
+  const roots = useMemo(() => pickRoots(categoryTree), [categoryTree]);
 
   const selectedRoot = useMemo(
     () => roots.find((n) => n.slug === selectedRootSlug) ?? null,
@@ -93,7 +92,12 @@ export function PostTypeStep({
             : 'Seçtiğiniz gruba uygun ilan türünü işaretleyin.'}
         </Text>
         <View style={styles.list}>
-          {subtypes.map((node) => (
+          {subtypes.length === 0 ? (
+            <Text style={[styles.lead, { color: secondary }]}>
+              Bu kategoride ilan türü bulunamadı.
+            </Text>
+          ) : (
+            subtypes.map((node) => (
             <PostChoiceCard
               key={node.id}
               title={node.name}
@@ -103,7 +107,8 @@ export function PostTypeStep({
                 onSelectType(toSelection(node, selectedRootSlug))
               }
             />
-          ))}
+            ))
+          )}
         </View>
       </View>
     );
@@ -116,10 +121,23 @@ export function PostTypeStep({
         Ne ilan vermek istiyorsunuz?
       </Text>
       <Text style={[styles.lead, { color: secondary }]}>
-        Satılık at, hizmet veya aşım — önce ana grubu seçin.
+        Önce ana kategoriyi seçin.
       </Text>
       <View style={styles.list}>
-        {roots.map((node) => (
+        {loading ? (
+          <Text style={[styles.lead, { color: secondary }]}>
+            Kategoriler yükleniyor…
+          </Text>
+        ) : error ? (
+          <Text style={[styles.lead, { color: secondary }]}>
+            Kategoriler yüklenemedi. Lütfen tekrar deneyin.
+          </Text>
+        ) : roots.length === 0 ? (
+          <Text style={[styles.lead, { color: secondary }]}>
+            Kategori listesi henüz tanımlı değil.
+          </Text>
+        ) : (
+          roots.map((node) => (
           <PostChoiceCard
             key={node.id}
             title={node.name}
@@ -134,7 +152,8 @@ export function PostTypeStep({
               onSelectRoot(toSelection(node, null));
             }}
           />
-        ))}
+          ))
+        )}
       </View>
     </View>
   );
