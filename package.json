@@ -11,7 +11,10 @@
     "selftest:auth": "npx --yes tsx scripts/selftest-auth.ts",
     "selftest:listing": "npx --yes tsx scripts/selftest-listing.ts",
     "selftest:geo": "npx --yes tsx scripts/selftest-geo.ts",
-    "selftest:packages": "npx --yes tsx scripts/selftest-packages.ts"
+    "selftest:packages": "npx --yes tsx scripts/selftest-packages.ts",
+    "selftest:my-listings": "npx --yes tsx scripts/selftest-my-listings.ts",
+    "selftest:adverts-search": "npx --yes tsx scripts/selftest-adverts-search.ts",
+    "selftest:media": "npx --yes tsx scripts/selftest-media.ts"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.5",

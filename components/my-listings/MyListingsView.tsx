@@ -24,6 +24,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useMyListings } from '@/hooks/useMyListings';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { prepareListingWizardEntry } from '@/services/listing';
+import { locationLookup } from '@/services/location';
 import type { MyListingStatus } from '@/types';
 
 const EMPTY: Record<MyListingStatus, { title: string; hint: string }> = {
@@ -31,9 +32,17 @@ const EMPTY: Record<MyListingStatus, { title: string; hint: string }> = {
     title: 'Yayında ilan yok',
     hint: 'Yeni bir ilan vererek burada görünün.',
   },
+  pending: {
+    title: 'İncelemede ilan yok',
+    hint: 'Moderasyona gönderilen ilanlarınız burada listelenir.',
+  },
+  rejected: {
+    title: 'Reddedilen ilan yok',
+    hint: 'Reddedilen ilanlarınız bu sekmede görünür.',
+  },
   draft: {
     title: 'Taslak yok',
-    hint: 'Yarım kalan ilanlarınız burada durur.',
+    hint: 'Yarım kalan veya düzeltme bekleyen ilanlarınız burada durur.',
   },
   sold: {
     title: 'Satılmış ilan yok',
@@ -51,6 +60,8 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const [status, setStatus] = useState<MyListingStatus>('published');
   const published = useMyListings('published', accessToken);
+  const pending = useMyListings('pending', accessToken);
+  const rejected = useMyListings('rejected', accessToken);
   const drafts = useMyListings('draft', accessToken);
   const sold = useMyListings('sold', accessToken);
   const { apply, remember, toggle } = useFavorites();
@@ -59,29 +70,50 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
   const border = useThemeColor('border');
   const surface = useThemeColor('surface');
 
-  const publishedItems = useMemo(
-    () => apply(published.items),
-    [apply, published.items]
+  const byTab = useMemo(
+    () => ({
+      published: apply(published.items),
+      pending: apply(pending.items),
+      rejected: apply(rejected.items),
+      draft: apply(drafts.items),
+      sold: apply(sold.items),
+    }),
+    [
+      apply,
+      published.items,
+      pending.items,
+      rejected.items,
+      drafts.items,
+      sold.items,
+    ]
   );
-  const draftItems = useMemo(() => apply(drafts.items), [apply, drafts.items]);
-  const soldItems = useMemo(() => apply(sold.items), [apply, sold.items]);
 
-  const activeItems =
-    status === 'published'
-      ? publishedItems
-      : status === 'draft'
-        ? draftItems
-        : soldItems;
-  const active =
-    status === 'published' ? published : status === 'draft' ? drafts : sold;
+  const queries = {
+    published,
+    pending,
+    rejected,
+    draft: drafts,
+    sold,
+  } as const;
+
+  const activeItems = byTab[status];
+  const active = queries[status];
 
   const counts = useMemo(
     () => ({
       published: published.items.length,
+      pending: pending.items.length,
+      rejected: rejected.items.length,
       draft: drafts.items.length,
       sold: sold.items.length,
     }),
-    [published.items.length, drafts.items.length, sold.items.length]
+    [
+      published.items.length,
+      pending.items.length,
+      rejected.items.length,
+      drafts.items.length,
+      sold.items.length,
+    ]
   );
 
   const cols = isWide ? 3 : width >= 640 ? 2 : 1;
@@ -91,14 +123,51 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
     (Math.min(width, HOME_CONTENT_MAX_WIDTH) - pad * 2 - gap * (cols - 1)) / cols
   );
 
+  const [locationTick, setLocationTick] = useState(0);
+  const allItems = useMemo(
+    () => [
+      ...byTab.published,
+      ...byTab.pending,
+      ...byTab.rejected,
+      ...byTab.draft,
+      ...byTab.sold,
+    ],
+    [byTab]
+  );
+
   useEffect(() => {
-    remember([...publishedItems, ...draftItems, ...soldItems]);
-  }, [remember, publishedItems, draftItems, soldItems]);
+    remember(allItems);
+  }, [remember, allItems]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const provinces = await locationLookup.listProvinces();
+        const needed = new Set(
+          allItems.map((i) => i.provinceId).filter(Boolean)
+        );
+        await Promise.all(
+          provinces
+            .filter((p) => needed.has(p.id))
+            .map((p) => locationLookup.listDistricts(p.id))
+        );
+        if (!cancelled) setLocationTick((n) => n + 1);
+      } catch {
+        /* konum isimleri opsiyonel */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [allItems]);
 
   const postAd = () => {
     prepareListingWizardEntry();
     router.push('/post');
   };
+
+  const showPostCta = status === 'published' || status === 'draft';
 
   return (
     <ScrollView
@@ -110,7 +179,7 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
         <Text style={[styles.kicker, { color: muted }]}>Hesap</Text>
         <Text style={[styles.title, { color: text }]}>İlanlarım</Text>
         <Text style={[styles.lead, { color: muted }]}>
-          Yayındaki, taslak ve satılmış ilanlarınız.
+          Yayındaki, incelemedeki, reddedilen, taslak ve satılmış ilanlarınız.
         </Text>
 
         <MyListingsTabs active={status} counts={counts} onChange={setStatus} />
@@ -137,20 +206,21 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
             <Text style={[styles.emptyHint, { color: muted }]}>
               {EMPTY[status].hint}
             </Text>
-            {status !== 'sold' ? (
-              <Button onPress={postAd}>İlan Ver</Button>
-            ) : null}
+            {showPostCta ? <Button onPress={postAd}>İlan Ver</Button> : null}
           </View>
         ) : (
           <View style={[styles.grid, { gap }]}>
             {activeItems.map((item) => (
               <FeaturedListingCard
-                key={item.id}
+                key={`${item.id}-${locationTick}`}
                 product={item}
                 width={colWidth}
-                badge={item.isUrgent && item.status !== 'sold' ? 'urgent' : 'auto'}
+                badge={
+                  item.isUrgent && item.status !== 'sold' ? 'urgent' : 'auto'
+                }
                 onPress={(id) => router.push(`/advert/${id}`)}
                 onToggleFavorite={toggle}
+                accessToken={accessToken}
               />
             ))}
           </View>

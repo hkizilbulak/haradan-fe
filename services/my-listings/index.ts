@@ -1,4 +1,7 @@
-export type { IMyListingsRepository } from './MyListingsRepository';
+export type {
+  IMyListingsRepository,
+  MyListingEditPayload,
+} from './MyListingsRepository';
 export { MockMyListingsRepository } from './MockMyListingsRepository';
 export { HttpMyListingsRepository } from './HttpMyListingsRepository';
 export {
@@ -6,4 +9,7 @@ export {
   myListingsRepository,
 } from './createMyListingsRepository';
 export { mapAdvertToListingDraft } from './mapAdvertToListingDraft';
+export { mapOwnerToListingDraft } from './mapOwnerToListingDraft';
 export { mapDraftToUpdate } from './mapDraftToUpdate';
+export { mapOwnerAdvertToCard } from './mapOwnerAdvert';
+export { toMyListingTab, backendStatusesForTab, MY_LISTING_TABS } from './statusTabs';

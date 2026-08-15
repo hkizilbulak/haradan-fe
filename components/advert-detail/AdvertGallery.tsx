@@ -12,6 +12,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
+import { useMediaImageSource } from '@/hooks/useMediaImageSource';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { PublicMediaItem } from '@/types';
 
@@ -20,11 +21,14 @@ const EASE = Easing.bezier(0.22, 1, 0.36, 1);
 type AdvertGalleryProps = {
   items: PublicMediaItem[];
   height?: number;
+  /** Sahip önizlemesi — yayınlanmamış ilan görselleri için Bearer. */
+  accessToken?: string | null;
 };
 
 export const AdvertGallery = memo(function AdvertGallery({
   items,
   height = 420,
+  accessToken,
 }: AdvertGalleryProps) {
   const [index, setIndex] = useState(0);
   const fade = useRef(new Animated.Value(1)).current;
@@ -35,6 +39,7 @@ export const AdvertGallery = memo(function AdvertGallery({
 
   const current = items[index] ?? items[0];
   const paused = useRef(false);
+  const mainSource = useMediaImageSource(current?.publicUrl, accessToken);
 
   useEffect(() => {
     fade.setValue(0.35);
@@ -78,12 +83,12 @@ export const AdvertGallery = memo(function AdvertGallery({
       <View style={[styles.main, { height, backgroundColor: surface }]}>
         <Animated.View style={[styles.mainInner, { opacity: fade }]}>
           <Image
-            source={current.publicUrl}
+            source={mainSource}
             style={[styles.mainImg, { backgroundColor: skeleton }]}
             contentFit="cover"
             transition={280}
             priority="high"
-            cachePolicy="memory-disk"
+            cachePolicy={accessToken ? 'memory' : 'memory-disk'}
             recyclingKey={current.assetId}
           />
         </Animated.View>
@@ -142,13 +147,12 @@ export const AdvertGallery = memo(function AdvertGallery({
                 },
               ]}
             >
-              <Image
-                source={item.publicUrl}
+              <AuthMediaImage
+                uri={item.publicUrl}
+                accessToken={accessToken}
                 style={[styles.thumbImg, { backgroundColor: skeleton }]}
-                contentFit="cover"
                 transition={180}
                 priority="low"
-                cachePolicy="memory-disk"
               />
             </Pressable>
           );
@@ -158,6 +162,31 @@ export const AdvertGallery = memo(function AdvertGallery({
   );
 });
 
+function AuthMediaImage({
+  uri,
+  accessToken,
+  style,
+  transition,
+  priority,
+}: {
+  uri: string;
+  accessToken?: string | null;
+  style: object;
+  transition: number;
+  priority: 'low' | 'high' | 'normal';
+}) {
+  const source = useMediaImageSource(uri, accessToken);
+  return (
+    <Image
+      source={source}
+      style={style}
+      contentFit="cover"
+      transition={transition}
+      priority={priority}
+      cachePolicy={accessToken ? 'memory' : 'memory-disk'}
+    />
+  );
+}
 const styles = StyleSheet.create({
   wrap: { gap: Spacing.md },
   main: {

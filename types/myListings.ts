@@ -1,7 +1,12 @@
 import type { CatalogProductCard } from './catalog';
 import type { ListingDraft } from './listing';
 
-export type MyListingStatus = 'published' | 'draft' | 'sold';
+export type MyListingStatus =
+  | 'published'
+  | 'pending'
+  | 'rejected'
+  | 'draft'
+  | 'sold';
 
 export type MyListingCard = CatalogProductCard & {
   status: MyListingStatus;
@@ -15,10 +20,13 @@ export type MyListingListResponse = {
 };
 
 export type UpdateListingRequest = {
+  expectedVersion: number;
   title: string;
   description: string;
   priceAmountMinor: number | null;
   provinceId: string;
+  districtId: string | null;
+  horseId: string | null;
   sellerPhone: string | null;
   draft: ListingDraft;
 };

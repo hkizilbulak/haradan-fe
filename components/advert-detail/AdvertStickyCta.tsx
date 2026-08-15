@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RatingStars } from '@/components/product/RatingStars';
 import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
+import { useMediaImageSource } from '@/hooks/useMediaImageSource';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { formatMoney } from '@/utils/formatMoney';
 import { WHATSAPP_GREEN } from '@/utils/contactLinks';
@@ -14,6 +15,7 @@ type AdvertStickyCtaProps = {
   detail: AdvertDetail;
   favorite: boolean;
   isOwner?: boolean;
+  accessToken?: string | null;
   onCall?: () => void;
   onWhatsApp?: () => void;
   onToggleFavorite?: () => void;
@@ -24,6 +26,7 @@ export const AdvertStickyCta = memo(function AdvertStickyCta({
   detail,
   favorite,
   isOwner = false,
+  accessToken,
   onCall,
   onWhatsApp,
   onToggleFavorite,
@@ -34,6 +37,10 @@ export const AdvertStickyCta = memo(function AdvertStickyCta({
   const header = useThemeColor('header');
   const surface = useThemeColor('surface');
   const skeleton = useThemeColor('skeleton');
+  const thumbSource = useMediaImageSource(
+    detail.cover?.publicUrl ?? detail.gallery[0]?.publicUrl,
+    accessToken
+  );
 
   const pressMotion = (pressed: boolean) => ({
     opacity: pressed ? 0.9 : 1,
@@ -58,11 +65,11 @@ export const AdvertStickyCta = memo(function AdvertStickyCta({
       ]}
     >
       <Image
-        source={detail.cover?.publicUrl ?? detail.gallery[0]?.publicUrl}
+        source={thumbSource}
         style={[styles.thumb, { backgroundColor: skeleton }]}
         contentFit="cover"
         transition={200}
-        cachePolicy="memory-disk"
+        cachePolicy={accessToken ? 'memory' : 'memory-disk'}
       />
       <RatingStars value={detail.rating} count={detail.reviewCount} size={13} />
       <Text style={[styles.title, { color: text }]} numberOfLines={2}>

@@ -1,50 +1,119 @@
 import { HttpClient } from '@/services/http';
+import { catalogRepository, type ICatalogRepository } from '@/services/catalog';
+import { getAuthSession } from '@/services/auth/sessionStore';
 import type {
-  ListingDraft,
   MyListingCard,
   MyListingListResponse,
   MyListingStatus,
   UpdateListingRequest,
 } from '@/types';
-import type { IMyListingsRepository } from './MyListingsRepository';
+import type {
+  IMyListingsRepository,
+  MyListingEditPayload,
+} from './MyListingsRepository';
+import {
+  mapOwnerAdvertToCard,
+  type OwnerAdvertDto,
+  type OwnerAdvertListDto,
+} from './mapOwnerAdvert';
+import { mapOwnerToListingDraft } from './mapOwnerToListingDraft';
+import { backendStatusesForTab } from './statusTabs';
 
-/** HTTP — EXPO_PUBLIC_USE_HTTP_MY_LISTINGS=1 */
+/** ADVERT-OWNER-02/03/04 — GET/PATCH /v1/me/adverts */
 export class HttpMyListingsRepository implements IMyListingsRepository {
   private readonly http: HttpClient;
+  private readonly catalog: ICatalogRepository;
 
-  constructor(baseUrl: string) {
+  constructor(
+    private readonly baseUrl: string,
+    catalog: ICatalogRepository = catalogRepository
+  ) {
     this.http = new HttpClient(baseUrl);
+    this.catalog = catalog;
   }
 
-  list(
+  async list(
     status: MyListingStatus,
     accessToken: string
   ): Promise<MyListingListResponse> {
-    return this.http.request<MyListingListResponse>(
-      `/v1/me/listings?status=${encodeURIComponent(status)}`,
-      { method: 'GET', accessToken }
+    const sellerId = getAuthSession()?.user.id ?? '';
+    const statuses = backendStatusesForTab(status);
+    const pages = await Promise.all(
+      statuses.map((beStatus) =>
+        this.http.request<OwnerAdvertListDto>(
+          `/v1/me/adverts?status=${encodeURIComponent(beStatus)}&limit=100`,
+          { method: 'GET', accessToken }
+        )
+      )
     );
+
+    const merged = new Map<string, MyListingCard>();
+    for (const page of pages) {
+      for (const item of page.items ?? []) {
+        const card = mapOwnerAdvertToCard(item, {
+          apiBase: this.baseUrl,
+          sellerId,
+        });
+        merged.set(card.id, card);
+      }
+    }
+
+    const items = [...merged.values()].sort((a, b) =>
+      a.updatedAt < b.updatedAt ? 1 : -1
+    );
+    return { items };
   }
 
-  getEditDraft(id: string, accessToken: string): Promise<ListingDraft> {
-    return this.http.request<ListingDraft>(
-      `/v1/me/listings/${encodeURIComponent(id)}/edit`,
+  async getEditDraft(
+    id: string,
+    accessToken: string
+  ): Promise<MyListingEditPayload> {
+    const dto = await this.http.request<OwnerAdvertDto>(
+      `/v1/me/adverts/${encodeURIComponent(id)}`,
       { method: 'GET', accessToken }
     );
+    const tree = await this.catalog.getCategoryTree();
+    return {
+      draft: mapOwnerToListingDraft(dto, tree, this.baseUrl),
+      version: dto.version,
+      mediaVersion: dto.mediaVersion,
+    };
   }
 
-  update(
+  async update(
     id: string,
     payload: UpdateListingRequest,
     accessToken: string
   ): Promise<MyListingCard> {
-    return this.http.request<MyListingCard>(
-      `/v1/me/listings/${encodeURIComponent(id)}`,
+    const body: Record<string, unknown> = {
+      expectedVersion: payload.expectedVersion,
+      title: payload.title,
+      description: payload.description,
+    };
+    if (payload.districtId) body.districtId = payload.districtId;
+    if (payload.horseId) body.horseId = payload.horseId;
+    if (payload.priceAmountMinor != null) {
+      body.price = {
+        amountMinor: payload.priceAmountMinor,
+        currency: 'TRY',
+      };
+    } else {
+      body.price = null;
+    }
+
+    const dto = await this.http.request<OwnerAdvertDto>(
+      `/v1/me/adverts/${encodeURIComponent(id)}`,
       {
         method: 'PATCH',
-        body: JSON.stringify(payload),
         accessToken,
+        body: JSON.stringify(body),
       }
     );
+
+    const sellerId = getAuthSession()?.user.id ?? '';
+    return mapOwnerAdvertToCard(dto, {
+      apiBase: this.baseUrl,
+      sellerId,
+    });
   }
 }

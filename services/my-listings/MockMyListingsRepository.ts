@@ -9,7 +9,10 @@ import type {
   MyListingStatus,
   UpdateListingRequest,
 } from '@/types';
-import type { IMyListingsRepository } from './MyListingsRepository';
+import type {
+  IMyListingsRepository,
+  MyListingEditPayload,
+} from './MyListingsRepository';
 import { mapAdvertToListingDraft } from './mapAdvertToListingDraft';
 
 function wait(ms: number): Promise<void> {
@@ -23,6 +26,7 @@ function clone(items: MyListingCard[]): MyListingCard[] {
 export class MockMyListingsRepository implements IMyListingsRepository {
   private items: MyListingCard[] = clone(MOCK_MY_LISTINGS);
   private drafts = new Map<string, ListingDraft>();
+  private versions = new Map<string, number>();
 
   async list(
     status: MyListingStatus,
@@ -36,18 +40,28 @@ export class MockMyListingsRepository implements IMyListingsRepository {
     };
   }
 
-  async getEditDraft(id: string, _accessToken: string): Promise<ListingDraft> {
+  async getEditDraft(
+    id: string,
+    _accessToken: string
+  ): Promise<MyListingEditPayload> {
     await wait(180);
     const card = this.items.find((item) => item.id === id);
     if (!card) {
       throw new ApiError('İlan bulunamadı.', 404, 'NOT_FOUND');
     }
     const cached = this.drafts.get(id);
-    if (cached) return cached;
+    if (cached) {
+      return {
+        draft: cached,
+        version: this.versions.get(id) ?? 1,
+        mediaVersion: 1,
+      };
+    }
     const detail = getMockAdvertDetail(id);
     const draft = mapAdvertToListingDraft(detail, card, MOCK_CATEGORIES);
     this.drafts.set(id, draft);
-    return draft;
+    this.versions.set(id, 1);
+    return { draft, version: 1, mediaVersion: 1 };
   }
 
   async update(
@@ -60,7 +74,16 @@ export class MockMyListingsRepository implements IMyListingsRepository {
     if (index < 0) {
       throw new ApiError('İlan bulunamadı.', 404, 'NOT_FOUND');
     }
-    const cover = payload.draft.media.find((m) => m.isCover) ?? payload.draft.media[0];
+    const currentVersion = this.versions.get(id) ?? 1;
+    if (payload.expectedVersion !== currentVersion) {
+      throw new ApiError(
+        'İlan başka bir yerden güncellendi; sayfayı yenileyin.',
+        409,
+        'STALE_VERSION'
+      );
+    }
+    const cover =
+      payload.draft.media.find((m) => m.isCover) ?? payload.draft.media[0];
     const next: MyListingCard = {
       ...this.items[index],
       title: payload.title,
@@ -69,6 +92,7 @@ export class MockMyListingsRepository implements IMyListingsRepository {
           ? { amountMinor: payload.priceAmountMinor, currency: 'TRY' }
           : this.items[index].price,
       provinceId: payload.provinceId,
+      districtId: payload.districtId ?? this.items[index].districtId,
       cover: cover
         ? {
             assetId: cover.assetId ?? cover.localId,
@@ -82,6 +106,7 @@ export class MockMyListingsRepository implements IMyListingsRepository {
     };
     this.items[index] = next;
     this.drafts.set(id, payload.draft);
+    this.versions.set(id, currentVersion + 1);
     return next;
   }
 }

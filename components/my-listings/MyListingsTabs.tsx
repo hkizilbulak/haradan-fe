@@ -1,14 +1,16 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { MY_LISTING_TABS } from '@/services/my-listings';
 import type { MyListingStatus } from '@/types';
-
-const TABS: { key: MyListingStatus; label: string }[] = [
-  { key: 'published', label: 'Yayında' },
-  { key: 'draft', label: 'Taslak' },
-  { key: 'sold', label: 'Satılmış' },
-];
 
 type MyListingsTabsProps = {
   active: MyListingStatus;
@@ -27,9 +29,14 @@ export function MyListingsTabs({
   const header = useThemeColor('header');
 
   return (
-    <View style={[styles.wrap, { borderBottomColor: border }]}>
-      {TABS.map((tab) => {
-        const on = tab.key === active;
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.wrap}
+      style={[styles.scroll, { borderBottomColor: border }]}
+    >
+      {MY_LISTING_TABS.map((tab) => {
+        const on = active === tab.key;
         return (
           <Pressable
             key={tab.key}
@@ -46,6 +53,7 @@ export function MyListingsTabs({
                   fontWeight: on ? '700' : '500',
                 },
               ]}
+              numberOfLines={1}
             >
               {tab.label}
               {counts[tab.key] > 0 ? `  ${counts[tab.key]}` : ''}
@@ -59,25 +67,33 @@ export function MyListingsTabs({
           </Pressable>
         );
       })}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  scroll: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginHorizontal: Platform.OS === 'web' ? 0 : -4,
+  },
   wrap: {
     flexDirection: 'row',
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    alignItems: 'stretch',
+    minWidth: '100%',
   },
   tab: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
     paddingTop: 8,
+    paddingHorizontal: 10,
+    minWidth: 88,
   },
-  label: { ...Typography.small, fontSize: 14 },
+  label: { ...Typography.small, fontSize: 13 },
   line: {
     marginTop: 10,
     height: 2,
     width: '70%',
     borderRadius: 1,
+    alignSelf: 'center',
   },
 });

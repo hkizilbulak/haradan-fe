@@ -8,13 +8,19 @@ function parseTlInput(raw: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-export function mapDraftToUpdate(draft: ListingDraft): UpdateListingRequest {
+export function mapDraftToUpdate(
+  draft: ListingDraft,
+  expectedVersion: number
+): UpdateListingRequest {
   const priceTl = parseTlInput(draft.details.priceTl);
   return {
+    expectedVersion,
     title: draft.details.title.trim(),
     description: draft.details.description.trim(),
     priceAmountMinor: priceTl != null ? Math.round(priceTl * 100) : null,
     provinceId: draft.details.provinceId ?? '',
+    districtId: draft.details.districtId,
+    horseId: draft.details.horseId,
     sellerPhone:
       composeInternationalPhone(
         draft.details.phoneCountryIso || 'TR',

@@ -20,6 +20,8 @@ function prefetchGallery(detail: AdvertDetail) {
  */
 export function useAdvert(
   id: string | undefined,
+  accessToken: string | null = null,
+  viewerUserId: string | null = null,
   repo: IAdvertRepository = advertRepository
 ) {
   const [data, setData] = useState<AdvertDetail | null>(() =>
@@ -42,7 +44,11 @@ export function useAdvert(
       if (!cached) setStatus('loading');
 
       try {
-        const result = await repo.getById(id, { fresh });
+        const result = await repo.getById(id, {
+          fresh,
+          accessToken,
+          viewerUserId,
+        });
         prefetchGallery(result);
         const apply = () => {
           setData(result);
@@ -58,7 +64,7 @@ export function useAdvert(
         if (!repo.getCached(id) && !cached) setStatus('error');
       }
     },
-    [id, repo]
+    [id, repo, accessToken, viewerUserId]
   );
 
   useEffect(() => {

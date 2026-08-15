@@ -76,9 +76,11 @@ export class HttpListingRepository implements IListingRepository {
       ...uploaded.filter((m) => m.isCover),
       ...uploaded.filter((m) => !m.isCover),
     ];
+    let coverAssetId: string | null = null;
     for (let i = 0; i < ordered.length; i += 1) {
       const slot = ordered[i];
       if (!slot.assetId) continue;
+      if (!coverAssetId) coverAssetId = slot.assetId;
       const attached = await this.http.request<AdvertMediaCollectionResponse>(
         `/v1/me/adverts/${created.id}/media`,
         {
@@ -92,6 +94,20 @@ export class HttpListingRepository implements IListingRepository {
         }
       );
       mediaVersion = attached.mediaVersion;
+    }
+    if (coverAssetId) {
+      const covered = await this.http.request<AdvertMediaCollectionResponse>(
+        `/v1/me/adverts/${created.id}/media/cover`,
+        {
+          method: 'PUT',
+          accessToken,
+          body: JSON.stringify({
+            assetId: coverAssetId,
+            expectedMediaVersion: mediaVersion,
+          }),
+        }
+      );
+      mediaVersion = covered.mediaVersion;
     }
 
     const submitted = await this.http.request<OwnerAdvertResponse>(

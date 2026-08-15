@@ -124,11 +124,20 @@ export type OwnerAdvertResponse = {
   mediaVersion: number;
   categoryId: string | null;
   districtId: string | null;
+  provinceId?: string | null;
   horseId: string | null;
   title: string | null;
   description: string | null;
   price: Money | null;
   properties: Record<string, unknown>;
+  media?: {
+    assetId: string;
+    displayOrder: number;
+    isCover: boolean;
+    lifecycleStatus: string;
+  }[];
+  publishedAt?: string | null;
+  updatedAt?: string;
 };
 
 export type PublishListingResult = {

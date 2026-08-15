@@ -35,11 +35,13 @@ import type { AdvertDetail, AdvertDetailTab } from '@/types';
 type AdvertDetailViewProps = {
   detail: AdvertDetail;
   isOwner?: boolean;
+  accessToken?: string | null;
 };
 
 export function AdvertDetailView({
   detail,
   isOwner = false,
+  accessToken = null,
 }: AdvertDetailViewProps) {
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -216,6 +218,7 @@ export function AdvertDetailView({
               <AdvertGallery
                 items={detail.gallery}
                 height={isWide ? 440 : 320}
+                accessToken={accessToken}
               />
             </View>
             <View style={styles.buyCol}>
@@ -278,6 +281,7 @@ export function AdvertDetailView({
                     detail={detail}
                     favorite={favorite}
                     isOwner={isOwner}
+                    accessToken={accessToken}
                     onCall={onCall}
                     onWhatsApp={onWhatsApp}
                     onToggleFavorite={() => setFavorite((v) => !v)}

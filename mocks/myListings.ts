@@ -38,16 +38,16 @@ function mine(
   };
 }
 
-/** Demo kullanıcının ilanları — GET /v1/me/listings */
+/** Demo kullanıcının ilanları — GET /v1/me/adverts?status= */
 export const MOCK_MY_LISTINGS: MyListingCard[] = [
   mine('adv-001', 'published'),
   mine('adv-002', 'published'),
   mine('adv-006', 'published'),
-  mine('adv-003', 'draft', {
-    updatedAt: new Date(Date.now() - 4 * 3_600_000).toISOString(),
+  mine('adv-003', 'pending', {
+    updatedAt: new Date(Date.now() - 2 * 3_600_000).toISOString(),
   }),
-  mine('adv-009', 'draft', {
-    updatedAt: new Date(Date.now() - 26 * 3_600_000).toISOString(),
+  mine('adv-009', 'rejected', {
+    updatedAt: new Date(Date.now() - 30 * 3_600_000).toISOString(),
   }),
   mine('adv-008', 'draft', {
     updatedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),

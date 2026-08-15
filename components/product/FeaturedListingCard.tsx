@@ -12,6 +12,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
+import { useMediaImageSource } from '@/hooks/useMediaImageSource';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { locationLookup } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
@@ -30,6 +31,8 @@ type FeaturedListingCardProps = {
   width?: number;
   /** Bölüme göre rozet; verilmezse isUrgent → ACİL. */
   badge?: FeaturedCardBadge | 'auto';
+  /** Sahip önizlemesi (incelemede / taslak) için Bearer. */
+  accessToken?: string | null;
   onPress?: (id: string) => void;
   onToggleFavorite?: (product: CatalogProductCard) => void;
 };
@@ -38,6 +41,7 @@ function FeaturedListingCardComponent({
   product,
   width,
   badge = 'auto',
+  accessToken,
   onPress,
   onToggleFavorite,
 }: FeaturedListingCardProps) {
@@ -54,6 +58,10 @@ function FeaturedListingCardComponent({
   }, [product.districtId, product.provinceId]);
 
   const views = formatViewCount(product.viewCount);
+  const coverSource = useMediaImageSource(
+    product.cover?.publicUrl,
+    accessToken
+  );
 
   const resolvedBadge: FeaturedCardBadge | null =
     badge === 'featured'
@@ -146,13 +154,13 @@ function FeaturedListingCardComponent({
             style={[styles.imageInner, { transform: [{ scale: imgScale }] }]}
           >
             <Image
-              source={product.cover?.publicUrl}
+              source={coverSource}
               style={[styles.image, { backgroundColor: skeleton }]}
               contentFit="cover"
               transition={240}
               recyclingKey={product.id}
               priority="low"
-              cachePolicy="memory-disk"
+              cachePolicy={accessToken ? 'memory' : 'memory-disk'}
             />
           </Animated.View>
           <View

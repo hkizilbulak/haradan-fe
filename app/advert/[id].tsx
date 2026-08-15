@@ -19,7 +19,11 @@ export default function AdvertDetailScreen() {
   const bg = useThemeColor('background');
   const { isLoggedIn, session } = useAuthSession();
 
-  const { data, isLoading, isError, error, refetch } = useAdvert(id);
+  const { data, isLoading, isError, error, refetch } = useAdvert(
+    id,
+    session?.accessToken ?? null,
+    session?.user.id ?? null
+  );
 
   const onLogin = useCallback(() => router.push('/auth/login'), [router]);
   const onSignup = useCallback(() => router.push('/auth/signup'), [router]);
@@ -74,6 +78,7 @@ export default function AdvertDetailScreen() {
             isOwner={
               Boolean(session?.user.id) && data.sellerId === session?.user.id
             }
+            accessToken={session?.accessToken ?? null}
           />
         )}
       </SafeAreaView>

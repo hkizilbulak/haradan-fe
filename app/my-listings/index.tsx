@@ -31,7 +31,7 @@ export default function MyListingsScreen() {
           <title>İlanlarım | Haradan.com</title>
           <meta
             name="description"
-            content="Yayındaki, taslak ve satılmış ilanlarınız."
+            content="Yayındaki, incelemedeki, reddedilen, taslak ve satılmış ilanlarınız."
           />
         </Head>
       ) : null}

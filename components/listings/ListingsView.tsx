@@ -7,6 +7,7 @@ import React, {
   useState,
 } from 'react';
 import {
+  ActivityIndicator,
   Keyboard,
   Platform,
   Pressable,
@@ -26,10 +27,11 @@ import { HomeSearchBar, SiteFooter } from '@/components/home';
 import { HomeContentContainer } from '@/components/layout';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
+import { useAuthSession } from '@/hooks/useAuthSession';
 import { useCatalogFacets } from '@/hooks/useCatalogFacets';
 import { useFavorites } from '@/hooks/useFavorites';
+import { usePublishedAdvertsSearch } from '@/hooks/usePublishedAdvertsSearch';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { MOCK_CATALOG_PRODUCTS } from '@/mocks/homepage';
 import {
   matchesPrice,
   parseProvinceParam,
@@ -37,11 +39,9 @@ import {
   serializeProvinceParam,
 } from '@/components/listings/filterConfig';
 import { syncListingsQuery } from '@/components/listings/syncListingsQuery';
-import {
-  categoryLabel,
-  collectCategoryIds,
-} from '@/services/catalog';
-import type { CatalogProductCard, CategoryTreeNode } from '@/types';
+import { categoryLabel } from '@/services/catalog';
+import { locationLookup } from '@/services/location';
+import type { CatalogProductCard } from '@/types';
 
 export type ListingsQuery = {
   q?: string | null;
@@ -57,9 +57,9 @@ type ListingsViewProps = {
   query: ListingsQuery;
 };
 
-function filterProducts(
+/** BE sonrası kalan UI filtreleri (fiyat, acil, ırk, metin). */
+function applyClientFilters(
   all: CatalogProductCard[],
-  tree: CategoryTreeNode[],
   filters: ListingsFiltersState,
   q: string
 ): CatalogProductCard[] {
@@ -70,21 +70,8 @@ function filterProducts(
   }
 
   if (filters.breed) {
-    list = list.filter(
-      (p) => (p.brand ?? '').toLowerCase() === filters.breed!.toLowerCase()
-    );
-  }
-
-  if (filters.categorySlug) {
-    const ids = collectCategoryIds(tree, filters.categorySlug);
-    if (ids) {
-      list = list.filter((p) => ids.has(p.categoryId));
-    }
-  }
-
-  if (filters.provinceIds.length > 0) {
-    const set = new Set(filters.provinceIds);
-    list = list.filter((p) => set.has(p.provinceId));
+    const needle = filters.breed.toLowerCase();
+    list = list.filter((p) => (p.brand ?? '').toLowerCase() === needle);
   }
 
   if (filters.priceMinTl != null || filters.priceMaxTl != null) {
@@ -109,13 +96,14 @@ function filterProducts(
   return list;
 }
 
-/** İlanlar sayfası — arama + sol filtre + 3 kolon grid. */
+/** İlanlar sayfası — BE arama + sol filtre + kart grid. */
 export const ListingsView = memo(function ListingsView({
   query,
 }: ListingsViewProps) {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
+  const { session } = useAuthSession();
 
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
@@ -133,6 +121,7 @@ export const ListingsView = memo(function ListingsView({
   });
   const [page, setPage] = useState(0);
   const [liveQuery, setLiveQuery] = useState(query.q ?? '');
+  const [locationTick, setLocationTick] = useState(0);
   const skipHydrate = useRef(false);
 
   useEffect(() => {
@@ -160,22 +149,53 @@ export const ListingsView = memo(function ListingsView({
     query.urgent,
   ]);
 
+  const search = usePublishedAdvertsSearch(
+    {
+      categorySlug: filters.categorySlug,
+      provinceIds: filters.provinceIds,
+    },
+    categoryTree,
+    session?.accessToken ?? null
+  );
+
   const q = liveQuery.trim();
 
   const items = useMemo(
-    () =>
-      apply(filterProducts(MOCK_CATALOG_PRODUCTS, categoryTree, filters, q)),
-    [categoryTree, filters, q, apply]
+    () => apply(applyClientFilters(search.items, filters, q)),
+    [apply, search.items, filters, q]
   );
 
   useEffect(() => {
     remember(items);
   }, [remember, items]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const provinces = await locationLookup.listProvinces();
+        const needed = new Set(
+          search.items.map((i) => i.provinceId).filter(Boolean)
+        );
+        await Promise.all(
+          provinces
+            .filter((p) => needed.has(p.id))
+            .map((p) => locationLookup.listDistricts(p.id))
+        );
+        if (!cancelled) setLocationTick((n) => n + 1);
+      } catch {
+        /* konum isimleri opsiyonel */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [search.items]);
+
   const syncUrl = useCallback(
-    (next: ListingsFiltersState, search = liveQuery) => {
+    (next: ListingsFiltersState, searchText = liveQuery) => {
       const params = new URLSearchParams();
-      const trimmed = search.trim();
+      const trimmed = searchText.trim();
       if (trimmed) params.set('q', trimmed);
       if (next.categorySlug) params.set('category', next.categorySlug);
       if (next.breed) params.set('breed', next.breed);
@@ -277,6 +297,8 @@ export const ListingsView = memo(function ListingsView({
     </Pressable>
   );
 
+  const gridKey = `loc-${locationTick}`;
+
   return (
     <View
       style={[
@@ -320,18 +342,40 @@ export const ListingsView = memo(function ListingsView({
                     İlanlar
                   </Text>
                   <Text style={[styles.pageSub, { color: textMuted }]}>
-                    {items.length} sonuç
-                    {contextLabel ? ` · ${contextLabel}` : ''}
+                    {search.loading
+                      ? 'Yükleniyor…'
+                      : `${items.length} sonuç`}
+                    {!search.loading && contextLabel
+                      ? ` · ${contextLabel}`
+                      : ''}
                   </Text>
                 </View>
 
-                <ListingsGrid
-                  items={items}
-                  page={page}
-                  onPageChange={setPage}
-                  onProductPress={onProductPress}
-                  onToggleFavorite={toggle}
-                />
+                {search.loading && items.length === 0 ? (
+                  <View style={styles.center}>
+                    <ActivityIndicator />
+                  </View>
+                ) : search.error && items.length === 0 ? (
+                  <View style={styles.center}>
+                    <Text style={[styles.error, { color: text }]}>
+                      {search.error}
+                    </Text>
+                    <Pressable onPress={() => void search.refetch()}>
+                      <Text style={[styles.retry, { color: textMuted }]}>
+                        Tekrar dene
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <ListingsGrid
+                    key={gridKey}
+                    items={items}
+                    page={page}
+                    onPageChange={setPage}
+                    onProductPress={onProductPress}
+                    onToggleFavorite={toggle}
+                  />
+                )}
               </View>
             </View>
           </HomeContentContainer>
@@ -352,37 +396,26 @@ export const ListingsView = memo(function ListingsView({
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
-  content: { paddingTop: Spacing.lg, paddingBottom: 0, flexGrow: 1 },
+  content: { flexGrow: 1, paddingBottom: Spacing['3xl'] },
   contentPress: { flexGrow: 1 },
-  pageHead: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: Spacing.md,
-    marginBottom: Spacing.lg,
-    flexWrap: 'wrap',
-  },
-  pageTitle: {
-    fontSize: 26,
-    fontWeight: '700',
-    letterSpacing: -0.45,
-  },
-  pageSub: { fontSize: 13, fontWeight: '500' },
   body: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing.xl,
-    marginBottom: Spacing['2xl'],
+    paddingTop: Spacing.lg,
   },
   bodyStack: { flexDirection: 'column' },
-  sidebar: {
-    width: 240,
-    flexShrink: 0,
-    ...Platform.select({
-      web: { position: 'sticky' as 'relative', top: 20 },
-      default: {},
-    }),
-  },
+  sidebar: { width: 260, flexShrink: 0 },
   sidebarStack: { width: '100%' },
-  main: { flex: 1, minWidth: 0 },
+  main: { flex: 1, minWidth: 0, gap: Spacing.md },
+  pageHead: { gap: 4, marginBottom: Spacing.sm },
+  pageTitle: { fontSize: 22, fontWeight: '700' },
+  pageSub: { fontSize: 13 },
+  center: {
+    paddingVertical: 64,
+    alignItems: 'center',
+    gap: 12,
+  },
+  error: { fontSize: 15, textAlign: 'center' },
+  retry: { fontSize: 14, fontWeight: '600', textDecorationLine: 'underline' },
 });

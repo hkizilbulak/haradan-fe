@@ -16,6 +16,7 @@ export function useMyListingEdit(
   tjk: ITjkRepository = tjkRepository
 ) {
   const [draft, setDraft] = useState<ListingDraft | null>(null);
+  const [version, setVersion] = useState(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +34,8 @@ export function useMyListingEdit(
       try {
         const next = await repo.getEditDraft(id, accessToken);
         if (cancelled) return;
-        setDraft(next);
+        setDraft(next.draft);
+        setVersion(next.version);
         setError(null);
       } catch (err) {
         if (cancelled) return;
@@ -95,7 +97,13 @@ export function useMyListingEdit(
     setSaving(true);
     setError(null);
     try {
-      await repo.update(id, mapDraftToUpdate(draft), accessToken);
+      const updated = await repo.update(
+        id,
+        mapDraftToUpdate(draft, version),
+        accessToken
+      );
+      setVersion((v) => v + 1);
+      void updated;
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kayıt başarısız.');
@@ -103,7 +111,7 @@ export function useMyListingEdit(
     } finally {
       setSaving(false);
     }
-  }, [id, accessToken, draft, repo]);
+  }, [id, accessToken, draft, repo, version]);
 
   return {
     draft,

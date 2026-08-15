@@ -179,11 +179,12 @@ export function isListingWizardComplete(
   return snapshot.step === 'review' && snapshot.submittedDraftId != null;
 }
 
-/** İlan Ver: süreç bitmemişse taslağı silip başa alır. */
+/**
+ * İlan Ver giriş noktası: her tıklamada sihirbazı sıfırlar.
+ * Gönderilmiş başarı ekranı veya yarım taslak kalıntısı taşınmaz.
+ */
 export function prepareListingWizardEntry(): void {
-  if (!isListingWizardComplete()) {
-    resetListingWizard();
-  }
+  resetListingWizard();
 }
 
 export function subscribeListingWizard(listener: () => void): () => void {
