@@ -28,6 +28,13 @@ export type OwnerAdvertDto = {
   publishedAt?: string | null;
   deletedAt?: string | null;
   updatedAt?: string;
+  packageCode?: string | null;
+  packageDisplayName?: string | null;
+  packageBadgeText?: string | null;
+  isUrgent?: boolean;
+  urgentActivatedAt?: string | null;
+  isFeatured?: boolean;
+  featuredUntil?: string | null;
 };
 
 export type OwnerAdvertListDto = {
@@ -73,11 +80,13 @@ export function mapOwnerAdvertToCard(
     horseId: dto.horseId,
     cover: pickCover(dto.media, opts.apiBase),
     isFavorite: false,
-    packageCode: null,
-    packageDisplayName: null,
-    packageBadgeText: null,
-    isUrgent: false,
-    urgentActivatedAt: null,
+    packageCode: dto.packageCode ?? null,
+    packageDisplayName: dto.packageDisplayName ?? null,
+    packageBadgeText: dto.packageBadgeText ?? null,
+    isUrgent: Boolean(dto.isUrgent),
+    urgentActivatedAt: dto.urgentActivatedAt ?? null,
+    isFeatured: Boolean(dto.isFeatured),
+    featuredUntil: dto.featuredUntil ?? null,
     rating: 0,
     reviewCount: 0,
     viewCount: 0,

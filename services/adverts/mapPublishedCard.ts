@@ -27,6 +27,8 @@ type BePublishedCard = {
   packageBadgeText?: string | null;
   isUrgent: boolean;
   urgentActivatedAt?: string | null;
+  isFeatured?: boolean;
+  featuredUntil?: string | null;
 };
 
 function mapCover(
@@ -64,6 +66,8 @@ export function mapPublishedCardToCatalog(
     packageBadgeText: card.packageBadgeText ?? null,
     isUrgent: card.isUrgent,
     urgentActivatedAt: card.urgentActivatedAt ?? null,
+    isFeatured: Boolean(card.isFeatured),
+    featuredUntil: card.featuredUntil ?? null,
     rating: 0,
     reviewCount: 0,
     viewCount: 0,

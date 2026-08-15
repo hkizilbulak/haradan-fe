@@ -108,6 +108,10 @@ export function AppHeader({
   };
 
   const openWishlist = () => {
+    if (!isLoggedIn) {
+      router.push('/auth/login?next=/');
+      return;
+    }
     if (drawers) {
       drawers.openFavorites();
       return;

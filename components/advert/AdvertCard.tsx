@@ -125,6 +125,9 @@ function AdvertCardComponent({
         />
         <View style={styles.badgeRow}>
           {advert.isUrgent ? <Badge label="Acil" tone="danger" /> : null}
+          {advert.isFeatured && !advert.isUrgent ? (
+            <Badge label="Öne çıkan" tone="info" />
+          ) : null}
           {advert.packageBadgeText ? (
             <Badge label={advert.packageBadgeText} tone="info" />
           ) : null}

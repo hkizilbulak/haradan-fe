@@ -2,6 +2,7 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -68,15 +69,29 @@ export function HeaderDrawersProvider({
     setFromProfile(false);
   }, []);
 
-  const openFavorites = useCallback((opts?: { fromProfile?: boolean }) => {
-    setFromProfile(opts?.fromProfile === true);
-    setPanel('favorites');
-  }, []);
+  const openFavorites = useCallback(
+    (opts?: { fromProfile?: boolean }) => {
+      if (!isLoggedIn) {
+        router.push('/auth/login?next=/');
+        return;
+      }
+      setFromProfile(opts?.fromProfile === true);
+      setPanel('favorites');
+    },
+    [isLoggedIn, router]
+  );
 
   const closeFavorites = useCallback(() => {
     setPanel('none');
     setFromProfile(false);
   }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn && panel === 'favorites') {
+      setPanel('none');
+      setFromProfile(false);
+    }
+  }, [isLoggedIn, panel]);
 
   const closeAll = useCallback(() => {
     setPanel('none');

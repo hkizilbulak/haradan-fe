@@ -52,6 +52,18 @@ async function main(): Promise<void> {
   assertEqual(byCode.PREMIUM?.durationDays, 45, 'Premium 45 gün');
   assertEqual(byCode.PREMIUM?.highlighted, true, 'Premium Önerilen');
   assertEqual(byCode.PREMIUM?.tagline, 'Daha fazla görünürlük', 'Premium tagline');
+  assert(
+    (body.items.find((p) => p.code === 'PREMIUM')?.featuredDays ?? null) === 7,
+    'Premium featuredDays=7 from BE'
+  );
+  assert(
+    (body.items.find((p) => p.code === 'ULTIMATE')?.featuredDays ?? null) === 30,
+    'Ultimate featuredDays=30 from BE'
+  );
+  assert(
+    (body.items.find((p) => p.code === 'STANDARD')?.featuredDays ?? null) == null,
+    'Standard has no featuredDays'
+  );
 
   assertEqual(byCode.ULTIMATE?.name, 'Ultimate', 'Ultimate name');
   assertEqual(byCode.ULTIMATE?.price.amountMinor, 125000, 'Ultimate ₺1250');

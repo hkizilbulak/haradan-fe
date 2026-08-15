@@ -2,6 +2,7 @@ import type { CatalogProductCard } from '@/types';
 
 type Listener = () => void;
 
+/** Optimistic UI overrides on top of hydrated server state. */
 let overrides: Record<string, boolean> = {};
 let cards: Record<string, CatalogProductCard> = {};
 const listeners = new Set<Listener>();
@@ -25,7 +26,31 @@ function isCardFavorite(card: CatalogProductCard): boolean {
   return card.isFavorite === true;
 }
 
-/** Listeler render olunca kartları index’e alır — çekmece her sayfadan dolar. */
+/** Clears all local favorite state (logout). */
+export function clearFavorites(): void {
+  overrides = {};
+  cards = {};
+  notify();
+}
+
+/**
+ * Replaces local cache with BE list (login hydrate).
+ * Overrides are cleared so server is source of truth.
+ */
+export function replaceFavoritesFromServer(items: CatalogProductCard[]): void {
+  const nextCards: Record<string, CatalogProductCard> = {};
+  for (const item of items) {
+    nextCards[item.id] = { ...item, isFavorite: true };
+  }
+  cards = nextCards;
+  overrides = {};
+  for (const item of items) {
+    overrides[item.id] = true;
+  }
+  notify();
+}
+
+/** Listeler render olunca kartları index’e alır — çekmece için. */
 export function rememberFavoriteCards(items: CatalogProductCard[]): void {
   if (items.length === 0) return;
   let changed = false;
@@ -47,12 +72,15 @@ export function rememberFavoriteCards(items: CatalogProductCard[]): void {
   notify();
 }
 
-export function toggleFavorite(card: CatalogProductCard): void {
+/** Optimistic local flip (caller persists via repository). */
+export function toggleFavoriteLocal(card: CatalogProductCard): boolean {
   cards = { ...cards, [card.id]: card };
-  setFavoriteOverride(card.id, !isCardFavorite(card));
+  const next = !isCardFavorite(card);
+  setFavoriteOverride(card.id, next);
+  return next;
 }
 
-export function removeFavorite(id: string): void {
+export function removeFavoriteLocal(id: string): void {
   setFavoriteOverride(id, false);
 }
 
@@ -72,4 +100,14 @@ export function subscribeFavoriteOverrides(listener: Listener): () => void {
   return () => {
     listeners.delete(listener);
   };
+}
+
+/** @deprecated use toggleFavoriteLocal */
+export function toggleFavorite(card: CatalogProductCard): void {
+  toggleFavoriteLocal(card);
+}
+
+/** @deprecated use removeFavoriteLocal */
+export function removeFavorite(id: string): void {
+  removeFavoriteLocal(id);
 }

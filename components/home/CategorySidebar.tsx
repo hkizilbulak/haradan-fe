@@ -37,7 +37,7 @@ type CategorySidebarProps = {
   maxHeight?: number;
 };
 
-/** Browse kategorileri — tıklanınca sağda alt kategori flyout. */
+/** Browse kategorileri — seçim üst bileşene (ilanlar?category=slug). */
 export const CategorySidebar = memo(function CategorySidebar({
   categories,
   onSelect,
@@ -86,13 +86,18 @@ export const CategorySidebar = memo(function CategorySidebar({
 
   if (categories.length === 0) return null;
 
+  /**
+   * Kök seçim → hemen /listings?category=slug (parent, alt ağacı BE’de fan-out).
+   * Wide: hover ile alt kategoriler; alt satır tıklanınca o slug ile gider.
+   */
   const handleRootPress = (cat: CategoryTreeNode) => {
-    if (cat.children.length > 0) {
-      setActiveId((prev) => (prev === cat.id ? null : cat.id));
-    } else {
-      setActiveId(null);
-      onSelect?.(cat);
-    }
+    setActiveId(null);
+    onSelect?.(cat);
+  };
+
+  const handleRootHoverIn = (cat: CategoryTreeNode) => {
+    if (!isWide || cat.children.length === 0) return;
+    setActiveId(cat.id);
   };
 
   const handleChildPress = (child: CategoryTreeNode) => {
@@ -134,6 +139,7 @@ export const CategorySidebar = memo(function CategorySidebar({
               hasChildren={cat.children.length > 0}
               expanded={cat.id === activeId && cat.children.length > 0}
               onPress={() => handleRootPress(cat)}
+              onHoverIn={() => handleRootHoverIn(cat)}
             />
           ))}
 
@@ -149,7 +155,7 @@ export const CategorySidebar = memo(function CategorySidebar({
 
       {hasFlyout && activeCategory ? (
         <CategoryFlyout
-          title={activeCategory.name}
+          parent={activeCategory}
           items={activeCategory.children}
           borderColor={border}
           surfaceColor={surface}
@@ -162,14 +168,14 @@ export const CategorySidebar = memo(function CategorySidebar({
 });
 
 function CategoryFlyout({
-  title,
+  parent,
   items,
   borderColor,
   surfaceColor,
   onSelect,
   onClose,
 }: {
-  title: string;
+  parent: CategoryTreeNode;
   items: CategoryTreeNode[];
   borderColor: string;
   surfaceColor: string;
@@ -196,7 +202,7 @@ function CategoryFlyout({
         useNativeDriver: true,
       }),
     ]).start();
-  }, [title, opacity, translateX]);
+  }, [parent.id, opacity, translateX]);
 
   return (
     <Animated.View
@@ -215,11 +221,11 @@ function CategoryFlyout({
         },
       ]}
       accessibilityRole="menu"
-      accessibilityLabel={`${title} alt kategorileri`}
+      accessibilityLabel={`${parent.name} alt kategorileri`}
     >
       <View style={styles.flyoutHeader}>
         <Text style={styles.flyoutTitle} numberOfLines={1}>
-          {title}
+          {parent.name}
         </Text>
         <Pressable
           onPress={onClose}
@@ -318,6 +324,7 @@ function CategoryRow({
   hasChildren,
   expanded,
   onPress,
+  onHoverIn,
 }: {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
@@ -325,6 +332,7 @@ function CategoryRow({
   hasChildren: boolean;
   expanded: boolean;
   onPress: () => void;
+  onHoverIn?: () => void;
 }) {
   const progress = useRef(new Animated.Value(active ? 1 : 0)).current;
   const press = useRef(new Animated.Value(0)).current;
@@ -376,6 +384,7 @@ function CategoryRow({
   return (
     <Pressable
       onPress={onPress}
+      onHoverIn={onHoverIn}
       onPressIn={() => {
         Animated.timing(press, {
           toValue: 1,

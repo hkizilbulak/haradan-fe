@@ -28,9 +28,10 @@ import { SiteFooter } from '@/components/home';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { useFavorites } from '@/hooks/useFavorites';
 import { openPhoneCall, openWhatsApp } from '@/utils/contactLinks';
 import { prepareListingWizardEntry } from '@/services/listing';
-import type { AdvertDetail, AdvertDetailTab } from '@/types';
+import type { AdvertDetail, AdvertDetailTab, CatalogProductCard } from '@/types';
 
 type AdvertDetailViewProps = {
   detail: AdvertDetail;
@@ -50,10 +51,40 @@ export function AdvertDetailView({
   const scrollYRef = useRef(0);
   const specsAnchorRef = useRef<View>(null);
   const reviewsAnchorRef = useRef<View>(null);
+  const { toggle, apply } = useFavorites();
 
   const [tab, setTab] = useState<AdvertDetailTab>('general');
-  const [favorite, setFavorite] = useState(detail.isFavorite === true);
   const [showTop, setShowTop] = useState(false);
+
+  const favoriteCard = useMemo((): CatalogProductCard => {
+    return {
+      id: detail.id,
+      title: detail.title,
+      publishedAt: detail.publishedAt,
+      price: detail.price,
+      categoryId: detail.categoryId,
+      districtId: detail.districtId,
+      provinceId: detail.provinceId,
+      horseId: detail.horseId,
+      cover: detail.cover ?? detail.gallery[0] ?? null,
+      isFavorite: detail.isFavorite,
+      packageCode: detail.packageCode,
+      packageDisplayName: detail.packageDisplayName,
+      packageBadgeText: detail.packageBadgeText,
+      isUrgent: detail.isUrgent,
+      urgentActivatedAt: detail.urgentActivatedAt,
+      isFeatured: detail.isFeatured,
+      featuredUntil: detail.featuredUntil,
+      rating: detail.rating,
+      reviewCount: detail.reviewCount,
+      viewCount: detail.viewCount,
+      oldPrice: detail.oldPrice,
+      available: detail.available ? 1 : 0,
+      brand: detail.brand,
+    };
+  }, [detail]);
+
+  const favorite = apply([favoriteCard])[0]?.isFavorite === true;
 
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
@@ -226,7 +257,7 @@ export function AdvertDetailView({
                 detail={detail}
                 favorite={favorite}
                 isOwner={isOwner}
-                onToggleFavorite={() => setFavorite((v) => !v)}
+                onToggleFavorite={() => toggle(favoriteCard)}
                 onCall={onCall}
                 onWhatsApp={onWhatsApp}
                 onEdit={() => router.push(`/my-listings/edit/${detail.id}`)}
@@ -284,7 +315,7 @@ export function AdvertDetailView({
                     accessToken={accessToken}
                     onCall={onCall}
                     onWhatsApp={onWhatsApp}
-                    onToggleFavorite={() => setFavorite((v) => !v)}
+                    onToggleFavorite={() => toggle(favoriteCard)}
                     onEdit={() =>
                       router.push(`/my-listings/edit/${detail.id}`)
                     }

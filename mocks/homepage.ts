@@ -63,6 +63,7 @@ function product(
     coverUrl: string;
     assetId: string;
     isUrgent?: boolean;
+    isFeatured?: boolean;
     districtId?: string;
     provinceId?: string;
     viewCount?: number;
@@ -73,6 +74,7 @@ function product(
     coverUrl,
     assetId,
     isUrgent = false,
+    isFeatured = false,
     viewCount,
     horseId = null,
     ...rest
@@ -82,11 +84,13 @@ function product(
     provinceId: partial.provinceId ?? 'prov-34',
     horseId,
     isUrgent,
+    isFeatured,
     cover: cover(coverUrl, assetId),
     packageCode: null,
     packageDisplayName: null,
     packageBadgeText: null,
     urgentActivatedAt: isUrgent ? hoursAgo(2) : null,
+    featuredUntil: isFeatured ? daysAgo(-7) : null,
     viewCount: viewCount ?? seededViewCount(partial.id),
     ...rest,
   };
@@ -256,7 +260,7 @@ const PRODUCTS: CatalogProductCard[] = [
     categoryId: 'cat-kisrak',
     coverUrl: img(H.mare),
     assetId: 'a2',
-    isFavorite: true,
+    isFavorite: false,
     rating: 4.9,
     reviewCount: 0,
     available: 1,
@@ -371,7 +375,7 @@ const PRODUCTS: CatalogProductCard[] = [
     categoryId: 'cat-pansiyon',
     coverUrl: img(H.stable),
     assetId: 'a8',
-    isFavorite: true,
+    isFavorite: false,
     rating: 4.4,
     reviewCount: 0,
     available: null,
@@ -500,14 +504,14 @@ export const MOCK_HOMEPAGE: HomepageData = {
   },
   newAdverts: PRODUCTS.slice(0, 8),
   trending: [
-    PRODUCTS[0],
-    PRODUCTS[1],
-    PRODUCTS[2],
-    PRODUCTS[3],
-    PRODUCTS[4],
-    PRODUCTS[11],
-    PRODUCTS[5],
-    PRODUCTS[6],
+    { ...PRODUCTS[0], isFeatured: true },
+    { ...PRODUCTS[1], isFeatured: true },
+    { ...PRODUCTS[2], isFeatured: true },
+    { ...PRODUCTS[3], isFeatured: true },
+    { ...PRODUCTS[4], isFeatured: true },
+    { ...PRODUCTS[11], isFeatured: true },
+    { ...PRODUCTS[5], isFeatured: true },
+    { ...PRODUCTS[6], isFeatured: true },
   ],
   specialOffers: [
     PRODUCTS[8],

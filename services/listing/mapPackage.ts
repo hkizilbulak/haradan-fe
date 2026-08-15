@@ -11,6 +11,7 @@ export type PublicPackage = {
   defaultDurationDays?: number | null;
   allowsUrgent: boolean;
   showcaseEligible: boolean;
+  featuredDays?: number | null;
   searchPriority: number;
   sortOrder: number;
 };

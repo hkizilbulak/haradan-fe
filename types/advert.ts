@@ -24,6 +24,8 @@ export type PublishedAdvertCard = {
   packageBadgeText?: string | null;
   isUrgent: boolean;
   urgentActivatedAt?: string | null;
+  isFeatured?: boolean;
+  featuredUntil?: string | null;
 };
 
 /** OpenAPI: PublishedAdvertSearchResponse */

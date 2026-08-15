@@ -70,7 +70,9 @@ function FeaturedListingCardComponent({
         ? 'urgent'
         : product.isUrgent
           ? 'urgent'
-          : null;
+          : product.isFeatured
+            ? 'featured'
+            : null;
 
   const handlePress = useCallback(
     () => onPress?.(product.id),

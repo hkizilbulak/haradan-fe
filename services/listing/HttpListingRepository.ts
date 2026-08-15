@@ -110,6 +110,15 @@ export class HttpListingRepository implements IListingRepository {
       mediaVersion = covered.mediaVersion;
     }
 
+    const packageCode = draft.packageCode?.trim();
+    if (packageCode) {
+      await this.http.request(`/v1/me/adverts/${created.id}/package`, {
+        method: 'PUT',
+        accessToken,
+        body: JSON.stringify({ packageCode }),
+      });
+    }
+
     const submitted = await this.http.request<OwnerAdvertResponse>(
       `/v1/me/adverts/${created.id}/submit`,
       {

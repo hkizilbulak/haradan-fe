@@ -97,8 +97,9 @@ draft.details.title = 'Satılık kısrak';
 draft.details.description = 'Detaylı açıklama metni burada yeterince uzun.';
 draft.details.priceTl = '150000';
 draft.details.districtId = '11111111-1111-1111-1111-111111111111';
-draft.details.horseId = '1b221374-e177-4ba2-9411-43c9339fbb48';
-const body = mapDraftToCreateAdvert(draft);
+  draft.details.horseId = '1b221374-e177-4ba2-9411-43c9339fbb48';
+  draft.packageCode = 'PREMIUM';
+  const body = mapDraftToCreateAdvert(draft);
 assertEqual(
   Object.keys(body).sort().join(','),
   'categoryId,description,districtId,horseId,price,title',
@@ -300,6 +301,23 @@ async function main() {
       deletedAt: null,
     },
   };
+  responses['PUT /api/v1/me/adverts/adv-1/package'] = {
+    status: 200,
+    body: {
+      id: 'assign-1',
+      advertId: 'adv-1',
+      packageCode: 'PREMIUM',
+      status: 'ACTIVE',
+      startsAt: new Date().toISOString(),
+      endsAt: new Date(Date.now() + 45 * 86400000).toISOString(),
+      assignedByUserId: 'user-1',
+      assignedAt: new Date().toISOString(),
+      source: 'SYSTEM',
+      version: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  };
   const published = await listing.publish(draft, 'token-1');
   assertEqual(published.status, 'PENDING_REVIEW', 'submit → PENDING_REVIEW');
   const createCall = calls.find((c) => c.url.endsWith('/v1/me/adverts'));
@@ -307,6 +325,23 @@ async function main() {
   assertEqual(createBody.categoryId, draft.type?.categoryId, 'create sends categoryId');
   assert(!('packageCode' in createBody), 'create does not send packageCode');
   assert(!('sellerPhone' in createBody), 'create does not send sellerPhone');
+  const packageCall = calls.find((c) =>
+    c.url.endsWith('/v1/me/adverts/adv-1/package')
+  );
+  assert(Boolean(packageCall), 'assigns selected package before submit');
+  const packageBody = JSON.parse(String(packageCall?.init.body));
+  assertEqual(packageBody.packageCode, 'PREMIUM', 'package assign sends packageCode');
+  const callOrder = calls.map((c) => {
+    const path = c.url.replace(/^https?:\/\/[^/]+/, '');
+    return `${(c.init.method ?? 'GET').toUpperCase()} ${path}`;
+  });
+  const packageIdx = callOrder.findIndex((c) =>
+    c.includes('PUT /api/v1/me/adverts/adv-1/package')
+  );
+  const submitIdx = callOrder.findIndex((c) =>
+    c.includes('POST /api/v1/me/adverts/adv-1/submit')
+  );
+  assert(packageIdx >= 0 && packageIdx < submitIdx, 'package before submit');
   const auth = new Headers(createCall?.init.headers);
   assertEqual(auth.get('Authorization'), 'Bearer token-1', 'create uses Bearer');
   assert(

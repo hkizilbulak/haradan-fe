@@ -12,6 +12,8 @@
     "selftest:listing": "npx --yes tsx scripts/selftest-listing.ts",
     "selftest:geo": "npx --yes tsx scripts/selftest-geo.ts",
     "selftest:packages": "npx --yes tsx scripts/selftest-packages.ts",
+    "selftest:package-features": "npx --yes tsx scripts/selftest-package-features.ts",
+    "selftest:favorites": "npx --yes tsx scripts/selftest-favorites.ts",
     "selftest:my-listings": "npx --yes tsx scripts/selftest-my-listings.ts",
     "selftest:adverts-search": "npx --yes tsx scripts/selftest-adverts-search.ts",
     "selftest:media": "npx --yes tsx scripts/selftest-media.ts"

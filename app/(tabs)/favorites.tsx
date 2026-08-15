@@ -1,38 +1,78 @@
 /**
- * Favoriler sayfası — boş durum ağırlıklı örnek
+ * Favoriler sekmesi — login zorunlu; liste BE /v1/me/favorites.
  */
-import React from 'react';
-import { ScreenWrapper } from '@/components/ui';
-import { useAsync } from '@/hooks/useAsync';
+import React, { useCallback, useEffect } from 'react';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-
-async function fetchFavorites(): Promise<string[]> {
-  await new Promise((r) => setTimeout(r, 800));
-  return []; // Favori yok — EmptyState gösterilir
-}
+import { ScreenWrapper } from '@/components/ui';
+import { FavoriteListCard } from '@/components/product/FavoriteListCard';
+import { useAuthSession } from '@/hooks/useAuthSession';
+import { useFavorites } from '@/hooks/useFavorites';
+import { Spacing } from '@/constants/Spacing';
 
 export default function FavoritesScreen() {
   const router = useRouter();
-  const { isLoading, isError, isEmpty, error, refetch } =
-    useAsync(fetchFavorites, { isEmpty: (d) => d.length === 0 });
+  const { isLoggedIn } = useAuthSession();
+  const { items, hydrating, remove, requireLogin } = useFavorites();
+
+  useEffect(() => {
+    if (!isLoggedIn) requireLogin();
+  }, [isLoggedIn, requireLogin]);
+
+  const onPress = useCallback(
+    (id: string) => router.push(`/advert/${id}`),
+    [router]
+  );
+
+  if (!isLoggedIn) {
+    return (
+      <ScreenWrapper
+        isLoading={false}
+        isError={false}
+        isEmpty
+        emptyVariant="favorite"
+        emptyTitle="Favoriler için giriş yapın"
+        emptyDescription="Beğendiğiniz ilanları kaydetmek için hesabınıza giriş yapın."
+        emptyActionLabel="Giriş yap"
+        onEmptyAction={requireLogin}
+      >
+        {null}
+      </ScreenWrapper>
+    );
+  }
 
   return (
     <ScreenWrapper
-      isLoading={isLoading}
-      isError={isError}
-      isEmpty={isEmpty}
+      isLoading={hydrating && items.length === 0}
+      isError={false}
+      isEmpty={!hydrating && items.length === 0}
       loadingVariant="cards"
       loadingCount={3}
-      errorVariant="generic"
-      errorMessage={error}
-      onRetry={refetch}
       emptyVariant="favorite"
       emptyTitle="Favori listeniz boş"
       emptyDescription="Beğendiğiniz ilanların kalbine dokunun, buraya ekleyin."
       emptyActionLabel="İlanlara Göz At"
       onEmptyAction={() => router.push('/')}
     >
-      {null}
+      <FlatList
+        data={items}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.list}
+        renderItem={({ item }) => (
+          <View style={styles.row}>
+            <FavoriteListCard
+              product={item}
+              onPress={onPress}
+              onRemove={remove}
+            />
+          </View>
+        )}
+      />
     </ScreenWrapper>
   );
 }
+
+const styles = StyleSheet.create({
+  list: { padding: Spacing.md, gap: Spacing.md },
+  row: { marginBottom: Spacing.sm },
+});
