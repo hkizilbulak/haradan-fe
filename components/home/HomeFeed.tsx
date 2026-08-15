@@ -230,9 +230,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   heroRowMobile: { flexDirection: 'column', gap: Spacing.md },
-  sidebar: { minWidth: 248, flexShrink: 0, paddingTop: 4, zIndex: 4 },
-  sidebarMobile: { width: '100%' },
-  hero: { flex: 1, minWidth: 0 },
+  sidebar: { minWidth: 248, flexShrink: 0, paddingTop: 4, zIndex: 20 },
+  sidebarMobile: { width: '100%', zIndex: 20 },
+  hero: { flex: 1, minWidth: 0, zIndex: 1 },
   heroMobile: { width: '100%' },
   topBtn: {
     position: 'absolute',

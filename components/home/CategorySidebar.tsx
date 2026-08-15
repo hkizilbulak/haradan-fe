@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
@@ -56,6 +57,14 @@ export const CategorySidebar = memo(function CategorySidebar({
   const isMenuOpen =
     activeCategory != null && activeCategory.children.length > 0;
 
+  /** Eve dönüşte açık menü / dismiss katmanı tıklamayı yutmasın. */
+  useFocusEffect(
+    useCallback(() => {
+      setActiveId(null);
+      return () => setActiveId(null);
+    }, [])
+  );
+
   useEffect(() => {
     if (!isMenuOpen) return;
 
@@ -87,17 +96,22 @@ export const CategorySidebar = memo(function CategorySidebar({
   if (categories.length === 0) return null;
 
   /**
-   * Kök seçim → hemen /listings?category=slug (parent, alt ağacı BE’de fan-out).
-   * Wide: hover ile alt kategoriler; alt satır tıklanınca o slug ile gider.
+   * Leaf → /listings?category=slug.
+   * Parent → tık ile alt menü (hover açmaz: hover+tık yarışı menüyü kapatıyordu).
+   * “Tümü” / alt satır → filtreli listings.
    */
   const handleRootPress = (cat: CategoryTreeNode) => {
+    if (cat.children.length > 0) {
+      setActiveId((prev) => (prev === cat.id ? null : cat.id));
+      return;
+    }
     setActiveId(null);
     onSelect?.(cat);
   };
 
-  const handleRootHoverIn = (cat: CategoryTreeNode) => {
-    if (!isWide || cat.children.length === 0) return;
-    setActiveId(cat.id);
+  const handleParentBrowseAll = (cat: CategoryTreeNode) => {
+    setActiveId(null);
+    onSelect?.(cat);
   };
 
   const handleChildPress = (child: CategoryTreeNode) => {
@@ -139,13 +153,14 @@ export const CategorySidebar = memo(function CategorySidebar({
               hasChildren={cat.children.length > 0}
               expanded={cat.id === activeId && cat.children.length > 0}
               onPress={() => handleRootPress(cat)}
-              onHoverIn={() => handleRootHoverIn(cat)}
             />
           ))}
 
           {!isWide && activeCategory && activeCategory.children.length > 0 ? (
             <SubcategoryList
+              parent={activeCategory}
               items={activeCategory.children}
+              onSelectParent={handleParentBrowseAll}
               onSelect={handleChildPress}
               inline
             />
@@ -160,6 +175,7 @@ export const CategorySidebar = memo(function CategorySidebar({
           borderColor={border}
           surfaceColor={surface}
           onSelect={handleChildPress}
+          onBrowseAll={() => handleParentBrowseAll(activeCategory)}
           onClose={() => setActiveId(null)}
         />
       ) : null}
@@ -173,6 +189,7 @@ function CategoryFlyout({
   borderColor,
   surfaceColor,
   onSelect,
+  onBrowseAll,
   onClose,
 }: {
   parent: CategoryTreeNode;
@@ -180,6 +197,7 @@ function CategoryFlyout({
   borderColor: string;
   surfaceColor: string;
   onSelect: (item: CategoryTreeNode) => void;
+  onBrowseAll: () => void;
   onClose: () => void;
 }) {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -222,11 +240,24 @@ function CategoryFlyout({
       ]}
       accessibilityRole="menu"
       accessibilityLabel={`${parent.name} alt kategorileri`}
+      // Hero / dismiss katmanının üstünde kalsın; tıklanabilir olsun.
+      pointerEvents="auto"
     >
       <View style={styles.flyoutHeader}>
-        <Text style={styles.flyoutTitle} numberOfLines={1}>
-          {parent.name}
-        </Text>
+        <Pressable
+          onPress={onBrowseAll}
+          accessibilityRole="button"
+          accessibilityLabel={`${parent.name} — tümünü gör`}
+          style={({ pressed }) => [
+            styles.flyoutTitlePress,
+            { opacity: pressed ? 0.7 : 1 },
+          ]}
+        >
+          <Text style={styles.flyoutTitle} numberOfLines={1}>
+            {parent.name}
+          </Text>
+          <Text style={styles.flyoutAll}>Tümü</Text>
+        </Pressable>
         <Pressable
           onPress={onClose}
           hitSlop={8}
@@ -237,22 +268,41 @@ function CategoryFlyout({
           <Ionicons name="close" size={16} color={IDLE_TEXT} />
         </Pressable>
       </View>
-      <SubcategoryList items={items} onSelect={onSelect} />
+      <SubcategoryList
+        parent={parent}
+        items={items}
+        onSelectParent={() => onBrowseAll()}
+        onSelect={onSelect}
+        showBrowseAll={false}
+      />
     </Animated.View>
   );
 }
 
 function SubcategoryList({
+  parent,
   items,
+  onSelectParent,
   onSelect,
   inline = false,
+  showBrowseAll = true,
 }: {
+  parent: CategoryTreeNode;
   items: CategoryTreeNode[];
+  onSelectParent: (item: CategoryTreeNode) => void;
   onSelect: (item: CategoryTreeNode) => void;
   inline?: boolean;
+  showBrowseAll?: boolean;
 }) {
   return (
     <View style={inline ? styles.inlineList : undefined}>
+      {showBrowseAll ? (
+        <SubcategoryRow
+          label={`Tüm ${parent.name}`}
+          emphasized
+          onPress={() => onSelectParent(parent)}
+        />
+      ) : null}
       {items.map((item) => (
         <SubcategoryRow
           key={item.id}
@@ -267,9 +317,11 @@ function SubcategoryList({
 function SubcategoryRow({
   label,
   onPress,
+  emphasized = false,
 }: {
   label: string;
   onPress: () => void;
+  emphasized?: boolean;
 }) {
   const press = useRef(new Animated.Value(0)).current;
 
@@ -308,7 +360,10 @@ function SubcategoryRow({
       <Animated.View
         style={[styles.subRow, { backgroundColor: bg, transform: [{ scale }] }]}
       >
-        <Text style={styles.subLabel} numberOfLines={2}>
+        <Text
+          style={[styles.subLabel, emphasized && styles.subLabelEmphasized]}
+          numberOfLines={2}
+        >
           {label}
         </Text>
         <Ionicons name="chevron-forward" size={13} color={IDLE_TEXT} />
@@ -324,7 +379,6 @@ function CategoryRow({
   hasChildren,
   expanded,
   onPress,
-  onHoverIn,
 }: {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
@@ -332,7 +386,6 @@ function CategoryRow({
   hasChildren: boolean;
   expanded: boolean;
   onPress: () => void;
-  onHoverIn?: () => void;
 }) {
   const progress = useRef(new Animated.Value(active ? 1 : 0)).current;
   const press = useRef(new Animated.Value(0)).current;
@@ -384,7 +437,6 @@ function CategoryRow({
   return (
     <Pressable
       onPress={onPress}
-      onHoverIn={onHoverIn}
       onPressIn={() => {
         Animated.timing(press, {
           toValue: 1,
@@ -469,7 +521,7 @@ const styles = StyleSheet.create({
   mainPanel: {
     overflow: 'hidden',
     flexShrink: 0,
-    zIndex: 2,
+    zIndex: 3,
   },
   heading: {
     ...Typography.caption,
@@ -512,7 +564,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     alignSelf: 'stretch',
     maxHeight: '100%',
-    zIndex: 2,
+    zIndex: 5,
+    elevation: 8,
   },
   flyoutHeader: {
     flexDirection: 'row',
@@ -521,13 +574,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingBottom: Spacing.sm,
     marginBottom: 4,
+    gap: Spacing.xs,
+  },
+  flyoutTitlePress: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginRight: Spacing.sm,
+    minWidth: 0,
   },
   flyoutTitle: {
     ...Typography.small,
     fontWeight: '700',
     color: ACTIVE_TEXT,
-    flex: 1,
-    marginRight: Spacing.sm,
+    flexShrink: 1,
+  },
+  flyoutAll: {
+    ...Typography.caption,
+    fontWeight: '600',
+    color: IDLE_TEXT,
+    flexShrink: 0,
   },
   subRow: {
     flexDirection: 'row',
@@ -544,6 +611,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontWeight: '500',
     color: IDLE_TEXT,
+  },
+  subLabelEmphasized: {
+    fontWeight: '700',
+    color: ACTIVE_TEXT,
   },
   inlineList: {
     marginTop: 4,
