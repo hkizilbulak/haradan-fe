@@ -7,6 +7,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "build:web": "expo export --platform web",
+    "start:web": "node scripts/serve-web.mjs",
     "lint": "expo lint",
     "selftest:auth": "npx --yes tsx scripts/selftest-auth.ts",
     "selftest:listing": "npx --yes tsx scripts/selftest-listing.ts",
