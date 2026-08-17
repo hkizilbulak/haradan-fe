@@ -32,6 +32,11 @@ assertEqual(resolveApiBaseUrl('http://localhost:8080'), 'http://localhost:8080/a
 assertEqual(resolveApiBaseUrl('http://localhost:8080/'), 'http://localhost:8080/api', 'base url strips slash');
 assertEqual(resolveApiBaseUrl('http://localhost:8080/api'), 'http://localhost:8080/api', 'base url keeps /api');
 assertEqual(resolveApiBaseUrl('http://localhost:8080/api/v1'), 'http://localhost:8080/api', 'base url strips /v1');
+assertEqual(
+  resolveApiBaseUrl('https://haradan-be-production.up.railway.app/api/v1/...'),
+  'https://haradan-be-production.up.railway.app/api',
+  'strips placeholder path to /api'
+);
 assertEqual(resolveApiBaseUrl(''), null, 'empty url is null');
 assertEqual(resolveApiBaseUrl(undefined), null, 'undefined url is null');
 

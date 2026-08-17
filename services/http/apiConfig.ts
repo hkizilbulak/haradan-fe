@@ -1,16 +1,36 @@
 /**
  * BE OpenAPI server = `/api`. Business paths = `/v1/...`.
- * EXPO_PUBLIC_API_URL: `http://localhost:8080` veya `http://localhost:8080/api`.
+ * Prefers runtime `window.__HARADAN_API_URL__` (Railway serve injects it)
+ * so a rebuild is not required when only the API origin changes.
  */
 export function resolveApiBaseUrl(
-  raw: string | undefined = process.env.EXPO_PUBLIC_API_URL
+  raw: string | undefined = readRawApiUrl()
 ): string | null {
   const trimmed = raw?.trim();
   if (!trimmed) return null;
-  const noSlash = trimmed.replace(/\/+$/, '');
-  if (noSlash.endsWith('/api/v1')) return noSlash.slice(0, -3);
-  if (noSlash.endsWith('/api')) return noSlash;
-  return `${noSlash}/api`;
+
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(withScheme.replace(/\/\.+$/, ''));
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+  if (!parsed.hostname) return null;
+  return `${parsed.origin}/api`;
+}
+
+function readRawApiUrl(): string | undefined {
+  if (typeof globalThis !== 'undefined') {
+    const runtime = (globalThis as { __HARADAN_API_URL__?: unknown })
+      .__HARADAN_API_URL__;
+    if (typeof runtime === 'string' && runtime.trim()) return runtime;
+  }
+  return process.env.EXPO_PUBLIC_API_URL;
 }
 
 export function isHttpAuthEnabled(): boolean {

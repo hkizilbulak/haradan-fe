@@ -3,13 +3,15 @@
  * Production static host for `expo export --platform web`.
  * Listens on Railway $PORT (fallback 8080). SPA fallback for client routes.
  */
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, resolve, sep } from 'node:path';
 
 const ROOT = resolve(process.cwd(), process.env.WEB_DIST_DIR || 'dist');
 const PORT = Number.parseInt(process.env.PORT || '8080', 10);
 const HOST = process.env.HOST || '0.0.0.0';
+const API_BASE = publicApiBase(process.env.EXPO_PUBLIC_API_URL);
+const CONFIG_SCRIPT = `<script>window.__HARADAN_API_URL__=${JSON.stringify(API_BASE || '')};</script>`;
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -39,6 +41,30 @@ function safeJoin(root, urlPath) {
   return abs;
 }
 
+function publicApiBase(raw) {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed) return '';
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+  try {
+    const parsed = new URL(withScheme.replace(/\/\.+$/, ''));
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
+    if (!parsed.hostname) return '';
+    return `${parsed.origin}/api`;
+  } catch {
+    return '';
+  }
+}
+
+function injectRuntimeConfig(html) {
+  if (html.includes('window.__HARADAN_API_URL__')) return html;
+  if (html.includes('<head>')) {
+    return html.replace('<head>', `<head>${CONFIG_SCRIPT}`);
+  }
+  return `${CONFIG_SCRIPT}${html}`;
+}
+
 function send(res, status, body, headers = {}) {
   res.writeHead(status, {
     'X-Content-Type-Options': 'nosniff',
@@ -49,6 +75,16 @@ function send(res, status, body, headers = {}) {
 
 function sendFile(res, file, cache) {
   const type = TYPES[extname(file).toLowerCase()] || 'application/octet-stream';
+  if (type.startsWith('text/html')) {
+    const html = injectRuntimeConfig(readFileSync(file, 'utf8'));
+    res.writeHead(200, {
+      'Content-Type': type,
+      'Cache-Control': cache,
+      'X-Content-Type-Options': 'nosniff',
+    });
+    res.end(html);
+    return;
+  }
   const stream = createReadStream(file);
   res.writeHead(200, {
     'Content-Type': type,
@@ -91,7 +127,20 @@ const server = createServer((req, res) => {
     return;
   }
 
-  const urlPath = req.url || '/';
+  const urlPath = (req.url || '/').split('?')[0];
+  if (urlPath === '/config.json') {
+    send(
+      res,
+      200,
+      JSON.stringify({ apiUrl: API_BASE || null }),
+      {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+      }
+    );
+    return;
+  }
+
   let file = resolvePath(urlPath);
   let cache = urlPath.startsWith('/_expo/') || urlPath.startsWith('/assets/')
     ? 'public, max-age=31536000, immutable'
@@ -118,4 +167,5 @@ const server = createServer((req, res) => {
 
 server.listen(PORT, HOST, () => {
   console.log(`haradan-fe web listening on http://${HOST}:${PORT}`);
+  console.log(`api base ${API_BASE || '(unset — FE will use mocks)'}`);
 });
