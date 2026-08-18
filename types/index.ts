@@ -90,3 +90,9 @@ export type {
   MyListingListResponse,
   UpdateListingRequest,
 } from './myListings';
+export type {
+  AdvertComment,
+  CreateCommentPayload,
+  CommentListResponse,
+} from './comment';
+

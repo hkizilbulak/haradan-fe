@@ -301,7 +301,7 @@ export function AdvertDetailView({
                 collapsable={false}
                 nativeID="advert-reviews"
               >
-                <AdvertReviews detail={detail} />
+                <AdvertReviews detail={detail} accessToken={accessToken} />
               </View>
             </View>
 
