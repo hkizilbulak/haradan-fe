@@ -2,7 +2,13 @@
  * Listings/home navigation helpers.
  * Çalıştır: npx --yes tsx scripts/selftest-navigation.ts
  */
-import { buildListingsHref } from '../services/navigation';
+import {
+  HEADER_FLEX_SLOT_POINTER_EVENTS,
+  buildListingsHref,
+  buildMyListingsHref,
+  headerNavHref,
+  headerNavKeyFromPath,
+} from '../services/navigation';
 
 let failed = 0;
 let passed = 0;
@@ -43,6 +49,51 @@ assert(
   buildListingsHref({ category: 'satilik-atlar' }) ===
     buildListingsHref({ category: 'satilik-atlar' }),
   'same category produces stable URL'
+);
+
+assert(
+  HEADER_FLEX_SLOT_POINTER_EVENTS === 'box-none',
+  'header flex slots pass hits through empty area (İlanlarım overlay)'
+);
+
+assert(headerNavKeyFromPath('/') === 'home', 'home path');
+assert(headerNavKeyFromPath('/index') === 'home', 'index path is home');
+assert(headerNavKeyFromPath('/listings') === 'listings', 'listings path');
+assert(
+  headerNavKeyFromPath('/listings?q=arap') === 'listings',
+  'listings path ignores query'
+);
+assert(
+  headerNavKeyFromPath('/my-listings') === 'my-listings',
+  'İlanlarım path'
+);
+assert(
+  headerNavKeyFromPath('/my-listings/') === 'my-listings',
+  'İlanlarım trailing slash'
+);
+assert(
+  headerNavKeyFromPath('/my-listings/edit/abc') === 'my-listings',
+  'İlanlarım edit nested path stays my-listings (not listings)'
+);
+assert(
+  headerNavKeyFromPath('/auth/login') === '',
+  'unrelated path has no header nav key'
+);
+
+assert(buildMyListingsHref(true) === '/my-listings', 'logged-in İlanlarım href');
+assert(
+  buildMyListingsHref(false) === '/auth/login?next=/my-listings',
+  'guest İlanlarım href preserves next'
+);
+assert(headerNavHref('home', true) === '/', 'home href');
+assert(headerNavHref('listings', true) === '/listings', 'listings href');
+assert(
+  headerNavHref('my-listings', true) === '/my-listings',
+  'İlanlarım href when logged in'
+);
+assert(
+  headerNavHref('my-listings', false) === '/auth/login?next=/my-listings',
+  'İlanlarım href when logged out'
 );
 
 console.log(`\n${passed} passed, ${failed} failed`);

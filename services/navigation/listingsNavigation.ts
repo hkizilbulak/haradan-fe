@@ -10,6 +10,43 @@ export type ListingsNavQuery = {
   urgent?: string | null;
 };
 
+export type HeaderNavKey = 'home' | 'listings' | 'my-listings';
+
+/**
+ * Header sol/sağ slot `flex:1` kaplar. `box-none` olmadan boş alan,
+ * overlay nav’ın (özellikle sağdaki İlanlarım) tıklamasını yutar.
+ * Çocuklar varsayılan hit-test ile tıklanır kalır.
+ */
+export const HEADER_FLEX_SLOT_POINTER_EVENTS = 'box-none' as const;
+
+export function buildMyListingsHref(isLoggedIn: boolean): string {
+  return isLoggedIn ? '/my-listings' : '/auth/login?next=/my-listings';
+}
+
+export function headerNavHref(
+  key: HeaderNavKey,
+  isLoggedIn: boolean
+): string {
+  if (key === 'home') return '/';
+  if (key === 'listings') return '/listings';
+  return buildMyListingsHref(isLoggedIn);
+}
+
+export function headerNavKeyFromPath(pathname: string): HeaderNavKey | '' {
+  const path = (pathname.split('?')[0] ?? '').replace(/\/+$/, '') || '/';
+  if (path.startsWith('/my-listings')) return 'my-listings';
+  if (path.startsWith('/listings')) return 'listings';
+  if (
+    path === '/' ||
+    path === '/(tabs)' ||
+    path === '/(tabs)/index' ||
+    path === '/index'
+  ) {
+    return 'home';
+  }
+  return '';
+}
+
 export function buildListingsHref(query: ListingsNavQuery): string {
   const params = new URLSearchParams();
   const q = query.q?.trim();

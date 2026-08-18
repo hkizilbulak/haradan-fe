@@ -24,16 +24,23 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useLiveAdvertSearch } from '@/hooks/useLiveAdvertSearch';
 import { SearchDropdown } from '@/components/search';
 import { prepareListingWizardEntry } from '@/services/listing';
-import { navigateHome, navigateToListings } from '@/services/navigation';
+import {
+  HEADER_FLEX_SLOT_POINTER_EVENTS,
+  headerNavHref,
+  headerNavKeyFromPath,
+  navigateHome,
+  navigateToListings,
+} from '@/services/navigation';
+import type { HeaderNavKey } from '@/services/navigation';
 import type { CatalogProductCard } from '@/types';
 
-const NAV_ITEMS = [
+export type { HeaderNavKey };
+
+const NAV_ITEMS: { key: HeaderNavKey; label: string }[] = [
   { key: 'home', label: 'Anasayfa' },
   { key: 'listings', label: 'İlanlar' },
   { key: 'my-listings', label: 'İlanlarım' },
-] as const;
-
-export type HeaderNavKey = (typeof NAV_ITEMS)[number]['key'];
+];
 
 type AppHeaderProps = {
   brandName?: string;
@@ -53,21 +60,6 @@ const ACTIVE = '#ffffff';
 const INACTIVE = '#8a8a93';
 const EASE = Easing.bezier(0.22, 1, 0.36, 1);
 
-function navKeyFromPath(pathname: string): string {
-  if (pathname.startsWith('/listings')) return 'listings';
-  if (pathname.startsWith('/my-listings')) return 'my-listings';
-  if (
-    pathname === '/' ||
-    pathname === '' ||
-    pathname === '/(tabs)' ||
-    pathname === '/(tabs)/index' ||
-    pathname === '/index'
-  ) {
-    return 'home';
-  }
-  return '';
-}
-
 export function AppHeader({
   brandName = 'Haradan.com',
   isLoggedIn = false,
@@ -86,7 +78,7 @@ export function AppHeader({
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const showAuthText = width >= 640 && !isLoggedIn;
   const showPostAdLabel = width >= 640;
-  const active = navKeyFromPath(pathname);
+  const active = headerNavKeyFromPath(pathname);
   const [searchOpen, setSearchOpen] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const searchAnim = useRef(new Animated.Value(0)).current;
@@ -158,7 +150,11 @@ export function AppHeader({
     if (key === 'home') navigateHome(router);
     else if (key === 'listings') navigateToListings(router, {});
     else if (key === 'my-listings') {
-      router.push(isLoggedIn ? '/my-listings' : '/auth/login?next=/my-listings');
+      router.push(
+        headerNavHref('my-listings', isLoggedIn) as
+          | '/my-listings'
+          | '/auth/login?next=/my-listings'
+      );
     }
     onNavPress?.(key);
   };
@@ -210,7 +206,10 @@ export function AppHeader({
     >
       <HomeContentContainer>
         <View style={styles.bar}>
-          <View style={[styles.slot, styles.slotLeft]}>
+          <View
+            style={[styles.slot, styles.slotLeft]}
+            pointerEvents={HEADER_FLEX_SLOT_POINTER_EVENTS}
+          >
             <Pressable
               onPress={goHome}
               accessibilityRole="link"
@@ -243,8 +242,11 @@ export function AppHeader({
             </View>
           ) : null}
 
-          <View style={[styles.slot, styles.slotRight]}>
-            <View style={styles.searchCluster}>
+          <View
+            style={[styles.slot, styles.slotRight]}
+            pointerEvents={HEADER_FLEX_SLOT_POINTER_EVENTS}
+          >
+            <View style={styles.searchCluster} pointerEvents="auto">
               <Animated.View
                 style={[
                   styles.searchFieldWrap,
@@ -586,7 +588,6 @@ const styles = StyleSheet.create({
   slotRight: {
     justifyContent: 'flex-end',
     gap: 6,
-    zIndex: 100,
   },
   navOverlay: {
     ...StyleSheet.absoluteFillObject,
