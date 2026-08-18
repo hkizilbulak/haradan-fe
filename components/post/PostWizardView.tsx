@@ -78,19 +78,9 @@ export function PostWizardView() {
         }
         await wizard.publishListing(token);
       } catch (err) {
-        const code =
-          err && typeof err === 'object' && 'code' in err
-            ? String((err as { code?: string }).code)
-            : null;
-        if (code === 'EMAIL_NOT_VERIFIED') {
-          setSubmitError(
-            'E-posta adresiniz doğrulanmadan ilan gönderilemez. Gelen kutusundaki bağlantıyı kullanın.'
-          );
-        } else {
-          setSubmitError(
-            err instanceof Error ? err.message : 'İlan gönderilemedi.'
-          );
-        }
+        setSubmitError(
+          err instanceof Error ? err.message : 'İlan gönderilemedi.'
+        );
       } finally {
         setSubmitting(false);
       }
