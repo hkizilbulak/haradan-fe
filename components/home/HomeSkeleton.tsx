@@ -133,26 +133,14 @@ export function HomeBrandsSkeleton() {
   );
 }
 
-export function HomeNewsletterSkeleton({ isWide }: { isWide: boolean }) {
+export function HomeNewsletterSkeleton() {
   return (
-    <View style={[styles.news, !isWide && styles.newsMobile]}>
+    <View style={styles.news}>
       <View style={styles.newsCopy}>
         <Skeleton width={72} height={10} borderRadius={5} />
         <Skeleton width="80%" height={26} borderRadius={8} />
         <Skeleton width="70%" height={12} borderRadius={6} />
         <Skeleton width="100%" height={52} borderRadius={999} />
-      </View>
-      <View style={styles.newsCards}>
-        {Array.from({ length: 3 }).map((_, i) => (
-          <View key={i} style={styles.newsRow}>
-            <Skeleton width={112} height={76} borderRadius={18} />
-            <View style={styles.newsRowCopy}>
-              <Skeleton width={64} height={10} borderRadius={5} />
-              <Skeleton width="92%" height={12} borderRadius={6} />
-              <Skeleton width="70%" height={12} borderRadius={6} />
-            </View>
-          </View>
-        ))}
       </View>
     </View>
   );
@@ -172,7 +160,7 @@ export function HomeSkeleton() {
       <HomeSaleSkeleton />
       <HomeSpecialSkeleton isWide={isWide} />
       <HomeBrandsSkeleton />
-      <HomeNewsletterSkeleton isWide={isWide} />
+      <HomeNewsletterSkeleton />
     </SkeletonPulse>
   );
 }

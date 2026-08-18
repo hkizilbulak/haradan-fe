@@ -94,6 +94,8 @@ export function mapOwnerAdvertToCard(
     available: null,
     brand: null,
     status: toMyListingTab(dto.status),
+    backendStatus: dto.status,
+    version: dto.version,
     sellerId: opts.sellerId,
     updatedAt,
     soldAt: dto.status === 'SOLD' ? updatedAt : null,

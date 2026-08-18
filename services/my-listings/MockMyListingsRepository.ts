@@ -103,10 +103,42 @@ export class MockMyListingsRepository implements IMyListingsRepository {
           }
         : this.items[index].cover,
       updatedAt: new Date().toISOString(),
+      version: currentVersion + 1,
     };
     this.items[index] = next;
     this.drafts.set(id, payload.draft);
     this.versions.set(id, currentVersion + 1);
     return next;
+  }
+
+  async removeDraft(
+    id: string,
+    expectedVersion: number,
+    _accessToken: string
+  ): Promise<void> {
+    await wait(180);
+    const index = this.items.findIndex((item) => item.id === id);
+    if (index < 0) {
+      throw new ApiError('İlan bulunamadı.', 404, 'NOT_FOUND');
+    }
+    const current = this.items[index];
+    if (current.backendStatus !== 'DRAFT') {
+      throw new ApiError(
+        'Yalnız taslak ilanlar silinebilir.',
+        409,
+        'INVALID_STATE'
+      );
+    }
+    const currentVersion = this.versions.get(id) ?? current.version ?? 1;
+    if (expectedVersion !== currentVersion) {
+      throw new ApiError(
+        'İlan başka bir yerden güncellendi; sayfayı yenileyin.',
+        409,
+        'STALE_VERSION'
+      );
+    }
+    this.items.splice(index, 1);
+    this.drafts.delete(id);
+    this.versions.delete(id);
   }
 }
