@@ -205,7 +205,7 @@ export function AdvertDetailView({
           });
         }}
       >
-        <HomeContentContainer>
+        <HomeContentContainer style={styles.container}>
           <View style={styles.crumbs}>
             {detail.breadcrumbs.map((crumb, i) => (
               <React.Fragment key={`${crumb.label}-${i}`}>
@@ -379,7 +379,13 @@ export function AdvertDetailView({
 const styles = StyleSheet.create({
   root: { flex: 1, position: 'relative' },
   flex: { flex: 1 },
-  content: { paddingTop: Spacing.lg, paddingBottom: 0 },
+  content: {
+    flexGrow: 1,
+    justifyContent: 'space-between',
+    paddingTop: Spacing.lg,
+    paddingBottom: 0,
+  },
+  container: { flexGrow: 1, width: '100%' },
   crumbs: {
     flexDirection: 'row',
     flexWrap: 'wrap',

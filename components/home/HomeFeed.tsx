@@ -120,7 +120,7 @@ function HomeFeedComponent({
           />
         }
       >
-        <HomeContentContainer>
+        <HomeContentContainer style={styles.container}>
           {!data ? (
             <SkeletonPulse>
               <HomeHeroSkeleton isWide={isWide} />
@@ -233,9 +233,12 @@ export const HomeFeed = memo(HomeFeedComponent);
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: {
+    flexGrow: 1,
+    justifyContent: 'space-between',
     paddingTop: Spacing.lg,
     paddingBottom: 0,
   },
+  container: { flexGrow: 1, width: '100%' },
   heroRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
