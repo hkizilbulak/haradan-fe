@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   AdvertBundleOffer,
   AdvertBuyBox,
+  AdvertDetailBanner,
   AdvertDetailTabs,
   AdvertGallery,
   AdvertReviews,
@@ -29,6 +30,7 @@ import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useFavorites } from '@/hooks/useFavorites';
+import { usePlacementBanners } from '@/hooks/usePlacementBanners';
 import { openPhoneCall, openWhatsApp } from '@/utils/contactLinks';
 import { prepareListingWizardEntry } from '@/services/listing';
 import type { AdvertDetail, AdvertDetailTab, CatalogProductCard } from '@/types';
@@ -52,6 +54,7 @@ export function AdvertDetailView({
   const specsAnchorRef = useRef<View>(null);
   const reviewsAnchorRef = useRef<View>(null);
   const { toggle, apply } = useFavorites();
+  const { banners: detailBanners } = usePlacementBanners('LISTING_DETAIL');
 
   const [tab, setTab] = useState<AdvertDetailTab>('general');
   const [showTop, setShowTop] = useState(false);
@@ -263,6 +266,7 @@ export function AdvertDetailView({
                 onEdit={() => router.push(`/my-listings/edit/${detail.id}`)}
               />
               <AdvertShipping horse={detail.horse} />
+              <AdvertDetailBanner banner={detailBanners[0] ?? null} />
             </View>
           </View>
 

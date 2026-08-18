@@ -132,6 +132,24 @@ export const MOCK_BANNERS: ActiveBannerItem[] = [
     sortOrder: 3,
     imageUrl: img(H.prairie, 1200),
   },
+  {
+    id: 'ban-detail-1',
+    placement: 'LISTING_DETAIL',
+    title: 'At Nakliyesi ve Lojistik Hizmetleri',
+    altText: 'Güvenli Taşıma',
+    targetUrl: '/categories/ekipman-malzemeler',
+    sortOrder: 1,
+    imageUrl: img(H.farm, 1200),
+  },
+  {
+    id: 'ban-search-1',
+    placement: 'SEARCH',
+    title: 'Arap ve İngiliz Aygır Aşım Sezonu İndirimleri',
+    altText: 'Sponsorlu',
+    targetUrl: '/categories/asim-hizmetleri',
+    sortOrder: 1,
+    imageUrl: img(H.mist, 1200),
+  },
 ];
 
 export const MOCK_CATEGORIES: CategoryTreeNode[] = [

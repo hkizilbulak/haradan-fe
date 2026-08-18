@@ -50,11 +50,20 @@ async function runTests(): Promise<void> {
     'First banner is HOMEPAGE placement'
   );
 
-  const searchBanners = await mockRepo.getActiveBanners('SEARCH');
+  const detailBanners = await mockRepo.getActiveBanners('LISTING_DETAIL');
+  assert(detailBanners.length > 0, 'Mock repo returns LISTING_DETAIL banners');
   assertEqual(
-    searchBanners.length,
-    0,
-    'Empty search banners handled gracefully'
+    detailBanners[0].placement,
+    'LISTING_DETAIL',
+    'Detail banner is LISTING_DETAIL placement'
+  );
+
+  const searchBanners = await mockRepo.getActiveBanners('SEARCH');
+  assert(searchBanners.length > 0, 'Mock repo returns SEARCH banners');
+  assertEqual(
+    searchBanners[0].placement,
+    'SEARCH',
+    'Search banner is SEARCH placement'
   );
 
   // 3. DIP Interface conformance
