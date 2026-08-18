@@ -10,6 +10,9 @@ export type MyListingStatus =
 
 export type MyListingCard = CatalogProductCard & {
   status: MyListingStatus;
+  /** BE AdvertStatus — taslak silme yalnızca DRAFT. */
+  backendStatus: string;
+  version: number;
   sellerId: string;
   updatedAt: string;
   soldAt?: string | null;
