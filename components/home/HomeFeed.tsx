@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useRef, useState } from 'react';
+import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -84,6 +84,16 @@ function HomeFeedComponent({
   const text = useThemeColor('text');
   const border = useThemeColor('border');
 
+  const heroBanners = useMemo(
+    () => (data?.banners ?? []).filter((b) => b.placement === 'HOMEPAGE_HERO' || b.placement === 'HOMEPAGE'),
+    [data?.banners]
+  );
+
+  const promoBanner = useMemo(
+    () => (data?.banners ?? []).find((b) => b.placement === 'HOMEPAGE_PROMO') ?? null,
+    [data?.banners]
+  );
+
   const onScroll = useCallback((y: number) => {
     setShowTop((prev) => {
       const next = y > 480;
@@ -134,7 +144,7 @@ function HomeFeedComponent({
                 </View>
                 <View style={[styles.hero, !isWide && styles.heroMobile]}>
                   <HeroSlider
-                    slides={data.banners}
+                    slides={heroBanners}
                     onSlidePress={onBannerPress}
                     height={isWide ? HERO_HEIGHT_DESKTOP : HERO_HEIGHT_MOBILE}
                   />
@@ -163,7 +173,7 @@ function HomeFeedComponent({
                   onToggleFavorite={onToggleFavorite}
                 />
                 <HomepageAdBanner
-                  banner={data.banners[0] ?? null}
+                  banner={promoBanner}
                   onPress={onBannerPress}
                 />
               </LazySection>

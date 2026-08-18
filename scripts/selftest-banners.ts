@@ -42,12 +42,20 @@ async function runTests(): Promise<void> {
 
   // 2. MockBannerRepository tests
   const mockRepo = new MockBannerRepository();
-  const homepageBanners = await mockRepo.getActiveBanners('HOMEPAGE');
-  assert(homepageBanners.length > 0, 'Mock repo returns HOMEPAGE banners');
+  const heroBanners = await mockRepo.getActiveBanners('HOMEPAGE_HERO');
+  assert(heroBanners.length > 0, 'Mock repo returns HOMEPAGE_HERO banners');
   assertEqual(
-    homepageBanners[0].placement,
-    'HOMEPAGE',
-    'First banner is HOMEPAGE placement'
+    heroBanners[0].placement,
+    'HOMEPAGE_HERO',
+    'Hero banner is HOMEPAGE_HERO placement'
+  );
+
+  const promoBanners = await mockRepo.getActiveBanners('HOMEPAGE_PROMO');
+  assert(promoBanners.length > 0, 'Mock repo returns HOMEPAGE_PROMO banners');
+  assertEqual(
+    promoBanners[0].placement,
+    'HOMEPAGE_PROMO',
+    'Promo banner is HOMEPAGE_PROMO placement'
   );
 
   const detailBanners = await mockRepo.getActiveBanners('LISTING_DETAIL');

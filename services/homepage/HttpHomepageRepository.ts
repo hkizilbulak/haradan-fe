@@ -73,11 +73,25 @@ export class HttpHomepageRepository implements IHomepageRepository {
           ...auth,
         }),
         this.catalog.getCategoryTree(),
-        this.http
-          .request<ActiveBannerListResponse>('/v1/banners?placement=HOMEPAGE', {
-            method: 'GET',
-          })
-          .catch(() => ({ items: [] as ActiveBannerItem[] })),
+        Promise.all([
+          this.http
+            .request<ActiveBannerListResponse>('/v1/banners?placement=HOMEPAGE_HERO', {
+              method: 'GET',
+            })
+            .catch(() => ({ items: [] as ActiveBannerItem[] })),
+          this.http
+            .request<ActiveBannerListResponse>('/v1/banners?placement=HOMEPAGE_PROMO', {
+              method: 'GET',
+            })
+            .catch(() => ({ items: [] as ActiveBannerItem[] })),
+          this.http
+            .request<ActiveBannerListResponse>('/v1/banners?placement=HOMEPAGE', {
+              method: 'GET',
+            })
+            .catch(() => ({ items: [] as ActiveBannerItem[] })),
+        ]).then(([hero, promo, legacy]) => ({
+          items: [...(hero?.items ?? []), ...(promo?.items ?? []), ...(legacy?.items ?? [])],
+        })),
       ]);
 
     const mapItems = (items: BePublishedCard[]) =>
