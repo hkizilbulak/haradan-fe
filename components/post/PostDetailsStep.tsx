@@ -250,14 +250,17 @@ export function PostDetailsStep({
                 return (
                   <Pressable
                     key={g}
-                    disabled={locked}
+                    // When user selects an At (horse), other horse-derived fields
+                    // are locked. Gender is allowed to be changed from the form
+                    // because our edit flow expects users to correct/override it.
+                    disabled={false}
                     onPress={() => onUpdate({ gender: g })}
                     style={[
                       styles.chip,
                       {
                         borderColor: on ? header : border,
                         backgroundColor: on ? header : 'transparent',
-                        opacity: locked ? 0.7 : 1,
+                        opacity: 1,
                       },
                     ]}
                   >
