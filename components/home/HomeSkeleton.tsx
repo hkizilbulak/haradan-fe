@@ -101,10 +101,10 @@ export function HomeTrendingSkeleton({ isWide }: { isWide: boolean }) {
   );
 }
 
-export function HomeSaleSkeleton() {
+export function HomeSaleSkeleton({ isWide = true }: { isWide?: boolean }) {
   return (
     <View style={styles.section}>
-      <Skeleton width="100%" height={160} borderRadius={16} />
+      <Skeleton width="100%" height={isWide ? 180 : 120} borderRadius={12} />
     </View>
   );
 }

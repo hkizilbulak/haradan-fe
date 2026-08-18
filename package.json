@@ -19,7 +19,8 @@
     "selftest:favorites": "npx --yes tsx scripts/selftest-favorites.ts",
     "selftest:my-listings": "npx --yes tsx scripts/selftest-my-listings.ts",
     "selftest:adverts-search": "npx --yes tsx scripts/selftest-adverts-search.ts",
-    "selftest:media": "npx --yes tsx scripts/selftest-media.ts"
+    "selftest:media": "npx --yes tsx scripts/selftest-media.ts",
+    "selftest:banners": "npx --yes tsx scripts/selftest-banners.ts"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.5",

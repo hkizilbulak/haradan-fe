@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Linking, Platform, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -57,9 +57,18 @@ export default function HomeScreen() {
     router.push(`/advert/${id}`);
   }, [router]);
 
-  const onBannerPress = useCallback((slide: ActiveBannerItem) => {
-    if (__DEV__) console.log('[home] banner', slide.targetUrl ?? slide.id);
-  }, []);
+  const onBannerPress = useCallback(
+    (slide: ActiveBannerItem) => {
+      if (__DEV__) console.log('[home] banner', slide.targetUrl ?? slide.id);
+      if (!slide.targetUrl) return;
+      if (/^https?:\/\//i.test(slide.targetUrl)) {
+        Linking.openURL(slide.targetUrl).catch(() => {});
+      } else {
+        router.push(slide.targetUrl as any);
+      }
+    },
+    [router]
+  );
 
   const onCategorySelect = useCallback(
     (cat: CategoryTreeNode) => {

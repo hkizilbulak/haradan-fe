@@ -28,7 +28,7 @@ import { HeroSlider } from './HeroSlider';
 import { HomeSearchBar } from './HomeSearchBar';
 import { NewsletterBlogSection } from './NewsletterBlogSection';
 import { NewArrivalsSection } from './NewArrivalsSection';
-import { SaleBanner } from './SaleBanner';
+import { HomepageAdBanner } from './HomepageAdBanner';
 import { SiteFooter } from './SiteFooter';
 import { SpecialOffersSection } from './SpecialOffersSection';
 import { TrendingProductsSection } from './TrendingProductsSection';
@@ -117,7 +117,7 @@ function HomeFeedComponent({
               <HomeSearchBar />
               <HomeUrgentSkeleton isWide={isWide} />
               <HomeTrendingSkeleton isWide={isWide} />
-              <HomeSaleSkeleton />
+              <HomeSaleSkeleton isWide={isWide} />
               <HomeSpecialSkeleton isWide={isWide} />
               <HomeBrandsSkeleton />
               <HomeNewsletterSkeleton isWide={isWide} />
@@ -153,7 +153,7 @@ function HomeFeedComponent({
                 fallback={
                   <SkeletonPulse>
                     <HomeTrendingSkeleton isWide={isWide} />
-                    <HomeSaleSkeleton />
+                    <HomeSaleSkeleton isWide={isWide} />
                   </SkeletonPulse>
                 }
               >
@@ -162,7 +162,10 @@ function HomeFeedComponent({
                   onProductPress={onProductPress}
                   onToggleFavorite={onToggleFavorite}
                 />
-                <SaleBanner promo={data.salePromo} />
+                <HomepageAdBanner
+                  banner={data.banners[0] ?? null}
+                  onPress={onBannerPress}
+                />
               </LazySection>
 
               <LazySection
