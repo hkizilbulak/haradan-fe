@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { FeaturedListingCard } from '@/components/product/FeaturedListingCard';
+import { DraftDeleteConfirm } from './DraftDeleteConfirm';
 import { MyListingsTabs } from './MyListingsTabs';
 import { HomeContentContainer } from '@/components/layout';
 import { Button } from '@/components/ui/Button';
@@ -25,7 +26,8 @@ import { useMyListings } from '@/hooks/useMyListings';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { prepareListingWizardEntry } from '@/services/listing';
 import { locationLookup } from '@/services/location';
-import type { MyListingStatus } from '@/types';
+import { ApiError } from '@/services/http';
+import type { MyListingCard, MyListingStatus } from '@/types';
 
 const EMPTY: Record<MyListingStatus, { title: string; hint: string }> = {
   published: {
@@ -69,6 +71,11 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
   const muted = useThemeColor('textMuted');
   const border = useThemeColor('border');
   const surface = useThemeColor('surface');
+  const errorColor = useThemeColor('error');
+  const [pendingDelete, setPendingDelete] = useState<MyListingCard | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const deletingRef = useRef(false);
 
   const byTab = useMemo(
     () => ({
@@ -167,66 +174,126 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
     router.push('/post');
   };
 
+  const requestRemoveDraft = useCallback((id: string) => {
+    const item = drafts.items.find((entry) => entry.id === id);
+    if (!item) return;
+    setDeleteError(null);
+    setPendingDelete(item);
+  }, [drafts.items]);
+
+  const cancelRemoveDraft = useCallback(() => {
+    if (deletingRef.current) return;
+    setPendingDelete(null);
+  }, []);
+
+  const confirmRemoveDraft = useCallback(async () => {
+    if (!pendingDelete || deletingRef.current) return;
+    deletingRef.current = true;
+    setDeleting(true);
+    try {
+      await drafts.removeDraft(pendingDelete.id, pendingDelete.version);
+      setPendingDelete(null);
+      setDeleteError(null);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Taslak silinemedi.');
+      setPendingDelete(null);
+      if (err instanceof ApiError && err.code === 'STALE_VERSION') {
+        void drafts.refetch({ silent: true });
+      }
+    } finally {
+      deletingRef.current = false;
+      setDeleting(false);
+    }
+  }, [drafts, pendingDelete]);
+
   const showPostCta = status === 'published' || status === 'draft';
 
   return (
-    <ScrollView
-      style={styles.flex}
-      contentContainerStyle={styles.scroll}
-      showsVerticalScrollIndicator={false}
-    >
-      <HomeContentContainer>
-        <Text style={[styles.kicker, { color: muted }]}>Hesap</Text>
-        <Text style={[styles.title, { color: text }]}>İlanlarım</Text>
-        <Text style={[styles.lead, { color: muted }]}>
-          Yayındaki, incelemedeki, reddedilen, taslak ve satılmış ilanlarınız.
-        </Text>
+    <>
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        <HomeContentContainer>
+          <Text style={[styles.kicker, { color: muted }]}>Hesap</Text>
+          <Text style={[styles.title, { color: text }]}>İlanlarım</Text>
+          <Text style={[styles.lead, { color: muted }]}>
+            Yayındaki, incelemedeki, reddedilen, taslak ve satılmış ilanlarınız.
+          </Text>
 
-        <MyListingsTabs active={status} counts={counts} onChange={setStatus} />
+          <MyListingsTabs
+            active={status}
+            counts={counts}
+            onChange={(next) => {
+              setDeleteError(null);
+              setStatus(next);
+            }}
+          />
 
-        <View style={{ height: Spacing.lg }} />
+          <View style={{ height: Spacing.lg }} />
 
-        {active.loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator />
-          </View>
-        ) : active.error ? (
-          <Text style={[styles.error, { color: text }]}>{active.error}</Text>
-        ) : activeItems.length === 0 ? (
-          <View
-            style={[
-              styles.empty,
-              { borderColor: border, backgroundColor: surface },
-            ]}
-          >
-            <Ionicons name="grid-outline" size={28} color={muted} />
-            <Text style={[styles.emptyTitle, { color: text }]}>
-              {EMPTY[status].title}
+          {deleteError && status === 'draft' ? (
+            <Text style={[styles.deleteError, { color: errorColor }]}>
+              {deleteError}
             </Text>
-            <Text style={[styles.emptyHint, { color: muted }]}>
-              {EMPTY[status].hint}
-            </Text>
-            {showPostCta ? <Button onPress={postAd}>İlan Ver</Button> : null}
-          </View>
-        ) : (
-          <View style={[styles.grid, { gap }]}>
-            {activeItems.map((item) => (
-              <FeaturedListingCard
-                key={`${item.id}-${locationTick}`}
-                product={item}
-                width={colWidth}
-                badge={
-                  item.isUrgent && item.status !== 'sold' ? 'urgent' : 'auto'
-                }
-                onPress={(id) => router.push(`/advert/${id}`)}
-                onToggleFavorite={toggle}
-                accessToken={accessToken}
-              />
-            ))}
-          </View>
-        )}
-      </HomeContentContainer>
-    </ScrollView>
+          ) : null}
+
+          {active.loading ? (
+            <View style={styles.center}>
+              <ActivityIndicator />
+            </View>
+          ) : active.error ? (
+            <Text style={[styles.error, { color: text }]}>{active.error}</Text>
+          ) : activeItems.length === 0 ? (
+            <View
+              style={[
+                styles.empty,
+                { borderColor: border, backgroundColor: surface },
+              ]}
+            >
+              <Ionicons name="grid-outline" size={28} color={muted} />
+              <Text style={[styles.emptyTitle, { color: text }]}>
+                {EMPTY[status].title}
+              </Text>
+              <Text style={[styles.emptyHint, { color: muted }]}>
+                {EMPTY[status].hint}
+              </Text>
+              {showPostCta ? <Button onPress={postAd}>İlan Ver</Button> : null}
+            </View>
+          ) : (
+            <View style={[styles.grid, { gap }]}>
+              {activeItems.map((item) => (
+                <FeaturedListingCard
+                  key={`${item.id}-${locationTick}`}
+                  product={item}
+                  width={colWidth}
+                  badge={
+                    item.isUrgent && item.status !== 'sold' ? 'urgent' : 'auto'
+                  }
+                  onPress={(id) => router.push(`/advert/${id}`)}
+                  onToggleFavorite={toggle}
+                  onRemove={
+                    status === 'draft' ? requestRemoveDraft : undefined
+                  }
+                  removing={deleting && pendingDelete?.id === item.id}
+                  accessToken={accessToken}
+                />
+              ))}
+            </View>
+          )}
+        </HomeContentContainer>
+      </ScrollView>
+      <DraftDeleteConfirm
+        visible={pendingDelete != null}
+        title={pendingDelete?.title ?? ''}
+        loading={deleting}
+        onCancel={cancelRemoveDraft}
+        onConfirm={() => {
+          void confirmRemoveDraft();
+        }}
+      />
+    </>
   );
 }
 
@@ -244,6 +311,11 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   center: { paddingVertical: 64, alignItems: 'center' },
   error: { ...Typography.body, paddingVertical: Spacing.lg },
+  deleteError: {
+    ...Typography.small,
+    fontWeight: '600',
+    marginBottom: Spacing.md,
+  },
   empty: {
     borderWidth: 1,
     borderRadius: 18,

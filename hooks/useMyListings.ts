@@ -14,23 +14,23 @@ export function useMyListings(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { silent?: boolean }) => {
     if (!accessToken) {
       setItems([]);
       setLoading(false);
       setError(null);
       return;
     }
-    setLoading(true);
+    if (!opts?.silent) setLoading(true);
     try {
       const res = await repo.list(status, accessToken);
       setItems(res.items);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'İlanlar yüklenemedi.');
-      setItems([]);
+      if (!opts?.silent) setItems([]);
     } finally {
-      setLoading(false);
+      if (!opts?.silent) setLoading(false);
     }
   }, [accessToken, repo, status]);
 
@@ -38,5 +38,30 @@ export function useMyListings(
     void load();
   }, [load]);
 
-  return { items, loading, error, refetch: load };
+  const removeDraft = useCallback(
+    async (id: string, expectedVersion: number) => {
+      if (!accessToken) {
+        throw new Error('Oturum bulunamadı.');
+      }
+      const removed = items.find((item) => item.id === id);
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      try {
+        await repo.removeDraft(id, expectedVersion, accessToken);
+      } catch (err) {
+        if (removed) {
+          setItems((prev) =>
+            prev.some((item) => item.id === id)
+              ? prev
+              : [...prev, removed].sort((a, b) =>
+                  a.updatedAt < b.updatedAt ? 1 : -1
+                )
+          );
+        }
+        throw err;
+      }
+    },
+    [accessToken, items, repo]
+  );
+
+  return { items, loading, error, refetch: load, removeDraft };
 }

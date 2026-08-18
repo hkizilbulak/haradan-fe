@@ -14,9 +14,10 @@ export type MyListingEditPayload = {
 
 /**
  * Satıcının kendi ilanları.
- * GET   /v1/me/adverts?status=
- * GET   /v1/me/adverts/:id
- * PATCH /v1/me/adverts/:id
+ * GET    /v1/me/adverts?status=
+ * GET    /v1/me/adverts/:id
+ * PATCH  /v1/me/adverts/:id
+ * DELETE /v1/me/adverts/:id?expectedVersion=
  */
 export interface IMyListingsRepository {
   list(
@@ -29,4 +30,9 @@ export interface IMyListingsRepository {
     payload: UpdateListingRequest,
     accessToken: string
   ): Promise<MyListingCard>;
+  removeDraft(
+    id: string,
+    expectedVersion: number,
+    accessToken: string
+  ): Promise<void>;
 }
