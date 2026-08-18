@@ -12,4 +12,9 @@ export { mapAdvertToListingDraft } from './mapAdvertToListingDraft';
 export { mapOwnerToListingDraft } from './mapOwnerToListingDraft';
 export { mapDraftToUpdate } from './mapDraftToUpdate';
 export { mapOwnerAdvertToCard } from './mapOwnerAdvert';
-export { toMyListingTab, backendStatusesForTab, MY_LISTING_TABS } from './statusTabs';
+export {
+  toMyListingTab,
+  backendStatusesForTab,
+  canSoftDeleteDraft,
+  MY_LISTING_TABS,
+} from './statusTabs';

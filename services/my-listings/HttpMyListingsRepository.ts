@@ -1,4 +1,4 @@
-import { HttpClient } from '@/services/http';
+import { HttpClient, ApiError } from '@/services/http';
 import { catalogRepository, type ICatalogRepository } from '@/services/catalog';
 import { getAuthSession } from '@/services/auth/sessionStore';
 import type {
@@ -19,7 +19,7 @@ import {
 import { mapOwnerToListingDraft } from './mapOwnerToListingDraft';
 import { backendStatusesForTab } from './statusTabs';
 
-/** ADVERT-OWNER-02/03/04 — GET/PATCH /v1/me/adverts */
+/** ADVERT-OWNER-02/03/04/09 — GET/PATCH/DELETE /v1/me/adverts */
 export class HttpMyListingsRepository implements IMyListingsRepository {
   private readonly http: HttpClient;
   private readonly catalog: ICatalogRepository;
@@ -115,5 +115,22 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
       apiBase: this.baseUrl,
       sellerId,
     });
+  }
+
+  async removeDraft(
+    id: string,
+    expectedVersion: number,
+    accessToken: string
+  ): Promise<void> {
+    if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+      throw new ApiError('İlan sürümü geçersiz.', 400, 'VALIDATION_ERROR');
+    }
+    const q = new URLSearchParams({
+      expectedVersion: String(expectedVersion),
+    });
+    await this.http.request<OwnerAdvertDto>(
+      `/v1/me/adverts/${encodeURIComponent(id)}?${q.toString()}`,
+      { method: 'DELETE', accessToken }
+    );
   }
 }

@@ -6,12 +6,16 @@ import { mediaDeliveryUrl, resolvePublicMediaUrl } from '../services/media/publi
 import { mapOwnerAdvertToCard } from '../services/my-listings/mapOwnerAdvert';
 import {
   backendStatusesForTab,
+  canSoftDeleteDraft,
   toMyListingTab,
 } from '../services/my-listings/statusTabs';
 import {
   mapOwnerToAdvertDetail,
   mapPublishedDetailToAdvert,
 } from '../services/advert/mapAdvertDetail';
+import { HttpMyListingsRepository } from '../services/my-listings/HttpMyListingsRepository';
+import { MockMyListingsRepository } from '../services/my-listings/MockMyListingsRepository';
+import { ApiError } from '../services/http';
 
 let failed = 0;
 let passed = 0;
@@ -92,6 +96,8 @@ const card = mapOwnerAdvertToCard(
   { apiBase, sellerId: 'user-1' }
 );
 assertEqual(card.status, 'pending', 'card tab from PENDING');
+assertEqual(card.backendStatus, 'PENDING_REVIEW', 'card keeps BE status');
+assertEqual(card.version, 2, 'card version');
 assertEqual(card.provinceId, 'prov-1', 'province on card');
 assert(
   card.cover?.publicUrl.includes('/v1/media/media-1/DETAIL'),
@@ -195,5 +201,133 @@ assert(
 );
 assertEqual(published.provinceId, 'p', 'published province');
 
-console.log(`\n${passed} passed, ${failed} failed`);
-if (failed > 0) process.exit(1);
+assert(canSoftDeleteDraft('DRAFT'), 'DRAFT can soft-delete');
+assert(!canSoftDeleteDraft('CHANGES_REQUESTED'), 'CHANGES_REQUESTED cannot soft-delete');
+assert(!canSoftDeleteDraft('PUBLISHED'), 'PUBLISHED cannot soft-delete');
+assert(!canSoftDeleteDraft('ARCHIVED'), 'ARCHIVED cannot soft-delete');
+
+type Call = { url: string; init: RequestInit };
+const calls: Call[] = [];
+const responses: Record<string, { status: number; body: unknown }> = {};
+
+function keyOf(url: string, method: string): string {
+  return `${method} ${url.replace(/^https?:\/\/[^/]+/, '')}`;
+}
+
+globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+  const url = String(input);
+  const method = (init?.method ?? 'GET').toUpperCase();
+  calls.push({ url, init: init ?? {} });
+  const hit = responses[keyOf(url, method)];
+  if (!hit) {
+    return new Response(JSON.stringify({ code: 'NOT_FOUND' }), { status: 404 });
+  }
+  return new Response(JSON.stringify(hit.body), {
+    status: hit.status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}) as typeof fetch;
+
+async function main(): Promise<void> {
+  const mock = new MockMyListingsRepository();
+  const listed = await mock.list('draft', 'tok');
+  assert(listed.items.length >= 1, 'mock has draft');
+  const draft = listed.items[0];
+  assertEqual(draft?.backendStatus, 'DRAFT', 'mock draft backendStatus');
+  assertEqual(draft?.version, 1, 'mock draft version');
+
+  await mock.removeDraft(draft.id, draft.version, 'tok');
+  const afterDelete = await mock.list('draft', 'tok');
+  assert(
+    !afterDelete.items.some((item) => item.id === draft.id),
+    'mock delete removes draft from list'
+  );
+
+  const gone = await mock
+    .removeDraft(draft.id, 1, 'tok')
+    .then(() => null)
+    .catch((err: unknown) => err);
+  assert(gone instanceof ApiError && gone.status === 404, 'second delete is 404');
+
+  const publishedCard = (await mock.list('published', 'tok')).items[0];
+  const publishedErr = await mock
+    .removeDraft(publishedCard.id, publishedCard.version, 'tok')
+    .then(() => null)
+    .catch((err: unknown) => err);
+  assert(
+    publishedErr instanceof ApiError && publishedErr.code === 'INVALID_STATE',
+    'published delete is INVALID_STATE'
+  );
+
+  const leftover = new MockMyListingsRepository();
+  const leftoverDraft = (await leftover.list('draft', 'tok')).items[0];
+  const stale = await leftover
+    .removeDraft(leftoverDraft.id, leftoverDraft.version + 9, 'tok')
+    .then(() => null)
+    .catch((err: unknown) => err);
+  assert(
+    stale instanceof ApiError && stale.code === 'STALE_VERSION',
+    'stale expectedVersion is STALE_VERSION'
+  );
+  const stillThere = await leftover.list('draft', 'tok');
+  assert(
+    stillThere.items.some((item) => item.id === leftoverDraft.id),
+    'stale delete does not drop draft'
+  );
+
+  const http = new HttpMyListingsRepository('http://localhost:8080/api');
+  responses['DELETE /api/v1/me/adverts/adv-draft?expectedVersion=3'] = {
+    status: 200,
+    body: {
+      id: 'adv-draft',
+      status: 'DRAFT',
+      version: 4,
+      mediaVersion: 1,
+      deletedAt: '2026-08-18T10:00:00Z',
+    },
+  };
+  await http.removeDraft('adv-draft', 3, 'tok');
+  const del = calls.find((c) => (c.init.method ?? 'GET').toUpperCase() === 'DELETE');
+  assert(del != null, 'http DELETE called');
+  assert(
+    del?.url.endsWith('/v1/me/adverts/adv-draft?expectedVersion=3'),
+    'DELETE path + expectedVersion query'
+  );
+  const auth = new Headers(del?.init.headers);
+  assertEqual(auth.get('Authorization'), 'Bearer tok', 'DELETE sends Bearer');
+
+  const badVersion = await http
+    .removeDraft('adv-draft', 0, 'tok')
+    .then(() => null)
+    .catch((err: unknown) => err);
+  assert(
+    badVersion instanceof ApiError && badVersion.code === 'VALIDATION_ERROR',
+    'expectedVersion < 1 is VALIDATION_ERROR'
+  );
+
+  responses['DELETE /api/v1/me/adverts/adv-pub?expectedVersion=1'] = {
+    status: 409,
+    body: {
+      code: 'INVALID_STATE',
+      message: 'Yalnız taslak ilanlar silinebilir.',
+    },
+  };
+  const invalid = await http
+    .removeDraft('adv-pub', 1, 'tok')
+    .then(() => null)
+    .catch((err: unknown) => err);
+  assert(
+    invalid instanceof ApiError &&
+      invalid.code === 'INVALID_STATE' &&
+      invalid.message === 'Yalnız taslak ilanlar silinebilir.',
+    'http maps INVALID_STATE message'
+  );
+
+  console.log(`\n${passed} passed, ${failed} failed`);
+  if (failed > 0) process.exit(1);
+}
+
+void main().catch((err) => {
+  console.error(err instanceof Error ? err.message : err);
+  process.exit(1);
+});

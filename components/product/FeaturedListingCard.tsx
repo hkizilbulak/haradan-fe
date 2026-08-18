@@ -18,6 +18,7 @@ import { locationLookup } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
 import { formatViewCount } from '@/utils/formatViewCount';
 import { WishlistButton } from '@/components/advert/WishlistButton';
+import { RemoveDraftButton } from '@/components/advert/RemoveDraftButton';
 import type { CatalogProductCard } from '@/types';
 
 const URGENT_RED = '#e11d48';
@@ -35,6 +36,9 @@ type FeaturedListingCardProps = {
   accessToken?: string | null;
   onPress?: (id: string) => void;
   onToggleFavorite?: (product: CatalogProductCard) => void;
+  /** Taslak sekmesi — favori yanındaki kırmızı eksi. */
+  onRemove?: (id: string) => void;
+  removing?: boolean;
 };
 
 function FeaturedListingCardComponent({
@@ -44,6 +48,8 @@ function FeaturedListingCardComponent({
   accessToken,
   onPress,
   onToggleFavorite,
+  onRemove,
+  removing = false,
 }: FeaturedListingCardProps) {
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
@@ -81,6 +87,9 @@ function FeaturedListingCardComponent({
   const handleFavorite = useCallback(() => {
     onToggleFavorite?.(product);
   }, [onToggleFavorite, product]);
+  const handleRemove = useCallback(() => {
+    onRemove?.(product.id);
+  }, [onRemove, product.id]);
 
   const animateHover = useCallback(
     (to: number) => {
@@ -181,6 +190,12 @@ function FeaturedListingCardComponent({
             </View>
           ) : null}
           <View style={styles.wishWrap}>
+            {onRemove ? (
+              <RemoveDraftButton
+                disabled={removing}
+                onPress={handleRemove}
+              />
+            ) : null}
             <WishlistButton
               active={product.isFavorite === true}
               onPress={handleFavorite}
@@ -284,6 +299,9 @@ const styles = StyleSheet.create({
     top: 12,
     right: 12,
     zIndex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
   },
   body: {
     gap: 6,

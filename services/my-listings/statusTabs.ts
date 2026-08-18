@@ -29,6 +29,11 @@ export function toMyListingTab(backendStatus: string): MyListingStatus {
   }
 }
 
+/** ADVERT-OWNER-09 yalnızca DRAFT soft-delete kabul eder. */
+export function canSoftDeleteDraft(backendStatus: string): boolean {
+  return backendStatus === 'DRAFT';
+}
+
 /** Sekme → BE status filtreleri (ListMyAdverts tek status; fan-out burada). */
 export function backendStatusesForTab(tab: MyListingStatus): string[] {
   switch (tab) {

@@ -23,15 +23,25 @@ function mustCard(id: string): CatalogProductCard {
   return found;
 }
 
+const BACKEND_STATUS: Record<MyListingStatus, string> = {
+  published: 'PUBLISHED',
+  pending: 'PENDING_REVIEW',
+  rejected: 'REJECTED',
+  draft: 'DRAFT',
+  sold: 'SOLD',
+};
+
 function mine(
   id: string,
   status: MyListingStatus,
-  extra?: Partial<Pick<MyListingCard, 'updatedAt' | 'soldAt'>>
+  extra?: Partial<Pick<MyListingCard, 'updatedAt' | 'soldAt' | 'version'>>
 ): MyListingCard {
   const base = mustCard(id);
   return {
     ...base,
     status,
+    backendStatus: BACKEND_STATUS[status],
+    version: extra?.version ?? 1,
     sellerId: DEMO_SELLER_ID,
     updatedAt: extra?.updatedAt ?? base.publishedAt,
     soldAt: extra?.soldAt ?? null,
