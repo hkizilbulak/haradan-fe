@@ -8,13 +8,13 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, usePathname } from 'expo-router';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
+import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { CategoryTreeNode } from '@/types';
 
@@ -44,7 +44,8 @@ export const CategorySidebar = memo(function CategorySidebar({
   onSelect,
   maxHeight,
 }: CategorySidebarProps) {
-  const { width } = useWindowDimensions();
+  const pathname = usePathname();
+  const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const textMuted = useThemeColor('textMuted');
   const border = useThemeColor('border');
@@ -64,6 +65,10 @@ export const CategorySidebar = memo(function CategorySidebar({
       return () => setActiveId(null);
     }, [])
   );
+
+  useEffect(() => {
+    setActiveId(null);
+  }, [pathname]);
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -93,6 +98,14 @@ export const CategorySidebar = memo(function CategorySidebar({
     return undefined;
   }, [isMenuOpen]);
 
+  const selectCategory = useCallback(
+    (cat: CategoryTreeNode) => {
+      setActiveId(null);
+      onSelect?.(cat);
+    },
+    [onSelect]
+  );
+
   if (categories.length === 0) return null;
 
   /**
@@ -105,18 +118,15 @@ export const CategorySidebar = memo(function CategorySidebar({
       setActiveId((prev) => (prev === cat.id ? null : cat.id));
       return;
     }
-    setActiveId(null);
-    onSelect?.(cat);
+    selectCategory(cat);
   };
 
   const handleParentBrowseAll = (cat: CategoryTreeNode) => {
-    setActiveId(null);
-    onSelect?.(cat);
+    selectCategory(cat);
   };
 
   const handleChildPress = (child: CategoryTreeNode) => {
-    setActiveId(null);
-    onSelect?.(child);
+    selectCategory(child);
   };
 
   return (

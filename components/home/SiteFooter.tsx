@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -13,7 +12,9 @@ import { BrandMark } from '@/components/layout/BrandMark';
 import { HomeContentContainer } from '@/components/layout/HomeContentContainer';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Typography } from '@/constants/Typography';
+import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { navigateHome } from '@/services/navigation';
 
 const NAV = [
   { key: 'listings', label: 'İlanlar' },
@@ -37,7 +38,7 @@ type SiteFooterProps = {
 /** Footer — header ile aynı siyah bar, genişlik ve tipografi. */
 export function SiteFooter({ onNavPress, onPostAdPress }: SiteFooterProps) {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const showPostAdLabel = width >= 640;
 
@@ -63,7 +64,7 @@ export function SiteFooter({ onNavPress, onPostAdPress }: SiteFooterProps) {
         <View style={styles.bar}>
           <View style={[styles.slot, styles.slotLeft]}>
             <Pressable
-              onPress={() => router.push('/')}
+              onPress={() => navigateHome(router)}
               accessibilityRole="link"
               accessibilityLabel="Haradan.com ana sayfa"
               hitSlop={6}

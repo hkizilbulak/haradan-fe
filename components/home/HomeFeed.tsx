@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { HomeContentContainer } from '@/components/layout';
@@ -15,6 +14,7 @@ import { LazySection } from '@/components/ui/LazySection';
 import { SkeletonPulse } from '@/components/ui/Skeleton';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
+import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type {
   ActiveBannerItem,
@@ -74,7 +74,7 @@ function HomeFeedComponent({
   onPostAdPress,
   onToggleFavorite,
 }: HomeFeedProps) {
-  const { width } = useWindowDimensions();
+  const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const scrollRef = useRef<ScrollView>(null);
   const [showTop, setShowTop] = useState(false);

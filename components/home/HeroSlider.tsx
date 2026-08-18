@@ -9,13 +9,13 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
+import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { ActiveBannerItem } from '@/types';
 
@@ -36,7 +36,7 @@ export const HeroSlider = memo(function HeroSlider({
   onSlidePress,
   height = 320,
 }: HeroSliderProps) {
-  const { width } = useWindowDimensions();
+  const width = useLayoutWidth();
   const isWide = width >= 900;
   const [index, setIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);

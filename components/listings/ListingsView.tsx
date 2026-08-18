@@ -15,7 +15,6 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
@@ -30,6 +29,7 @@ import { Spacing } from '@/constants/Spacing';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useCatalogFacets } from '@/hooks/useCatalogFacets';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { usePublishedAdvertsSearch } from '@/hooks/usePublishedAdvertsSearch';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import {
@@ -101,7 +101,7 @@ export const ListingsView = memo(function ListingsView({
   query,
 }: ListingsViewProps) {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const { session } = useAuthSession();
 

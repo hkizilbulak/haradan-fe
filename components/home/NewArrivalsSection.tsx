@@ -1,8 +1,9 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { UrgentListingCard } from '@/components/product/UrgentListingCard';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
+import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import type { CatalogProductCard } from '@/types';
 import { SectionHeader } from './SectionHeader';
 
@@ -24,7 +25,7 @@ export const NewArrivalsSection = memo(function NewArrivalsSection({
   onToggleFavorite,
   onViewAll,
 }: NewArrivalsSectionProps) {
-  const { width } = useWindowDimensions();
+  const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const paused = useRef(false);
 

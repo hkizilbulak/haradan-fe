@@ -1,10 +1,11 @@
 import React from 'react';
-import { StyleSheet, View, ViewStyle, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, ViewStyle } from 'react-native';
 import {
   HOME_CONTENT_MAX_WIDTH,
   HOME_DESKTOP_BREAKPOINT,
   homeContentPadding,
 } from '@/constants/Layout';
+import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 
 type HomeContentContainerProps = {
   children: React.ReactNode;
@@ -16,7 +17,7 @@ export function HomeContentContainer({
   children,
   style,
 }: HomeContentContainerProps) {
-  const { width } = useWindowDimensions();
+  const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
 
   return (

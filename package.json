@@ -12,6 +12,7 @@
     "lint": "expo lint",
     "selftest:auth": "npx --yes tsx scripts/selftest-auth.ts",
     "selftest:listing": "npx --yes tsx scripts/selftest-listing.ts",
+    "selftest:navigation": "npx --yes tsx scripts/selftest-navigation.ts",
     "selftest:geo": "npx --yes tsx scripts/selftest-geo.ts",
     "selftest:packages": "npx --yes tsx scripts/selftest-packages.ts",
     "selftest:package-features": "npx --yes tsx scripts/selftest-package-features.ts",

@@ -10,13 +10,14 @@ import {
   TextInput,
   UIManager,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
+import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { navigateToListings } from '@/services/navigation';
 
 if (
   Platform.OS === 'android' &&
@@ -73,7 +74,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
   compact = false,
 }: HomeSearchBarProps) {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const width = useLayoutWidth();
   const isWide = width >= 900;
   const [query, setQuery] = useState(initialQuery);
   const [focused, setFocused] = useState(false);
@@ -118,9 +119,8 @@ export const HomeSearchBar = memo(function HomeSearchBar({
   });
 
   const goListings = (params: Record<string, string>) => {
-    const qs = new URLSearchParams(params).toString();
     setMenuOpen(false);
-    router.push((qs ? `/listings?${qs}` : '/listings') as '/listings');
+    navigateToListings(router, params);
   };
 
   const submit = () => {

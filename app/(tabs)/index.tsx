@@ -10,6 +10,7 @@ import { useHomepageFeed } from '@/hooks/useHomepageFeed';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { prepareListingWizardEntry } from '@/services/listing';
+import { navigateToListings } from '@/services/navigation';
 import type { ActiveBannerItem, CategoryTreeNode } from '@/types';
 
 const SEO = {
@@ -60,10 +61,9 @@ export default function HomeScreen() {
     if (__DEV__) console.log('[home] banner', slide.targetUrl ?? slide.id);
   }, []);
 
-  /** Home -> listings geçişini kanonik query string ile yap. */
   const onCategorySelect = useCallback(
     (cat: CategoryTreeNode) => {
-      router.push(`/listings?category=${encodeURIComponent(cat.slug)}`);
+      navigateToListings(router, { category: cat.slug });
     },
     [router]
   );

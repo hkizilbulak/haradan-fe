@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/layout';
 import { ListingsView } from '@/components/listings/ListingsView';
 import { useAuthSession } from '@/hooks/useAuthSession';
+import { useIsHydrated } from '@/hooks/useIsHydrated';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { prepareListingWizardEntry } from '@/services/listing';
 
@@ -27,9 +28,21 @@ export default function ListingsScreen() {
   }>();
   const bg = useThemeColor('background');
   const { isLoggedIn } = useAuthSession();
+  const hydrated = useIsHydrated();
 
-  const query = useMemo(
-    () => ({
+  const query = useMemo(() => {
+    if (!hydrated) {
+      return {
+        q: null,
+        category: null,
+        breed: null,
+        province: null,
+        min: null,
+        max: null,
+        urgent: null,
+      };
+    }
+    return {
       q: first(params.q),
       category: first(params.category),
       breed: first(params.breed),
@@ -37,17 +50,17 @@ export default function ListingsScreen() {
       min: first(params.min),
       max: first(params.max),
       urgent: first(params.urgent),
-    }),
-    [
-      params.q,
-      params.category,
-      params.breed,
-      params.province,
-      params.min,
-      params.max,
-      params.urgent,
-    ]
-  );
+    };
+  }, [
+    hydrated,
+    params.q,
+    params.category,
+    params.breed,
+    params.province,
+    params.min,
+    params.max,
+    params.urgent,
+  ]);
 
   const onLogin = useCallback(() => router.push('/auth/login'), [router]);
   const onSignup = useCallback(() => router.push('/auth/signup'), [router]);

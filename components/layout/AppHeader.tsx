@@ -8,7 +8,6 @@ import {
   Text,
   TextInput,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePathname, useRouter } from 'expo-router';
@@ -19,9 +18,11 @@ import { useHeaderDrawers } from './HeaderDrawersContext';
 import { Radius } from '@/constants/Radius';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Typography } from '@/constants/Typography';
+import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useFavorites } from '@/hooks/useFavorites';
 import { prepareListingWizardEntry } from '@/services/listing';
+import { navigateHome, navigateToListings } from '@/services/navigation';
 
 const NAV_ITEMS = [
   { key: 'home', label: 'Anasayfa' },
@@ -78,7 +79,7 @@ export function AppHeader({
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const showAuthText = width >= 640 && !isLoggedIn;
   const showPostAdLabel = width >= 640;
@@ -131,12 +132,12 @@ export function AppHeader({
   }, [searchOpen, searchAnim]);
 
   const goHome = () => {
-    router.push('/');
+    navigateHome(router);
   };
 
   const handleNav = (key: HeaderNavKey) => {
-    if (key === 'home') router.push('/');
-    else if (key === 'listings') router.push('/listings');
+    if (key === 'home') navigateHome(router);
+    else if (key === 'listings') navigateToListings(router, {});
     else if (key === 'my-listings') {
       router.push(isLoggedIn ? '/my-listings' : '/auth/login?next=/my-listings');
     }
@@ -147,7 +148,7 @@ export function AppHeader({
     const q = query.trim();
     if (!q) return;
     onSearchSubmit?.(q);
-    router.push(`/listings?q=${encodeURIComponent(q)}`);
+    navigateToListings(router, { q });
     setSearchOpen(false);
     setQuery('');
   };

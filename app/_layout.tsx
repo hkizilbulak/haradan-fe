@@ -4,10 +4,13 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
 import { HeaderDrawersProvider } from '@/components/layout/HeaderDrawersContext';
 import { Colors } from '@/constants/Colors';
+import { useIsHydrated } from '@/hooks/useIsHydrated';
 
 export default function RootLayout() {
+  const hydrated = useIsHydrated();
   const colorScheme = useColorScheme();
-  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const scheme =
+    hydrated && colorScheme === 'dark' ? 'dark' : 'light';
   const palette = Colors[scheme];
 
   const navTheme = {

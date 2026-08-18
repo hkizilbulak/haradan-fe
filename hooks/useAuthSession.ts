@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
 import {
   clearAuthSession,
   getAuthSession,
@@ -10,13 +11,10 @@ import type { AuthSession } from '@/types';
 
 /** Login sonrası header / profil için oturum durumu. */
 export function useAuthSession() {
-  const [session, setSessionState] = useState<AuthSession | null>(() =>
-    getAuthSession()
-  );
-
-  useEffect(
-    () => subscribeAuthSession(() => setSessionState(getAuthSession())),
-    []
+  const session = useSyncExternalStore(
+    subscribeAuthSession,
+    getAuthSession,
+    () => null
   );
 
   useEffect(() => {
