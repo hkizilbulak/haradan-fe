@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -17,7 +17,10 @@ import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { useLiveAdvertSearch } from '@/hooks/useLiveAdvertSearch';
+import { SearchDropdown } from '@/components/search';
 import { navigateToListings } from '@/services/navigation';
+import type { CatalogProductCard } from '@/types';
 
 if (
   Platform.OS === 'android' &&
@@ -63,7 +66,7 @@ const HORSE_BREEDS = [
 ] as const;
 
 /**
- * Banner altı arama — büyük alan; sağda tür seçimi → /listings.
+ * Banner altı arama — büyük alan; sağda tür seçimi ve otomatik canlı arama sonuçları.
  */
 export const HomeSearchBar = memo(function HomeSearchBar({
   placeholder = 'İsim, cins veya ilan ara…',
@@ -76,19 +79,39 @@ export const HomeSearchBar = memo(function HomeSearchBar({
   const router = useRouter();
   const width = useLayoutWidth();
   const isWide = width >= 900;
-  const [query, setQuery] = useState(initialQuery);
   const [focused, setFocused] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const focusAnim = useRef(new Animated.Value(0)).current;
 
+  const {
+    query,
+    setQuery,
+    results,
+    loading,
+    isOpen,
+    setIsOpen,
+    clear,
+    close: closeDropdown,
+  } = useLiveAdvertSearch({
+    initialQuery,
+    limit: 6,
+    debounceMs: 180,
+  });
+
   useEffect(() => {
     setQuery(initialQuery);
     if (!initialQuery) setMenuOpen(false);
-  }, [initialQuery]);
+  }, [initialQuery, setQuery]);
 
   const updateQuery = (next: string) => {
     setQuery(next);
     onQueryChange?.(next);
+    if (menuOpen) setMenuOpen(false);
+    if (next.trim().length > 0) {
+      setIsOpen(true);
+    } else {
+      setIsOpen(false);
+    }
   };
 
   const surface = useThemeColor('surface');
@@ -99,14 +122,16 @@ export const HomeSearchBar = memo(function HomeSearchBar({
   const header = useThemeColor('header');
   const background = useThemeColor('background');
 
+  const isDropdownActive = isOpen && query.trim().length > 0;
+
   useEffect(() => {
     Animated.timing(focusAnim, {
-      toValue: focused || menuOpen ? 1 : 0,
+      toValue: focused || menuOpen || isDropdownActive ? 1 : 0,
       duration: 260,
       easing: EASE,
       useNativeDriver: false,
     }).start();
-  }, [focused, menuOpen, focusAnim]);
+  }, [focused, menuOpen, isDropdownActive, focusAnim]);
 
   const borderColor = focusAnim.interpolate({
     inputRange: [0, 1],
@@ -118,13 +143,18 @@ export const HomeSearchBar = memo(function HomeSearchBar({
     outputRange: [surface, '#ffffff'],
   });
 
-  const goListings = (params: Record<string, string>) => {
-    setMenuOpen(false);
-    navigateToListings(router, params);
-  };
+  const goListings = useCallback(
+    (params: Record<string, string>) => {
+      setMenuOpen(false);
+      closeDropdown();
+      navigateToListings(router, params);
+    },
+    [router, closeDropdown]
+  );
 
-  const submit = () => {
+  const submit = useCallback(() => {
     const q = query.trim();
+    closeDropdown();
     if (live) {
       onQueryChange?.(query);
       setMenuOpen(false);
@@ -132,11 +162,37 @@ export const HomeSearchBar = memo(function HomeSearchBar({
     }
     if (q) goListings({ q });
     else goListings({});
-  };
+  }, [query, live, onQueryChange, goListings, closeDropdown]);
+
+  const handleSelectAdvert = useCallback(
+    (advert: CatalogProductCard) => {
+      closeDropdown();
+      router.push(`/advert/${advert.id}`);
+    },
+    [router, closeDropdown]
+  );
+
+  const handleViewAll = useCallback(
+    (searchQuery: string) => {
+      closeDropdown();
+      const q = searchQuery.trim();
+      if (q) goListings({ q });
+      else goListings({});
+    },
+    [goListings, closeDropdown]
+  );
 
   const toggleMenu = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    if (!menuOpen) {
+      closeDropdown();
+    }
     setMenuOpen((v) => !v);
+  };
+
+  const handleClear = () => {
+    clear();
+    onQueryChange?.('');
   };
 
   return (
@@ -162,7 +218,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
             ...Platform.select({
               web: {
                 boxShadow:
-                  focused || menuOpen
+                  focused || menuOpen || isDropdownActive
                     ? '0 12px 36px rgba(15, 23, 42, 0.07)'
                     : '0 2px 12px rgba(15, 23, 42, 0.03)',
                 transition: 'box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1)',
@@ -180,8 +236,13 @@ export const HomeSearchBar = memo(function HomeSearchBar({
         <TextInput
           value={query}
           onChangeText={updateQuery}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onFocus={() => {
+            setFocused(true);
+            if (query.trim().length > 0) setIsOpen(true);
+          }}
+          onBlur={() => {
+            setFocused(false);
+          }}
           onSubmitEditing={submit}
           placeholder={placeholder}
           placeholderTextColor={textMuted}
@@ -204,7 +265,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
 
         {query.length > 0 ? (
           <Pressable
-            onPress={() => updateQuery('')}
+            onPress={handleClear}
             hitSlop={8}
             accessibilityLabel="Temizle"
             style={styles.iconBtn}
@@ -236,6 +297,20 @@ export const HomeSearchBar = memo(function HomeSearchBar({
         </Pressable>
       </Animated.View>
 
+      {/* Canlı Filtreleme Açılır Menüsü */}
+      <SearchDropdown
+        results={results}
+        loading={loading}
+        query={query}
+        isOpen={isDropdownActive && !menuOpen}
+        onSelectAdvert={handleSelectAdvert}
+        onViewAll={handleViewAll}
+        onClose={closeDropdown}
+        variant="home"
+        maxHeight={400}
+      />
+
+      {/* Kategori ve Irk Seçim Menüsü */}
       {menuOpen ? (
         <View
           style={[
@@ -335,7 +410,8 @@ const styles = StyleSheet.create({
   wrap: {
     marginTop: Spacing.lg,
     marginBottom: Spacing.xl,
-    zIndex: 4,
+    zIndex: 40,
+    position: 'relative',
   },
   wrapWide: {
     maxWidth: 820,

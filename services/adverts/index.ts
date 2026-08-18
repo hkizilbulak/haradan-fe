@@ -10,3 +10,11 @@ export {
 } from './createPublishedAdvertsRepository';
 export { mapPublishedCardToCatalog } from './mapPublishedCard';
 export { resolveSearchCategoryIds } from './resolveSearchCategoryIds';
+export {
+  filterAndRankAdverts,
+  normalizeSearchText,
+  type FilterAdvertsOptions,
+  type AdvertFilterExtraInfo,
+  type AdvertFilterResolver,
+} from './filterAdverts';
+
