@@ -122,7 +122,8 @@ export const HomeSearchBar = memo(function HomeSearchBar({
   const header = useThemeColor('header');
   const background = useThemeColor('background');
 
-  const isDropdownActive = isOpen && query.trim().length > 0;
+  // Dropdown yalnızca anasayfada (!live) gösterilir; /listings sayfasında (live=true) sayfa kendisi anlık filtrelenir.
+  const isDropdownActive = !live && isOpen && query.trim().length > 0;
 
   useEffect(() => {
     Animated.timing(focusAnim, {
@@ -203,6 +204,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
         compact && styles.wrapCompact,
         isWide && !fullWidth && styles.wrapWide,
         fullWidth && styles.wrapFull,
+        (isDropdownActive || menuOpen) && styles.wrapActive,
       ]}
       accessibilityRole="search"
       {...(Platform.OS === 'web'
@@ -410,8 +412,15 @@ const styles = StyleSheet.create({
   wrap: {
     marginTop: Spacing.lg,
     marginBottom: Spacing.xl,
-    zIndex: 40,
+    zIndex: 4,
+  },
+  wrapActive: {
+    zIndex: 1000,
     position: 'relative',
+    ...Platform.select({
+      android: { elevation: 20 },
+      default: {},
+    }),
   },
   wrapWide: {
     maxWidth: 820,
