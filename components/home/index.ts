@@ -12,6 +12,7 @@ export { NewArrivalsSection } from './NewArrivalsSection';
 export { MacPromoCard } from './MacPromoCard';
 export { TrendingProductsSection } from './TrendingProductsSection';
 export { SaleBanner } from './SaleBanner';
+export { HomepageAdBanner } from './HomepageAdBanner';
 export { SpecialOffersSection } from './SpecialOffersSection';
 export { BrandStrip } from './BrandStrip';
 export { NewsletterBlogSection } from './NewsletterBlogSection';

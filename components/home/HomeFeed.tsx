@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useRef, useState } from 'react';
+import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -28,7 +28,7 @@ import { HeroSlider } from './HeroSlider';
 import { HomeSearchBar } from './HomeSearchBar';
 import { NewsletterBlogSection } from './NewsletterBlogSection';
 import { NewArrivalsSection } from './NewArrivalsSection';
-import { SaleBanner } from './SaleBanner';
+import { HomepageAdBanner } from './HomepageAdBanner';
 import { SiteFooter } from './SiteFooter';
 import { SpecialOffersSection } from './SpecialOffersSection';
 import { TrendingProductsSection } from './TrendingProductsSection';
@@ -84,6 +84,16 @@ function HomeFeedComponent({
   const text = useThemeColor('text');
   const border = useThemeColor('border');
 
+  const heroBanners = useMemo(
+    () => (data?.banners ?? []).filter((b) => b.placement === 'HOMEPAGE_HERO' || b.placement === 'HOMEPAGE'),
+    [data?.banners]
+  );
+
+  const promoBanner = useMemo(
+    () => (data?.banners ?? []).find((b) => b.placement === 'HOMEPAGE_PROMO') ?? null,
+    [data?.banners]
+  );
+
   const onScroll = useCallback((y: number) => {
     setShowTop((prev) => {
       const next = y > 480;
@@ -117,7 +127,7 @@ function HomeFeedComponent({
               <HomeSearchBar />
               <HomeUrgentSkeleton isWide={isWide} />
               <HomeTrendingSkeleton isWide={isWide} />
-              <HomeSaleSkeleton />
+              <HomeSaleSkeleton isWide={isWide} />
               <HomeSpecialSkeleton isWide={isWide} />
               <HomeBrandsSkeleton />
               <HomeNewsletterSkeleton />
@@ -134,7 +144,7 @@ function HomeFeedComponent({
                 </View>
                 <View style={[styles.hero, !isWide && styles.heroMobile]}>
                   <HeroSlider
-                    slides={data.banners}
+                    slides={heroBanners}
                     onSlidePress={onBannerPress}
                     height={isWide ? HERO_HEIGHT_DESKTOP : HERO_HEIGHT_MOBILE}
                   />
@@ -153,7 +163,7 @@ function HomeFeedComponent({
                 fallback={
                   <SkeletonPulse>
                     <HomeTrendingSkeleton isWide={isWide} />
-                    <HomeSaleSkeleton />
+                    <HomeSaleSkeleton isWide={isWide} />
                   </SkeletonPulse>
                 }
               >
@@ -162,7 +172,10 @@ function HomeFeedComponent({
                   onProductPress={onProductPress}
                   onToggleFavorite={onToggleFavorite}
                 />
-                <SaleBanner promo={data.salePromo} />
+                <HomepageAdBanner
+                  banner={promoBanner}
+                  onPress={onBannerPress}
+                />
               </LazySection>
 
               <LazySection

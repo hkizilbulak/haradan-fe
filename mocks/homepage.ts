@@ -107,7 +107,7 @@ function seededViewCount(id: string): number {
 export const MOCK_BANNERS: ActiveBannerItem[] = [
   {
     id: 'ban-1',
-    placement: 'HOMEPAGE',
+    placement: 'HOMEPAGE_HERO',
     title: 'Satılık yarış atları',
     altText: 'Hipodrom hazırlığı',
     targetUrl: '/categories/satilik-yaris-ati',
@@ -116,7 +116,7 @@ export const MOCK_BANNERS: ActiveBannerItem[] = [
   },
   {
     id: 'ban-2',
-    placement: 'HOMEPAGE',
+    placement: 'HOMEPAGE_HERO',
     title: 'Seçkin kısrak ilanları',
     altText: 'Bu haftanın fırsatları',
     targetUrl: '/categories/satilik-kisrak',
@@ -125,12 +125,39 @@ export const MOCK_BANNERS: ActiveBannerItem[] = [
   },
   {
     id: 'ban-3',
-    placement: 'HOMEPAGE',
+    placement: 'HOMEPAGE_HERO',
     title: 'Aşım hizmetleri',
     altText: 'Arap ve İngiliz aygırlar',
     targetUrl: '/categories/asim-hizmetleri',
     sortOrder: 3,
     imageUrl: img(H.prairie, 1200),
+  },
+  {
+    id: 'ban-promo-1',
+    placement: 'HOMEPAGE_PROMO',
+    title: 'Aşım Sezonu Kampanyası',
+    altText: 'Özel Fırsat',
+    targetUrl: '/categories/asim-hizmetleri',
+    sortOrder: 1,
+    imageUrl: img(H.close, 1200),
+  },
+  {
+    id: 'ban-detail-1',
+    placement: 'LISTING_DETAIL',
+    title: 'At Nakliyesi ve Lojistik Hizmetleri',
+    altText: 'Güvenli Taşıma',
+    targetUrl: '/categories/ekipman-malzemeler',
+    sortOrder: 1,
+    imageUrl: img(H.farm, 1200),
+  },
+  {
+    id: 'ban-search-1',
+    placement: 'SEARCH',
+    title: 'Arap ve İngiliz Aygır Aşım Sezonu İndirimleri',
+    altText: 'Sponsorlu',
+    targetUrl: '/categories/asim-hizmetleri',
+    sortOrder: 1,
+    imageUrl: img(H.mist, 1200),
   },
 ];
 

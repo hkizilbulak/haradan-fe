@@ -22,6 +22,7 @@ import {
   type ListingsFiltersState,
 } from '@/components/listings/ListingsFilterSidebar';
 import { ListingsGrid } from '@/components/listings/ListingsGrid';
+import { ListingsSearchBanner } from '@/components/listings/ListingsSearchBanner';
 import { HomeSearchBar, SiteFooter } from '@/components/home';
 import { HomeContentContainer } from '@/components/layout';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
@@ -31,6 +32,7 @@ import { useCatalogFacets } from '@/hooks/useCatalogFacets';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { usePublishedAdvertsSearch } from '@/hooks/usePublishedAdvertsSearch';
+import { usePlacementBanners } from '@/hooks/usePlacementBanners';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import {
   matchesPrice,
@@ -104,6 +106,7 @@ export const ListingsView = memo(function ListingsView({
   const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const { session } = useAuthSession();
+  const { banners: searchBanners } = usePlacementBanners('SEARCH');
 
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
@@ -350,6 +353,8 @@ export const ListingsView = memo(function ListingsView({
                       : ''}
                   </Text>
                 </View>
+
+                <ListingsSearchBanner banner={searchBanners[0] ?? null} />
 
                 {search.loading && items.length === 0 ? (
                   <View style={styles.center}>

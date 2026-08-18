@@ -1,5 +1,10 @@
 /** OpenAPI: BannerPlacement */
-export type BannerPlacement = 'HOMEPAGE' | 'LISTING_DETAIL' | 'SEARCH';
+export type BannerPlacement =
+  | 'HOMEPAGE'
+  | 'HOMEPAGE_HERO'
+  | 'HOMEPAGE_PROMO'
+  | 'LISTING_DETAIL'
+  | 'SEARCH';
 
 /** OpenAPI: ActiveBannerItem */
 export type ActiveBannerItem = {

@@ -6,8 +6,13 @@ import {
   mapPublishedCardToCatalog,
   type BePublishedCard,
 } from '@/services/adverts/mapPublishedCard';
+import { resolvePublicMediaUrl } from '@/services/media/publicUrl';
 import { MOCK_HOMEPAGE } from '@/mocks/homepage';
-import type { HomepageData } from '@/types';
+import type {
+  ActiveBannerItem,
+  ActiveBannerListResponse,
+  HomepageData,
+} from '@/types';
 import type {
   HomepageQueryOptions,
   IHomepageRepository,
@@ -28,7 +33,7 @@ type BeShowcaseResponse = {
  * HOMEPAGE advert feeds — yalnız BE.
  * İlan kartları mock’a düşmez; boş feed boş section demektir.
  * Kategoriler: HTTP catalog (app-wide mock singleton’a bağlanmaz).
- * Banner/promo/blog: henüz ayrı chrome API’si yok (UI placeholder).
+ * Bannerlar: BE /v1/banners?placement=HOMEPAGE ile canlı getirilir; boş ise fallback mock'a düşer.
  */
 export class HttpHomepageRepository implements IHomepageRepository {
   private readonly http: HttpClient;
@@ -49,7 +54,7 @@ export class HttpHomepageRepository implements IHomepageRepository {
     const accessToken = getAuthSession()?.accessToken ?? undefined;
     const auth = accessToken ? { accessToken } : {};
 
-    const [newPage, urgentPage, featuredPage, showcase, categories] =
+    const [newPage, urgentPage, featuredPage, showcase, categories, bannersRes] =
       await Promise.all([
         this.http.request<BeSearchResponse>('/v1/homepage/new-adverts?limit=20', {
           method: 'GET',
@@ -68,6 +73,25 @@ export class HttpHomepageRepository implements IHomepageRepository {
           ...auth,
         }),
         this.catalog.getCategoryTree(),
+        Promise.all([
+          this.http
+            .request<ActiveBannerListResponse>('/v1/banners?placement=HOMEPAGE_HERO', {
+              method: 'GET',
+            })
+            .catch(() => ({ items: [] as ActiveBannerItem[] })),
+          this.http
+            .request<ActiveBannerListResponse>('/v1/banners?placement=HOMEPAGE_PROMO', {
+              method: 'GET',
+            })
+            .catch(() => ({ items: [] as ActiveBannerItem[] })),
+          this.http
+            .request<ActiveBannerListResponse>('/v1/banners?placement=HOMEPAGE', {
+              method: 'GET',
+            })
+            .catch(() => ({ items: [] as ActiveBannerItem[] })),
+        ]).then(([hero, promo, legacy]) => ({
+          items: [...(hero?.items ?? []), ...(promo?.items ?? []), ...(legacy?.items ?? [])],
+        })),
       ]);
 
     const mapItems = (items: BePublishedCard[]) =>
@@ -78,8 +102,13 @@ export class HttpHomepageRepository implements IHomepageRepository {
     const newAdverts = mapItems(newPage.items);
     const showcaseItems = mapItems(showcase.items);
 
+    const liveBanners = (bannersRes?.items ?? []).map((item) => ({
+      ...item,
+      imageUrl: resolvePublicMediaUrl(item.imageUrl, this.apiBase),
+    }));
+
     return {
-      banners: MOCK_HOMEPAGE.banners,
+      banners: liveBanners.length > 0 ? liveBanners : MOCK_HOMEPAGE.banners,
       categories,
       showcase: {
         seed: showcase.seed || 'live',
