@@ -15,6 +15,7 @@ import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { locationLookup } from '@/services/location';
 import { formatRelativeTime } from '@/utils/formatRelativeTime';
+import { formatViewCount } from '@/utils/formatViewCount';
 import type { PublishedAdvertCard } from '@/types';
 import { PriceBlock } from './PriceBlock';
 import { WishlistButton } from './WishlistButton';
@@ -91,9 +92,16 @@ function AdvertCardComponent({
             {advert.title}
           </Text>
           <PriceBlock price={advert.price} />
-          <Text style={[styles.meta, { color: textMuted }]} numberOfLines={1}>
-            {location}
-          </Text>
+          <View style={styles.viewRow}>
+            <Ionicons name="eye-outline" size={11} color={textMuted} />
+            <Text style={[styles.meta, { color: textMuted }]}>
+              {formatViewCount(advert.viewCount)}
+            </Text>
+            <Text style={[styles.meta, { color: textMuted }]}>•</Text>
+            <Text style={[styles.meta, { color: textMuted }]} numberOfLines={1}>
+              {location}
+            </Text>
+          </View>
         </View>
       </Pressable>
     );
@@ -154,7 +162,16 @@ function AdvertCardComponent({
               {location}
             </Text>
           </View>
-          <Text style={[styles.meta, { color: textMuted }]}>{relative}</Text>
+          <View style={styles.metaSubRow}>
+            <View style={styles.viewRow}>
+              <Ionicons name="eye-outline" size={12} color={textMuted} />
+              <Text style={[styles.meta, { color: textMuted }]}>
+                {formatViewCount(advert.viewCount)}
+              </Text>
+            </View>
+            <Text style={[styles.meta, { color: textMuted }]}>•</Text>
+            <Text style={[styles.meta, { color: textMuted }]}>{relative}</Text>
+          </View>
         </View>
       </View>
     </Pressable>
@@ -213,6 +230,16 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  metaSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,

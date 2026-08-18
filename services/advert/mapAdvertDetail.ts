@@ -52,6 +52,7 @@ export type BePublishedAdvertDetail = {
   packageBadgeText?: string | null;
   isUrgent: boolean;
   urgentActivatedAt?: string | null;
+  viewCount?: number;
 };
 
 const EMPTY_HORSE: HorseProfile = {
@@ -116,6 +117,7 @@ function emptyDetailShell(
     | 'breadcrumbs'
     | 'horse'
     | 'specs'
+    | 'viewCount'
   >
 ): AdvertDetail {
   return {
@@ -123,7 +125,7 @@ function emptyDetailShell(
     slug: partial.id,
     rating: 0,
     reviewCount: 0,
-    viewCount: 0,
+    viewCount: partial.viewCount ?? 0,
     oldPrice: null,
     brand: null,
     available: true,
@@ -182,6 +184,7 @@ export function mapPublishedDetailToAdvert(
     isUrgent: dto.isUrgent,
     urgentActivatedAt: dto.urgentActivatedAt ?? null,
     sellerId: sellerId ?? null,
+    viewCount: dto.viewCount ?? 0,
     breadcrumbs: [
       { label: 'Ana sayfa', href: '/' },
       { label: dto.category.name },
@@ -233,6 +236,7 @@ export function mapOwnerToAdvertDetail(
     isUrgent: false,
     urgentActivatedAt: null,
     sellerId,
+    viewCount: 0,
     breadcrumbs: [
       { label: 'Ana sayfa', href: '/' },
       { label: 'İlanlarım', href: '/my-listings' },

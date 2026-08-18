@@ -174,37 +174,40 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
     router.push('/post');
   };
 
-  const requestRemoveDraft = useCallback((id: string) => {
-    const item = drafts.items.find((entry) => entry.id === id);
-    if (!item) return;
-    setDeleteError(null);
-    setPendingDelete(item);
-  }, [drafts.items]);
+  const requestRemoveItem = useCallback(
+    (id: string) => {
+      const item = activeItems.find((entry) => entry.id === id);
+      if (!item) return;
+      setDeleteError(null);
+      setPendingDelete(item);
+    },
+    [activeItems]
+  );
 
   const cancelRemoveDraft = useCallback(() => {
     if (deletingRef.current) return;
     setPendingDelete(null);
   }, []);
 
-  const confirmRemoveDraft = useCallback(async () => {
+  const confirmRemoveItem = useCallback(async () => {
     if (!pendingDelete || deletingRef.current) return;
     deletingRef.current = true;
     setDeleting(true);
     try {
-      await drafts.removeDraft(pendingDelete.id, pendingDelete.version);
+      await active.removeDraft(pendingDelete.id, pendingDelete.version);
       setPendingDelete(null);
       setDeleteError(null);
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Taslak silinemedi.');
+      setDeleteError(err instanceof Error ? err.message : 'İlan silinemedi.');
       setPendingDelete(null);
       if (err instanceof ApiError && err.code === 'STALE_VERSION') {
-        void drafts.refetch({ silent: true });
+        void active.refetch({ silent: true });
       }
     } finally {
       deletingRef.current = false;
       setDeleting(false);
     }
-  }, [drafts, pendingDelete]);
+  }, [active, pendingDelete]);
 
   const showPostCta = status === 'published' || status === 'draft';
 
@@ -233,7 +236,7 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
 
           <View style={{ height: Spacing.lg }} />
 
-          {deleteError && status === 'draft' ? (
+          {deleteError ? (
             <Text style={[styles.deleteError, { color: errorColor }]}>
               {deleteError}
             </Text>
@@ -273,9 +276,7 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
                   }
                   onPress={(id) => router.push(`/advert/${id}`)}
                   onToggleFavorite={toggle}
-                  onRemove={
-                    status === 'draft' ? requestRemoveDraft : undefined
-                  }
+                  onRemove={requestRemoveItem}
                   removing={deleting && pendingDelete?.id === item.id}
                   accessToken={accessToken}
                 />
@@ -290,7 +291,7 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
         loading={deleting}
         onCancel={cancelRemoveDraft}
         onConfirm={() => {
-          void confirmRemoveDraft();
+          void confirmRemoveItem();
         }}
       />
     </>

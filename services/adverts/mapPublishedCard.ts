@@ -29,6 +29,7 @@ type BePublishedCard = {
   urgentActivatedAt?: string | null;
   isFeatured?: boolean;
   featuredUntil?: string | null;
+  viewCount?: number;
 };
 
 function mapCover(
@@ -70,7 +71,7 @@ export function mapPublishedCardToCatalog(
     featuredUntil: card.featuredUntil ?? null,
     rating: 0,
     reviewCount: 0,
-    viewCount: 0,
+    viewCount: card.viewCount ?? 0,
     oldPrice: null,
     available: null,
     brand: null,
