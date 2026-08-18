@@ -120,7 +120,7 @@ function HomeFeedComponent({
               <HomeSaleSkeleton />
               <HomeSpecialSkeleton isWide={isWide} />
               <HomeBrandsSkeleton />
-              <HomeNewsletterSkeleton isWide={isWide} />
+              <HomeNewsletterSkeleton />
             </SkeletonPulse>
           ) : (
             <>
@@ -183,12 +183,12 @@ function HomeFeedComponent({
                 fallback={
                   <SkeletonPulse>
                     <HomeBrandsSkeleton />
-                    <HomeNewsletterSkeleton isWide={isWide} />
+                    <HomeNewsletterSkeleton />
                   </SkeletonPulse>
                 }
               >
                 <BrandStrip brands={data.brands} />
-                <NewsletterBlogSection videos={data.blogVideos} />
+                <NewsletterBlogSection />
               </LazySection>
             </>
           )}
