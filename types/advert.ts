@@ -26,6 +26,7 @@ export type PublishedAdvertCard = {
   urgentActivatedAt?: string | null;
   isFeatured?: boolean;
   featuredUntil?: string | null;
+  viewCount: number;
 };
 
 /** OpenAPI: PublishedAdvertSearchResponse */

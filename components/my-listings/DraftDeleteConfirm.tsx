@@ -34,9 +34,9 @@ export function DraftDeleteConfirm({
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
         <View style={[styles.sheet, { backgroundColor: surface }]}>
-          <Text style={[styles.title, { color: text }]}>Taslağı sil</Text>
+          <Text style={[styles.title, { color: text }]}>İlanı sil</Text>
           <Text style={[styles.body, { color: muted }]}>
-            “{title}” taslağı kalıcı olarak silinecek. Bu işlem geri alınamaz.
+            “{title}” ilanı kalıcı olarak silinecek. Bu işlem geri alınamaz.
           </Text>
           <View style={styles.actions}>
             <Button
@@ -51,7 +51,7 @@ export function DraftDeleteConfirm({
               variant="primary"
               onPress={onConfirm}
               loading={loading}
-              accessibilityLabel="Taslağı sil"
+              accessibilityLabel="İlanı sil"
               style={styles.action}
             >
               Sil

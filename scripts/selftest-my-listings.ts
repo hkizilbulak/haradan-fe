@@ -202,9 +202,9 @@ assert(
 assertEqual(published.provinceId, 'p', 'published province');
 
 assert(canSoftDeleteDraft('DRAFT'), 'DRAFT can soft-delete');
-assert(!canSoftDeleteDraft('CHANGES_REQUESTED'), 'CHANGES_REQUESTED cannot soft-delete');
-assert(!canSoftDeleteDraft('PUBLISHED'), 'PUBLISHED cannot soft-delete');
-assert(!canSoftDeleteDraft('ARCHIVED'), 'ARCHIVED cannot soft-delete');
+assert(canSoftDeleteDraft('CHANGES_REQUESTED'), 'CHANGES_REQUESTED can soft-delete');
+assert(canSoftDeleteDraft('PUBLISHED'), 'PUBLISHED can soft-delete');
+assert(canSoftDeleteDraft('ARCHIVED'), 'ARCHIVED can soft-delete');
 
 type Call = { url: string; init: RequestInit };
 const calls: Call[] = [];
@@ -250,13 +250,11 @@ async function main(): Promise<void> {
   assert(gone instanceof ApiError && gone.status === 404, 'second delete is 404');
 
   const publishedCard = (await mock.list('published', 'tok')).items[0];
-  const publishedErr = await mock
-    .removeDraft(publishedCard.id, publishedCard.version, 'tok')
-    .then(() => null)
-    .catch((err: unknown) => err);
+  await mock.removeDraft(publishedCard.id, publishedCard.version, 'tok');
+  const publishedAfterDelete = await mock.list('published', 'tok');
   assert(
-    publishedErr instanceof ApiError && publishedErr.code === 'INVALID_STATE',
-    'published delete is INVALID_STATE'
+    !publishedAfterDelete.items.some((item) => item.id === publishedCard.id),
+    'published delete removes listing from list'
   );
 
   const leftover = new MockMyListingsRepository();
@@ -306,22 +304,18 @@ async function main(): Promise<void> {
   );
 
   responses['DELETE /api/v1/me/adverts/adv-pub?expectedVersion=1'] = {
-    status: 409,
+    status: 200,
     body: {
-      code: 'INVALID_STATE',
-      message: 'Yalnız taslak ilanlar silinebilir.',
+      id: 'adv-pub',
+      status: 'PUBLISHED',
+      version: 2,
+      mediaVersion: 1,
+      deletedAt: '2026-08-18T10:00:00Z',
     },
   };
-  const invalid = await http
-    .removeDraft('adv-pub', 1, 'tok')
-    .then(() => null)
-    .catch((err: unknown) => err);
-  assert(
-    invalid instanceof ApiError &&
-      invalid.code === 'INVALID_STATE' &&
-      invalid.message === 'Yalnız taslak ilanlar silinebilir.',
-    'http maps INVALID_STATE message'
-  );
+  await http.removeDraft('adv-pub', 1, 'tok');
+  const pubDel = calls.find((c) => c.url.includes('adv-pub'));
+  assert(pubDel != null, 'http DELETE for published listing called');
 
   console.log(`\n${passed} passed, ${failed} failed`);
   if (failed > 0) process.exit(1);

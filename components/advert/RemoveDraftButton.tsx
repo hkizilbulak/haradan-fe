@@ -16,13 +16,18 @@ export function RemoveDraftButton({
   onPress,
 }: RemoveDraftButtonProps) {
   const error = useThemeColor('error');
-  const dim = size === 'sm' ? 28 : 36;
-  const icon = size === 'sm' ? 18 : 22;
+  const dim = size === 'sm' ? 22 : 26;
+  const icon = size === 'sm' ? 14 : 18;
 
   return (
     <Pressable
-      onPress={(e) => {
-        e.stopPropagation?.();
+      onPress={(e: any) => {
+        if (e && typeof e.stopPropagation === 'function') {
+          e.stopPropagation();
+        }
+        if (e?.nativeEvent && typeof e.nativeEvent.stopPropagation === 'function') {
+          e.nativeEvent.stopPropagation();
+        }
         if (!disabled) onPress?.();
       }}
       disabled={disabled}
@@ -35,14 +40,16 @@ export function RemoveDraftButton({
         {
           width: dim,
           height: dim,
+          borderRadius: dim / 2,
+          backgroundColor: error,
           opacity: disabled ? 0.45 : pressed ? 0.7 : 1,
         },
       ]}
     >
       <Ionicons
-        name="remove-circle"
+        name="remove"
         size={icon}
-        color={error}
+        color="#ffffff"
         style={styles.icon}
       />
     </Pressable>
@@ -53,18 +60,18 @@ const styles = StyleSheet.create({
   btn: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'transparent',
   },
   icon: {
     ...Platform.select({
       web: {
-        filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.55))',
+        filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.45))',
       },
       default: {
-        textShadowColor: 'rgba(0,0,0,0.45)',
+        textShadowColor: 'rgba(0,0,0,0.35)',
         textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 3,
+        textShadowRadius: 2,
       },
     }),
   },
 });
+

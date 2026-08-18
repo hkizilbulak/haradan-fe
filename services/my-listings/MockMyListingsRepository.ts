@@ -122,13 +122,6 @@ export class MockMyListingsRepository implements IMyListingsRepository {
       throw new ApiError('İlan bulunamadı.', 404, 'NOT_FOUND');
     }
     const current = this.items[index];
-    if (current.backendStatus !== 'DRAFT') {
-      throw new ApiError(
-        'Yalnız taslak ilanlar silinebilir.',
-        409,
-        'INVALID_STATE'
-      );
-    }
     const currentVersion = this.versions.get(id) ?? current.version ?? 1;
     if (expectedVersion !== currentVersion) {
       throw new ApiError(
