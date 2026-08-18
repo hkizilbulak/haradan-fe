@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -21,8 +21,11 @@ import { Typography } from '@/constants/Typography';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useLiveAdvertSearch } from '@/hooks/useLiveAdvertSearch';
+import { SearchDropdown } from '@/components/search';
 import { prepareListingWizardEntry } from '@/services/listing';
 import { navigateHome, navigateToListings } from '@/services/navigation';
+import type { CatalogProductCard } from '@/types';
 
 const NAV_ITEMS = [
   { key: 'home', label: 'Anasayfa' },
@@ -85,9 +88,22 @@ export function AppHeader({
   const showPostAdLabel = width >= 640;
   const active = navKeyFromPath(pathname);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [query, setQuery] = useState('');
   const inputRef = useRef<TextInput>(null);
   const searchAnim = useRef(new Animated.Value(0)).current;
+
+  const {
+    query,
+    setQuery,
+    results,
+    loading,
+    isOpen,
+    setIsOpen,
+    clear: clearSearch,
+    close: closeDropdown,
+  } = useLiveAdvertSearch({
+    limit: 6,
+    debounceMs: 180,
+  });
 
   const header = useThemeColor('header');
   const headerMuted = useThemeColor('headerMuted');
@@ -127,9 +143,12 @@ export function AppHeader({
       easing: EASE,
       useNativeDriver: false,
     }).start(({ finished }) => {
-      if (finished && searchOpen) inputRef.current?.focus();
+      if (finished && searchOpen) {
+        inputRef.current?.focus();
+        if (query.trim()) setIsOpen(true);
+      }
     });
-  }, [searchOpen, searchAnim]);
+  }, [searchOpen, searchAnim, query, setIsOpen]);
 
   const goHome = () => {
     navigateHome(router);
@@ -144,18 +163,33 @@ export function AppHeader({
     onNavPress?.(key);
   };
 
-  const submitSearch = () => {
-    const q = query.trim();
-    if (!q) return;
-    onSearchSubmit?.(q);
-    navigateToListings(router, { q });
+  const handleCloseSearch = useCallback(() => {
     setSearchOpen(false);
-    setQuery('');
-  };
+    clearSearch();
+  }, [clearSearch]);
+
+  const submitSearch = useCallback(
+    (overrideQuery?: string) => {
+      const q = (overrideQuery !== undefined ? overrideQuery : query).trim();
+      if (!q) return;
+      onSearchSubmit?.(q);
+      navigateToListings(router, { q });
+      handleCloseSearch();
+    },
+    [query, onSearchSubmit, router, handleCloseSearch]
+  );
+
+  const handleSelectAdvert = useCallback(
+    (advert: CatalogProductCard) => {
+      handleCloseSearch();
+      router.push(`/advert/${advert.id}`);
+    },
+    [router, handleCloseSearch]
+  );
 
   const searchWidth = searchAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, isWide ? 240 : Math.min(180, width * 0.42)],
+    outputRange: [0, isWide ? 260 : Math.min(200, width * 0.46)],
   });
   const searchOpacity = searchAnim.interpolate({
     inputRange: [0, 0.35, 1],
@@ -222,7 +256,13 @@ export function AppHeader({
                   <TextInput
                     ref={inputRef}
                     value={query}
-                    onChangeText={setQuery}
+                    onChangeText={(txt) => {
+                      setQuery(txt);
+                      if (txt.trim().length > 0) setIsOpen(true);
+                    }}
+                    onFocus={() => {
+                      if (query.trim().length > 0) setIsOpen(true);
+                    }}
                     placeholder="At, kısrak, ilan ara…"
                     placeholderTextColor="rgba(255,255,255,0.35)"
                     style={[
@@ -232,12 +272,12 @@ export function AppHeader({
                         : null,
                     ]}
                     returnKeyType="search"
-                    onSubmitEditing={submitSearch}
+                    onSubmitEditing={() => submitSearch()}
                     accessibilityLabel="Ara"
                   />
                   {query.length > 0 ? (
                     <Pressable
-                      onPress={() => setQuery('')}
+                      onPress={clearSearch}
                       hitSlop={6}
                       accessibilityLabel="Temizle"
                     >
@@ -257,13 +297,33 @@ export function AppHeader({
                 color={headerMuted}
                 onPress={() => {
                   if (searchOpen) {
-                    setSearchOpen(false);
-                    setQuery('');
+                    handleCloseSearch();
                   } else {
                     setSearchOpen(true);
                   }
                 }}
               />
+
+              {/* Header Canlı Arama Açılır Menüsü */}
+              {searchOpen && isOpen && query.trim().length > 0 ? (
+                <SearchDropdown
+                  results={results}
+                  loading={loading}
+                  query={query}
+                  isOpen={true}
+                  onSelectAdvert={handleSelectAdvert}
+                  onViewAll={submitSearch}
+                  onClose={closeDropdown}
+                  variant="header"
+                  maxHeight={360}
+                  style={[
+                    styles.headerDropdown,
+                    {
+                      width: isWide ? 380 : Math.min(360, width - 24),
+                    },
+                  ]}
+                />
+              ) : null}
             </View>
 
             <AuthLinks
@@ -505,6 +565,8 @@ const styles = StyleSheet.create({
   wrap: {
     paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    zIndex: 100,
+    position: 'relative',
   },
   bar: {
     position: 'relative',
@@ -524,6 +586,7 @@ const styles = StyleSheet.create({
   slotRight: {
     justifyContent: 'flex-end',
     gap: 6,
+    zIndex: 100,
   },
   navOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -586,6 +649,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
+    position: 'relative',
+    zIndex: 100,
   },
   searchFieldWrap: {
     overflow: 'hidden',
@@ -611,6 +676,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '400',
     paddingVertical: Platform.OS === 'web' ? 8 : 6,
+  },
+  headerDropdown: {
+    position: 'absolute',
+    top: 44,
+    right: 0,
+    zIndex: 1000,
   },
   authIconHit: {
     width: 34,
