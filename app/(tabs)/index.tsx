@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { usePathname, useRouter, type Href } from 'expo-router';
+import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader, useHeaderDrawers } from '@/components/layout';
@@ -25,7 +25,6 @@ const SEO = {
  */
 export default function HomeScreen() {
   const router = useRouter();
-  const pathname = usePathname();
   const bg = useThemeColor('background');
   const { isLoggedIn } = useAuthSession();
   const drawers = useHeaderDrawers();
@@ -61,23 +60,12 @@ export default function HomeScreen() {
     if (__DEV__) console.log('[home] banner', slide.targetUrl ?? slide.id);
   }, []);
 
-  /** Aynı kategoriye 2. girişte stack/params no-op olmasın. */
+  /** Home -> listings geçişini kanonik query string ile yap. */
   const onCategorySelect = useCallback(
     (cat: CategoryTreeNode) => {
-      const href = {
-        pathname: '/listings',
-        // Expo Router bazen aynı href'e (aynı params) push/replace yapınca
-        // navigasyonu no-op yapabiliyor. Her tıklamada URL'i farklılaştırmak
-        // için kullanılmayan bir nonce parametresi ekliyoruz.
-        params: { category: cat.slug, _navId: String(Date.now()) },
-      } as Href;
-      if (pathname === '/listings' || pathname.startsWith('/listings')) {
-        router.replace(href);
-        return;
-      }
-      router.push(href);
+      router.push(`/listings?category=${encodeURIComponent(cat.slug)}`);
     },
-    [pathname, router]
+    [router]
   );
 
   const onPostAdPress = useCallback(() => {
