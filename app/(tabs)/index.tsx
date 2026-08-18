@@ -66,7 +66,10 @@ export default function HomeScreen() {
     (cat: CategoryTreeNode) => {
       const href = {
         pathname: '/listings',
-        params: { category: cat.slug },
+        // Expo Router bazen aynı href'e (aynı params) push/replace yapınca
+        // navigasyonu no-op yapabiliyor. Her tıklamada URL'i farklılaştırmak
+        // için kullanılmayan bir nonce parametresi ekliyoruz.
+        params: { category: cat.slug, _navId: String(Date.now()) },
       } as Href;
       if (pathname === '/listings' || pathname.startsWith('/listings')) {
         router.replace(href);
