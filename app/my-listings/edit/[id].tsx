@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import { PostDetailsStep, PostFormShell } from '@/components/post';
@@ -12,6 +12,8 @@ export default function EditListingScreen() {
   const params = useLocalSearchParams<{ id: string | string[] }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { session, isLoggedIn } = useAuthSession();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [scrollTrigger, setScrollTrigger] = useState(0);
   const bg = useThemeColor('background');
   const text = useThemeColor('text');
   const edit = useMyListingEdit(id, session?.accessToken ?? null);
@@ -29,6 +31,10 @@ export default function EditListingScreen() {
 
   const onSave = useCallback(async () => {
     const ok = await edit.save();
+    if (!ok) {
+      setScrollTrigger((v) => v + 1);
+      return;
+    }
     if (ok && id) {
       router.replace(`/advert/${id}`);
     }
@@ -61,6 +67,7 @@ export default function EditListingScreen() {
           canSave={edit.canSave}
           saving={edit.saving}
           saveLabel="Değişiklikleri kaydet"
+          scrollViewRef={scrollViewRef}
           onClose={close}
           onSave={() => void onSave()}
         >
@@ -71,6 +78,8 @@ export default function EditListingScreen() {
             draft={edit.draft}
             errors={edit.fieldErrors}
             tjkPromptSeen
+            scrollViewRef={scrollViewRef}
+            scrollTrigger={scrollTrigger}
             kicker="Düzenle"
             heading="İlan bilgileri"
             lead="Alanları güncelleyin; kayıt sonrası ilan detayına dönersiniz."

@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PostWizardShell } from './PostWizardShell';
 import { PostTypeStep } from './PostTypeStep';
@@ -11,11 +12,14 @@ import { useListingWizard } from '@/hooks/useListingWizard';
 import { useListingWizardBack } from '@/hooks/useListingWizardBack';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { getValidAccessToken } from '@/services/auth';
+import { detailsStepComplete } from '@/services/listing';
 import { parseInternationalPhone } from '@/services/phone';
 import type { ListingWizardStep } from '@/types/listing';
 
 export function PostWizardView() {
   const router = useRouter();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [scrollTrigger, setScrollTrigger] = useState(0);
   const { session, isLoggedIn } = useAuthSession();
   const { categoryTree, error: catalogError, loading: catalogLoading } = useCatalogFacets();
   const { packages, error: packageError } = useListingPackages();
@@ -48,7 +52,19 @@ export function PostWizardView() {
 
   const onNext = useCallback(async () => {
     setSubmitError(null);
+    if (wizard.step === 'details') {
+      if (!detailsStepComplete(wizard.draft)) {
+        wizard.goNext();
+        setScrollTrigger((v) => v + 1);
+        return;
+      }
+    }
     if (wizard.step === 'package') {
+      if (!wizard.draft.packageCode) {
+        setSubmitError('Devam etmek için bir yayın paketi seçmelisiniz.');
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+        return;
+      }
       if (!isLoggedIn) {
         router.push('/auth/login?next=/post');
         return;
@@ -95,6 +111,7 @@ export function PostWizardView() {
       nextLoading={submitting}
       showBack={showBack}
       showNext={showNext}
+      scrollViewRef={scrollViewRef}
       onClose={close}
       onBack={back}
       onNext={() => void onNext()}
@@ -117,6 +134,8 @@ export function PostWizardView() {
           draft={wizard.draft}
           errors={wizard.fieldErrors}
           tjkPromptSeen={wizard.tjkPromptSeen}
+          scrollViewRef={scrollViewRef}
+          scrollTrigger={scrollTrigger}
           onUpdate={wizard.updateDetails}
           onMediaChange={wizard.setMedia}
           onSetCover={wizard.setCover}

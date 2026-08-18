@@ -1,4 +1,5 @@
 import { ApiError } from '@/services/http';
+import { addMockListingFromDraft } from '@/services/my-listings/mockListingStore';
 import type {
   ListingDraft,
   ListingPackage,
@@ -31,9 +32,6 @@ export class MockListingRepository implements IListingRepository {
     if (!payload.title?.trim() || !payload.categoryId) {
       throw new ApiError('Eksik ilan bilgisi.', 400, 'VALIDATION_ERROR');
     }
-    return {
-      advertId: `draft-${Date.now().toString(36)}`,
-      status: 'PENDING_REVIEW',
-    };
+    return addMockListingFromDraft(draft);
   }
 }
