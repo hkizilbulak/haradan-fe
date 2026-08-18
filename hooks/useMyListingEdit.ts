@@ -58,7 +58,11 @@ export function useMyListingEdit(
   }, []);
 
   const setMedia = useCallback((media: ListingMediaSlot[]) => {
-    setDraft((prev) => (prev ? { ...prev, media } : prev));
+    let next = media;
+    if (next.length > 0 && !next.some((m) => m.isCover)) {
+      next = next.map((m, i) => (i === 0 ? { ...m, isCover: true } : m));
+    }
+    setDraft((prev) => (prev ? { ...prev, media: next } : prev));
   }, []);
 
   const setCover = useCallback((localId: string) => {

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PostField } from './PostField';
 import { PostMediaGrid } from './PostMediaGrid';
@@ -19,10 +19,24 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 
 const GENDERS: HorseGender[] = ['Erkek', 'Dişi', 'İğdiş'];
 
+const FIELD_ORDER: (keyof ListingFieldErrors)[] = [
+  'title',
+  'description',
+  'priceTl',
+  'provinceId',
+  'districtId',
+  'sellerPhone',
+  'registeredName',
+  'gender',
+  'media',
+];
+
 type PostDetailsStepProps = {
   draft: ListingDraft;
   errors: ListingFieldErrors;
   tjkPromptSeen: boolean;
+  scrollViewRef?: React.RefObject<ScrollView | null>;
+  scrollTrigger?: number;
   kicker?: string;
   heading?: string;
   lead?: string;
@@ -38,6 +52,8 @@ export function PostDetailsStep({
   draft,
   errors,
   tjkPromptSeen,
+  scrollViewRef,
+  scrollTrigger,
   kicker = 'Adım 2 · Detay',
   heading = 'İlan bilgileri',
   lead,
@@ -66,6 +82,61 @@ export function PostDetailsStep({
     useProvinces();
   const { items: districts, loading: districtsLoading, error: districtsError, retry: retryDistricts } =
     useDistricts(d.provinceId);
+
+  const card1Y = useRef(0);
+  const cardPhoneY = useRef(0);
+  const cardHorseY = useRef(0);
+  const cardMediaY = useRef(0);
+  const relativeYMap = useRef<Record<string, number>>({});
+  const fieldYMap = useRef<Record<string, number>>({});
+
+  const updateFieldY = useCallback((key: string, relativeY?: number) => {
+    if (relativeY != null) {
+      relativeYMap.current[key] = relativeY;
+    }
+    const rel = relativeYMap.current[key] ?? 0;
+    let cardY = 0;
+    if (['title', 'description', 'priceTl', 'provinceId', 'districtId'].includes(key)) {
+      cardY = card1Y.current;
+    } else if (key === 'sellerPhone') {
+      cardY = cardPhoneY.current;
+    } else if (['registeredName', 'gender'].includes(key)) {
+      cardY = cardHorseY.current;
+    } else if (key === 'media') {
+      cardY = cardMediaY.current;
+    }
+    fieldYMap.current[key] = cardY + rel;
+  }, []);
+
+  const scrollToFirstError = useCallback(() => {
+    if (!errors || Object.keys(errors).length === 0) return;
+    const firstErrorKey = FIELD_ORDER.find((key) => Boolean(errors[key]));
+    if (!firstErrorKey) return;
+
+    const y = fieldYMap.current[firstErrorKey];
+    if (y != null && scrollViewRef?.current) {
+      scrollViewRef.current.scrollTo({ y: Math.max(0, y - 20), animated: true });
+    }
+  }, [errors, scrollViewRef]);
+
+  const prevTrigger = useRef(scrollTrigger);
+  const prevHasErrors = useRef(false);
+
+  useEffect(() => {
+    const hasErrors = Object.keys(errors).length > 0;
+    const triggerChanged = scrollTrigger != null && scrollTrigger !== prevTrigger.current;
+    const errorJustAppeared = hasErrors && !prevHasErrors.current;
+
+    if (triggerChanged || errorJustAppeared) {
+      prevTrigger.current = scrollTrigger;
+      prevHasErrors.current = hasErrors;
+      const timer = setTimeout(() => {
+        scrollToFirstError();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+    prevHasErrors.current = hasErrors;
+  }, [scrollTrigger, errors, scrollToFirstError]);
 
   useEffect(() => {
     if (horse && !tjkPromptSeen) {
@@ -126,33 +197,48 @@ export function PostDetailsStep({
         </Pressable>
       ) : null}
 
-      <View style={[styles.card, { backgroundColor: surface, borderColor: border }]}>
+      <View
+        style={[styles.card, { backgroundColor: surface, borderColor: border }]}
+        onLayout={(e) => {
+          card1Y.current = e.nativeEvent.layout.y;
+          ['title', 'description', 'priceTl', 'provinceId', 'districtId'].forEach((k) => updateFieldY(k));
+        }}
+      >
         <Text style={[styles.section, { color: text }]}>İlan</Text>
-        <PostField
-          label="Başlık"
-          value={d.title}
-          onChangeText={(title) => onUpdate({ title })}
-          placeholder="Kısa, net bir başlık"
-          error={errors.title}
-        />
-        <PostField
-          label="Açıklama"
-          value={d.description}
-          onChangeText={(description) => onUpdate({ description })}
-          placeholder="Durum, bakım ve öne çıkan özellikler…"
-          multiline
-          error={errors.description}
-        />
-        <PostField
-          label="Fiyat"
-          value={d.priceTl}
-          onChangeText={(raw) => onUpdate({ priceTl: formatTlGrouped(raw) })}
-          placeholder="0"
-          keyboardType="numeric"
-          error={errors.priceTl}
-          suffix="₺"
-        />
-        <View style={styles.fieldBlock}>
+        <View onLayout={(e) => updateFieldY('title', e.nativeEvent.layout.y)}>
+          <PostField
+            label="Başlık"
+            value={d.title}
+            onChangeText={(title) => onUpdate({ title })}
+            placeholder="Kısa, net bir başlık"
+            error={errors.title}
+          />
+        </View>
+        <View onLayout={(e) => updateFieldY('description', e.nativeEvent.layout.y)}>
+          <PostField
+            label="Açıklama"
+            value={d.description}
+            onChangeText={(description) => onUpdate({ description })}
+            placeholder="Durum, bakım ve öne çıkan özellikler…"
+            multiline
+            error={errors.description}
+          />
+        </View>
+        <View onLayout={(e) => updateFieldY('priceTl', e.nativeEvent.layout.y)}>
+          <PostField
+            label="Fiyat"
+            value={d.priceTl}
+            onChangeText={(raw) => onUpdate({ priceTl: formatTlGrouped(raw) })}
+            placeholder="0"
+            keyboardType="numeric"
+            error={errors.priceTl}
+            suffix="₺"
+          />
+        </View>
+        <View
+          style={styles.fieldBlock}
+          onLayout={(e) => updateFieldY('provinceId', e.nativeEvent.layout.y)}
+        >
           <Text style={[styles.fieldLabel, { color: secondary }]}>Konum</Text>
           <Pressable
             onPress={() => setProvinceOpen(true)}
@@ -185,7 +271,10 @@ export function PostDetailsStep({
             </Pressable>
           ) : null}
         </View>
-        <View style={styles.fieldBlock}>
+        <View
+          style={styles.fieldBlock}
+          onLayout={(e) => updateFieldY('districtId', e.nativeEvent.layout.y)}
+        >
           <Text style={[styles.fieldLabel, { color: secondary }]}>İlçe</Text>
           <Pressable
             onPress={() => d.provinceId && setDistrictOpen(true)}
@@ -221,28 +310,47 @@ export function PostDetailsStep({
         </View>
       </View>
 
-      <View style={[styles.card, { backgroundColor: surface, borderColor: border }]}>
+      <View
+        style={[styles.card, { backgroundColor: surface, borderColor: border }]}
+        onLayout={(e) => {
+          cardPhoneY.current = e.nativeEvent.layout.y;
+          updateFieldY('sellerPhone');
+        }}
+      >
         <Text style={[styles.section, { color: text }]}>İletişim</Text>
-        <PostPhoneField
-          iso={d.phoneCountryIso || 'TR'}
-          national={d.sellerPhone}
-          error={errors.sellerPhone}
-          onChange={onUpdate}
-        />
+        <View onLayout={(e) => updateFieldY('sellerPhone', e.nativeEvent.layout.y)}>
+          <PostPhoneField
+            iso={d.phoneCountryIso || 'TR'}
+            national={d.sellerPhone}
+            error={errors.sellerPhone}
+            onChange={onUpdate}
+          />
+        </View>
       </View>
 
       {horse ? (
-        <View style={[styles.card, { backgroundColor: surface, borderColor: border }]}>
+        <View
+          style={[styles.card, { backgroundColor: surface, borderColor: border }]}
+          onLayout={(e) => {
+            cardHorseY.current = e.nativeEvent.layout.y;
+            ['registeredName', 'gender'].forEach((k) => updateFieldY(k));
+          }}
+        >
           <Text style={[styles.section, { color: text }]}>At</Text>
-          <PostField
-            label="Kayıtlı adı"
-            value={d.registeredName}
-            onChangeText={(registeredName) => onUpdate({ registeredName })}
-            placeholder="Atın adı"
-            locked={locked}
-            error={errors.registeredName}
-          />
-          <View style={styles.fieldBlock}>
+          <View onLayout={(e) => updateFieldY('registeredName', e.nativeEvent.layout.y)}>
+            <PostField
+              label="Kayıtlı adı"
+              value={d.registeredName}
+              onChangeText={(registeredName) => onUpdate({ registeredName })}
+              placeholder="Atın adı"
+              locked={locked}
+              error={errors.registeredName}
+            />
+          </View>
+          <View
+            style={styles.fieldBlock}
+            onLayout={(e) => updateFieldY('gender', e.nativeEvent.layout.y)}
+          >
             <Text style={[styles.fieldLabel, { color: secondary }]}>Cinsiyet</Text>
             <View style={styles.chips}>
               {GENDERS.map((g) => {
@@ -355,7 +463,14 @@ export function PostDetailsStep({
         </View>
       ) : null}
 
-      <View style={[styles.card, { backgroundColor: surface, borderColor: border }]}>
+      <View
+        style={[styles.card, { backgroundColor: surface, borderColor: border }]}
+        onLayout={(e) => {
+          const y = e.nativeEvent.layout.y;
+          cardMediaY.current = y;
+          updateFieldY('media', 0);
+        }}
+      >
         <Text style={[styles.section, { color: text }]}>Görseller</Text>
         <PostMediaGrid
           items={draft.media}

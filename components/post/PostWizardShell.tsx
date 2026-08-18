@@ -25,6 +25,7 @@ type PostWizardShellProps = {
   nextLoading?: boolean;
   showBack: boolean;
   showNext: boolean;
+  scrollViewRef?: React.RefObject<ScrollView | null>;
   children: React.ReactNode;
   onClose: () => void;
   onBack: () => void;
@@ -39,6 +40,7 @@ export function PostWizardShell({
   nextLoading,
   showBack,
   showNext,
+  scrollViewRef,
   children,
   onClose,
   onBack,
@@ -81,6 +83,7 @@ export function PostWizardShell({
       </View>
 
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scroll}
         contentContainerStyle={[
           styles.content,

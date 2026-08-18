@@ -59,6 +59,9 @@ export function detailsErrors(draft: ListingDraft): ListingFieldErrors {
   if (!isValidNationalPhone(d.phoneCountryIso || 'TR', d.sellerPhone)) {
     e.sellerPhone = 'Geçerli bir telefon girin.';
   }
+  if (!draft.media || draft.media.length === 0) {
+    e.media = 'En az bir görsel eklemelisiniz.';
+  }
   if (isHorseListing(draft.type)) {
     if (!d.registeredName.trim()) e.registeredName = 'Atın adı gerekli.';
     if (!d.gender) e.gender = 'Cinsiyet seçin.';
@@ -70,8 +73,8 @@ export function detailsStepComplete(draft: ListingDraft): boolean {
   return Object.keys(detailsErrors(draft)).length === 0;
 }
 
-export function packageStepComplete(_draft: ListingDraft): boolean {
-  return true;
+export function packageStepComplete(draft: ListingDraft): boolean {
+  return draft.packageCode != null && draft.packageCode.trim() !== '';
 }
 
 export function canEnterStep(
@@ -81,5 +84,5 @@ export function canEnterStep(
   if (target === 'type') return true;
   if (target === 'details') return typeStepComplete(draft);
   if (target === 'package') return typeStepComplete(draft) && detailsStepComplete(draft);
-  return typeStepComplete(draft) && detailsStepComplete(draft);
+  return typeStepComplete(draft) && detailsStepComplete(draft) && packageStepComplete(draft);
 }

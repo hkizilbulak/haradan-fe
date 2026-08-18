@@ -21,6 +21,7 @@ type PostFormShellProps = {
   canSave: boolean;
   saving?: boolean;
   saveLabel?: string;
+  scrollViewRef?: React.RefObject<ScrollView | null>;
   children: React.ReactNode;
   onClose: () => void;
   onSave: () => void;
@@ -31,6 +32,7 @@ export function PostFormShell({
   canSave,
   saving,
   saveLabel = 'Kaydet',
+  scrollViewRef,
   children,
   onClose,
   onSave,
@@ -67,6 +69,7 @@ export function PostFormShell({
       </View>
 
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scroll}
         contentContainerStyle={[
           styles.content,

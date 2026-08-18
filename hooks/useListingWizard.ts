@@ -3,6 +3,7 @@ import {
   canEnterStep,
   detailsErrors,
   detailsStepComplete,
+  packageStepComplete,
   getListingWizardState,
   setListingWizardState,
   subscribeListingWizard,
@@ -81,9 +82,9 @@ export function useListingWizard(deps: Deps = {}) {
   const canNext = useMemo(() => {
     if (step === 'type') return false;
     if (step === 'details') return true;
-    if (step === 'package') return true;
+    if (step === 'package') return packageStepComplete(draft);
     return submittedDraftId != null;
-  }, [step, submittedDraftId]);
+  }, [step, draft, submittedDraftId]);
 
   const patchDraft = useCallback(
     (partial: Partial<typeof draft>) => {
@@ -146,7 +147,11 @@ export function useListingWizard(deps: Deps = {}) {
   );
 
   const setMedia = useCallback((mediaSlots: ListingMediaSlot[]) => {
-    patchDraft({ media: mediaSlots });
+    let next = mediaSlots;
+    if (next.length > 0 && !next.some((m) => m.isCover)) {
+      next = next.map((m, i) => (i === 0 ? { ...m, isCover: true } : m));
+    }
+    patchDraft({ media: next });
   }, [patchDraft]);
 
   const setCover = useCallback((localId: string) => {
