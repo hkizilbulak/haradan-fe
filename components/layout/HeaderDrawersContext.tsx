@@ -12,21 +12,25 @@ import { useRouter } from 'expo-router';
 import { FavoritesDrawer } from '@/components/layout/FavoritesDrawer';
 import { ProfileDrawer } from '@/components/layout/ProfileDrawer';
 import type { ProfileDrawerAction } from '@/components/layout/ProfileDrawer';
+import { SettingsDrawer } from '@/components/layout/SettingsDrawer';
 import { SideDrawer } from '@/components/layout/SideDrawer';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
-type DrawerPanel = 'none' | 'profile' | 'favorites';
+type DrawerPanel = 'none' | 'profile' | 'favorites' | 'settings';
 
 type HeaderDrawersValue = {
   openProfile: () => void;
   closeProfile: () => void;
   openFavorites: (opts?: { fromProfile?: boolean }) => void;
   closeFavorites: () => void;
+  openSettings: (opts?: { fromProfile?: boolean }) => void;
+  closeSettings: () => void;
   profileOpen: boolean;
   favoritesOpen: boolean;
+  settingsOpen: boolean;
 };
 
 const HeaderDrawersContext = createContext<HeaderDrawersValue | null>(null);
@@ -35,7 +39,7 @@ export function useHeaderDrawers(): HeaderDrawersValue | null {
   return useContext(HeaderDrawersContext);
 }
 
-/** Tüm sayfalarda ortak profil + favori çekmecesi. */
+/** Tüm sayfalarda ortak profil + favori + ayarlar çekmecesi. */
 export function HeaderDrawersProvider({
   children,
 }: {
@@ -49,9 +53,9 @@ export function HeaderDrawersProvider({
 
   const [panel, setPanel] = useState<DrawerPanel>('none');
   const [fromProfile, setFromProfile] = useState(false);
-  const lastPanel = useRef<'profile' | 'favorites'>('profile');
+  const lastPanel = useRef<'profile' | 'favorites' | 'settings'>('profile');
 
-  if (panel === 'profile' || panel === 'favorites') {
+  if (panel === 'profile' || panel === 'favorites' || panel === 'settings') {
     lastPanel.current = panel;
   }
 
@@ -86,8 +90,22 @@ export function HeaderDrawersProvider({
     setFromProfile(false);
   }, []);
 
+  const openSettings = useCallback(
+    (opts?: { fromProfile?: boolean }) => {
+      if (!isLoggedIn) return;
+      setFromProfile(opts?.fromProfile === true);
+      setPanel('settings');
+    },
+    [isLoggedIn]
+  );
+
+  const closeSettings = useCallback(() => {
+    setPanel('none');
+    setFromProfile(false);
+  }, []);
+
   useEffect(() => {
-    if (!isLoggedIn && panel === 'favorites') {
+    if (!isLoggedIn && (panel === 'favorites' || panel === 'settings')) {
       setPanel('none');
       setFromProfile(false);
     }
@@ -115,6 +133,10 @@ export function HeaderDrawersProvider({
         openFavorites({ fromProfile: true });
         return;
       }
+      if (action === 'settings') {
+        openSettings({ fromProfile: true });
+        return;
+      }
       if (action === 'listings') {
         closeAll();
         router.push('/my-listings');
@@ -122,7 +144,7 @@ export function HeaderDrawersProvider({
       }
       closeAll();
     },
-    [openFavorites, closeAll, router]
+    [openFavorites, openSettings, closeAll, router]
   );
 
   const onFavoriteItemPress = useCallback(
@@ -133,17 +155,41 @@ export function HeaderDrawersProvider({
     [closeAll, router]
   );
 
+  const drawerTitle = useMemo(() => {
+    if (shown === 'profile') return 'Profil';
+    if (shown === 'favorites') return 'Favoriler';
+    return 'Ayarlar';
+  }, [shown]);
+
+  const drawerKicker = useMemo(() => {
+    if (shown === 'profile') return 'Hesap';
+    if (shown === 'favorites') return 'Kayıtlı';
+    return 'Hesap';
+  }, [shown]);
+
+  const drawerA11y = useMemo(() => {
+    if (shown === 'profile') return 'Profil menüsü';
+    if (shown === 'favorites') return 'Favori ilanlar';
+    return 'Hesap ayarları';
+  }, [shown]);
+
   const value = useMemo(
     () => ({
       openProfile,
       closeProfile,
       openFavorites,
       closeFavorites,
+      openSettings,
+      closeSettings,
       profileOpen: panel === 'profile',
       favoritesOpen: panel === 'favorites',
+      settingsOpen: panel === 'settings',
     }),
-    [openProfile, closeProfile, openFavorites, closeFavorites, panel]
+    [openProfile, closeProfile, openFavorites, closeFavorites, openSettings, closeSettings, panel]
   );
+
+  const showBackButton =
+    (shown === 'favorites' || shown === 'settings') && isLoggedIn;
 
   return (
     <HeaderDrawersContext.Provider value={value}>
@@ -151,15 +197,11 @@ export function HeaderDrawersProvider({
       <SideDrawer
         visible={visible}
         onClose={closeAll}
-        onBack={
-          shown === 'favorites' && isLoggedIn ? backToProfile : undefined
-        }
+        onBack={showBackButton ? backToProfile : undefined}
         backLabel={fromProfile ? 'Geri' : 'Profile git'}
-        kicker={shown === 'profile' ? 'Hesap' : 'Kayıtlı'}
-        title={shown === 'profile' ? 'Profil' : 'Favoriler'}
-        accessibilityLabel={
-          shown === 'profile' ? 'Profil menüsü' : 'Favori ilanlar'
-        }
+        kicker={drawerKicker}
+        title={drawerTitle}
+        accessibilityLabel={drawerA11y}
         meta={
           shown === 'favorites' ? (
             <Text style={{ fontSize: 13, fontWeight: '500', color: textMuted }}>
@@ -174,12 +216,14 @@ export function HeaderDrawersProvider({
             onNavigate={onNavigate}
             onLogout={onLogout}
           />
-        ) : (
+        ) : shown === 'favorites' ? (
           <FavoritesDrawer
             items={favoriteItems}
             onItemPress={onFavoriteItemPress}
             onRemove={remove}
           />
+        ) : (
+          <SettingsDrawer user={session?.user ?? null} />
         )}
       </SideDrawer>
     </HeaderDrawersContext.Provider>

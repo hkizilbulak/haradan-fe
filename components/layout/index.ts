@@ -6,4 +6,5 @@ export { HeaderDrawersProvider, useHeaderDrawers } from './HeaderDrawersContext'
 export { HomeContentContainer } from './HomeContentContainer';
 export { ProfileDrawer } from './ProfileDrawer';
 export { SearchBar } from './SearchBar';
+export { SettingsDrawer } from './SettingsDrawer';
 export { SideDrawer } from './SideDrawer';

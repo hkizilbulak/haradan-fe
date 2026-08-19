@@ -1,12 +1,16 @@
 import type {
   AuthSession,
   AuthUser,
+  ChangePasswordRequest,
   EmailRequest,
   GenericAuthMessageResponse,
   LoginRequest,
+  MyProfileResponse,
   RefreshSessionRequest,
   RegisterUserRequest,
+  RequestEmailChangeRequest,
   TokenRequest,
+  UpdateMyProfileRequest,
 } from '@/types';
 import { AuthError } from './AuthError';
 import type { IAuthRepository } from './AuthRepository';
@@ -141,6 +145,77 @@ export class MockAuthRepository implements IAuthRepository {
       throw new AuthError('Doğrulama jetonu geçersiz.', 400, 'TOKEN_INVALID');
     }
     return { message: 'E-posta adresi doğrulandı.' };
+  }
+
+  async changePassword(
+    accessToken: string,
+    payload: ChangePasswordRequest
+  ): Promise<GenericAuthMessageResponse> {
+    await delay(LATENCY_MS);
+    if (!accessToken.startsWith('mock-access-')) {
+      throw new AuthError('Kimlik doğrulama gerekli.', 401, 'UNAUTHENTICATED');
+    }
+    if (!payload.currentPassword) {
+      throw new AuthError('Mevcut şifre zorunludur.', 422, 'VALIDATION_ERROR');
+    }
+    if (!payload.newPassword || payload.newPassword.length < 8) {
+      throw new AuthError(
+        'Yeni şifre en az 8 karakter olmalıdır.',
+        422,
+        'VALIDATION_ERROR'
+      );
+    }
+    const demo = mockUserDirectory.findByEmail('demo@cartzilla.com');
+    if (!demo) {
+      throw new AuthError('Kullanıcı bulunamadı.', 404, 'NOT_FOUND');
+    }
+    if (demo.password !== payload.currentPassword) {
+      throw new AuthError('Mevcut şifre hatalı.', 422, 'VALIDATION_ERROR');
+    }
+    demo.password = payload.newPassword;
+    mockUserDirectory.add(demo);
+    return { message: 'Şifreniz başarıyla değiştirildi.' };
+  }
+
+  async requestEmailChange(
+    accessToken: string,
+    payload: RequestEmailChangeRequest
+  ): Promise<GenericAuthMessageResponse> {
+    await delay(LATENCY_MS);
+    if (!accessToken.startsWith('mock-access-')) {
+      throw new AuthError('Kimlik doğrulama gerekli.', 401, 'UNAUTHENTICATED');
+    }
+    if (!payload.newEmail || !isValidEmail(payload.newEmail.trim().toLowerCase())) {
+      throw new AuthError('Geçerli bir e-posta girin.', 422, 'VALIDATION_ERROR');
+    }
+    return { message: 'Yeni e-posta adresinize doğrulama bağlantısı gönderildi.' };
+  }
+
+  async updateProfile(
+    accessToken: string,
+    payload: UpdateMyProfileRequest
+  ): Promise<MyProfileResponse> {
+    await delay(LATENCY_MS);
+    if (!accessToken.startsWith('mock-access-')) {
+      throw new AuthError('Kimlik doğrulama gerekli.', 401, 'UNAUTHENTICATED');
+    }
+    const demo = mockUserDirectory.findByEmail('demo@cartzilla.com');
+    if (!demo) {
+      throw new AuthError('Kullanıcı bulunamadı.', 404, 'NOT_FOUND');
+    }
+    if (payload.firstName !== undefined) demo.firstName = payload.firstName.trim();
+    if (payload.lastName !== undefined) demo.lastName = payload.lastName.trim();
+    if (payload.phone !== undefined) demo.phone = payload.phone;
+    return {
+      id: demo.id,
+      email: demo.email,
+      emailVerified: true,
+      firstName: demo.firstName,
+      lastName: demo.lastName,
+      phone: demo.phone,
+      role: 'USER',
+      status: 'ACTIVE',
+    };
   }
 }
 

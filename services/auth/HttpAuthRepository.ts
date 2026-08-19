@@ -3,20 +3,23 @@ import type {
   AuthSession,
   AuthTokenResponse,
   AuthUser,
+  ChangePasswordRequest,
   EmailRequest,
   GenericAuthMessageResponse,
   LoginRequest,
   MyProfileResponse,
   RefreshSessionRequest,
   RegisterUserRequest,
+  RequestEmailChangeRequest,
   TokenRequest,
+  UpdateMyProfileRequest,
 } from '@/types';
 import { AuthError } from './AuthError';
 import type { IAuthRepository } from './AuthRepository';
 import { combineSession, mapProfileToUser } from './mapSession';
 
 /**
- * HTTP auth — haradan-be AUTH-01/04/05/06 + ACCOUNT-01.
+ * HTTP auth — haradan-be AUTH sözleşmesi ile hizalı.
  */
 export class HttpAuthRepository implements IAuthRepository {
   private readonly http: HttpClient;
@@ -126,6 +129,48 @@ export class HttpAuthRepository implements IAuthRepository {
     return this.guard(() =>
       this.http.request<GenericAuthMessageResponse>('/v1/auth/verify-email', {
         method: 'POST',
+        body: JSON.stringify(payload),
+      })
+    );
+  }
+
+  changePassword(
+    accessToken: string,
+    payload: ChangePasswordRequest
+  ): Promise<GenericAuthMessageResponse> {
+    return this.guard(() =>
+      this.http.request<GenericAuthMessageResponse>('/v1/me/password', {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify(payload),
+      })
+    );
+  }
+
+  requestEmailChange(
+    accessToken: string,
+    payload: RequestEmailChangeRequest
+  ): Promise<GenericAuthMessageResponse> {
+    return this.guard(() =>
+      this.http.request<GenericAuthMessageResponse>(
+        '/v1/me/email/change-request',
+        {
+          method: 'POST',
+          accessToken,
+          body: JSON.stringify(payload),
+        }
+      )
+    );
+  }
+
+  async updateProfile(
+    accessToken: string,
+    payload: UpdateMyProfileRequest
+  ): Promise<MyProfileResponse> {
+    return this.guard(() =>
+      this.http.request<MyProfileResponse>('/v1/me', {
+        method: 'PATCH',
+        accessToken,
         body: JSON.stringify(payload),
       })
     );

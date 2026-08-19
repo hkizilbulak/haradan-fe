@@ -32,8 +32,7 @@ function readPersisted(): MockUserRecord[] {
 function writePersisted(users: MockUserRecord[]) {
   if (typeof localStorage === 'undefined') return;
   try {
-    const extra = users.filter((u) => u.id !== 'user-demo');
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(extra));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
   } catch {
     /* ignore */
   }
@@ -41,9 +40,8 @@ function writePersisted(users: MockUserRecord[]) {
 
 function merge(seed: MockUserRecord[], extra: MockUserRecord[]): MockUserRecord[] {
   const byEmail = new Map<string, MockUserRecord>();
-  [...seed, ...extra].forEach((u) => {
-    byEmail.set(u.email.toLowerCase(), u);
-  });
+  seed.forEach((u) => byEmail.set(u.email.toLowerCase(), u));
+  extra.forEach((u) => byEmail.set(u.email.toLowerCase(), u));
   return [...byEmail.values()];
 }
 

@@ -79,3 +79,21 @@ export type AuthSession = AuthTokenResponse & {
   /** Access token basım anı (epoch ms) — yenileme için. */
   issuedAt: number;
 };
+
+/** OpenAPI: ChangePasswordRequest (AUTH-12) */
+export type ChangePasswordRequest = {
+  currentPassword: string;
+  newPassword: string;
+};
+
+/** OpenAPI: RequestEmailChangeRequest (AUTH-13) */
+export type RequestEmailChangeRequest = {
+  newEmail: string;
+};
+
+/** OpenAPI: UpdateMyProfileRequest (ACCOUNT-02) */
+export type UpdateMyProfileRequest = {
+  firstName?: string;
+  lastName?: string;
+  phone?: string | null;
+};
