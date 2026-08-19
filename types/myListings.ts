@@ -26,6 +26,7 @@ export type UpdateListingRequest = {
   expectedVersion: number;
   title: string;
   description: string;
+  address?: string | null;
   priceAmountMinor: number | null;
   provinceId: string;
   districtId: string | null;

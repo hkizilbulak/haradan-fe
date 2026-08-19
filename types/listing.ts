@@ -58,6 +58,7 @@ export type ListingDraftDetails = {
   priceTl: string;
   provinceId: string | null;
   districtId: string | null;
+  address: string;
   gender: HorseGender | null;
   birthDate: string;
   age: string;
@@ -110,6 +111,7 @@ export type ListingDraft = {
 export type CreateAdvertDraftRequest = {
   categoryId?: string | null;
   districtId?: string | null;
+  address?: string | null;
   horseId?: string | null;
   title?: string | null;
   description?: string | null;
@@ -125,6 +127,7 @@ export type OwnerAdvertResponse = {
   categoryId: string | null;
   districtId: string | null;
   provinceId?: string | null;
+  address?: string | null;
   horseId: string | null;
   title: string | null;
   description: string | null;

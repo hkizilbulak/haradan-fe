@@ -19,6 +19,7 @@ export type OwnerAdvertDto = {
   categoryId: string | null;
   districtId: string | null;
   provinceId?: string | null;
+  address?: string | null;
   horseId: string | null;
   title: string | null;
   description: string | null;

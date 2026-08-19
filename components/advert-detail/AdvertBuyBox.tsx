@@ -90,6 +90,14 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
           {formatViewCount(detail.viewCount)}
         </Text>
       </View>
+      {detail.address ? (
+        <View style={[styles.subRow, { marginTop: 4 }]}>
+          <Ionicons name="map-outline" size={13} color={textMuted} />
+          <Text style={[styles.sub, { color: textMuted }]} numberOfLines={2}>
+            {detail.address}
+          </Text>
+        </View>
+      ) : null}
 
       <View style={styles.facts}>
         {facts.map((f) => (

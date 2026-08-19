@@ -25,6 +25,7 @@ const FIELD_ORDER: (keyof ListingFieldErrors)[] = [
   'priceTl',
   'provinceId',
   'districtId',
+  'address',
   'sellerPhone',
   'registeredName',
   'gender',
@@ -96,7 +97,7 @@ export function PostDetailsStep({
     }
     const rel = relativeYMap.current[key] ?? 0;
     let cardY = 0;
-    if (['title', 'description', 'priceTl', 'provinceId', 'districtId'].includes(key)) {
+    if (['title', 'description', 'priceTl', 'provinceId', 'districtId', 'address'].includes(key)) {
       cardY = card1Y.current;
     } else if (key === 'sellerPhone') {
       cardY = cardPhoneY.current;
@@ -307,6 +308,20 @@ export function PostDetailsStep({
               </Text>
             </Pressable>
           ) : null}
+        </View>
+        <View
+          style={styles.fieldBlock}
+          onLayout={(e) => updateFieldY('address', e.nativeEvent.layout.y)}
+        >
+          <PostField
+            label="Açık adres"
+            value={d.address}
+            onChangeText={(address) => onUpdate({ address })}
+            placeholder="Mahalle, cadde, sokak, no, tesis veya çiftlik/hara adı…"
+            hint="İlanınızın tam konumunu belirtmek için açık adres girin."
+            error={errors.address}
+            multiline
+          />
         </View>
       </View>
 

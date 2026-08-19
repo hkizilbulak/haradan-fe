@@ -90,6 +90,7 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
       title: payload.title,
       description: payload.description,
     };
+    if (payload.address !== undefined) body.address = payload.address;
     if (payload.districtId) body.districtId = payload.districtId;
     if (payload.horseId) body.horseId = payload.horseId;
     if (payload.priceAmountMinor != null) {
