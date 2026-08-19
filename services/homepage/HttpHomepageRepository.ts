@@ -52,6 +52,18 @@ export class HttpHomepageRepository implements IHomepageRepository {
 
   async getHomepage(_options?: HomepageQueryOptions): Promise<HomepageData> {
     const accessToken = getAuthSession()?.accessToken ?? undefined;
+    try {
+      return await this.fetchHomepageData(accessToken);
+    } catch (err) {
+      if (accessToken) {
+        // If an authenticated request failed (e.g. 401 session revoked), retry as guest
+        return await this.fetchHomepageData(undefined);
+      }
+      throw err;
+    }
+  }
+
+  private async fetchHomepageData(accessToken?: string): Promise<HomepageData> {
     const auth = accessToken ? { accessToken } : {};
 
     const [newPage, urgentPage, featuredPage, showcase, categories, bannersRes] =
