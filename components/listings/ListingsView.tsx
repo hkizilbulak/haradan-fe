@@ -321,7 +321,7 @@ export const ListingsView = memo(function ListingsView({
           onPress={Platform.OS === 'web' ? undefined : clearSearch}
           style={styles.contentPress}
         >
-          <HomeContentContainer>
+          <HomeContentContainer style={styles.containerFlex}>
             <View style={[styles.body, !isWide && styles.bodyStack]}>
               {!isWide ? searchBar : null}
 
@@ -385,7 +385,7 @@ export const ListingsView = memo(function ListingsView({
             </View>
           </HomeContentContainer>
 
-          <Pressable onPress={consumePress}>
+          <Pressable onPress={consumePress} style={styles.footerWrap}>
             <SiteFooter
               onNavPress={(key) => {
                 if (key === 'listings') router.push('/listings');
@@ -401,13 +401,34 @@ export const ListingsView = memo(function ListingsView({
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
-  content: { flexGrow: 1, paddingBottom: Spacing['3xl'] },
-  contentPress: { flexGrow: 1 },
+  content: {
+    flexGrow: 1,
+    paddingBottom: 0,
+  },
+  contentPress: {
+    flex: 1,
+    flexGrow: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    minHeight: '100%',
+  },
+  containerFlex: {
+    flex: 1,
+    flexGrow: 1,
+    width: '100%',
+  },
+  footerWrap: {
+    marginTop: 'auto',
+    width: '100%',
+  },
   body: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing.xl,
     paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
+    flex: 1,
   },
   bodyStack: { flexDirection: 'column' },
   sidebar: { width: 260, flexShrink: 0 },
