@@ -10,6 +10,7 @@ import {
   TextInput,
   UIManager,
   View,
+  useColorScheme,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -114,6 +115,9 @@ export const HomeSearchBar = memo(function HomeSearchBar({
     }
   };
 
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+
   const surface = useThemeColor('surface');
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
@@ -134,14 +138,17 @@ export const HomeSearchBar = memo(function HomeSearchBar({
     }).start();
   }, [focused, menuOpen, isDropdownActive, focusAnim]);
 
+  const focusedSurface = isDark ? '#232833' : '#ffffff';
+  const focusedBorder = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(12,12,14,0.18)';
+
   const borderColor = focusAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [border, 'rgba(12,12,14,0.16)'],
+    outputRange: [border, focusedBorder],
   });
 
   const bg = focusAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [surface, '#ffffff'],
+    outputRange: [surface, focusedSurface],
   });
 
   const goListings = useCallback(
@@ -221,8 +228,12 @@ export const HomeSearchBar = memo(function HomeSearchBar({
               web: {
                 boxShadow:
                   focused || menuOpen || isDropdownActive
-                    ? '0 12px 36px rgba(15, 23, 42, 0.07)'
-                    : '0 2px 12px rgba(15, 23, 42, 0.03)',
+                    ? isDark
+                      ? '0 12px 36px rgba(0, 0, 0, 0.45)'
+                      : '0 12px 36px rgba(15, 23, 42, 0.07)'
+                    : isDark
+                      ? '0 2px 12px rgba(0, 0, 0, 0.25)'
+                      : '0 2px 12px rgba(15, 23, 42, 0.03)',
                 transition: 'box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1)',
               },
               default: {},
@@ -251,7 +262,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
           returnKeyType="search"
           autoCapitalize="none"
           autoCorrect={false}
-          selectionColor="rgba(12,12,14,0.22)"
+          selectionColor={isDark ? 'rgba(243,245,249,0.3)' : 'rgba(12,12,14,0.22)'}
           underlineColorAndroid="transparent"
           style={[
             styles.input,
