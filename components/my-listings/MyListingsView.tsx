@@ -77,6 +77,10 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const deletingRef = useRef(false);
 
+  const [markingSoldId, setMarkingSoldId] = useState<string | null>(null);
+  const [soldError, setSoldError] = useState<string | null>(null);
+  const markingSoldRef = useRef(false);
+
   const byTab = useMemo(
     () => ({
       published: apply(published.items),
@@ -209,6 +213,39 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
     }
   }, [active, pendingDelete]);
 
+  const requestMarkSold = useCallback(
+    (id: string) => {
+      if (markingSoldRef.current) return;
+      const item = activeItems.find((entry) => entry.id === id);
+      if (!item) return;
+      setSoldError(null);
+      void confirmMarkSold(id, item.version);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeItems]
+  );
+
+  const confirmMarkSold = useCallback(
+    async (id: string, version: number) => {
+      if (markingSoldRef.current) return;
+      markingSoldRef.current = true;
+      setMarkingSoldId(id);
+      try {
+        await published.markSold(id, version);
+        setSoldError(null);
+      } catch (err) {
+        setSoldError(err instanceof Error ? err.message : 'İlan güncellenemedi.');
+        if (err instanceof ApiError && err.code === 'STALE_VERSION') {
+          void published.refetch({ silent: true });
+        }
+      } finally {
+        markingSoldRef.current = false;
+        setMarkingSoldId(null);
+      }
+    },
+    [published]
+  );
+
   const showPostCta = status === 'published' || status === 'draft';
 
   return (
@@ -230,6 +267,7 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
             counts={counts}
             onChange={(next) => {
               setDeleteError(null);
+              setSoldError(null);
               setStatus(next);
             }}
           />
@@ -239,6 +277,11 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
           {deleteError ? (
             <Text style={[styles.deleteError, { color: errorColor }]}>
               {deleteError}
+            </Text>
+          ) : null}
+          {soldError ? (
+            <Text style={[styles.deleteError, { color: errorColor }]}>
+              {soldError}
             </Text>
           ) : null}
 
@@ -276,8 +319,10 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
                   }
                   onPress={(id) => router.push(`/advert/${id}`)}
                   onToggleFavorite={toggle}
-                  onRemove={requestRemoveItem}
+                  onRemove={status === 'draft' ? requestRemoveItem : undefined}
                   removing={deleting && pendingDelete?.id === item.id}
+                  onMarkSold={status === 'published' ? requestMarkSold : undefined}
+                  markingSold={markingSoldId === item.id}
                   accessToken={accessToken}
                 />
               ))}

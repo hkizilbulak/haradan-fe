@@ -18,6 +18,7 @@ export type MyListingEditPayload = {
  * GET    /v1/me/adverts/:id
  * PATCH  /v1/me/adverts/:id
  * DELETE /v1/me/adverts/:id?expectedVersion=
+ * POST   /v1/me/adverts/:id/sold  (ADVERT-OWNER-10)
  */
 export interface IMyListingsRepository {
   list(
@@ -35,4 +36,9 @@ export interface IMyListingsRepository {
     expectedVersion: number,
     accessToken: string
   ): Promise<void>;
+  markSold(
+    id: string,
+    expectedVersion: number,
+    accessToken: string
+  ): Promise<MyListingCard>;
 }

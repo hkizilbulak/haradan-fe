@@ -42,6 +42,7 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
   const success = useThemeColor('success');
 
   const { horse } = detail;
+  const isSold = detail.backendStatus === 'SOLD';
 
   const location = useMemo(() => {
     const district = locationLookup.getDistrictName(detail.districtId);
@@ -153,27 +154,29 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
 
       <View style={styles.actions}>
         <Pressable
-          onPress={onCall}
+          onPress={isSold ? undefined : onCall}
+          disabled={isSold}
           accessibilityRole="button"
           accessibilityLabel="Ara"
           style={({ pressed }) => [
             styles.cta,
-            { backgroundColor: header },
-            pressMotion(pressed),
+            { backgroundColor: isSold ? '#9ca3af' : header },
+            !isSold && pressMotion(pressed),
           ]}
         >
           <Ionicons name="call" size={17} color="#fff" />
-          <Text style={styles.ctaText}>Ara</Text>
+          <Text style={styles.ctaText}>{isSold ? 'Satıldı' : 'Ara'}</Text>
         </Pressable>
 
         <Pressable
-          onPress={onWhatsApp}
+          onPress={isSold ? undefined : onWhatsApp}
+          disabled={isSold}
           accessibilityRole="button"
           accessibilityLabel="WhatsApp ile iletişime geç"
           style={({ pressed }) => [
             styles.cta,
-            { backgroundColor: WHATSAPP_GREEN },
-            pressMotion(pressed),
+            { backgroundColor: isSold ? '#9ca3af' : WHATSAPP_GREEN },
+            !isSold && pressMotion(pressed),
           ]}
         >
           <Ionicons name="logo-whatsapp" size={18} color="#fff" />

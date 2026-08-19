@@ -26,6 +26,7 @@ export type OwnerAdvertDto = {
   properties: Record<string, unknown>;
   media?: OwnerMediaRelationDto[];
   publishedAt?: string | null;
+  soldAt?: string | null;
   deletedAt?: string | null;
   updatedAt?: string;
   packageCode?: string | null;
@@ -98,6 +99,6 @@ export function mapOwnerAdvertToCard(
     version: dto.version,
     sellerId: opts.sellerId,
     updatedAt,
-    soldAt: dto.status === 'SOLD' ? updatedAt : null,
+    soldAt: dto.soldAt ?? (dto.status === 'SOLD' ? updatedAt : null),
   };
 }

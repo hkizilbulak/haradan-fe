@@ -129,6 +129,8 @@ export type AdvertDetail = PublishedAdvertCard & {
   sellerPhone: string | null;
   /** Satıcı kullanıcı id — sahiplik (düzenle) için. */
   sellerId?: string | null;
+  /** BE AdvertStatus — owner görünümünde doldurulur; public endpoint NULL bırakır. */
+  backendStatus?: string | null;
   gallery: PublicMediaItem[];
   breadcrumbs: { label: string; href?: string }[];
   horse: HorseProfile;

@@ -19,6 +19,8 @@ import { formatMoney } from '@/utils/formatMoney';
 import { formatViewCount } from '@/utils/formatViewCount';
 import { WishlistButton } from '@/components/advert/WishlistButton';
 import { RemoveDraftButton } from '@/components/advert/RemoveDraftButton';
+import { MarkSoldButton } from '@/components/advert/MarkSoldButton';
+import { SoldOverlay } from '@/components/advert/SoldOverlay';
 import type { CatalogProductCard } from '@/types';
 
 const URGENT_RED = '#e11d48';
@@ -39,6 +41,9 @@ type FeaturedListingCardProps = {
   /** Taslak sekmesi — favori yanındaki kırmızı eksi. */
   onRemove?: (id: string) => void;
   removing?: boolean;
+  /** Yayında sekmesi — satıldı olarak işaretle butonu. */
+  onMarkSold?: (id: string) => void;
+  markingSold?: boolean;
 };
 
 function FeaturedListingCardComponent({
@@ -50,6 +55,8 @@ function FeaturedListingCardComponent({
   onToggleFavorite,
   onRemove,
   removing = false,
+  onMarkSold,
+  markingSold = false,
 }: FeaturedListingCardProps) {
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
@@ -90,6 +97,12 @@ function FeaturedListingCardComponent({
   const handleRemove = useCallback(() => {
     onRemove?.(product.id);
   }, [onRemove, product.id]);
+
+  const handleMarkSold = useCallback(() => {
+    onMarkSold?.(product.id);
+  }, [onMarkSold, product.id]);
+
+  const isSold = (product as { backendStatus?: string }).backendStatus === 'SOLD';
 
   const animateHover = useCallback(
     (to: number) => {
@@ -178,6 +191,7 @@ function FeaturedListingCardComponent({
             pointerEvents="none"
             style={[styles.scrim, { opacity: hovered ? 1 : 0 }]}
           />
+          {isSold ? <SoldOverlay /> : null}
           {resolvedBadge === 'urgent' ? (
             <View style={[styles.pill, styles.urgentPill]}>
               <Text style={styles.urgentText}>ACİL</Text>
@@ -194,6 +208,12 @@ function FeaturedListingCardComponent({
               <RemoveDraftButton
                 disabled={removing}
                 onPress={handleRemove}
+              />
+            ) : null}
+            {onMarkSold ? (
+              <MarkSoldButton
+                disabled={markingSold || isSold}
+                onPress={handleMarkSold}
               />
             ) : null}
             <WishlistButton

@@ -42,6 +42,8 @@ export const AdvertStickyCta = memo(function AdvertStickyCta({
     accessToken
   );
 
+  const isSold = detail.backendStatus === 'SOLD';
+
   const pressMotion = (pressed: boolean) => ({
     opacity: pressed ? 0.9 : 1,
     transform: [{ scale: pressed ? 0.98 : 1 }],
@@ -97,26 +99,28 @@ export const AdvertStickyCta = memo(function AdvertStickyCta({
 
       <View style={styles.actions}>
         <Pressable
-          onPress={onCall}
+          onPress={isSold ? undefined : onCall}
+          disabled={isSold}
           accessibilityRole="button"
           accessibilityLabel="Ara"
           style={({ pressed }) => [
             styles.cta,
-            { backgroundColor: header },
-            pressMotion(pressed),
+            { backgroundColor: isSold ? '#9ca3af' : header },
+            !isSold && pressMotion(pressed),
           ]}
         >
           <Ionicons name="call" size={16} color="#fff" />
-          <Text style={styles.ctaText}>Ara</Text>
+          <Text style={styles.ctaText}>{isSold ? 'Satıldı' : 'Ara'}</Text>
         </Pressable>
         <Pressable
-          onPress={onWhatsApp}
+          onPress={isSold ? undefined : onWhatsApp}
+          disabled={isSold}
           accessibilityRole="button"
           accessibilityLabel="WhatsApp ile iletişime geç"
           style={({ pressed }) => [
             styles.cta,
-            { backgroundColor: WHATSAPP_GREEN },
-            pressMotion(pressed),
+            { backgroundColor: isSold ? '#9ca3af' : WHATSAPP_GREEN },
+            !isSold && pressMotion(pressed),
           ]}
         >
           <Ionicons name="logo-whatsapp" size={17} color="#fff" />

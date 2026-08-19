@@ -63,5 +63,19 @@ export function useMyListings(
     [accessToken, items, repo]
   );
 
-  return { items, loading, error, refetch: load, removeDraft };
+  const markSold = useCallback(
+    async (id: string, expectedVersion: number): Promise<MyListingCard> => {
+      if (!accessToken) {
+        throw new Error('Oturum bulunamadı.');
+      }
+      const updated = await repo.markSold(id, expectedVersion, accessToken);
+      setItems((prev) =>
+        prev.map((item) => (item.id === id ? updated : item))
+      );
+      return updated;
+    },
+    [accessToken, repo]
+  );
+
+  return { items, loading, error, refetch: load, removeDraft, markSold };
 }

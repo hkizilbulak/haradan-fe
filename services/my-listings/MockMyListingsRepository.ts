@@ -189,4 +189,37 @@ export class MockMyListingsRepository implements IMyListingsRepository {
     this.setItems(items);
     this.removeDraftFromStorage(id);
   }
+
+  async markSold(
+    id: string,
+    expectedVersion: number,
+    _accessToken: string
+  ): Promise<MyListingCard> {
+    await wait(200);
+    const items = [...this.getItems()];
+    const index = items.findIndex((item) => item.id === id);
+    if (index < 0) {
+      throw new ApiError('İlan bulunamadı.', 404, 'NOT_FOUND');
+    }
+    const currentVersion = this.getVersion(id, items[index].version ?? 1);
+    if (expectedVersion !== currentVersion) {
+      throw new ApiError(
+        'İlan başka bir yerden güncellendi; sayfayı yenileyin.',
+        409,
+        'STALE_VERSION'
+      );
+    }
+    const now = new Date().toISOString();
+    const next: MyListingCard = {
+      ...items[index],
+      status: 'sold',
+      backendStatus: 'SOLD',
+      soldAt: now,
+      updatedAt: now,
+      version: currentVersion + 1,
+    };
+    items[index] = next;
+    this.setItems(items);
+    return next;
+  }
 }
