@@ -22,8 +22,7 @@ import {
 } from './mockUsers';
 
 const LATENCY_MS = 550;
-const REGISTER_MESSAGE =
-  'Kayıt alındı. E-posta doğrulama talimatları gönderildi.';
+const REGISTER_MESSAGE = 'Kayıt başarılı.';
 
 /**
  * Mock auth — haradan-be AUTH sözleşmesi ile hizalı.

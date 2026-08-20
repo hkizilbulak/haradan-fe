@@ -46,7 +46,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       return 'E-posta adresiniz doğrulandı. Giriş yapabilirsiniz.';
     }
     if (firstParam(params.registered) === '1') {
-      return 'Kayıt alındı. E-posta doğrulama talimatlarını kontrol edin, ardından giriş yapın.';
+      return 'Kayıt başarılı. Giriş yapabilirsiniz.';
     }
     return null;
   });
