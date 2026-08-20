@@ -38,6 +38,7 @@ export interface IAuthRepository {
   getMe(accessToken: string): Promise<AuthUser>;
   resendVerification(payload: EmailRequest): Promise<GenericAuthMessageResponse>;
   verifyEmail(payload: TokenRequest): Promise<GenericAuthMessageResponse>;
+  confirmEmailChange(payload: TokenRequest): Promise<GenericAuthMessageResponse>;
   changePassword(accessToken: string, payload: ChangePasswordRequest): Promise<GenericAuthMessageResponse>;
   requestEmailChange(accessToken: string, payload: RequestEmailChangeRequest): Promise<GenericAuthMessageResponse>;
   updateProfile(accessToken: string, payload: UpdateMyProfileRequest): Promise<MyProfileResponse>;
