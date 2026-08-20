@@ -48,8 +48,13 @@ export function useMediaImageSource(
 
     setSource(null);
     void (async () => {
-      const resolved = await resolveMediaDisplayUri(trimmed, token);
-      if (!cancelled) setSource(resolved);
+      try {
+        const resolved = await resolveMediaDisplayUri(trimmed, token);
+        if (!cancelled) setSource(resolved);
+      } catch (error) {
+        console.warn('[useMediaImageSource] Medya URI çözümlenemedi:', error);
+        if (!cancelled) setSource(null);
+      }
     })();
 
     return () => {

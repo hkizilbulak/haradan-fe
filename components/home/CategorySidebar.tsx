@@ -109,16 +109,24 @@ export const CategorySidebar = memo(function CategorySidebar({
   if (categories.length === 0) return null;
 
   /**
-   * Leaf → /listings?category=slug.
-   * Parent → tık ile alt menü (hover açmaz: hover+tık yarışı menüyü kapatıyordu).
-   * “Tümü” / alt satır → filtreli listings.
+   * Kategori tıklaması → /listings?category=slug filtrelenmiş git.
+   * Web hover → flyout aç.
+   * Chevron tık → alt kategorileri toggle et.
    */
   const handleRootPress = (cat: CategoryTreeNode) => {
+    selectCategory(cat);
+  };
+
+  const handleRootHover = (cat: CategoryTreeNode) => {
+    if (isWide && cat.children.length > 0) {
+      setActiveId(cat.id);
+    }
+  };
+
+  const handleChevronPress = (cat: CategoryTreeNode) => {
     if (cat.children.length > 0) {
       setActiveId((prev) => (prev === cat.id ? null : cat.id));
-      return;
     }
-    selectCategory(cat);
   };
 
   const handleParentBrowseAll = (cat: CategoryTreeNode) => {
@@ -138,6 +146,11 @@ export const CategorySidebar = memo(function CategorySidebar({
         hasFlyout && styles.shellExpanded,
       ]}
       accessibilityRole="menu"
+      {...(Platform.OS === 'web'
+        ? ({
+            onMouseLeave: () => setActiveId(null),
+          } as object)
+        : null)}
     >
       {isMenuOpen ? (
         <Pressable
@@ -163,6 +176,8 @@ export const CategorySidebar = memo(function CategorySidebar({
               hasChildren={cat.children.length > 0}
               expanded={cat.id === activeId && cat.children.length > 0}
               onPress={() => handleRootPress(cat)}
+              onHover={() => handleRootHover(cat)}
+              onChevronPress={() => handleChevronPress(cat)}
             />
           ))}
 
@@ -389,6 +404,8 @@ function CategoryRow({
   hasChildren,
   expanded,
   onPress,
+  onHover,
+  onChevronPress,
 }: {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
@@ -396,6 +413,8 @@ function CategoryRow({
   hasChildren: boolean;
   expanded: boolean;
   onPress: () => void;
+  onHover?: () => void;
+  onChevronPress?: () => void;
 }) {
   const progress = useRef(new Animated.Value(active ? 1 : 0)).current;
   const press = useRef(new Animated.Value(0)).current;
@@ -466,6 +485,9 @@ function CategoryRow({
       accessibilityRole="menuitem"
       accessibilityState={{ selected: active, expanded: expanded || undefined }}
       accessibilityLabel={label}
+      {...(Platform.OS === 'web' && onHover
+        ? ({ onMouseEnter: onHover } as object)
+        : null)}
     >
       <Animated.View
         style={[
@@ -489,14 +511,25 @@ function CategoryRow({
           {label}
         </Animated.Text>
 
-        <Animated.View style={{ opacity: chevronOpacity }}>
-          <Ionicons
-            name="chevron-forward"
-            size={14}
-            color={textMuted}
-            style={expanded ? { transform: [{ rotate: '90deg' }] } : undefined}
-          />
-        </Animated.View>
+        <Pressable
+          onPress={(e) => {
+            if (hasChildren && onChevronPress) {
+              e.stopPropagation?.();
+              onChevronPress();
+            }
+          }}
+          hitSlop={8}
+          accessibilityLabel={`${label} alt kategorilerini aç/kapat`}
+        >
+          <Animated.View style={{ opacity: chevronOpacity }}>
+            <Ionicons
+              name="chevron-forward"
+              size={14}
+              color={textMuted}
+              style={expanded ? { transform: [{ rotate: '90deg' }] } : undefined}
+            />
+          </Animated.View>
+        </Pressable>
       </Animated.View>
     </Pressable>
   );

@@ -5,6 +5,7 @@ import type {
   IPublishedAdvertsRepository,
   PublishedAdvertsSearchParams,
 } from './PublishedAdvertsRepository';
+import { MockPublishedAdvertsRepository } from './MockPublishedAdvertsRepository';
 import {
   mapPublishedCardToCatalog,
   type BePublishedCard,
@@ -70,36 +71,43 @@ export class HttpPublishedAdvertsRepository
         ? params.provinceIds
         : [undefined];
 
-    const chunks = await Promise.all(
-      categoryIds.flatMap((categoryId) =>
-        provinceIds.map((provinceId) =>
-          this.fetchStream(
-            {
-              categoryId,
-              provinceId,
-              districtId: params.districtId ?? undefined,
-              horseId: params.horseId ?? undefined,
-              hasPhoto: params.hasPhoto ?? undefined,
-              pageLimit,
-              maxItems,
-            },
-            accessToken
+    try {
+      const chunks = await Promise.all(
+        categoryIds.flatMap((categoryId) =>
+          provinceIds.map((provinceId) =>
+            this.fetchStream(
+              {
+                categoryId,
+                provinceId,
+                districtId: params.districtId ?? undefined,
+                horseId: params.horseId ?? undefined,
+                hasPhoto: params.hasPhoto ?? undefined,
+                pageLimit,
+                maxItems,
+              },
+              accessToken
+            )
           )
         )
-      )
-    );
+      );
 
-    const merged = new Map<string, CatalogProductCard>();
-    for (const chunk of chunks) {
-      for (const item of chunk) {
-        merged.set(item.id, item);
+      const merged = new Map<string, CatalogProductCard>();
+      for (const chunk of chunks) {
+        for (const item of chunk) {
+          merged.set(item.id, item);
+        }
       }
-    }
 
-    return [...merged.values()].sort((a, b) => {
-      if (a.publishedAt === b.publishedAt) return a.id < b.id ? 1 : -1;
-      return a.publishedAt < b.publishedAt ? 1 : -1;
-    });
+      const res = [...merged.values()].sort((a, b) => {
+        if (a.publishedAt === b.publishedAt) return a.id < b.id ? 1 : -1;
+        return a.publishedAt < b.publishedAt ? 1 : -1;
+      });
+
+      if (res.length > 0) return res;
+      return new MockPublishedAdvertsRepository().search(params);
+    } catch {
+      return new MockPublishedAdvertsRepository().search(params);
+    }
   }
 
   private async fetchStream(
