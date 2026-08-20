@@ -245,12 +245,23 @@ export const SettingsDrawer = memo(function SettingsDrawer({
   const handleChangeEmail = useCallback(async () => {
     clearError();
     setSuccessMsg(null);
-    const result = await requestEmailChange(accessToken, newEmail);
+    const trimmed = newEmail.trim();
+    const result = await requestEmailChange(accessToken, trimmed);
     if (result) {
       setSuccessMsg(result.message);
       setNewEmail('');
+      if (session) {
+        const { setAuthSession } = await import('@/services/auth/sessionStore');
+        setAuthSession({
+          ...session,
+          user: {
+            ...session.user,
+            email: trimmed.toLowerCase(),
+          },
+        });
+      }
     }
-  }, [requestEmailChange, accessToken, newEmail, clearError]);
+  }, [requestEmailChange, accessToken, newEmail, clearError, session]);
 
   /* ── Hesap İsmi Değiştir ── */
   const handleUpdateName = useCallback(async () => {
@@ -357,7 +368,7 @@ export const SettingsDrawer = memo(function SettingsDrawer({
             successColor="#43a047"
           />
           <ActionButton
-            label="Doğrulama Bağlantısı Gönder"
+            label="E-posta Adresini Değiştir"
             onPress={handleChangeEmail}
             loading={loading}
             disabled={!newEmail.trim()}
