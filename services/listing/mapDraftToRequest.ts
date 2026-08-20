@@ -28,6 +28,7 @@ export function mapDraftToCreateAdvert(
     description: draft.details.description.trim(),
   };
   if (draft.details.districtId) body.districtId = draft.details.districtId;
+  if (draft.details.address.trim()) body.address = draft.details.address.trim();
   if (draft.details.horseId) body.horseId = draft.details.horseId;
   if (price) body.price = price;
   return body;

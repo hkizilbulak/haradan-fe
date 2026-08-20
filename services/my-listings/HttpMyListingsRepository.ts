@@ -90,6 +90,7 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
       title: payload.title,
       description: payload.description,
     };
+    if (payload.address !== undefined) body.address = payload.address;
     if (payload.districtId) body.districtId = payload.districtId;
     if (payload.horseId) body.horseId = payload.horseId;
     if (payload.priceAmountMinor != null) {
@@ -124,6 +125,14 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
   ): Promise<void> {
     if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
       throw new ApiError('İlan sürümü geçersiz.', 400, 'VALIDATION_ERROR');
+    }
+    if (id.startsWith('adv-') || id.startsWith('mock-')) {
+      const { removeMockDraftFromStore, removeMockVersionFromStore } = await import(
+        './mockListingStore'
+      );
+      removeMockDraftFromStore(id);
+      removeMockVersionFromStore(id);
+      return;
     }
     const q = new URLSearchParams({
       expectedVersion: String(expectedVersion),

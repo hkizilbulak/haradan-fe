@@ -45,6 +45,7 @@ export function mapOwnerToListingDraft(
           : '',
       provinceId: dto.provinceId ?? null,
       districtId: dto.districtId ?? null,
+      address: dto.address?.trim() ?? '',
       horseId: dto.horseId,
       tjkSkipped: !dto.horseId,
     },

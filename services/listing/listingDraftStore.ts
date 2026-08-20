@@ -26,6 +26,7 @@ export function createEmptyDetails(): ListingDraftDetails {
     priceTl: '',
     provinceId: null,
     districtId: null,
+    address: '',
     gender: null,
     birthDate: '',
     age: '',

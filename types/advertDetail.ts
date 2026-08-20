@@ -119,6 +119,7 @@ export type HorseProfile = {
 export type AdvertDetail = PublishedAdvertCard & {
   slug: string;
   description: string;
+  address?: string | null;
   rating: number;
   reviewCount: number;
   viewCount: number;

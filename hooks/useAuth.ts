@@ -9,6 +9,7 @@ import { setAuthSession } from '@/services/auth/sessionStore';
 import type {
   AuthSession,
   GenericAuthMessageResponse,
+  MyProfileResponse,
 } from '@/types';
 
 export function useAuth(repo: IAuthRepository = authRepository) {
@@ -117,6 +118,41 @@ export function useAuth(repo: IAuthRepository = authRepository) {
     [repo]
   );
 
+  const changePassword = useCallback(
+    async (
+      accessToken: string,
+      currentPassword: string,
+      newPassword: string
+    ): Promise<GenericAuthMessageResponse | null> => {
+      return run(() =>
+        repo.changePassword(accessToken, { currentPassword, newPassword })
+      );
+    },
+    [repo, run]
+  );
+
+  const requestEmailChange = useCallback(
+    async (
+      accessToken: string,
+      newEmail: string
+    ): Promise<GenericAuthMessageResponse | null> => {
+      return run(() =>
+        repo.requestEmailChange(accessToken, { newEmail: newEmail.trim() })
+      );
+    },
+    [repo, run]
+  );
+
+  const updateProfile = useCallback(
+    async (
+      accessToken: string,
+      payload: { firstName?: string; lastName?: string; phone?: string | null }
+    ): Promise<MyProfileResponse | null> => {
+      return run(() => repo.updateProfile(accessToken, payload));
+    },
+    [repo, run]
+  );
+
   return {
     loading,
     error,
@@ -128,5 +164,8 @@ export function useAuth(repo: IAuthRepository = authRepository) {
     resendVerification,
     verifyEmail,
     logout,
+    changePassword,
+    requestEmailChange,
+    updateProfile,
   };
 }

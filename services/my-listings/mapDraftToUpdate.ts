@@ -17,6 +17,7 @@ export function mapDraftToUpdate(
     expectedVersion,
     title: draft.details.title.trim(),
     description: draft.details.description.trim(),
+    address: draft.details.address.trim() || null,
     priceAmountMinor: priceTl != null ? Math.round(priceTl * 100) : null,
     provinceId: draft.details.provinceId ?? '',
     districtId: draft.details.districtId,

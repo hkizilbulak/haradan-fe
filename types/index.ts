@@ -56,6 +56,9 @@ export type {
   RefreshSessionRequest,
   RefreshTokenRequest,
   MyProfileResponse,
+  ChangePasswordRequest,
+  RequestEmailChangeRequest,
+  UpdateMyProfileRequest,
 } from './auth';
 export type {
   ListingWizardStep,

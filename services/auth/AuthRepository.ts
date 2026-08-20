@@ -1,13 +1,17 @@
 import type {
   AuthSession,
   AuthUser,
+  ChangePasswordRequest,
   EmailRequest,
   FeClientContext,
   GenericAuthMessageResponse,
   LoginRequest,
+  MyProfileResponse,
   RefreshSessionRequest,
   RegisterUserRequest,
+  RequestEmailChangeRequest,
   TokenRequest,
+  UpdateMyProfileRequest,
 } from '@/types';
 
 /**
@@ -21,6 +25,9 @@ import type {
  * POST /v1/auth/resend-verification
  * POST /v1/auth/verify-email
  * GET  /v1/me                  Bearer
+ * PATCH /v1/me                 Bearer  (ACCOUNT-02)
+ * POST /v1/me/password         Bearer  (AUTH-12)
+ * POST /v1/me/email/change-request Bearer (AUTH-13)
  */
 export interface IAuthRepository {
   login(payload: LoginRequest): Promise<AuthSession>;
@@ -31,6 +38,9 @@ export interface IAuthRepository {
   getMe(accessToken: string): Promise<AuthUser>;
   resendVerification(payload: EmailRequest): Promise<GenericAuthMessageResponse>;
   verifyEmail(payload: TokenRequest): Promise<GenericAuthMessageResponse>;
+  changePassword(accessToken: string, payload: ChangePasswordRequest): Promise<GenericAuthMessageResponse>;
+  requestEmailChange(accessToken: string, payload: RequestEmailChangeRequest): Promise<GenericAuthMessageResponse>;
+  updateProfile(accessToken: string, payload: UpdateMyProfileRequest): Promise<MyProfileResponse>;
 }
 
 export function resolveFeClientContext(

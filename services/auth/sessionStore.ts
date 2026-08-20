@@ -36,7 +36,18 @@ function readStorage(): AuthSession | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return normalizeSession(JSON.parse(raw) as AuthSession);
+    const s = normalizeSession(JSON.parse(raw) as AuthSession);
+    const isMockToken = s.accessToken?.startsWith('mock-');
+    const isMockMode = process.env.EXPO_PUBLIC_USE_MOCK_AUTH === '1';
+    if (!isMockMode && isMockToken) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    if (isMockMode && !isMockToken) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return s;
   } catch {
     return null;
   }

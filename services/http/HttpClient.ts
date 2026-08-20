@@ -1,3 +1,4 @@
+import { clearAuthSession } from '@/services/auth/sessionStore';
 import { ApiError } from './ApiError';
 import { parseBeErrorBody, userFacingBeMessage } from './errorResponse';
 
@@ -52,6 +53,9 @@ export class HttpClient {
 
     if (!res.ok) {
       const parsed = await readBeError(res);
+      if (res.status === 401 && !path.includes('/auth/login') && !path.includes('/auth/register')) {
+        clearAuthSession();
+      }
       throw new ApiError(
         parsed.message,
         res.status,

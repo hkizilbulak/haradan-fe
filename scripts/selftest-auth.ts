@@ -110,7 +110,7 @@ async function main() {
 
 responses['POST /api/v1/auth/register'] = {
   status: 201,
-  body: { message: 'Kayıt alındı. E-posta doğrulama talimatları gönderildi.' },
+  body: { message: 'Kayıt başarılı.' },
 };
 const registered = await repo.register({
   email: 'ada@example.com',
@@ -120,7 +120,7 @@ const registered = await repo.register({
 });
 assertEqual(
   registered.message,
-  'Kayıt alındı. E-posta doğrulama talimatları gönderildi.',
+  'Kayıt başarılı.',
   'register 201 message'
 );
 const registerCall = calls.find((c) => c.url.endsWith('/v1/auth/register'));
@@ -136,7 +136,7 @@ assertEqual(
 calls.length = 0;
 responses['POST /api/v1/auth/register'] = {
   status: 201,
-  body: { message: 'Kayıt alındı. E-posta doğrulama talimatları gönderildi.' },
+  body: { message: 'Kayıt başarılı.' },
 };
 const duplicate = await repo.register({
   email: 'ada@example.com',
