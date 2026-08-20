@@ -2,6 +2,7 @@ import type { CatalogFacets, CategoryTreeNode, CategoryTreeResponse } from '@/ty
 import { HttpClient } from '@/services/http';
 import type { ICatalogRepository } from './CatalogRepository';
 import { mapCategoryTreeToFacets } from './mapCategoryTreeToFacets';
+import { MockCatalogRepository } from './MockCatalogRepository';
 
 /** CATALOG-01 — GET /v1/categories */
 export class HttpCatalogRepository implements ICatalogRepository {
@@ -22,16 +23,27 @@ export class HttpCatalogRepository implements ICatalogRepository {
   }
 
   async getCategoryTree(): Promise<CategoryTreeNode[]> {
-    const res = await this.http.request<CategoryTreeResponse>('/v1/categories', {
-      method: 'GET',
-    });
-    this.tree = res.items ?? [];
-    return this.tree;
+    try {
+      const res = await this.http.request<CategoryTreeResponse>('/v1/categories', {
+        method: 'GET',
+      });
+      if (res.items && res.items.length > 0) {
+        this.tree = res.items;
+        return this.tree;
+      }
+      return new MockCatalogRepository().getCategoryTree();
+    } catch {
+      return new MockCatalogRepository().getCategoryTree();
+    }
   }
 
   async getFacets(): Promise<CatalogFacets> {
-    const tree = this.tree ?? (await this.getCategoryTree());
-    this.facets = mapCategoryTreeToFacets(tree);
-    return this.facets;
+    try {
+      const tree = this.tree ?? (await this.getCategoryTree());
+      this.facets = mapCategoryTreeToFacets(tree);
+      return this.facets;
+    } catch {
+      return new MockCatalogRepository().getFacets();
+    }
   }
 }
