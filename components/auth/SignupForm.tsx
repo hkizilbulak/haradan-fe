@@ -8,6 +8,7 @@ import { AUTH_FORM_MAX_WIDTH } from '@/constants/AuthTheme';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useAuth } from '@/hooks/useAuth';
+import { setAuthSession } from '@/services/auth/sessionStore';
 
 type SignupFormProps = {
   onSuccess?: (message: string) => void;
@@ -15,7 +16,7 @@ type SignupFormProps = {
 
 export function SignupForm({ onSuccess }: SignupFormProps) {
   const router = useRouter();
-  const { register, loading, error, clearError } = useAuth();
+  const { register, login, loading, error, clearError } = useAuth();
   const { tokens } = useAuthTheme();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -48,10 +49,19 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
     });
     if (!result) return;
     onSuccess?.(result.message);
-    router.replace({
-      pathname: '/auth/login',
-      params: { registered: '1' },
-    });
+
+    // Kayıt başarılı — otomatik giriş yap
+    const session = await login(email.trim(), password);
+    if (session) {
+      setAuthSession(session);
+      router.replace('/(tabs)');
+    } else {
+      // Otomatik giriş başarısız olursa login sayfasına yönlendir
+      router.replace({
+        pathname: '/auth/login',
+        params: { registered: '1' },
+      });
+    }
   };
 
   return (
