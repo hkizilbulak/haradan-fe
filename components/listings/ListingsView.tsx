@@ -65,6 +65,8 @@ export type ListingsQuery = {
   breeds?: string | null;
   ages?: string | null;
   colors?: string | null;
+  genders?: string | null;
+  features?: string | null;
 };
 
 type ListingsViewProps = {
@@ -209,7 +211,43 @@ function applyClientFilters(
     });
   }
 
-  // 11. Canlı Arama Metni
+  // 11. Cinsiyet (Erkek, Dişi, İğdiş)
+  if (filters.genders && filters.genders.length > 0) {
+    const normalizedGenders = filters.genders.map(normalizeSearchText);
+    list = list.filter((p) => {
+      const normTitle = normalizeSearchText(p.title);
+      const normBrand = normalizeSearchText(p.brand ?? '');
+      return normalizedGenders.some(
+        (g) => normTitle.includes(g) || normBrand.includes(g)
+      );
+    });
+  }
+
+  // 12. Donanım / Hizmet Özellikleri (Nakliye, Nalbant, Aşım)
+  if (filters.features && filters.features.length > 0) {
+    const featureKeywords: Record<string, string[]> = {
+      camera: ['kamera', 'izleme'],
+      ac: ['klima', 'iklimlendirme', 'havalandirma'],
+      airSuspension: ['havali', 'suspansiyon'],
+      insurance: ['sigorta', 'sigortali', 'kasko'],
+      hotShoeing: ['sicak', 'ocak', 'dovme'],
+      orthopedic: ['ortopedik', 'aci', 'duzeltme'],
+      mobileService: ['mobil', 'yerinde', 'adrese'],
+      crackTreatment: ['catlak', 'tedavi', 'tirnak'],
+      liveFoal: ['canli tay', 'tay garantisi', 'garanti'],
+      marePension: ['pansiyon', 'kisrak'],
+      ultrasound: ['ultrason', 'muayene', 'veteriner'],
+    };
+    list = list.filter((p) => {
+      const hay = normalizeSearchText(`${p.title} ${p.brand ?? ''}`);
+      return (filters.features ?? []).every((fKey) => {
+        const keywords = featureKeywords[fKey] ?? [fKey];
+        return keywords.some((kw) => hay.includes(kw));
+      });
+    });
+  }
+
+  // 13. Canlı Arama Metni
   if (q) {
     const needle = normalizeSearchText(q);
     if (needle) {
@@ -252,6 +290,8 @@ export const ListingsView = memo(function ListingsView({
     breeds: parseArrayParam(query.breeds),
     ages: parseArrayParam(query.ages),
     colors: parseArrayParam(query.colors),
+    genders: parseArrayParam(query.genders),
+    features: parseArrayParam(query.features),
   });
   const [page, setPage] = useState(0);
   const [liveQuery, setLiveQuery] = useState(query.q ?? '');
@@ -277,6 +317,8 @@ export const ListingsView = memo(function ListingsView({
       breeds: parseArrayParam(query.breeds),
       ages: parseArrayParam(query.ages),
       colors: parseArrayParam(query.colors),
+      genders: parseArrayParam(query.genders),
+      features: parseArrayParam(query.features),
     });
     setPage(0);
   }, [
@@ -293,6 +335,8 @@ export const ListingsView = memo(function ListingsView({
     query.breeds,
     query.ages,
     query.colors,
+    query.genders,
+    query.features,
   ]);
 
   const search = usePublishedAdvertsSearch(
@@ -360,6 +404,10 @@ export const ListingsView = memo(function ListingsView({
       if (agesStr) params.set('ages', agesStr);
       const colorsStr = serializeArrayParam(next.colors);
       if (colorsStr) params.set('colors', colorsStr);
+      const gendersStr = serializeArrayParam(next.genders ?? []);
+      if (gendersStr) params.set('genders', gendersStr);
+      const featuresStr = serializeArrayParam(next.features ?? []);
+      if (featuresStr) params.set('features', featuresStr);
 
       skipHydrate.current = true;
       syncListingsQuery(params.toString(), router);

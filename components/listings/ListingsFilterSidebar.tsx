@@ -17,6 +17,11 @@ import {
   priceHint,
   PERIOD_OPTIONS,
   periodLabel,
+  isHorseCategory,
+  isPansiyonCategory,
+  isTransportCategory,
+  isFarrierCategory,
+  isStudCategory,
   type ListingPeriodFilter,
 } from '@/components/listings/filterConfig';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -38,6 +43,7 @@ export type PansiyonFacilityFilters = {
   vet?: boolean;
   farrier?: boolean;
   foalingBarn?: boolean;
+  trainingTrack?: boolean;
 };
 
 export type ListingsFiltersState = {
@@ -53,6 +59,8 @@ export type ListingsFiltersState = {
   breeds: string[];
   ages: string[];
   colors: string[];
+  genders?: string[];
+  features?: string[];
 };
 
 type ListingsFilterSidebarProps = {
@@ -62,18 +70,59 @@ type ListingsFilterSidebarProps = {
   resultCount: number;
 };
 
-const FACILITY_OPTIONS: { key: keyof PansiyonFacilityFilters; label: string }[] = [
+export const FACILITY_OPTIONS: { key: keyof PansiyonFacilityFilters; label: string }[] = [
   { key: 'grassPaddock', label: 'Çim Padok' },
   { key: 'sandPaddock', label: 'Kum Padok' },
   { key: 'stallionPaddock', label: 'Aygır Padoğu' },
-  { key: 'vet', label: 'Veteriner' },
-  { key: 'farrier', label: 'Nalbant' },
+  { key: 'vet', label: '7/24 Veteriner' },
+  { key: 'farrier', label: 'Nalbant Hizmeti' },
   { key: 'foalingBarn', label: 'Doğumhane' },
+  { key: 'trainingTrack', label: 'İdman Pisti' },
 ];
 
-const STUD_BREED_OPTIONS = ['Arap', 'İngiliz'];
-const STUD_AGE_OPTIONS = ['0', '1', '1.5', '2', '3', '4', '5+'];
-const COAT_COLOR_OPTIONS = [
+export const HORSE_BREED_OPTIONS = [
+  'İngiliz (Thoroughbred)',
+  'Safkan Arap',
+  'Warmblood / Spor Atı',
+  'Konkur / Engel Atlama',
+  'Rahvan',
+  'Pony / Midilli',
+  'Haflinger',
+];
+
+export const HORSE_AGE_OPTIONS = [
+  'Tay (0-1 Yaş)',
+  '2 Yaş',
+  '3 Yaş',
+  '4 Yaş',
+  '5+ Yaş',
+];
+
+export const HORSE_GENDER_OPTIONS = ['Erkek', 'Dişi', 'İğdiş'];
+
+export const TRANSPORT_OPTIONS: { key: string; label: string }[] = [
+  { key: 'camera', label: 'Araç İçi Canlı Kamera' },
+  { key: 'ac', label: 'İklimlendirme / Havalandırma' },
+  { key: 'airSuspension', label: 'Havalı Süspansiyon' },
+  { key: 'insurance', label: 'Taşıma Sigortası' },
+];
+
+export const FARRIER_OPTIONS: { key: string; label: string }[] = [
+  { key: 'hotShoeing', label: 'Sıcak Nal Çakımı' },
+  { key: 'orthopedic', label: 'Ortopedik Nallama' },
+  { key: 'mobileService', label: 'Mobil / Yerinde Servis' },
+  { key: 'crackTreatment', label: 'Tırnak Bakımı & Tedavi' },
+];
+
+export const STUD_BREED_OPTIONS = ['Safkan Arap', 'Safkan İngiliz'];
+export const STUD_AGE_OPTIONS = ['3-4 Yaş', '5-7 Yaş', '8-10 Yaş', '10+ Yaş'];
+export const STUD_GUARANTEE_OPTIONS: { key: string; label: string }[] = [
+  { key: 'liveFoal', label: 'Canlı Tay Garantisi' },
+  { key: 'marePension', label: 'Kısrak Pansiyon Bakımı' },
+  { key: 'ultrasound', label: 'Ultrason Muayenesi' },
+];
+
+export const COAT_COLOR_OPTIONS = [
   'Doru',
   'Al',
   'Kır',
@@ -256,6 +305,8 @@ export const EMPTY_LISTINGS_FILTERS: ListingsFiltersState = {
   breeds: [],
   ages: [],
   colors: [],
+  genders: [],
+  features: [],
 };
 
 /** Sol filtre — kapalı akordeon; detay basınca açılır. */
@@ -271,26 +322,26 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     value.provinceIds.length === 1 ? value.provinceIds[0] : null;
   const { items: districts } = useDistricts(selectedProvinceId);
 
-  const isPansiyonActive =
-    value.categorySlug === 'pansiyon-haralar' ||
-    value.categorySlug === 'cat-pansiyon';
-
-  const isStudActive =
-    value.categorySlug === 'asim-hizmetleri' ||
-    value.categorySlug === 'arap-aygir' ||
-    value.categorySlug === 'ingiliz-aygir' ||
-    value.categorySlug === 'cat-asim' ||
-    value.categorySlug === 'cat-arap-aygir' ||
-    value.categorySlug === 'cat-ingiliz-aygir';
+  const isHorseActive = isHorseCategory(value.categorySlug);
+  const isPansiyonActive = isPansiyonCategory(value.categorySlug);
+  const isTransportActive = isTransportCategory(value.categorySlug);
+  const isFarrierActive = isFarrierCategory(value.categorySlug);
+  const isStudActive = isStudCategory(value.categorySlug);
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     'listing-type': true,
-    'horse-breed': true,
-    period: true,
+    'horse-breeds': true,
+    'horse-ages': true,
+    'horse-colors': true,
+    'horse-genders': true,
     facilities: true,
+    transport: true,
+    farrier: true,
     'stud-breeds': true,
     'stud-ages': true,
     'stud-colors': true,
+    'stud-guarantees': true,
+    period: true,
     advanced: false,
   });
   const [openOptions, setOpenOptions] = useState<Record<string, boolean>>({});
@@ -369,6 +420,8 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     (value.breeds && value.breeds.length > 0) ||
     (value.ages && value.ages.length > 0) ||
     (value.colors && value.colors.length > 0) ||
+    (value.genders && value.genders.length > 0) ||
+    (value.features && value.features.length > 0) ||
     Object.values(value.facilities ?? {}).some(Boolean);
 
   const advancedHint =
@@ -465,7 +518,6 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
   };
 
   const categoryGroup = groups.find((g) => g.kind === 'category');
-  const breedGroup = groups.find((g) => g.kind === 'breed');
 
   const facilityCount = Object.values(value.facilities ?? {}).filter(Boolean).length;
   const facilityHint = facilityCount > 0 ? `${facilityCount} seçili` : null;
@@ -499,7 +551,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         </View>
       </View>
 
-      {/* 1. Kategori Seçimi */}
+      {/* 1. Kategori Seçimi (Her Zaman Görünür) */}
       {categoryGroup ? (
         <Accordion
           title={categoryGroup.label}
@@ -558,222 +610,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         </Accordion>
       ) : null}
 
-      {/* 2. Pansiyon Haralar: Tesis & Hizmet Özellikleri (Toggle Switch) */}
-      {isPansiyonActive ? (
-        <Accordion
-          title="Tesis & Hizmet Özellikleri"
-          open={!!openGroups.facilities}
-          onToggle={() => toggleGroup('facilities')}
-          hint={facilityHint}
-          text={text}
-          textMuted={textMuted}
-          border={border}
-        >
-          {FACILITY_OPTIONS.map((fac) => {
-            const on = Boolean(value.facilities?.[fac.key]);
-            return (
-              <Pressable
-                key={fac.key}
-                onPress={() =>
-                  onChange({
-                    ...value,
-                    facilities: {
-                      ...value.facilities,
-                      [fac.key]: !on,
-                    },
-                  })
-                }
-                accessibilityRole="switch"
-                accessibilityState={{ checked: on }}
-                style={({ pressed }) => [
-                  styles.toggleRow,
-                  { opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.rowText,
-                    {
-                      color: on ? text : textSecondary,
-                      fontWeight: on ? '600' : '400',
-                      flex: 1,
-                    },
-                  ]}
-                >
-                  {fac.label}
-                </Text>
-                <View
-                  style={[
-                    styles.switch,
-                    {
-                      backgroundColor: on ? header : border,
-                      justifyContent: on ? 'flex-end' : 'flex-start',
-                    },
-                  ]}
-                >
-                  <View style={styles.switchKnob} />
-                </View>
-              </Pressable>
-            );
-          })}
-        </Accordion>
-      ) : null}
-
-      {/* 3. Aşım Hizmetleri: At Irkı (Çoklu Seçim) */}
-      {isStudActive ? (
-        <Accordion
-          title="At Irkı"
-          open={!!openGroups['stud-breeds']}
-          onToggle={() => toggleGroup('stud-breeds')}
-          hint={value.breeds?.length ? value.breeds.join(', ') : null}
-          text={text}
-          textMuted={textMuted}
-          border={border}
-        >
-          {STUD_BREED_OPTIONS.map((breed) => {
-            const selected = (value.breeds ?? []).includes(breed);
-            return (
-              <FilterRow
-                key={breed}
-                label={breed}
-                multi
-                selected={selected}
-                onSelect={() => {
-                  const curr = value.breeds ?? [];
-                  const next = selected
-                    ? curr.filter((b) => b !== breed)
-                    : [...curr, breed];
-                  onChange({ ...value, breeds: next });
-                }}
-                {...rowTheme}
-              />
-            );
-          })}
-        </Accordion>
-      ) : null}
-
-      {/* 4. Aşım Hizmetleri: Yaş (Çoklu Seçim) */}
-      {isStudActive ? (
-        <Accordion
-          title="Yaş"
-          open={!!openGroups['stud-ages']}
-          onToggle={() => toggleGroup('stud-ages')}
-          hint={value.ages?.length ? `${value.ages.length} seçili` : null}
-          text={text}
-          textMuted={textMuted}
-          border={border}
-        >
-          {STUD_AGE_OPTIONS.map((age) => {
-            const selected = (value.ages ?? []).includes(age);
-            return (
-              <FilterRow
-                key={age}
-                label={`${age} Yaş`}
-                multi
-                selected={selected}
-                onSelect={() => {
-                  const curr = value.ages ?? [];
-                  const next = selected
-                    ? curr.filter((a) => a !== age)
-                    : [...curr, age];
-                  onChange({ ...value, ages: next });
-                }}
-                {...rowTheme}
-              />
-            );
-          })}
-        </Accordion>
-      ) : null}
-
-      {/* 5. Aşım Hizmetleri: Donu (Renk) (Çoklu Seçim) */}
-      {isStudActive ? (
-        <Accordion
-          title="Donu (Renk)"
-          open={!!openGroups['stud-colors']}
-          onToggle={() => toggleGroup('stud-colors')}
-          hint={value.colors?.length ? value.colors.join(', ') : null}
-          text={text}
-          textMuted={textMuted}
-          border={border}
-        >
-          {COAT_COLOR_OPTIONS.map((color) => {
-            const selected = (value.colors ?? []).includes(color);
-            return (
-              <FilterRow
-                key={color}
-                label={color}
-                multi
-                selected={selected}
-                onSelect={() => {
-                  const curr = value.colors ?? [];
-                  const next = selected
-                    ? curr.filter((c) => c !== color)
-                    : [...curr, color];
-                  onChange({ ...value, colors: next });
-                }}
-                {...rowTheme}
-              />
-            );
-          })}
-        </Accordion>
-      ) : null}
-
-      {/* 6. Satılık Atlar / Genel Irk Seçimi */}
-      {breedGroup && !isStudActive ? (
-        <Accordion
-          title={breedGroup.label}
-          open={!!openGroups[breedGroup.id]}
-          onToggle={() => toggleGroup(breedGroup.id)}
-          hint={value.breed}
-          text={text}
-          textMuted={textMuted}
-          border={border}
-        >
-          {breedGroup.options.map((option) => (
-            <FilterRow
-              key={option.id}
-              label={option.label}
-              selected={value.breed === option.slug}
-              onSelect={() => applyOption(breedGroup, option)}
-              {...rowTheme}
-            />
-          ))}
-        </Accordion>
-      ) : null}
-
-      {/* 7. İlan Tarihi (Periyot) */}
-      <Accordion
-        title="İlan Tarihi"
-        open={!!openGroups.period}
-        onToggle={() => toggleGroup('period')}
-        hint={periodLabel(value.period)}
-        text={text}
-        textMuted={textMuted}
-        border={border}
-      >
-        <FilterRow
-          label="Tümü"
-          selected={value.period == null}
-          onSelect={() => onChange({ ...value, period: null })}
-          {...rowTheme}
-        />
-        {PERIOD_OPTIONS.map((opt) => (
-          <FilterRow
-            key={opt.id}
-            label={opt.label}
-            selected={value.period === opt.id}
-            onSelect={() =>
-              onChange({
-                ...value,
-                period: value.period === opt.id ? null : opt.id,
-              })
-            }
-            {...rowTheme}
-          />
-        ))}
-      </Accordion>
-
-      {/* 8. Detaylı Filtreleme (Konum, Fiyat, Acil) */}
+      {/* 2. Detaylı Filtreleme (Konum, Fiyat, Acil - İlan Türünün Hemen Altında) */}
       <Accordion
         title="Detaylı filtreleme"
         open={!!openGroups.advanced}
@@ -1010,6 +847,493 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
             <View style={styles.switchKnob} />
           </View>
         </Pressable>
+      </Accordion>
+
+      {/* 3. SATILIK ATLAR: Irk, Don, Yaş, Cinsiyet (YALNIZCA Satılık Atlar Seçiliyken) */}
+      {isHorseActive ? (
+        <>
+          <Accordion
+            title="At Irkı"
+            open={!!openGroups['horse-breeds']}
+            onToggle={() => toggleGroup('horse-breeds')}
+            hint={value.breeds?.length ? value.breeds.join(', ') : null}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            {HORSE_BREED_OPTIONS.map((breed) => {
+              const selected = (value.breeds ?? []).includes(breed);
+              return (
+                <FilterRow
+                  key={breed}
+                  label={breed}
+                  multi
+                  selected={selected}
+                  onSelect={() => {
+                    const curr = value.breeds ?? [];
+                    const next = selected
+                      ? curr.filter((b) => b !== breed)
+                      : [...curr, breed];
+                    onChange({ ...value, breeds: next });
+                  }}
+                  {...rowTheme}
+                />
+              );
+            })}
+          </Accordion>
+
+          <Accordion
+            title="Donu (Renk)"
+            open={!!openGroups['horse-colors']}
+            onToggle={() => toggleGroup('horse-colors')}
+            hint={value.colors?.length ? value.colors.join(', ') : null}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            {COAT_COLOR_OPTIONS.map((color) => {
+              const selected = (value.colors ?? []).includes(color);
+              return (
+                <FilterRow
+                  key={color}
+                  label={color}
+                  multi
+                  selected={selected}
+                  onSelect={() => {
+                    const curr = value.colors ?? [];
+                    const next = selected
+                      ? curr.filter((c) => c !== color)
+                      : [...curr, color];
+                    onChange({ ...value, colors: next });
+                  }}
+                  {...rowTheme}
+                />
+              );
+            })}
+          </Accordion>
+
+          <Accordion
+            title="Yaş"
+            open={!!openGroups['horse-ages']}
+            onToggle={() => toggleGroup('horse-ages')}
+            hint={value.ages?.length ? `${value.ages.length} seçili` : null}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            {HORSE_AGE_OPTIONS.map((age) => {
+              const selected = (value.ages ?? []).includes(age);
+              return (
+                <FilterRow
+                  key={age}
+                  label={age}
+                  multi
+                  selected={selected}
+                  onSelect={() => {
+                    const curr = value.ages ?? [];
+                    const next = selected
+                      ? curr.filter((a) => a !== age)
+                      : [...curr, age];
+                    onChange({ ...value, ages: next });
+                  }}
+                  {...rowTheme}
+                />
+              );
+            })}
+          </Accordion>
+
+          <Accordion
+            title="Cinsiyet"
+            open={!!openGroups['horse-genders']}
+            onToggle={() => toggleGroup('horse-genders')}
+            hint={value.genders?.length ? value.genders.join(', ') : null}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            {HORSE_GENDER_OPTIONS.map((gender) => {
+              const selected = (value.genders ?? []).includes(gender);
+              return (
+                <FilterRow
+                  key={gender}
+                  label={gender}
+                  multi
+                  selected={selected}
+                  onSelect={() => {
+                    const curr = value.genders ?? [];
+                    const next = selected
+                      ? curr.filter((g) => g !== gender)
+                      : [...curr, gender];
+                    onChange({ ...value, genders: next });
+                  }}
+                  {...rowTheme}
+                />
+              );
+            })}
+          </Accordion>
+        </>
+      ) : null}
+
+      {/* 3. PANSİYON HARALAR: Tesis & Hizmet Özellikleri (YALNIZCA Pansiyon Seçiliyken) */}
+      {isPansiyonActive ? (
+        <Accordion
+          title="Tesis & Hizmet Özellikleri"
+          open={!!openGroups.facilities}
+          onToggle={() => toggleGroup('facilities')}
+          hint={facilityHint}
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        >
+          {FACILITY_OPTIONS.map((fac) => {
+            const on = Boolean(value.facilities?.[fac.key]);
+            return (
+              <Pressable
+                key={fac.key}
+                onPress={() =>
+                  onChange({
+                    ...value,
+                    facilities: {
+                      ...value.facilities,
+                      [fac.key]: !on,
+                    },
+                  })
+                }
+                accessibilityRole="switch"
+                accessibilityState={{ checked: on }}
+                style={({ pressed }) => [
+                  styles.toggleRow,
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.rowText,
+                    {
+                      color: on ? text : textSecondary,
+                      fontWeight: on ? '600' : '400',
+                      flex: 1,
+                    },
+                  ]}
+                >
+                  {fac.label}
+                </Text>
+                <View
+                  style={[
+                    styles.switch,
+                    {
+                      backgroundColor: on ? header : border,
+                      justifyContent: on ? 'flex-end' : 'flex-start',
+                    },
+                  ]}
+                >
+                  <View style={styles.switchKnob} />
+                </View>
+              </Pressable>
+            );
+          })}
+        </Accordion>
+      ) : null}
+
+      {/* 4. AT NAKLİYESİ: Taşıma & Araç Özellikleri (YALNIZCA Nakliye Seçiliyken) */}
+      {isTransportActive ? (
+        <Accordion
+          title="Taşıma & Donanım Özellikleri"
+          open={!!openGroups.transport}
+          onToggle={() => toggleGroup('transport')}
+          hint={value.features?.length ? `${value.features.length} seçili` : null}
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        >
+          {TRANSPORT_OPTIONS.map((opt) => {
+            const on = (value.features ?? []).includes(opt.key);
+            return (
+              <Pressable
+                key={opt.key}
+                onPress={() => {
+                  const curr = value.features ?? [];
+                  const next = on
+                    ? curr.filter((f) => f !== opt.key)
+                    : [...curr, opt.key];
+                  onChange({ ...value, features: next });
+                }}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: on }}
+                style={({ pressed }) => [
+                  styles.toggleRow,
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.rowText,
+                    {
+                      color: on ? text : textSecondary,
+                      fontWeight: on ? '600' : '400',
+                      flex: 1,
+                    },
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+                <View
+                  style={[
+                    styles.switch,
+                    {
+                      backgroundColor: on ? header : border,
+                      justifyContent: on ? 'flex-end' : 'flex-start',
+                    },
+                  ]}
+                >
+                  <View style={styles.switchKnob} />
+                </View>
+              </Pressable>
+            );
+          })}
+        </Accordion>
+      ) : null}
+
+      {/* 5. NALBANTLAR: Nalbantlık & Uzmanlık Özellikleri (YALNIZCA Nalbant Seçiliyken) */}
+      {isFarrierActive ? (
+        <Accordion
+          title="Nalbantlık Hizmet Kapsamı"
+          open={!!openGroups.farrier}
+          onToggle={() => toggleGroup('farrier')}
+          hint={value.features?.length ? `${value.features.length} seçili` : null}
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        >
+          {FARRIER_OPTIONS.map((opt) => {
+            const on = (value.features ?? []).includes(opt.key);
+            return (
+              <Pressable
+                key={opt.key}
+                onPress={() => {
+                  const curr = value.features ?? [];
+                  const next = on
+                    ? curr.filter((f) => f !== opt.key)
+                    : [...curr, opt.key];
+                  onChange({ ...value, features: next });
+                }}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: on }}
+                style={({ pressed }) => [
+                  styles.toggleRow,
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.rowText,
+                    {
+                      color: on ? text : textSecondary,
+                      fontWeight: on ? '600' : '400',
+                      flex: 1,
+                    },
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+                <View
+                  style={[
+                    styles.switch,
+                    {
+                      backgroundColor: on ? header : border,
+                      justifyContent: on ? 'flex-end' : 'flex-start',
+                    },
+                  ]}
+                >
+                  <View style={styles.switchKnob} />
+                </View>
+              </Pressable>
+            );
+          })}
+        </Accordion>
+      ) : null}
+
+      {/* 6. AŞIM HİZMETLERİ: Aygır Irkı, Yaş, Don, Şartlar (YALNIZCA Aşım Seçiliyken) */}
+      {isStudActive ? (
+        <>
+          <Accordion
+            title="Aygır Irkı"
+            open={!!openGroups['stud-breeds']}
+            onToggle={() => toggleGroup('stud-breeds')}
+            hint={value.breeds?.length ? value.breeds.join(', ') : null}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            {STUD_BREED_OPTIONS.map((breed) => {
+              const selected = (value.breeds ?? []).includes(breed);
+              return (
+                <FilterRow
+                  key={breed}
+                  label={breed}
+                  multi
+                  selected={selected}
+                  onSelect={() => {
+                    const curr = value.breeds ?? [];
+                    const next = selected
+                      ? curr.filter((b) => b !== breed)
+                      : [...curr, breed];
+                    onChange({ ...value, breeds: next });
+                  }}
+                  {...rowTheme}
+                />
+              );
+            })}
+          </Accordion>
+
+          <Accordion
+            title="Aygır Yaşı"
+            open={!!openGroups['stud-ages']}
+            onToggle={() => toggleGroup('stud-ages')}
+            hint={value.ages?.length ? `${value.ages.length} seçili` : null}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            {STUD_AGE_OPTIONS.map((age) => {
+              const selected = (value.ages ?? []).includes(age);
+              return (
+                <FilterRow
+                  key={age}
+                  label={age}
+                  multi
+                  selected={selected}
+                  onSelect={() => {
+                    const curr = value.ages ?? [];
+                    const next = selected
+                      ? curr.filter((a) => a !== age)
+                      : [...curr, age];
+                    onChange({ ...value, ages: next });
+                  }}
+                  {...rowTheme}
+                />
+              );
+            })}
+          </Accordion>
+
+          <Accordion
+            title="Donu (Renk)"
+            open={!!openGroups['stud-colors']}
+            onToggle={() => toggleGroup('stud-colors')}
+            hint={value.colors?.length ? value.colors.join(', ') : null}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            {COAT_COLOR_OPTIONS.map((color) => {
+              const selected = (value.colors ?? []).includes(color);
+              return (
+                <FilterRow
+                  key={color}
+                  label={color}
+                  multi
+                  selected={selected}
+                  onSelect={() => {
+                    const curr = value.colors ?? [];
+                    const next = selected
+                      ? curr.filter((c) => c !== color)
+                      : [...curr, color];
+                    onChange({ ...value, colors: next });
+                  }}
+                  {...rowTheme}
+                />
+              );
+            })}
+          </Accordion>
+
+          <Accordion
+            title="Aşım Şartları & Garanti"
+            open={!!openGroups['stud-guarantees']}
+            onToggle={() => toggleGroup('stud-guarantees')}
+            hint={value.features?.length ? `${value.features.length} seçili` : null}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            {STUD_GUARANTEE_OPTIONS.map((opt) => {
+              const on = (value.features ?? []).includes(opt.key);
+              return (
+                <Pressable
+                  key={opt.key}
+                  onPress={() => {
+                    const curr = value.features ?? [];
+                    const next = on
+                      ? curr.filter((f) => f !== opt.key)
+                      : [...curr, opt.key];
+                    onChange({ ...value, features: next });
+                  }}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: on }}
+                  style={({ pressed }) => [
+                    styles.toggleRow,
+                    { opacity: pressed ? 0.7 : 1 },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.rowText,
+                      {
+                        color: on ? text : textSecondary,
+                        fontWeight: on ? '600' : '400',
+                        flex: 1,
+                      },
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                  <View
+                    style={[
+                      styles.switch,
+                      {
+                        backgroundColor: on ? header : border,
+                        justifyContent: on ? 'flex-end' : 'flex-start',
+                      },
+                    ]}
+                  >
+                    <View style={styles.switchKnob} />
+                  </View>
+                </Pressable>
+              );
+            })}
+          </Accordion>
+        </>
+      ) : null}
+
+      {/* 7. İlan Tarihi (Periyot - Her Zaman Görünür) */}
+      <Accordion
+        title="İlan Tarihi"
+        open={!!openGroups.period}
+        onToggle={() => toggleGroup('period')}
+        hint={periodLabel(value.period)}
+        text={text}
+        textMuted={textMuted}
+        border={border}
+      >
+        <FilterRow
+          label="Tümü"
+          selected={value.period == null}
+          onSelect={() => onChange({ ...value, period: null })}
+          {...rowTheme}
+        />
+        {PERIOD_OPTIONS.map((opt) => (
+          <FilterRow
+            key={opt.id}
+            label={opt.label}
+            selected={value.period === opt.id}
+            onSelect={() =>
+              onChange({
+                ...value,
+                period: value.period === opt.id ? null : opt.id,
+              })
+            }
+            {...rowTheme}
+          />
+        ))}
       </Accordion>
     </View>
   );

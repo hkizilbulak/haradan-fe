@@ -227,6 +227,38 @@ assertEqual(parsedBreeds.length, 2, 'Çoklu ırk dizisi 2 eleman');
 assertEqual(parsedBreeds[0], 'Arap', 'İlk ırk Arap');
 assertEqual(serializeArrayParam(['Doru', 'Al', 'Kır']), 'Doru,Al,Kır', 'Don serileştirme');
 
+// D. Filtre Kenar Çubuğu Kategori İzolasyon Testleri
+import {
+  isHorseCategory,
+  isPansiyonCategory,
+  isTransportCategory,
+  isFarrierCategory,
+  isStudCategory,
+} from '../components/listings/filterConfig';
+
+assert(isHorseCategory('satilik-atlar'), 'satilik-atlar Satılık At kategorisi olarak algılandı');
+assert(isHorseCategory('satilik-yaris-ati'), 'satilik-yaris-ati Satılık At kategorisi olarak algılandı');
+assert(isHorseCategory('satilik-binek-ati'), 'satilik-binek-ati Satılık At kategorisi olarak algılandı');
+assert(isHorseCategory('satilik-pony'), 'satilik-pony Satılık At kategorisi olarak algılandı');
+assert(isHorseCategory('satilik-kisrak'), 'satilik-kisrak Satılık At kategorisi olarak algılandı');
+assert(isHorseCategory('satilik-aygir'), 'satilik-aygir Satılık At kategorisi olarak algılandı');
+assert(!isHorseCategory('at-nakliyesi'), 'at-nakliyesi Satılık At kategorisi değildir');
+assert(!isHorseCategory('pansiyon-haralar'), 'pansiyon-haralar Satılık At kategorisi değildir');
+assert(!isHorseCategory('nalbantlar'), 'nalbantlar Satılık At kategorisi değildir');
+
+assert(isTransportCategory('at-nakliyesi'), 'at-nakliyesi Nakliye kategorisi olarak algılandı');
+assert(!isTransportCategory('satilik-atlar'), 'satilik-atlar Nakliye kategorisi değildir');
+
+assert(isPansiyonCategory('pansiyon-haralar'), 'pansiyon-haralar Pansiyon kategorisi olarak algılandı');
+assert(!isPansiyonCategory('at-nakliyesi'), 'at-nakliyesi Pansiyon kategorisi değildir');
+
+assert(isFarrierCategory('nalbantlar'), 'nalbantlar Nalbant kategorisi olarak algılandı');
+assert(!isFarrierCategory('satilik-atlar'), 'satilik-atlar Nalbant kategorisi değildir');
+
+assert(isStudCategory('asim-hizmetleri'), 'asim-hizmetleri Aşım kategorisi olarak algılandı');
+assert(isStudCategory('arap-aygir'), 'arap-aygir Aşım kategorisi olarak algılandı');
+assert(!isStudCategory('at-nakliyesi'), 'at-nakliyesi Aşım kategorisi değildir');
+
 console.log(`\n========================================`);
 console.log(`Sonuç: ${passed} test geçti, ${failed} test başarısız`);
 console.log(`========================================\n`);

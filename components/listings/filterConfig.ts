@@ -94,3 +94,81 @@ export function periodLabel(period: string | null | undefined): string | null {
   if (!period) return null;
   return PERIOD_OPTIONS.find((p) => p.id === period)?.label ?? null;
 }
+
+export function isHorseCategory(slug: string | null): boolean {
+  if (!slug) return false;
+  const s = slug.toLowerCase();
+  return (
+    s === 'satilik-atlar' ||
+    s === 'cat-satilik-atlar' ||
+    s.includes('satilik') ||
+    s.includes('yaris-ati') ||
+    s.includes('yaris') ||
+    s.includes('yarış') ||
+    s.includes('kisrak') ||
+    s.includes('kısrak') ||
+    s.includes('damizlik') ||
+    s.includes('damızlık') ||
+    s.includes('aygir') ||
+    s.includes('aygır') ||
+    s.includes('binek') ||
+    s.includes('binek-ati') ||
+    s.includes('pony') ||
+    s.includes('midilli') ||
+    s.includes('tay') ||
+    s.includes('konkur')
+  ) && !s.includes('asim') && !s.includes('aşım');
+}
+
+export function isPansiyonCategory(slug: string | null): boolean {
+  if (!slug) return false;
+  const s = slug.toLowerCase();
+  return (
+    s === 'pansiyon-haralar' ||
+    s === 'cat-pansiyon' ||
+    s.includes('pansiyon') ||
+    s.includes('hara')
+  );
+}
+
+export function isTransportCategory(slug: string | null): boolean {
+  if (!slug) return false;
+  const s = slug.toLowerCase();
+  return (
+    s === 'at-nakliyesi' ||
+    s === 'cat-nakliye' ||
+    s.includes('nakliye') ||
+    s.includes('tasima') ||
+    s.includes('taşıma') ||
+    s.includes('transport')
+  );
+}
+
+export function isFarrierCategory(slug: string | null): boolean {
+  if (!slug) return false;
+  const s = slug.toLowerCase();
+  return (
+    s === 'nalbantlar' ||
+    s === 'cat-nalbant' ||
+    s.includes('nalbant') ||
+    s.includes('farrier')
+  );
+}
+
+export function isStudCategory(slug: string | null): boolean {
+  if (!slug) return false;
+  const s = slug.toLowerCase();
+  return (
+    s === 'asim-hizmetleri' ||
+    s === 'arap-aygir' ||
+    s === 'ingiliz-aygir' ||
+    s === 'cat-asim' ||
+    s === 'cat-arap-aygir' ||
+    s === 'cat-ingiliz-aygir' ||
+    s.includes('aygir') ||
+    s.includes('aygır') ||
+    s.includes('asim') ||
+    s.includes('aşım')
+  );
+}
+
