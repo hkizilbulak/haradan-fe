@@ -27,7 +27,13 @@ type Deps = {
   tjk?: ITjkRepository;
 };
 
-const STEPS: ListingWizardStep[] = ['type', 'details', 'package', 'review'];
+const STEPS: ListingWizardStep[] = [
+  'type',
+  'details',
+  'package',
+  'payment',
+  'review',
+];
 
 export function applyTjkProfile(
   details: ListingDraftDetails,
@@ -73,6 +79,8 @@ export function useListingWizard(deps: Deps = {}) {
     detailsAttempted,
     submittedDraftId,
     submittedStatus,
+    paytrMerchantOid,
+    paytrIframeUrl,
   } = state;
   const fieldErrors = useMemo(
     () => (detailsAttempted ? detailsErrors(draft) : {}),
@@ -83,6 +91,7 @@ export function useListingWizard(deps: Deps = {}) {
     if (step === 'type') return false;
     if (step === 'details') return true;
     if (step === 'package') return packageStepComplete(draft);
+    if (step === 'payment') return false;
     return submittedDraftId != null;
   }, [step, draft, submittedDraftId]);
 
@@ -93,6 +102,8 @@ export function useListingWizard(deps: Deps = {}) {
         draft: { ...prev.draft, ...partial },
         submittedDraftId: null,
         submittedStatus: null,
+        paytrMerchantOid: null,
+        paytrIframeUrl: null,
       }));
     },
     []
@@ -259,11 +270,51 @@ export function useListingWizard(deps: Deps = {}) {
         submittedDraftId: created.advertId,
         submittedStatus: created.status,
         step: 'review',
+        paytrMerchantOid: null,
+        paytrIframeUrl: null,
       }));
       return created;
     },
     [listingRepo]
   );
+
+  /** Create draft then open PayTR iframe checkout (live path). */
+  const startPaidCheckout = useCallback(
+    async (accessToken: string) => {
+      const current = getListingWizardState();
+      const packageCode = current.draft.packageCode?.trim();
+      if (!packageCode) {
+        throw new Error('Paket seçilmedi.');
+      }
+      if (!listingRepo.createDraft || !listingRepo.startPaytrCheckout) {
+        return publishListing(accessToken);
+      }
+      const draft = await listingRepo.createDraft(current.draft, accessToken);
+      const checkout = await listingRepo.startPaytrCheckout(
+        draft.advertId,
+        packageCode,
+        accessToken
+      );
+      setListingWizardState((prev) => ({
+        ...prev,
+        submittedDraftId: draft.advertId,
+        submittedStatus: draft.status,
+        paytrMerchantOid: checkout.merchantOid,
+        paytrIframeUrl: checkout.iframeUrl,
+        step: 'payment',
+      }));
+      return checkout;
+    },
+    [listingRepo, publishListing]
+  );
+
+  const markPaymentSucceeded = useCallback((status = 'PENDING_REVIEW') => {
+    setListingWizardState((prev) => ({
+      ...prev,
+      submittedStatus: status,
+      step: 'review',
+    }));
+  }, []);
 
   return {
     draft,
@@ -274,6 +325,8 @@ export function useListingWizard(deps: Deps = {}) {
     detailsAttempted,
     submittedDraftId,
     submittedStatus,
+    paytrMerchantOid,
+    paytrIframeUrl,
     fieldErrors,
     canNext,
     setStep,
@@ -290,5 +343,7 @@ export function useListingWizard(deps: Deps = {}) {
     goNext,
     goBack,
     publishListing,
+    startPaidCheckout,
+    markPaymentSucceeded,
   };
 }

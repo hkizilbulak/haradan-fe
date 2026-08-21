@@ -16,7 +16,8 @@ function depth(step: ListingWizardStep, typePhase: ListingTypePhase): number {
   if (step === 'type') return typePhase === 'category' ? 1 : 0;
   if (step === 'details') return 2;
   if (step === 'package') return 3;
-  return 4;
+  if (step === 'payment') return 4;
+  return 5; // review
 }
 
 function isFirstStep(step: ListingWizardStep, typePhase: ListingTypePhase): boolean {

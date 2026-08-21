@@ -15,6 +15,8 @@ export type ListingWizardState = {
   detailsAttempted: boolean;
   submittedDraftId: string | null;
   submittedStatus: string | null;
+  paytrMerchantOid: string | null;
+  paytrIframeUrl: string | null;
 };
 
 const STORAGE_KEY = 'haradan.listingDraft';
@@ -67,6 +69,8 @@ function createInitialState(): ListingWizardState {
     detailsAttempted: false,
     submittedDraftId: null,
     submittedStatus: null,
+    paytrMerchantOid: null,
+    paytrIframeUrl: null,
   };
 }
 
@@ -74,7 +78,8 @@ let state: ListingWizardState = hydrate();
 const listeners = new Set<() => void>();
 
 function normalizeStep(raw: unknown): ListingWizardStep {
-  if (raw === 'review' || raw === 'payment') return 'review';
+  if (raw === 'review') return 'review';
+  if (raw === 'payment') return 'payment';
   if (raw === 'details' || raw === 'package' || raw === 'type') return raw;
   return 'type';
 }
@@ -118,6 +123,8 @@ function hydrate(): ListingWizardState {
           : typePhase,
       submittedDraftId: parsed.submittedDraftId ?? null,
       submittedStatus: parsed.submittedStatus ?? null,
+      paytrMerchantOid: parsed.paytrMerchantOid ?? null,
+      paytrIframeUrl: parsed.paytrIframeUrl ?? null,
       detailsAttempted: parsed.detailsAttempted === true,
       draft: {
         ...createEmptyDraft(),

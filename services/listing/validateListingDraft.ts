@@ -85,5 +85,8 @@ export function canEnterStep(
   if (target === 'type') return true;
   if (target === 'details') return typeStepComplete(draft);
   if (target === 'package') return typeStepComplete(draft) && detailsStepComplete(draft);
-  return typeStepComplete(draft) && detailsStepComplete(draft) && packageStepComplete(draft);
+  if (target === 'payment' || target === 'review') {
+    return typeStepComplete(draft) && detailsStepComplete(draft) && packageStepComplete(draft);
+  }
+  return false;
 }

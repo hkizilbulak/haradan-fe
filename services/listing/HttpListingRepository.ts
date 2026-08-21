@@ -7,6 +7,7 @@ import type {
   OwnerAdvertResponse,
   PublishListingResult,
 } from '@/types/listing';
+import type { PaytrChargeStatus, PaytrCheckoutResult } from '@/types/paytr';
 import type { IListingRepository } from './ListingRepository';
 import { mapDraftToCreateAdvert } from './mapDraftToRequest';
 import {
@@ -19,7 +20,7 @@ type AdvertMediaCollectionResponse = {
   mediaVersion: number;
 };
 
-/** ADVERT-OWNER-01/07 + PACKAGE-PUBLIC-01 + MEDIA-04 */
+/** ADVERT-OWNER + PACKAGE-PUBLIC + MEDIA + PayTR checkout */
 export class HttpListingRepository implements IListingRepository {
   private readonly http: HttpClient;
   private cached: ListingPackage[] | null = null;
@@ -43,10 +44,11 @@ export class HttpListingRepository implements IListingRepository {
     return this.cached;
   }
 
-  async publish(
+  /** Creates draft + media only (no package assign, no submit). */
+  async createDraft(
     draft: ListingDraft,
     accessToken: string
-  ): Promise<PublishListingResult> {
+  ): Promise<{ advertId: string; version: number; status: string }> {
     const uploaded = await Promise.all(
       draft.media.map(async (slot) => {
         if (slot.assetId) return slot;
@@ -110,24 +112,64 @@ export class HttpListingRepository implements IListingRepository {
       mediaVersion = covered.mediaVersion;
     }
 
+    return {
+      advertId: created.id,
+      version: created.version,
+      status: created.status,
+    };
+  }
+
+  async startPaytrCheckout(
+    advertId: string,
+    packageCode: string,
+    accessToken: string
+  ): Promise<PaytrCheckoutResult> {
+    return this.http.request<PaytrCheckoutResult>(
+      `/v1/me/adverts/${advertId}/paytr/checkout`,
+      {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify({ packageCode }),
+      }
+    );
+  }
+
+  async getPaytrChargeStatus(
+    advertId: string,
+    merchantOid: string,
+    accessToken: string
+  ): Promise<PaytrChargeStatus> {
+    return this.http.request<PaytrChargeStatus>(
+      `/v1/me/adverts/${advertId}/paytr/charges/${encodeURIComponent(merchantOid)}`,
+      { method: 'GET', accessToken }
+    );
+  }
+
+  /**
+   * Legacy path used by mocks / tests: create + assign package + submit.
+   * Live HTTP wizard uses createDraft + PayTR instead.
+   */
+  async publish(
+    draft: ListingDraft,
+    accessToken: string
+  ): Promise<PublishListingResult> {
+    const created = await this.createDraft(draft, accessToken);
     const packageCode = draft.packageCode?.trim();
     if (packageCode) {
-      await this.http.request(`/v1/me/adverts/${created.id}/package`, {
+      await this.http.request(`/v1/me/adverts/${created.advertId}/package`, {
         method: 'PUT',
         accessToken,
         body: JSON.stringify({ packageCode }),
       });
     }
-
     const submitted = await this.http.request<OwnerAdvertResponse>(
-      `/v1/me/adverts/${created.id}/submit`,
+      `/v1/me/adverts/${created.advertId}/submit`,
       {
         method: 'POST',
         accessToken,
         body: JSON.stringify({ expectedVersion: created.version }),
       }
     );
-
     return { advertId: submitted.id, status: submitted.status };
   }
 }

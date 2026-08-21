@@ -1,8 +1,8 @@
 import type { HorseGender } from './advertDetail';
 import type { Money } from './money';
 
-/** 4 adımlı ilan verme süreci. */
-export type ListingWizardStep = 'type' | 'details' | 'package' | 'review';
+/** 5 adımlı ilan verme süreci (ödeme dahil). */
+export type ListingWizardStep = 'type' | 'details' | 'package' | 'payment' | 'review';
 
 export type ListingTypeSelection = {
   categoryId: string;
