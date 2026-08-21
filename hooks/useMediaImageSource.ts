@@ -16,19 +16,17 @@ export function useMediaImageSource(
   uri: string | null | undefined,
   accessToken?: string | null
 ): ImageSource | string | null {
-  const wantsAuth = Boolean(accessToken?.trim() && uri?.trim());
+  const trimmed = uri?.trim() ?? '';
   const [source, setSource] = useState<ImageSource | string | null>(() => {
-    if (!uri?.trim()) return null;
-    if (!wantsAuth) return uri;
-    if (Platform.OS !== 'web') {
-      return mediaImageSource(uri, accessToken);
+    if (!trimmed) return null;
+    if (Platform.OS !== 'web' && accessToken?.trim()) {
+      return mediaImageSource(trimmed, accessToken);
     }
-    return null;
+    return trimmed;
   });
 
   useEffect(() => {
     let cancelled = false;
-    const trimmed = uri?.trim() ?? '';
 
     if (!trimmed) {
       setSource(null);
@@ -46,21 +44,19 @@ export function useMediaImageSource(
       return;
     }
 
-    setSource(null);
     void (async () => {
       try {
         const resolved = await resolveMediaDisplayUri(trimmed, token);
-        if (!cancelled) setSource(resolved);
-      } catch (error) {
-        console.warn('[useMediaImageSource] Medya URI çözümlenemedi:', error);
-        if (!cancelled) setSource(null);
+        if (!cancelled && resolved) setSource(resolved);
+      } catch {
+        if (!cancelled) setSource(trimmed);
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [uri, accessToken]);
+  }, [trimmed, accessToken]);
 
   return source;
 }

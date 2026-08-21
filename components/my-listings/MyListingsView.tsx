@@ -256,11 +256,25 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
         showsVerticalScrollIndicator={false}
       >
         <HomeContentContainer>
-          <Text style={[styles.kicker, { color: muted }]}>Hesap</Text>
-          <Text style={[styles.title, { color: text }]}>İlanlarım</Text>
-          <Text style={[styles.lead, { color: muted }]}>
-            Yayındaki, incelemedeki, reddedilen, taslak ve satılmış ilanlarınız.
-          </Text>
+          <View
+            style={[
+              styles.headerRow,
+              isWide ? styles.headerRowWide : styles.headerRowMobile,
+            ]}
+          >
+            <View style={styles.headerTextGroup}>
+              <Text style={[styles.kicker, { color: muted }]}>Hesap</Text>
+              <Text style={[styles.title, { color: text }]}>İlanlarım</Text>
+              <Text style={[styles.lead, { color: muted }]}>
+                Yayındaki, incelemedeki, reddedilen, taslak ve satılmış ilanlarınız.
+              </Text>
+            </View>
+            <View style={styles.headerBtnWrapper}>
+              <Button onPress={postAd} variant="primary" size="md">
+                + Yeni İlan Ver
+              </Button>
+            </View>
+          </View>
 
           <MyListingsTabs
             active={status}
@@ -346,6 +360,25 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: { paddingTop: Spacing.lg, paddingBottom: Spacing['3xl'] },
+  headerRow: {
+    marginBottom: Spacing.md,
+    gap: Spacing.md,
+  },
+  headerRowWide: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  headerRowMobile: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  headerTextGroup: {
+    flex: 1,
+  },
+  headerBtnWrapper: {
+    paddingBottom: Spacing.xs,
+  },
   kicker: {
     ...Typography.caption,
     fontWeight: '700',
@@ -353,7 +386,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   title: { ...Typography.h2, marginTop: 4 },
-  lead: { ...Typography.body, marginBottom: Spacing.lg },
+  lead: { ...Typography.body, marginBottom: Spacing.xs },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   center: { paddingVertical: 64, alignItems: 'center' },
   error: { ...Typography.body, paddingVertical: Spacing.lg },

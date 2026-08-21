@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import {
   Linking,
   Pressable,
@@ -11,12 +11,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { formatMoney } from '@/utils/formatMoney';
-import type { AdvertSpecGroup, HorseProfile } from '@/types';
+import type { AdvertDetail, AdvertSpecGroup, HorseProfile } from '@/types';
+import {
+  getAdvertCategoryKind,
+  parsePansiyonInfo,
+  parseStudInfo,
+  parseTransportInfo,
+} from './advertCategoryHelper';
 
 type AdvertSpecsProps = {
   groups: AdvertSpecGroup[];
-  horse: HorseProfile;
+  horse?: HorseProfile;
+  detail?: AdvertDetail;
 };
 
 type SoftRow = {
@@ -34,7 +40,9 @@ type SoftSection = {
 
 /** Genel bilgiler — her zaman açık, 3 kolon. */
 export const AdvertSpecs = memo(function AdvertSpecs({
-  horse,
+  groups,
+  horse: propHorse,
+  detail,
 }: AdvertSpecsProps) {
   const { width } = useWindowDimensions();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
@@ -44,179 +52,259 @@ export const AdvertSpecs = memo(function AdvertSpecs({
   const textSecondary = useThemeColor('textSecondary');
   const header = useThemeColor('header');
 
-  const identity: SoftRow[] = [
-    { icon: 'ribbon-outline', label: 'İsim', value: horse.registeredName },
-    {
-      icon: 'calendar-outline',
-      label: 'Yaş / doğum',
-      value: `${horse.age} yaş`,
-      hint: horse.birthDate,
-    },
-    { icon: 'male-female-outline', label: 'Cinsiyet', value: horse.gender },
-    { icon: 'color-palette-outline', label: 'Don', value: horse.coatColor },
-    { icon: 'leaf-outline', label: 'Cins', value: horse.breed },
-    ...(horse.heightCm
-      ? [
-          {
-            icon: 'resize-outline' as const,
-            label: 'Cidago',
-            value: `${horse.heightCm} cm`,
-          },
-        ]
-      : []),
-  ];
+  const categoryKind = detail ? getAdvertCategoryKind(detail) : 'horse';
+  const horse = detail?.horse ?? propHorse;
+  const studInfo = useMemo(() => (detail ? parseStudInfo(detail) : null), [detail]);
+  const pansiyonInfo = useMemo(() => (detail ? parsePansiyonInfo(detail) : null), [detail]);
+  const transportInfo = useMemo(() => (detail ? parseTransportInfo(detail) : null), [detail]);
 
-  const pedigree: SoftRow[] = [
-    { icon: 'git-branch-outline', label: 'Baba', value: horse.sire },
-    { icon: 'git-branch-outline', label: 'Anne', value: horse.dam },
-    { icon: 'git-network-outline', label: 'Kısrak babası', value: horse.damsire },
-  ];
+  const { title, row1, row2, hasRaces } = useMemo(() => {
+    if (categoryKind === 'pansiyon') {
+      const s1: SoftSection = {
+        id: 'pansiyon-facilities',
+        title: 'Tesis ve Padok Özellikleri',
+        rows: [
+          { icon: 'leaf-outline', label: 'Çim Padok', value: 'Geniş Çim Otlatma Padokları' },
+          { icon: 'grid-outline', label: 'Kum Padok', value: 'Drenajlı Kum Dinlenme Alanı' },
+          { icon: 'shield-outline', label: 'Aygır Padoğu', value: 'Yüksek Çitli Özel Güvenli Alan' },
+          { icon: 'fitness-outline', label: 'İdman Pisti', value: pansiyonInfo?.trainingTrack || 'Kum İdman Pisti' },
+        ],
+      };
+      const s2: SoftSection = {
+        id: 'pansiyon-health',
+        title: 'Sağlık ve Bakım Hizmetleri',
+        rows: [
+          { icon: 'medkit-outline', label: 'Veteriner Hekim', value: '7/24 Düzenli Kontrol & Müdahale' },
+          { icon: 'home-outline', label: 'Doğumhane', value: 'Kamera Takipli Steril Doğum Locası' },
+          { icon: 'hammer-outline', label: 'Nalbant Hizmeti', value: 'Periyodik Tırnak ve Nal Bakımı' },
+          { icon: 'nutrition-outline', label: 'Özel Beslenme', value: 'Kaliteli Yem & Rasyon Programı' },
+        ],
+      };
+      const s3: SoftSection = {
+        id: 'pansiyon-security',
+        title: 'Güvenlik ve Hara Yönetimi',
+        rows: [
+          { icon: 'videocam-outline', label: 'Kamera Sistemi', value: '7/24 Gece Görüşlü Güvenlik Kamerası' },
+          { icon: 'person-outline', label: 'Gece Nöbetçisi', value: 'Kesintisiz 24 Saat Personel Nöbeti' },
+          { icon: 'calendar-outline', label: 'Ziyaret Saatleri', value: 'Haftanın 7 Günü Randevulu Ziyaret' },
+        ],
+      };
+      return { title: 'Tesis ve Hizmet Detayları', row1: [s1, s2, s3], row2: [], hasRaces: false };
+    }
 
-  const people: SoftRow[] = [
-    {
-      icon: 'person-outline',
-      label: 'Sahip',
-      value: horse.owners.join(', '),
-    },
-    { icon: 'home-outline', label: 'Yetiştirici', value: horse.breeder },
-    { icon: 'fitness-outline', label: 'Antrenör', value: horse.trainer },
-  ];
+    if (categoryKind === 'transport') {
+      const s1: SoftSection = {
+        id: 'transport-vehicle',
+        title: 'Araç ve Donanım',
+        rows: [
+          { icon: 'car-outline', label: 'Zemin', value: 'Darbe Emici Yumuşak Kauçuk Taban' },
+          { icon: 'snow-outline', label: 'Havalandırma', value: 'Otomatik Termostatlı İklimlendirme' },
+          { icon: 'flash-outline', label: 'Süspansiyon', value: 'Havalı & Sarsıntısız Süspansiyon' },
+          { icon: 'videocam-outline', label: 'İç Kamera', value: 'Yol Boyu Canlı HD Kamera Takibi' },
+        ],
+      };
+      const s2: SoftSection = {
+        id: 'transport-routes',
+        title: 'Güzergah ve Seferler',
+        rows: [
+          { icon: 'navigate-outline', label: 'Hatlar', value: transportInfo?.route || 'Şehirlerarası Düzenli Seferler' },
+          { icon: 'trophy-outline', label: 'Hipodrom', value: 'İstanbul, İzmir, Adana, Bursa, Ankara' },
+          { icon: 'calendar-outline', label: 'Sefer Şekli', value: 'Haftalık Ring & Özel VIP Sevkıyat' },
+        ],
+      };
+      const s3: SoftSection = {
+        id: 'transport-insurance',
+        title: 'Güvenlik ve Sigorta',
+        rows: [
+          { icon: 'shield-checkmark-outline', label: 'Taşıma Sigortası', value: 'Tam Kapsamlı Nakliyat Kaskosu' },
+          { icon: 'person-outline', label: 'Sürücüler', value: 'Lisanslı & Deneyimli At Seyisi / Şoför' },
+          { icon: 'water-outline', label: 'Dezenfeksiyon', value: 'Her Sefer Öncesi & Sonrası Temizlik' },
+        ],
+      };
+      return { title: 'Nakliye ve Taşıma Detayları', row1: [s1, s2, s3], row2: [], hasRaces: false };
+    }
 
-  const performance: SoftRow[] = [
-    {
-      icon: 'trophy-outline',
-      label: 'Kariyer',
-      value: `${horse.career.starts} start · ${horse.career.first}-${horse.career.second}-${horse.career.third}-${horse.career.fourth}-${horse.career.fifth}`,
-    },
-    {
-      icon: 'cash-outline',
-      label: 'Toplam kazanç',
-      value: formatMoney(horse.careerEarnings),
-    },
-    {
-      icon: 'speedometer-outline',
-      label: 'Handikap',
-      value: String(horse.handicap),
-    },
-    ...horse.yearly.map((y) => ({
-      icon: 'stats-chart-outline' as const,
-      label: String(y.year),
-      value: `${y.stats.starts} start · ${y.stats.first}-${y.stats.second}-${y.stats.third}-${y.stats.fourth}-${y.stats.fifth}`,
-      hint: formatMoney(y.earnings),
-    })),
-  ];
+    if (categoryKind === 'farrier') {
+      const s1: SoftSection = {
+        id: 'farrier-techniques',
+        title: 'Nallama Uygulamaları',
+        rows: [
+          { icon: 'hammer-outline', label: 'Sıcak Nal Çakımı', value: 'Ocakta Tırnağa Birebir Dövme' },
+          { icon: 'checkmark-circle-outline', label: 'Soğuk Nal', value: 'Standart ve Hızlı Uygulama' },
+          { icon: 'trophy-outline', label: 'Yarış Nalları', value: 'Hafif Alüminyum & Çelik Nallar' },
+        ],
+      };
+      const s2: SoftSection = {
+        id: 'farrier-health',
+        title: 'Ortopedik ve Terapötik Bakım',
+        rows: [
+          { icon: 'medkit-outline', label: 'Açı Dengeleme', value: 'Basış ve Açı Düzeltme İşlemleri' },
+          { icon: 'cut-outline', label: 'Çatlak Tedavisi', value: 'Özel Reçine & Klips Uygulaması' },
+          { icon: 'layers-outline', label: 'Taban Desteği', value: 'Silikon ve Terapötik Tabanlık' },
+        ],
+      };
+      const s3: SoftSection = {
+        id: 'farrier-service',
+        title: 'Hizmet ve Randevu',
+        rows: [
+          { icon: 'navigate-outline', label: 'Mobil Hizmet', value: 'Haralara Tam Donanımlı Mobil Servis' },
+          { icon: 'calendar-outline', label: 'Çalışma Günleri', value: 'Haftanın 7 Günü Hizmet' },
+        ],
+      };
+      return { title: 'Nalbantlık Hizmet Detayları', row1: [s1, s2, s3], row2: [], hasRaces: false };
+    }
 
-  const formRows: SoftRow[] = [
-    {
-      icon: 'flash-outline',
-      label: 'Galibiyet oranı',
-      value:
-        horse.career.starts > 0
-          ? `%${Math.round((horse.career.first / horse.career.starts) * 100)}`
-          : '—',
-    },
-    {
-      icon: 'podium-outline',
-      label: 'İlk üç',
-      value: `${horse.career.first + horse.career.second + horse.career.third} / ${horse.career.starts}`,
-    },
-    {
-      icon: 'cash-outline',
-      label: 'Kariyer kazancı',
-      value: formatMoney(horse.careerEarnings),
-    },
-  ];
+    if (categoryKind === 'stud') {
+      const s1: SoftSection = {
+        id: 'stud-identity',
+        title: 'Aygır Kimlik Bilgileri',
+        rows: [
+          { icon: 'ribbon-outline', label: 'Aygır Adı', value: studInfo?.name || detail?.title || 'Aygır' },
+          { icon: 'leaf-outline', label: 'At Irkı', value: studInfo?.breed || 'Safkan' },
+          { icon: 'calendar-outline', label: 'Yaş', value: studInfo?.age || '—' },
+          { icon: 'color-palette-outline', label: 'Don', value: studInfo?.coatColor || '—' },
+        ],
+      };
+      const s2: SoftSection = {
+        id: 'stud-pedigree',
+        title: 'Soy Kütüğü (Pedigree)',
+        rows: [
+          { icon: 'git-branch-outline', label: 'Baba (Sire)', value: studInfo?.sire || '—' },
+          { icon: 'git-branch-outline', label: 'Anne (Dam)', value: studInfo?.dam || '—' },
+          { icon: 'git-network-outline', label: 'Annesinin Babası', value: studInfo?.damsire || '—' },
+        ],
+      };
+      const s3: SoftSection = {
+        id: 'stud-conditions',
+        title: 'Aşım Koşulları ve Tesis',
+        rows: [
+          { icon: 'checkmark-done-outline', label: 'Garanti', value: 'Canlı Tay Garantisi' },
+          { icon: 'home-outline', label: 'Kısrak Pansiyonu', value: 'Hara Bünyesinde Bakım Mevcut' },
+          { icon: 'medkit-outline', label: 'Veteriner Muayenesi', value: 'Tam Kapsamlı Ultrason ve Kontrol' },
+        ],
+      };
+      return { title: 'Aygır ve Aşım Detayları', row1: [s1, s2, s3], row2: [], hasRaces: false };
+    }
 
-  const offspringRows: SoftRow[] =
-    horse.offspring?.map((o) => ({
-      icon: 'paw-outline' as const,
-      label: String(o.birthYear),
-      value: o.name,
-      hint: `${o.performanceSummary}${o.earnings ? ` · ${formatMoney(o.earnings)}` : ''}`,
-    })) ?? [];
+    // Default Horse Listing
+    const identity: SoftRow[] = [];
+    if (horse?.registeredName) identity.push({ icon: 'ribbon-outline', label: 'İsim', value: horse.registeredName });
+    if (horse && horse.age > 0) identity.push({ icon: 'calendar-outline', label: 'Yaş / doğum', value: `${horse.age} yaş`, hint: horse.birthDate });
+    if (horse?.gender) identity.push({ icon: 'male-female-outline', label: 'Cinsiyet', value: horse.gender });
+    if (horse?.coatColor) identity.push({ icon: 'color-palette-outline', label: 'Don', value: horse.coatColor });
+    if (horse?.breed) identity.push({ icon: 'leaf-outline', label: 'Cins', value: horse.breed });
+    if (horse?.heightCm) identity.push({ icon: 'resize-outline' as const, label: 'Cidago', value: `${horse.heightCm} cm` });
 
-  const row1: SoftSection[] = [
-    { id: 'identity', title: 'Kimlik ve fiziksel', rows: identity },
-    { id: 'pedigree', title: 'Orijin (soy ağacı)', rows: pedigree },
-    { id: 'people', title: 'İlgili kişiler', rows: people },
-  ];
+    const pedigree: SoftRow[] = [];
+    if (horse?.sire) pedigree.push({ icon: 'git-branch-outline', label: 'Baba', value: horse.sire });
+    if (horse?.dam) pedigree.push({ icon: 'git-branch-outline', label: 'Anne', value: horse.dam });
+    if (horse?.damsire) pedigree.push({ icon: 'git-network-outline', label: 'Kısrak babası', value: horse.damsire });
 
-  const row2: SoftSection[] = [
-    { id: 'performance', title: 'Performans ve kazanç', rows: performance },
-    {
-      id: 'form',
-      title: horse.offspring?.length ? 'Üreme ve taylar' : 'Form notu',
-      rows: horse.offspring?.length ? offspringRows : formRows,
-    },
-  ];
+    const people: SoftRow[] = [];
+    if (horse && horse.owners.length > 0) people.push({ icon: 'person-outline', label: 'Sahip', value: horse.owners.join(', ') });
+    if (horse?.breeder) people.push({ icon: 'home-outline', label: 'Yetiştirici', value: horse.breeder });
+    if (horse?.trainer) people.push({ icon: 'fitness-outline', label: 'Antrenör', value: horse.trainer });
+
+    const r1: SoftSection[] = [];
+    if (identity.length > 0) r1.push({ id: 'identity', title: 'Kimlik ve fiziksel', rows: identity });
+    if (pedigree.length > 0) r1.push({ id: 'pedigree', title: 'Orijin (soy ağacı)', rows: pedigree });
+    if (people.length > 0) r1.push({ id: 'people', title: 'İlgili kişiler', rows: people });
+
+    const r2: SoftSection[] = [];
+    if (horse && horse.career.starts > 0) {
+      r2.push({
+        id: 'performance',
+        title: 'Performans ve kazanç',
+        rows: [
+          { icon: 'trophy-outline', label: 'Kariyer', value: `${horse.career.starts} start · ${horse.career.first}-${horse.career.second}-${horse.career.third}` },
+          { icon: 'speedometer-outline', label: 'Handikap', value: String(horse.handicap) },
+        ],
+      });
+    }
+
+    return {
+      title: 'Genel bilgiler',
+      row1: r1,
+      row2: r2,
+      hasRaces: Boolean(horse && horse.races.length > 0),
+    };
+  }, [categoryKind, detail, horse, pansiyonInfo, studInfo, transportInfo]);
 
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.pageTitle, { color: text }]}>Genel bilgiler</Text>
+      <Text style={[styles.pageTitle, { color: text }]}>{title}</Text>
 
-      <View style={[styles.columns, !isWide && styles.columnsStack]}>
-        {row1.map((section) => (
-          <SpecColumn
-            key={section.id}
-            section={section}
-            text={text}
-            textMuted={textMuted}
-            textSecondary={textSecondary}
-            stack={!isWide}
-          />
-        ))}
-      </View>
+      {row1.length > 0 ? (
+        <View style={[styles.columns, !isWide && styles.columnsStack]}>
+          {row1.map((section) => (
+            <SpecColumn
+              key={section.id}
+              section={section}
+              text={text}
+              textMuted={textMuted}
+              textSecondary={textSecondary}
+              stack={!isWide}
+            />
+          ))}
+        </View>
+      ) : null}
 
-      <View style={[styles.columns, !isWide && styles.columnsStack]}>
-        {row2.map((section) => (
-          <SpecColumn
-            key={section.id}
-            section={section}
-            text={text}
-            textMuted={textMuted}
-            textSecondary={textSecondary}
-            stack={!isWide}
-          />
-        ))}
+      {row2.length > 0 ? (
+        <View style={[styles.columns, !isWide && styles.columnsStack]}>
+          {row2.map((section) => (
+            <SpecColumn
+              key={section.id}
+              section={section}
+              text={text}
+              textMuted={textMuted}
+              textSecondary={textSecondary}
+              stack={!isWide}
+            />
+          ))}
+        </View>
+      ) : null}
 
-        <View style={[styles.column, !isWide && styles.columnStack]}>
-          <Text style={[styles.sectionTitle, { color: text }]}>
-            Yarış geçmişi
-          </Text>
-          <View style={styles.raceList}>
-            {horse.races.slice(0, 5).map((race) => (
-              <View key={race.id} style={styles.raceRow}>
-                <Text style={[styles.racePlace, { color: header }]}>
-                  {race.place}.
-                </Text>
-                <View style={styles.raceCopy}>
-                  <Text
-                    style={[styles.raceVenue, { color: text }]}
-                    numberOfLines={1}
-                  >
-                    {race.venue}
+      {hasRaces && horse ? (
+        <View style={[styles.columns, !isWide && styles.columnsStack]}>
+          <View style={[styles.column, !isWide && styles.columnStack]}>
+            <Text style={[styles.sectionTitle, { color: text }]}>
+              Yarış geçmişi
+            </Text>
+            <View style={styles.raceList}>
+              {horse.races.slice(0, 5).map((race) => (
+                <View key={race.id} style={styles.raceRow}>
+                  <Text style={[styles.racePlace, { color: header }]}>
+                    {race.place}.
                   </Text>
-                  <Text style={[styles.raceMeta, { color: textMuted }]}>
-                    {race.date} · {race.distance} · {race.surface}
-                  </Text>
+                  <View style={styles.raceCopy}>
+                    <Text
+                      style={[styles.raceVenue, { color: text }]}
+                      numberOfLines={1}
+                    >
+                      {race.venue}
+                    </Text>
+                    <Text style={[styles.raceMeta, { color: textMuted }]}>
+                      {race.date} · {race.distance} · {race.surface}
+                    </Text>
+                  </View>
+                  {race.videoUrl ? (
+                    <Pressable
+                      onPress={() => Linking.openURL(race.videoUrl!)}
+                      hitSlop={8}
+                    >
+                      <Ionicons
+                        name="play-circle-outline"
+                        size={20}
+                        color={header}
+                      />
+                    </Pressable>
+                  ) : null}
                 </View>
-                {race.videoUrl ? (
-                  <Pressable
-                    onPress={() => Linking.openURL(race.videoUrl!)}
-                    hitSlop={8}
-                  >
-                    <Ionicons
-                      name="play-circle-outline"
-                      size={20}
-                      color={header}
-                    />
-                  </Pressable>
-                ) : null}
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
         </View>
-      </View>
+      ) : null}
     </View>
   );
 });
