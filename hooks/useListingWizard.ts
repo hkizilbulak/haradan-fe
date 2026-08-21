@@ -8,6 +8,7 @@ import {
   setListingWizardState,
   subscribeListingWizard,
   listingRepository,
+  isPaytrCheckoutEnabled,
   type IListingRepository,
   type ListingTypePhase,
 } from '@/services/listing';
@@ -27,13 +28,24 @@ type Deps = {
   tjk?: ITjkRepository;
 };
 
-const STEPS: ListingWizardStep[] = [
+const STEPS_WITH_PAYTR: ListingWizardStep[] = [
   'type',
   'details',
   'package',
   'payment',
   'review',
 ];
+
+const STEPS_WITHOUT_PAYTR: ListingWizardStep[] = [
+  'type',
+  'details',
+  'package',
+  'review',
+];
+
+function wizardSteps(): ListingWizardStep[] {
+  return isPaytrCheckoutEnabled() ? STEPS_WITH_PAYTR : STEPS_WITHOUT_PAYTR;
+}
 
 export function applyTjkProfile(
   details: ListingDraftDetails,
@@ -229,8 +241,9 @@ export function useListingWizard(deps: Deps = {}) {
         }
         return { ...prev, step: 'package', detailsAttempted: false };
       }
-      const idx = STEPS.indexOf(prev.step);
-      const next = STEPS[idx + 1];
+      const steps = wizardSteps();
+      const idx = steps.indexOf(prev.step);
+      const next = steps[idx + 1];
       if (!next || !canEnterStep(prev.draft, next)) return prev;
       return { ...prev, step: next };
     });
@@ -245,8 +258,9 @@ export function useListingWizard(deps: Deps = {}) {
           draft: { ...prev.draft, type: null, breed: null },
         };
       }
-      const idx = STEPS.indexOf(prev.step);
-      const prevStep = STEPS[idx - 1];
+      const steps = wizardSteps();
+      const idx = steps.indexOf(prev.step);
+      const prevStep = steps[idx - 1];
       if (!prevStep) return prev;
       return {
         ...prev,
@@ -278,9 +292,12 @@ export function useListingWizard(deps: Deps = {}) {
     [listingRepo]
   );
 
-  /** Create draft then open PayTR iframe checkout (live path). */
+  /** Create draft then open PayTR iframe checkout (only when flag enabled). */
   const startPaidCheckout = useCallback(
     async (accessToken: string) => {
+      if (!isPaytrCheckoutEnabled()) {
+        return publishListing(accessToken);
+      }
       const current = getListingWizardState();
       const packageCode = current.draft.packageCode?.trim();
       if (!packageCode) {

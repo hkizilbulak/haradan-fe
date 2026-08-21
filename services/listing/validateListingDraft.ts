@@ -2,6 +2,7 @@ import {
   HORSE_LISTING_GROUP_SLUGS,
   HORSE_LISTING_LEAF_SLUGS,
 } from '@/constants/listingCatalog';
+import { isPaytrCheckoutEnabled } from '@/constants/Paytr';
 import { isValidNationalPhone } from '@/services/phone';
 import type {
   ListingDraft,
@@ -85,7 +86,11 @@ export function canEnterStep(
   if (target === 'type') return true;
   if (target === 'details') return typeStepComplete(draft);
   if (target === 'package') return typeStepComplete(draft) && detailsStepComplete(draft);
-  if (target === 'payment' || target === 'review') {
+  if (target === 'payment') {
+    if (!isPaytrCheckoutEnabled()) return false;
+    return typeStepComplete(draft) && detailsStepComplete(draft) && packageStepComplete(draft);
+  }
+  if (target === 'review') {
     return typeStepComplete(draft) && detailsStepComplete(draft) && packageStepComplete(draft);
   }
   return false;

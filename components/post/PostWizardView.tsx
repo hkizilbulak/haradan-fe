@@ -13,7 +13,7 @@ import { useListingWizard } from '@/hooks/useListingWizard';
 import { useListingWizardBack } from '@/hooks/useListingWizardBack';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { getValidAccessToken } from '@/services/auth';
-import { detailsStepComplete } from '@/services/listing';
+import { detailsStepComplete, isPaytrCheckoutEnabled } from '@/services/listing';
 import { parseInternationalPhone } from '@/services/phone';
 import type { ListingWizardStep } from '@/types/listing';
 
@@ -27,6 +27,7 @@ export function PostWizardView() {
   const wizard = useListingWizard();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const paytrEnabled = isPaytrCheckoutEnabled();
   const { back, unwindAndExit } = useListingWizardBack({
     step: wizard.step,
     typePhase: wizard.typePhase,
@@ -77,10 +78,18 @@ export function PostWizardView() {
           router.push('/auth/login?next=/post');
           return;
         }
-        await wizard.startPaidCheckout(token);
+        if (paytrEnabled) {
+          await wizard.startPaidCheckout(token);
+        } else {
+          await wizard.publishListing(token);
+        }
       } catch (err) {
         setSubmitError(
-          err instanceof Error ? err.message : 'Ödeme başlatılamadı.'
+          err instanceof Error
+            ? err.message
+            : paytrEnabled
+              ? 'Ödeme başlatılamadı.'
+              : 'İlan gönderilemedi.'
         );
       } finally {
         setSubmitting(false);
@@ -88,10 +97,13 @@ export function PostWizardView() {
       return;
     }
     wizard.goNext();
-  }, [wizard, isLoggedIn, router]);
+  }, [wizard, isLoggedIn, router, paytrEnabled]);
 
-  const nextLabel =
-    wizard.step === 'package' ? 'Ödemeye geç' : 'Devam et';
+  const nextLabel = wizard.step === 'package'
+    ? paytrEnabled
+      ? 'Ödemeye geç'
+      : 'İncelemeye gönder'
+    : 'Devam et';
   const showBack = wizard.step !== 'type' || wizard.typePhase !== 'root';
   const showNext =
     wizard.step === 'details' || wizard.step === 'package';
@@ -145,7 +157,7 @@ export function PostWizardView() {
           onSelect={wizard.selectPackage}
         />
       ) : null}
-      {wizard.step === 'payment' ? (
+      {wizard.step === 'payment' && paytrEnabled ? (
         <PostPaymentStep
           iframeUrl={wizard.paytrIframeUrl}
           error={submitError}
