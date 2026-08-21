@@ -9,7 +9,13 @@ import { PostTjkSheet } from './PostTjkSheet';
 import { formatTlGrouped } from '@/services/phone';
 import { locationLookup } from '@/services/location';
 import { useDistricts, useProvinces } from '@/hooks/useLocation';
-import { isHorseListing } from '@/services/listing';
+import {
+  isPansiyonListing,
+  isSaleHorseListing,
+  isStudServiceListing,
+  isTransportListing,
+} from '@/services/listing';
+import { PostCategoryProperties } from './PostCategoryProperties';
 import type { ListingFieldErrors } from '@/services/listing';
 import type { HorseGender } from '@/types';
 import type { ListingDraft, ListingMediaSlot } from '@/types/listing';
@@ -72,7 +78,6 @@ export function PostDetailsStep({
   const border = useThemeColor('border');
   const header = useThemeColor('header');
   const errorColor = useThemeColor('error');
-  const horse = isHorseListing(draft.type);
   const d = draft.details;
   const locked = Boolean(d.horseId);
   const [tjkOpen, setTjkOpen] = useState(false);
@@ -139,12 +144,17 @@ export function PostDetailsStep({
     prevHasErrors.current = hasErrors;
   }, [scrollTrigger, errors, scrollToFirstError]);
 
+  const isSaleHorse = isSaleHorseListing(draft.type);
+  const isStud = isStudServiceListing(draft.type);
+  const isPansiyon = isPansiyonListing(draft.type);
+  const isTransport = isTransportListing(draft.type);
+
   useEffect(() => {
-    if (horse && !tjkPromptSeen) {
+    if (isSaleHorse && !tjkPromptSeen) {
       setTjkMode('ask');
       setTjkOpen(true);
     }
-  }, [horse, tjkPromptSeen]);
+  }, [isSaleHorse, tjkPromptSeen]);
 
   const openTjkSearch = () => {
     setTjkMode('search');
@@ -162,20 +172,27 @@ export function PostDetailsStep({
         locationLookup.getDistrictName(d.districtId))) ||
     '';
 
+  const defaultLead = isSaleHorse
+    ? 'TJK kaydı varsa alanlar dolar. Zorunlu alanları siz tamamlayın.'
+    : isStud
+      ? 'Aygır bilgileri ve soy kütüğünü tamamlayın.'
+      : isPansiyon
+        ? 'Tesis özellikleri, konum ve iletişim bilgilerini girin.'
+        : isTransport
+          ? 'Nakliye hizmeti, firma ve iletişim bilgilerini girin.'
+          : 'Başlık, fiyat, konum ve iletişim bilgilerini girin.';
+
   return (
     <View style={styles.wrap}>
       <View style={styles.intro}>
         <Text style={[styles.kicker, { color: muted }]}>{kicker}</Text>
         <Text style={[styles.title, { color: text }]}>{heading}</Text>
         <Text style={[styles.lead, { color: secondary }]}>
-          {lead ??
-            (horse
-              ? 'TJK kaydı varsa alanlar dolar. Zorunlu alanları siz tamamlayın.'
-              : 'Başlık, fiyat, konum ve iletişim bilgilerini girin.')}
+          {lead ?? defaultLead}
         </Text>
       </View>
 
-      {horse ? (
+      {isSaleHorse ? (
         <Pressable
           onPress={openTjkSearch}
           accessibilityRole="button"
@@ -353,7 +370,7 @@ export function PostDetailsStep({
         </View>
       </View>
 
-      {horse ? (
+      {isSaleHorse ? (
         <View
           style={[styles.card, { backgroundColor: surface, borderColor: border }]}
           onLayout={(e) => {
@@ -490,7 +507,9 @@ export function PostDetailsStep({
             locked={locked}
           />
         </View>
-      ) : null}
+      ) : (
+        <PostCategoryProperties draft={draft} onUpdate={onUpdate} />
+      )}
 
       <View
         style={[styles.card, { backgroundColor: surface, borderColor: border }]}

@@ -77,6 +77,27 @@ export type ListingDraftDetails = {
   trainer: string;
   phoneCountryIso: string;
   sellerPhone: string;
+  /** Pansiyon Haralar */
+  facilityGrassPaddock?: boolean;
+  facilitySandPaddock?: boolean;
+  facilityStallionPaddock?: boolean;
+  facilityTrainingTrack?: string;
+  facilityVeterinarian?: boolean;
+  facilityFarrier?: boolean;
+  facilityFoalingBarn?: boolean;
+  /** At Nakliyesi */
+  companyName?: string;
+  websiteUrl?: string;
+  /** Aşım Hizmetleri */
+  studBreed?: string;
+  studAge?: string;
+  studCoatColor?: string;
+  studHorseName?: string;
+  studSire?: string;
+  studDam?: string;
+  studDamsire?: string;
+  /** Dinamik Properties JSON Map */
+  properties?: Record<string, unknown>;
 };
 
 /** BE PackageCode — kapalı enum değil. */
@@ -116,6 +137,7 @@ export type CreateAdvertDraftRequest = {
   title?: string | null;
   description?: string | null;
   price?: Money | null;
+  properties?: Record<string, unknown> | null;
 };
 
 /** OpenAPI: OwnerAdvertResponse (özet) */

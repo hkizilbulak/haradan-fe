@@ -22,9 +22,15 @@ export default function ListingsScreen() {
     category?: string | string[];
     breed?: string | string[];
     province?: string | string[];
+    district?: string | string[];
     min?: string | string[];
     max?: string | string[];
     urgent?: string | string[];
+    period?: string | string[];
+    facilities?: string | string[];
+    breeds?: string | string[];
+    ages?: string | string[];
+    colors?: string | string[];
   }>();
   const bg = useThemeColor('background');
   const { isLoggedIn } = useAuthSession();
@@ -37,9 +43,15 @@ export default function ListingsScreen() {
         category: null,
         breed: null,
         province: null,
+        district: null,
         min: null,
         max: null,
         urgent: null,
+        period: null,
+        facilities: null,
+        breeds: null,
+        ages: null,
+        colors: null,
       };
     }
     return {
@@ -47,9 +59,15 @@ export default function ListingsScreen() {
       category: first(params.category),
       breed: first(params.breed),
       province: first(params.province),
+      district: first(params.district),
       min: first(params.min),
       max: first(params.max),
       urgent: first(params.urgent),
+      period: first(params.period),
+      facilities: first(params.facilities),
+      breeds: first(params.breeds),
+      ages: first(params.ages),
+      colors: first(params.colors),
     };
   }, [
     hydrated,
@@ -57,9 +75,15 @@ export default function ListingsScreen() {
     params.category,
     params.breed,
     params.province,
+    params.district,
     params.min,
     params.max,
     params.urgent,
+    params.period,
+    params.facilities,
+    params.breeds,
+    params.ages,
+    params.colors,
   ]);
 
   const onLogin = useCallback(() => router.push('/auth/login'), [router]);

@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
 import {
   LayoutAnimation,
   Platform,
@@ -15,10 +15,13 @@ import {
   formatTlInput,
   parseTlInput,
   priceHint,
+  PERIOD_OPTIONS,
+  periodLabel,
+  type ListingPeriodFilter,
 } from '@/components/listings/filterConfig';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { locationLookup } from '@/services/location';
-import { useProvinces } from '@/hooks/useLocation';
+import { useDistricts, useProvinces } from '@/hooks/useLocation';
 import type { CatalogFacetGroup, CatalogFacetOption, CatalogFacets } from '@/types';
 
 if (
@@ -28,13 +31,28 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+export type PansiyonFacilityFilters = {
+  grassPaddock?: boolean;
+  sandPaddock?: boolean;
+  stallionPaddock?: boolean;
+  vet?: boolean;
+  farrier?: boolean;
+  foalingBarn?: boolean;
+};
+
 export type ListingsFiltersState = {
   categorySlug: string | null;
   breed: string | null;
   urgentOnly: boolean;
   provinceIds: string[];
+  districtId: string | null;
   priceMinTl: number | null;
   priceMaxTl: number | null;
+  period: ListingPeriodFilter | null;
+  facilities: PansiyonFacilityFilters;
+  breeds: string[];
+  ages: string[];
+  colors: string[];
 };
 
 type ListingsFilterSidebarProps = {
@@ -43,6 +61,27 @@ type ListingsFilterSidebarProps = {
   onChange: (next: ListingsFiltersState) => void;
   resultCount: number;
 };
+
+const FACILITY_OPTIONS: { key: keyof PansiyonFacilityFilters; label: string }[] = [
+  { key: 'grassPaddock', label: 'Çim Padok' },
+  { key: 'sandPaddock', label: 'Kum Padok' },
+  { key: 'stallionPaddock', label: 'Aygır Padoğu' },
+  { key: 'vet', label: 'Veteriner' },
+  { key: 'farrier', label: 'Nalbant' },
+  { key: 'foalingBarn', label: 'Doğumhane' },
+];
+
+const STUD_BREED_OPTIONS = ['Arap', 'İngiliz'];
+const STUD_AGE_OPTIONS = ['0', '1', '1.5', '2', '3', '4', '5+'];
+const COAT_COLOR_OPTIONS = [
+  'Doru',
+  'Al',
+  'Kır',
+  'Beyaz',
+  'Yağız',
+  'Kula',
+  'Boz',
+];
 
 function toggleAnim() {
   if (Platform.OS === 'web') return;
@@ -204,13 +243,19 @@ function FilterRow({
   );
 }
 
-const EMPTY: ListingsFiltersState = {
+export const EMPTY_LISTINGS_FILTERS: ListingsFiltersState = {
   categorySlug: null,
   breed: null,
   urgentOnly: false,
   provinceIds: [],
+  districtId: null,
   priceMinTl: null,
   priceMaxTl: null,
+  period: null,
+  facilities: {},
+  breeds: [],
+  ages: [],
+  colors: [],
 };
 
 /** Sol filtre — kapalı akordeon; detay basınca açılır. */
@@ -220,19 +265,39 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
   onChange,
   resultCount,
 }: ListingsFilterSidebarProps) {
-  const groups = facets?.groups ?? [];
+  const groups = useMemo(() => facets?.groups ?? [], [facets?.groups]);
   const { items: provinces } = useProvinces();
+  const selectedProvinceId =
+    value.provinceIds.length === 1 ? value.provinceIds[0] : null;
+  const { items: districts } = useDistricts(selectedProvinceId);
+
+  const isPansiyonActive =
+    value.categorySlug === 'pansiyon-haralar' ||
+    value.categorySlug === 'cat-pansiyon';
+
+  const isStudActive =
+    value.categorySlug === 'asim-hizmetleri' ||
+    value.categorySlug === 'arap-aygir' ||
+    value.categorySlug === 'ingiliz-aygir' ||
+    value.categorySlug === 'cat-asim' ||
+    value.categorySlug === 'cat-arap-aygir' ||
+    value.categorySlug === 'cat-ingiliz-aygir';
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     'listing-type': true,
     'horse-breed': true,
+    period: true,
+    facilities: true,
+    'stud-breeds': true,
+    'stud-ages': true,
+    'stud-colors': true,
     advanced: false,
   });
   const [openOptions, setOpenOptions] = useState<Record<string, boolean>>({});
   const [cityQuery, setCityQuery] = useState('');
+  const [districtQuery, setDistrictQuery] = useState('');
   const [minText, setMinText] = useState(formatTlInput(value.priceMinTl));
   const [maxText, setMaxText] = useState(formatTlInput(value.priceMaxTl));
-  const seeded = useRef(false);
 
   useEffect(() => {
     setMinText(formatTlInput(value.priceMinTl));
@@ -243,6 +308,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     if (groups.length === 0) return;
     const hasAdvanced =
       value.provinceIds.length > 0 ||
+      value.districtId != null ||
       value.priceMinTl != null ||
       value.priceMaxTl != null ||
       value.urgentOnly;
@@ -262,7 +328,15 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
       });
     });
     setOpenOptions((prev) => ({ ...prev, ...nextOptions }));
-  }, [groups, value.categorySlug, value.provinceIds, value.priceMinTl, value.priceMaxTl, value.urgentOnly]);
+  }, [
+    groups,
+    value.categorySlug,
+    value.provinceIds,
+    value.districtId,
+    value.priceMinTl,
+    value.priceMaxTl,
+    value.urgentOnly,
+  ]);
 
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
@@ -288,8 +362,14 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     value.breed != null ||
     value.urgentOnly ||
     value.provinceIds.length > 0 ||
+    value.districtId != null ||
     value.priceMinTl != null ||
-    value.priceMaxTl != null;
+    value.priceMaxTl != null ||
+    value.period != null ||
+    (value.breeds && value.breeds.length > 0) ||
+    (value.ages && value.ages.length > 0) ||
+    (value.colors && value.colors.length > 0) ||
+    Object.values(value.facilities ?? {}).some(Boolean);
 
   const advancedHint =
     [
@@ -298,6 +378,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         : value.provinceIds.length > 1
           ? `${locationLookup.getProvinceName(value.provinceIds[0])} +${value.provinceIds.length - 1}`
           : null,
+      value.districtId ? locationLookup.getDistrictName(value.districtId) : null,
       priceHint(value.priceMinTl, value.priceMaxTl),
       value.urgentOnly ? 'Acil' : null,
     ]
@@ -311,6 +392,14 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
       p.name.toLocaleLowerCase('tr').includes(needle)
     );
   }, [cityQuery, provinces]);
+
+  const filteredDistricts = useMemo(() => {
+    const needle = districtQuery.trim().toLocaleLowerCase('tr');
+    if (!needle) return districts;
+    return districts.filter((d) =>
+      d.name.toLocaleLowerCase('tr').includes(needle)
+    );
+  }, [districtQuery, districts]);
 
   const commitPrice = (minRaw: string, maxRaw: string) => {
     onChange({
@@ -378,6 +467,9 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
   const categoryGroup = groups.find((g) => g.kind === 'category');
   const breedGroup = groups.find((g) => g.kind === 'breed');
 
+  const facilityCount = Object.values(value.facilities ?? {}).filter(Boolean).length;
+  const facilityHint = facilityCount > 0 ? `${facilityCount} seçili` : null;
+
   return (
     <View
       nativeID="haradan-listings-filters"
@@ -394,7 +486,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         <View style={styles.headMeta}>
           <Text style={[styles.count, { color: textMuted }]}>{resultCount}</Text>
           <Pressable
-            onPress={() => onChange(EMPTY)}
+            onPress={() => onChange(EMPTY_LISTINGS_FILTERS)}
             hitSlop={8}
             disabled={!hasActive}
             accessibilityLabel="Filtreleri sıfırla"
@@ -407,6 +499,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         </View>
       </View>
 
+      {/* 1. Kategori Seçimi */}
       {categoryGroup ? (
         <Accordion
           title={categoryGroup.label}
@@ -465,7 +558,168 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         </Accordion>
       ) : null}
 
-      {breedGroup ? (
+      {/* 2. Pansiyon Haralar: Tesis & Hizmet Özellikleri (Toggle Switch) */}
+      {isPansiyonActive ? (
+        <Accordion
+          title="Tesis & Hizmet Özellikleri"
+          open={!!openGroups.facilities}
+          onToggle={() => toggleGroup('facilities')}
+          hint={facilityHint}
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        >
+          {FACILITY_OPTIONS.map((fac) => {
+            const on = Boolean(value.facilities?.[fac.key]);
+            return (
+              <Pressable
+                key={fac.key}
+                onPress={() =>
+                  onChange({
+                    ...value,
+                    facilities: {
+                      ...value.facilities,
+                      [fac.key]: !on,
+                    },
+                  })
+                }
+                accessibilityRole="switch"
+                accessibilityState={{ checked: on }}
+                style={({ pressed }) => [
+                  styles.toggleRow,
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.rowText,
+                    {
+                      color: on ? text : textSecondary,
+                      fontWeight: on ? '600' : '400',
+                      flex: 1,
+                    },
+                  ]}
+                >
+                  {fac.label}
+                </Text>
+                <View
+                  style={[
+                    styles.switch,
+                    {
+                      backgroundColor: on ? header : border,
+                      justifyContent: on ? 'flex-end' : 'flex-start',
+                    },
+                  ]}
+                >
+                  <View style={styles.switchKnob} />
+                </View>
+              </Pressable>
+            );
+          })}
+        </Accordion>
+      ) : null}
+
+      {/* 3. Aşım Hizmetleri: At Irkı (Çoklu Seçim) */}
+      {isStudActive ? (
+        <Accordion
+          title="At Irkı"
+          open={!!openGroups['stud-breeds']}
+          onToggle={() => toggleGroup('stud-breeds')}
+          hint={value.breeds?.length ? value.breeds.join(', ') : null}
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        >
+          {STUD_BREED_OPTIONS.map((breed) => {
+            const selected = (value.breeds ?? []).includes(breed);
+            return (
+              <FilterRow
+                key={breed}
+                label={breed}
+                multi
+                selected={selected}
+                onSelect={() => {
+                  const curr = value.breeds ?? [];
+                  const next = selected
+                    ? curr.filter((b) => b !== breed)
+                    : [...curr, breed];
+                  onChange({ ...value, breeds: next });
+                }}
+                {...rowTheme}
+              />
+            );
+          })}
+        </Accordion>
+      ) : null}
+
+      {/* 4. Aşım Hizmetleri: Yaş (Çoklu Seçim) */}
+      {isStudActive ? (
+        <Accordion
+          title="Yaş"
+          open={!!openGroups['stud-ages']}
+          onToggle={() => toggleGroup('stud-ages')}
+          hint={value.ages?.length ? `${value.ages.length} seçili` : null}
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        >
+          {STUD_AGE_OPTIONS.map((age) => {
+            const selected = (value.ages ?? []).includes(age);
+            return (
+              <FilterRow
+                key={age}
+                label={`${age} Yaş`}
+                multi
+                selected={selected}
+                onSelect={() => {
+                  const curr = value.ages ?? [];
+                  const next = selected
+                    ? curr.filter((a) => a !== age)
+                    : [...curr, age];
+                  onChange({ ...value, ages: next });
+                }}
+                {...rowTheme}
+              />
+            );
+          })}
+        </Accordion>
+      ) : null}
+
+      {/* 5. Aşım Hizmetleri: Donu (Renk) (Çoklu Seçim) */}
+      {isStudActive ? (
+        <Accordion
+          title="Donu (Renk)"
+          open={!!openGroups['stud-colors']}
+          onToggle={() => toggleGroup('stud-colors')}
+          hint={value.colors?.length ? value.colors.join(', ') : null}
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        >
+          {COAT_COLOR_OPTIONS.map((color) => {
+            const selected = (value.colors ?? []).includes(color);
+            return (
+              <FilterRow
+                key={color}
+                label={color}
+                multi
+                selected={selected}
+                onSelect={() => {
+                  const curr = value.colors ?? [];
+                  const next = selected
+                    ? curr.filter((c) => c !== color)
+                    : [...curr, color];
+                  onChange({ ...value, colors: next });
+                }}
+                {...rowTheme}
+              />
+            );
+          })}
+        </Accordion>
+      ) : null}
+
+      {/* 6. Satılık Atlar / Genel Irk Seçimi */}
+      {breedGroup && !isStudActive ? (
         <Accordion
           title={breedGroup.label}
           open={!!openGroups[breedGroup.id]}
@@ -487,6 +741,39 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         </Accordion>
       ) : null}
 
+      {/* 7. İlan Tarihi (Periyot) */}
+      <Accordion
+        title="İlan Tarihi"
+        open={!!openGroups.period}
+        onToggle={() => toggleGroup('period')}
+        hint={periodLabel(value.period)}
+        text={text}
+        textMuted={textMuted}
+        border={border}
+      >
+        <FilterRow
+          label="Tümü"
+          selected={value.period == null}
+          onSelect={() => onChange({ ...value, period: null })}
+          {...rowTheme}
+        />
+        {PERIOD_OPTIONS.map((opt) => (
+          <FilterRow
+            key={opt.id}
+            label={opt.label}
+            selected={value.period === opt.id}
+            onSelect={() =>
+              onChange({
+                ...value,
+                period: value.period === opt.id ? null : opt.id,
+              })
+            }
+            {...rowTheme}
+          />
+        ))}
+      </Accordion>
+
+      {/* 8. Detaylı Filtreleme (Konum, Fiyat, Acil) */}
       <Accordion
         title="Detaylı filtreleme"
         open={!!openGroups.advanced}
@@ -496,7 +783,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         textMuted={textMuted}
         border={border}
       >
-        <Text style={[styles.subLabel, { color: textMuted }]}>Konum</Text>
+        <Text style={[styles.subLabel, { color: textMuted }]}>İl</Text>
         <View
           style={[
             styles.searchField,
@@ -548,6 +835,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
                   provinceIds: on
                     ? value.provinceIds.filter((id) => id !== p.id)
                     : [...value.provinceIds, p.id],
+                  districtId: on && value.districtId ? null : value.districtId,
                 });
               }}
               {...rowTheme}
@@ -559,6 +847,74 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
             </Text>
           ) : null}
         </ScrollView>
+
+        {/* Seçili il için İlçe Listesi */}
+        {selectedProvinceId && districts.length > 0 ? (
+          <>
+            <Text style={[styles.subLabel, styles.subSpaced, { color: textMuted }]}>
+              İlçe
+            </Text>
+            <View
+              style={[
+                styles.searchField,
+                { borderColor: border, backgroundColor: surface },
+              ]}
+            >
+              <Ionicons name="search-outline" size={14} color={textMuted} />
+              <TextInput
+                value={districtQuery}
+                onChangeText={setDistrictQuery}
+                placeholder="İlçe ara…"
+                placeholderTextColor={textMuted}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="search"
+                style={[
+                  styles.searchInput,
+                  {
+                    color: text,
+                    ...(Platform.OS === 'web'
+                      ? ({ outlineStyle: 'none', outlineWidth: 0 } as object)
+                      : null),
+                  },
+                ]}
+              />
+              {districtQuery.length > 0 ? (
+                <Pressable onPress={() => setDistrictQuery('')} hitSlop={6}>
+                  <Ionicons name="close-circle" size={14} color={textMuted} />
+                </Pressable>
+              ) : null}
+            </View>
+            <ScrollView
+              style={[styles.cityList, { borderColor: border }]}
+              contentContainerStyle={styles.cityListContent}
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator
+            >
+              <FilterRow
+                label="Tüm ilçeler"
+                selected={!value.districtId}
+                onSelect={() => onChange({ ...value, districtId: null })}
+                {...rowTheme}
+              />
+              {filteredDistricts.map((d) => (
+                <FilterRow
+                  key={d.id}
+                  label={d.name}
+                  selected={value.districtId === d.id}
+                  onSelect={() =>
+                    onChange({
+                      ...value,
+                      districtId: value.districtId === d.id ? null : d.id,
+                    })
+                  }
+                  {...rowTheme}
+                />
+              ))}
+            </ScrollView>
+          </>
+        ) : null}
 
         <Text style={[styles.subLabel, styles.subSpaced, { color: textMuted }]}>
           Fiyat
@@ -846,8 +1202,9 @@ const styles = StyleSheet.create({
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     minHeight: 40,
-    gap: 10,
+    paddingVertical: 4,
   },
   switch: {
     width: 36,

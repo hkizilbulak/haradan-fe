@@ -3,6 +3,7 @@ export { PostWizardShell } from './PostWizardShell';
 export { PostStepper } from './PostStepper';
 export { PostTypeStep } from './PostTypeStep';
 export { PostDetailsStep } from './PostDetailsStep';
+export { PostCategoryProperties } from './PostCategoryProperties';
 export { PostPackagesStep } from './PostPackagesStep';
 export { PostReviewStep } from './PostReviewStep';
 export { PostPlaceSheet } from './PostPlaceSheet';

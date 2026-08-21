@@ -9,6 +9,11 @@ export { LISTING_PACKAGES } from './listingPackages';
 export { mapPublicPackage } from './mapPackage';
 export {
   isHorseListing,
+  isSaleHorseListing,
+  isPansiyonListing,
+  isTransportListing,
+  isFarrierListing,
+  isStudServiceListing,
   typeStepComplete,
   detailsErrors,
   detailsStepComplete,
