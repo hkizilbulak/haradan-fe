@@ -38,6 +38,10 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import {
   matchesDatePeriod,
   matchesPrice,
+  matchHorseAge,
+  matchHorseBreed,
+  matchHorseColor,
+  matchHorseGender,
   parseArrayParam,
   parseProvinceParam,
   parseTlParam,
@@ -154,81 +158,27 @@ function applyClientFilters(
 
   // 7. Tekil Irk (Breed - Satılık Atlar / Genel)
   if (filters.breed) {
-    const needle = normalizeSearchText(filters.breed);
-    list = list.filter((p) => normalizeSearchText(p.brand) === needle);
+    list = list.filter((p) => matchHorseBreed(p, [filters.breed!]));
   }
 
-  // 8. Çoklu Irk (Aşım Hizmetleri - Arap / İngiliz)
+  // 8. Çoklu Irk (Aşım Hizmetleri / Satılık Atlar - Çoklu Seçim)
   if (filters.breeds && filters.breeds.length > 0) {
-    const normalizedBreeds = filters.breeds.map(normalizeSearchText);
-    list = list.filter((p) => {
-      const normBrand = normalizeSearchText(p.brand);
-      const normTitle = normalizeSearchText(p.title);
-      return normalizedBreeds.some((b) => {
-        if (b === 'arap') {
-          return (
-            normBrand.includes('arab') ||
-            normBrand.includes('arap') ||
-            normTitle.includes('arap') ||
-            p.categoryId === 'cat-arap-aygir'
-          );
-        }
-        if (b === 'ingiliz') {
-          return (
-            normBrand.includes('thorough') ||
-            normBrand.includes('ingiliz') ||
-            normTitle.includes('ingiliz') ||
-            p.categoryId === 'cat-ingiliz-aygir'
-          );
-        }
-        return normBrand.includes(b) || normTitle.includes(b);
-      });
-    });
+    list = list.filter((p) => matchHorseBreed(p, filters.breeds));
   }
 
-  // 9. Çoklu Yaş (0, 1, 1.5, 2, 3, 4, 5+)
+  // 9. Çoklu Yaş (0, 1, 1.5, 2, 3, 4, 5+ / Tay)
   if (filters.ages && filters.ages.length > 0) {
-    list = list.filter((p) => {
-      const normTitle = normalizeSearchText(p.title);
-      return filters.ages.some((age) => {
-        if (age === '5+' || age === '5+ Yas' || age === '5+ Yaş') {
-          const match = normTitle.match(/(\d+(?:\.\d+)?)\s*ya/);
-          if (match) {
-            const num = parseFloat(match[1]);
-            return num >= 5;
-          }
-          return false;
-        }
-        if (age === '1.5' || age === '1,5') {
-          return normTitle.includes('1.5') || normTitle.includes('1,5') || normTitle.includes('1 bucuk');
-        }
-        if (age === '0' || age.includes('Tay')) {
-          return normTitle.includes('0 ya') || normTitle.includes('tay') || normTitle.includes('0-1');
-        }
-        return normTitle.includes(`${age} ya`) || normTitle.includes(`${age}ya`);
-      });
-    });
+    list = list.filter((p) => matchHorseAge(p, filters.ages));
   }
 
-  // 10. Çoklu Don / Renk
+  // 10. Çoklu Don / Renk (Doru, Al, Kır, Beyaz, Yağız, Kula, Boz)
   if (filters.colors && filters.colors.length > 0) {
-    const normalizedColors = filters.colors.map(normalizeSearchText);
-    list = list.filter((p) => {
-      const normTitle = normalizeSearchText(p.title);
-      return normalizedColors.some((c) => normTitle.includes(c));
-    });
+    list = list.filter((p) => matchHorseColor(p, filters.colors));
   }
 
   // 11. Cinsiyet (Erkek, Dişi, İğdiş)
   if (filters.genders && filters.genders.length > 0) {
-    const normalizedGenders = filters.genders.map(normalizeSearchText);
-    list = list.filter((p) => {
-      const normTitle = normalizeSearchText(p.title);
-      const normBrand = normalizeSearchText(p.brand ?? '');
-      return normalizedGenders.some(
-        (g) => normTitle.includes(g) || normBrand.includes(g)
-      );
-    });
+    list = list.filter((p) => matchHorseGender(p, filters.genders));
   }
 
   // 12. Tesis & Hizmet Özellikleri (Pansiyon Haralar)

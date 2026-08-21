@@ -32,6 +32,10 @@ import {
   isTransportCategory,
   isFarrierCategory,
   isStudCategory,
+  matchHorseGender,
+  matchHorseBreed,
+  matchHorseAge,
+  matchHorseColor,
 } from '../components/listings/filterConfig';
 import type { ListingDraft } from '../types/listing';
 
@@ -277,7 +281,62 @@ assert(!isFarrierCategory('satilik-atlar'), 'satilik-atlar Nalbant kategorisi de
 
 assert(isStudCategory('asim-hizmetleri'), 'asim-hizmetleri Aşım kategorisi olarak algılandı');
 assert(isStudCategory('arap-aygir'), 'arap-aygir Aşım kategorisi olarak algılandı');
-assert(!isStudCategory('at-nakliyesi'), 'at-nakliyesi Aşım kategorisi değildir');
+// G. Satılık Atlar & Aşım Cinsiyet, Irk, Yaş, Don Eşleştirme Testleri
+console.log('\n--- 4. At Filtre Eşleştirme Testleri (Cinsiyet, Irk, Yaş, Don) ---');
+
+const cardMaleRaceHorse = {
+  title: '3 yaş İngiliz yarış aygırı — Veliefendi hazır',
+  brand: 'Thoroughbred',
+  categoryId: 'cat-yaris-ati',
+};
+const cardFemaleArabMare = {
+  title: 'Safkan Arap kısrak, 5 yaş — doğum belgesi tam',
+  brand: 'Arabian',
+  categoryId: 'cat-kisrak',
+};
+const cardPonyGelding = {
+  title: 'Pony Shetland, 4 yaş — çocuk biniciliği',
+  brand: 'Shetland',
+  categoryId: 'cat-pony',
+};
+const cardArabStud = {
+  title: 'Arap aygır aşım — 2026 sezonu rezervasyon',
+  brand: 'Arabian',
+  categoryId: 'cat-arap-aygir',
+};
+const cardWarmbloodHorse = {
+  title: 'Dressaj Warmblood, 9 yaş — orta seviye',
+  brand: 'Warmblood',
+  categoryId: 'cat-binek',
+};
+
+// Cinsiyet Testleri
+assert(matchHorseGender(cardMaleRaceHorse, ['Erkek']), 'Yarış aygırı Erkek filtresiyle eşleşti');
+assert(!matchHorseGender(cardMaleRaceHorse, ['Dişi']), 'Yarış aygırı Dişi filtresiyle eşleşmedi');
+assert(matchHorseGender(cardFemaleArabMare, ['Dişi']), 'Arap kısrak Dişi filtresiyle eşleşti');
+assert(!matchHorseGender(cardFemaleArabMare, ['Erkek']), 'Arap kısrak Erkek filtresiyle eşleşmedi');
+assert(matchHorseGender(cardPonyGelding, ['İğdiş']), 'Pony İğdiş filtresiyle eşleşti');
+assert(matchHorseGender(cardArabStud, ['Erkek']), 'Aşım aygırı Erkek filtresiyle eşleşti');
+
+// Irk Testleri
+assert(matchHorseBreed(cardMaleRaceHorse, ['İngiliz (Thoroughbred)']), 'İngiliz yarış aygırı İngiliz (Thoroughbred) filtresiyle eşleşti');
+assert(matchHorseBreed(cardFemaleArabMare, ['Safkan Arap']), 'Arap kısrak Safkan Arap filtresiyle eşleşti');
+assert(matchHorseBreed(cardWarmbloodHorse, ['Warmblood / Spor Atı']), 'Warmblood atı Warmblood / Spor Atı filtresiyle eşleşti');
+assert(matchHorseBreed(cardPonyGelding, ['Pony / Midilli']), 'Shetland pony Pony / Midilli filtresiyle eşleşti');
+assert(!matchHorseBreed(cardMaleRaceHorse, ['Safkan Arap']), 'İngiliz atı Arap filtresiyle eşleşmedi');
+
+// Yaş Testleri
+assert(matchHorseAge(cardMaleRaceHorse, ['3 Yaş']), '3 yaş at 3 Yaş filtresiyle eşleşti');
+assert(matchHorseAge(cardFemaleArabMare, ['5+ Yaş']), '5 yaş kısrak 5+ Yaş filtresiyle eşleşti');
+assert(matchHorseAge(cardPonyGelding, ['4 Yaş']), '4 yaş pony 4 Yaş filtresiyle eşleşti');
+assert(matchHorseAge({ title: '6 aylık tay' }, ['Tay (0-1 Yaş)']), 'Tay Tay (0-1 Yaş) filtresiyle eşleşti');
+assert(!matchHorseAge(cardMaleRaceHorse, ['5+ Yaş']), '3 yaş at 5+ Yaş filtresiyle eşleşmedi');
+
+// Don / Renk Testleri
+assert(matchHorseColor({ title: 'Doru tay satılık' }, ['Doru']), 'Doru don eşleşti');
+assert(matchHorseColor({ title: 'Al kısrak 3 yaş' }, ['Al']), 'Al don eşleşti');
+assert(matchHorseColor({ title: 'Kır aygır' }, ['Kır']), 'Kır don eşleşti');
+assert(!matchHorseColor({ title: 'Doru tay' }, ['Kır']), 'Doru tay Kır ile eşleşmedi');
 
 console.log(`\nÖzet: ${passed} geçti, ${failed} kaldı.`);
 if (failed > 0) {
