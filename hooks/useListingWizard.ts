@@ -9,6 +9,8 @@ import {
   subscribeListingWizard,
   listingRepository,
   isPaytrCheckoutEnabled,
+  isListingPackageStepEnabled,
+  DEFAULT_LISTING_PACKAGE_CODE,
   type IListingRepository,
   type ListingTypePhase,
 } from '@/services/listing';
@@ -28,7 +30,7 @@ type Deps = {
   tjk?: ITjkRepository;
 };
 
-const STEPS_WITH_PAYTR: ListingWizardStep[] = [
+const STEPS_FULL: ListingWizardStep[] = [
   'type',
   'details',
   'package',
@@ -36,15 +38,19 @@ const STEPS_WITH_PAYTR: ListingWizardStep[] = [
   'review',
 ];
 
-const STEPS_WITHOUT_PAYTR: ListingWizardStep[] = [
+const STEPS_PACKAGE_ONLY: ListingWizardStep[] = [
   'type',
   'details',
   'package',
   'review',
 ];
 
+/** TEMP: skip package + payment until PayTR is live. */
+const STEPS_DIRECT: ListingWizardStep[] = ['type', 'details', 'review'];
+
 function wizardSteps(): ListingWizardStep[] {
-  return isPaytrCheckoutEnabled() ? STEPS_WITH_PAYTR : STEPS_WITHOUT_PAYTR;
+  if (!isListingPackageStepEnabled()) return STEPS_DIRECT;
+  return isPaytrCheckoutEnabled() ? STEPS_FULL : STEPS_PACKAGE_ONLY;
 }
 
 export function applyTjkProfile(
@@ -239,6 +245,9 @@ export function useListingWizard(deps: Deps = {}) {
         if (!detailsStepComplete(prev.draft)) {
           return { ...prev, detailsAttempted: true };
         }
+        if (!isListingPackageStepEnabled()) {
+          return { ...prev, detailsAttempted: false };
+        }
         return { ...prev, step: 'package', detailsAttempted: false };
       }
       const steps = wizardSteps();
@@ -278,7 +287,18 @@ export function useListingWizard(deps: Deps = {}) {
   const publishListing = useCallback(
     async (accessToken: string): Promise<PublishListingResult> => {
       const current = getListingWizardState();
-      const created = await listingRepo.publish(current.draft, accessToken);
+      const draft = {
+        ...current.draft,
+        packageCode:
+          current.draft.packageCode?.trim() || DEFAULT_LISTING_PACKAGE_CODE,
+      };
+      if (draft.packageCode !== current.draft.packageCode) {
+        setListingWizardState((prev) => ({
+          ...prev,
+          draft: { ...prev.draft, packageCode: draft.packageCode },
+        }));
+      }
+      const created = await listingRepo.publish(draft, accessToken);
       setListingWizardState((prev) => ({
         ...prev,
         submittedDraftId: created.advertId,

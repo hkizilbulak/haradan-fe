@@ -2,7 +2,10 @@ import {
   HORSE_LISTING_GROUP_SLUGS,
   HORSE_LISTING_LEAF_SLUGS,
 } from '@/constants/listingCatalog';
-import { isPaytrCheckoutEnabled } from '@/constants/Paytr';
+import {
+  isListingPackageStepEnabled,
+  isPaytrCheckoutEnabled,
+} from '@/constants/Paytr';
 import { isValidNationalPhone } from '@/services/phone';
 import type {
   ListingDraft,
@@ -76,6 +79,7 @@ export function detailsStepComplete(draft: ListingDraft): boolean {
 }
 
 export function packageStepComplete(draft: ListingDraft): boolean {
+  if (!isListingPackageStepEnabled()) return true;
   return draft.packageCode != null && draft.packageCode.trim() !== '';
 }
 
@@ -85,13 +89,24 @@ export function canEnterStep(
 ): boolean {
   if (target === 'type') return true;
   if (target === 'details') return typeStepComplete(draft);
-  if (target === 'package') return typeStepComplete(draft) && detailsStepComplete(draft);
+  if (target === 'package') {
+    if (!isListingPackageStepEnabled()) return false;
+    return typeStepComplete(draft) && detailsStepComplete(draft);
+  }
   if (target === 'payment') {
     if (!isPaytrCheckoutEnabled()) return false;
-    return typeStepComplete(draft) && detailsStepComplete(draft) && packageStepComplete(draft);
+    return (
+      typeStepComplete(draft) &&
+      detailsStepComplete(draft) &&
+      packageStepComplete(draft)
+    );
   }
   if (target === 'review') {
-    return typeStepComplete(draft) && detailsStepComplete(draft) && packageStepComplete(draft);
+    return (
+      typeStepComplete(draft) &&
+      detailsStepComplete(draft) &&
+      packageStepComplete(draft)
+    );
   }
   return false;
 }

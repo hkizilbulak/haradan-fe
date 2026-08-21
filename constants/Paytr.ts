@@ -1,12 +1,21 @@
 /**
  * PayTR iframe checkout for listing packages.
  *
- * Default: OFF — package step submits directly to PENDING_REVIEW.
- * Enable anytime with EXPO_PUBLIC_PAYTR_CHECKOUT_ENABLED=1 (and BE PayTR env).
+ * TEMP (2026-08): always OFF — PayTR BE route 404; listing publishes
+ * from details without package/payment UI. Re-enable by restoring the
+ * env check below and setting isListingPackageStepEnabled() true.
  */
 export function isPaytrCheckoutEnabled(): boolean {
-  const raw = process.env.EXPO_PUBLIC_PAYTR_CHECKOUT_ENABLED;
-  if (raw == null || raw.trim() === '') return false;
-  const v = raw.trim().toLowerCase();
-  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+  return false;
 }
+
+/**
+ * TEMP: hide package selection step; auto-assign STANDARD on publish.
+ * Flip to true when package + PayTR flow should return.
+ */
+export function isListingPackageStepEnabled(): boolean {
+  return false;
+}
+
+/** Free default package while paid checkout is disabled. */
+export const DEFAULT_LISTING_PACKAGE_CODE = 'STANDARD' as const;

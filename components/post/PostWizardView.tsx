@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PostWizardShell } from './PostWizardShell';
 import { PostTypeStep } from './PostTypeStep';
@@ -13,8 +13,15 @@ import { useListingWizard } from '@/hooks/useListingWizard';
 import { useListingWizardBack } from '@/hooks/useListingWizardBack';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { getValidAccessToken } from '@/services/auth';
-import { detailsStepComplete, isPaytrCheckoutEnabled } from '@/services/listing';
+import {
+  detailsStepComplete,
+  isListingPackageStepEnabled,
+  isPaytrCheckoutEnabled,
+} from '@/services/listing';
 import { parseInternationalPhone } from '@/services/phone';
+import { Spacing } from '@/constants/Spacing';
+import { Typography } from '@/constants/Typography';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import type { ListingWizardStep } from '@/types/listing';
 
 export function PostWizardView() {
@@ -27,7 +34,9 @@ export function PostWizardView() {
   const wizard = useListingWizard();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const paytrEnabled = isPaytrCheckoutEnabled();
+  const packageStepEnabled = isListingPackageStepEnabled();
+  const paytrEnabled = packageStepEnabled && isPaytrCheckoutEnabled();
+  const errorColor = useThemeColor('error');
   const { back, unwindAndExit } = useListingWizardBack({
     step: wizard.step,
     typePhase: wizard.typePhase,
@@ -52,6 +61,38 @@ export function PostWizardView() {
     });
   }, [router, unwindAndExit]);
 
+  const submitListing = useCallback(async () => {
+    if (!isLoggedIn) {
+      router.push('/auth/login?next=/post');
+      return;
+    }
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const token = await getValidAccessToken();
+      if (!token) {
+        router.push('/auth/login?next=/post');
+        return;
+      }
+      if (paytrEnabled) {
+        await wizard.startPaidCheckout(token);
+      } else {
+        await wizard.publishListing(token);
+      }
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error
+          ? err.message
+          : paytrEnabled
+            ? 'Ödeme başlatılamadı.'
+            : 'İlan gönderilemedi.'
+      );
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    } finally {
+      setSubmitting(false);
+    }
+  }, [wizard, isLoggedIn, router, paytrEnabled]);
+
   const onNext = useCallback(async () => {
     setSubmitError(null);
     if (wizard.step === 'details') {
@@ -60,6 +101,12 @@ export function PostWizardView() {
         setScrollTrigger((v) => v + 1);
         return;
       }
+      if (!packageStepEnabled) {
+        await submitListing();
+        return;
+      }
+      wizard.goNext();
+      return;
     }
     if (wizard.step === 'package') {
       if (!wizard.draft.packageCode) {
@@ -67,46 +114,24 @@ export function PostWizardView() {
         scrollViewRef.current?.scrollTo({ y: 0, animated: true });
         return;
       }
-      if (!isLoggedIn) {
-        router.push('/auth/login?next=/post');
-        return;
-      }
-      setSubmitting(true);
-      try {
-        const token = await getValidAccessToken();
-        if (!token) {
-          router.push('/auth/login?next=/post');
-          return;
-        }
-        if (paytrEnabled) {
-          await wizard.startPaidCheckout(token);
-        } else {
-          await wizard.publishListing(token);
-        }
-      } catch (err) {
-        setSubmitError(
-          err instanceof Error
-            ? err.message
-            : paytrEnabled
-              ? 'Ödeme başlatılamadı.'
-              : 'İlan gönderilemedi.'
-        );
-      } finally {
-        setSubmitting(false);
-      }
+      await submitListing();
       return;
     }
     wizard.goNext();
-  }, [wizard, isLoggedIn, router, paytrEnabled]);
+  }, [wizard, packageStepEnabled, submitListing]);
 
-  const nextLabel = wizard.step === 'package'
-    ? paytrEnabled
-      ? 'Ödemeye geç'
-      : 'İncelemeye gönder'
-    : 'Devam et';
+  const nextLabel =
+    wizard.step === 'details' && !packageStepEnabled
+      ? 'İncelemeye gönder'
+      : wizard.step === 'package'
+        ? paytrEnabled
+          ? 'Ödemeye geç'
+          : 'İncelemeye gönder'
+        : 'Devam et';
   const showBack = wizard.step !== 'type' || wizard.typePhase !== 'root';
   const showNext =
-    wizard.step === 'details' || wizard.step === 'package';
+    wizard.step === 'details' ||
+    (packageStepEnabled && wizard.step === 'package');
 
   return (
     <PostWizardShell
@@ -135,21 +160,26 @@ export function PostWizardView() {
         />
       ) : null}
       {wizard.step === 'details' ? (
-        <PostDetailsStep
-          draft={wizard.draft}
-          errors={wizard.fieldErrors}
-          tjkPromptSeen={wizard.tjkPromptSeen}
-          scrollViewRef={scrollViewRef}
-          scrollTrigger={scrollTrigger}
-          onUpdate={wizard.updateDetails}
-          onMediaChange={wizard.setMedia}
-          onSetCover={wizard.setCover}
-          onApplyTjk={wizard.applyTjk}
-          onSkipTjk={wizard.skipTjk}
-          onMarkTjkSeen={wizard.markTjkPromptSeen}
-        />
+        <View style={styles.detailsBlock}>
+          {submitError && !packageStepEnabled ? (
+            <Text style={[styles.submitErr, { color: errorColor }]}>{submitError}</Text>
+          ) : null}
+          <PostDetailsStep
+            draft={wizard.draft}
+            errors={wizard.fieldErrors}
+            tjkPromptSeen={wizard.tjkPromptSeen}
+            scrollViewRef={scrollViewRef}
+            scrollTrigger={scrollTrigger}
+            onUpdate={wizard.updateDetails}
+            onMediaChange={wizard.setMedia}
+            onSetCover={wizard.setCover}
+            onApplyTjk={wizard.applyTjk}
+            onSkipTjk={wizard.skipTjk}
+            onMarkTjkSeen={wizard.markTjkPromptSeen}
+          />
+        </View>
       ) : null}
-      {wizard.step === 'package' ? (
+      {wizard.step === 'package' && packageStepEnabled ? (
         <PostPackagesStep
           packages={packages}
           selected={wizard.draft.packageCode}
@@ -175,3 +205,13 @@ export function PostWizardView() {
     </PostWizardShell>
   );
 }
+
+const styles = StyleSheet.create({
+  detailsBlock: {
+    gap: Spacing.sm,
+  },
+  submitErr: {
+    ...Typography.body,
+    fontWeight: '600',
+  },
+});
