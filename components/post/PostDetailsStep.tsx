@@ -171,7 +171,7 @@ export function PostDetailsStep({
           {lead ??
             (horse
               ? 'TJK kaydı varsa alanlar dolar. Zorunlu alanları siz tamamlayın.'
-              : 'Başlık, açıklama, fiyat ve iletişim bilgilerini girin.')}
+              : 'Başlık, fiyat, konum ve iletişim bilgilerini girin.')}
         </Text>
       </View>
 
@@ -209,6 +209,7 @@ export function PostDetailsStep({
         <View onLayout={(e) => updateFieldY('title', e.nativeEvent.layout.y)}>
           <PostField
             label="Başlık"
+            required
             value={d.title}
             onChangeText={(title) => onUpdate({ title })}
             placeholder="Kısa, net bir başlık"
@@ -220,7 +221,7 @@ export function PostDetailsStep({
             label="Açıklama"
             value={d.description}
             onChangeText={(description) => onUpdate({ description })}
-            placeholder="Durum, bakım ve öne çıkan özellikler…"
+            placeholder="Durum, bakım ve öne çıkan özellikler… (opsiyonel)"
             multiline
             error={errors.description}
           />
@@ -228,6 +229,7 @@ export function PostDetailsStep({
         <View onLayout={(e) => updateFieldY('priceTl', e.nativeEvent.layout.y)}>
           <PostField
             label="Fiyat"
+            required
             value={d.priceTl}
             onChangeText={(raw) => onUpdate({ priceTl: formatTlGrouped(raw) })}
             placeholder="0"
@@ -240,7 +242,10 @@ export function PostDetailsStep({
           style={styles.fieldBlock}
           onLayout={(e) => updateFieldY('provinceId', e.nativeEvent.layout.y)}
         >
-          <Text style={[styles.fieldLabel, { color: secondary }]}>Konum</Text>
+          <Text style={[styles.fieldLabel, { color: secondary }]}>
+            Konum
+            <Text style={{ color: errorColor }}> *</Text>
+          </Text>
           <Pressable
             onPress={() => setProvinceOpen(true)}
             style={[
@@ -276,7 +281,10 @@ export function PostDetailsStep({
           style={styles.fieldBlock}
           onLayout={(e) => updateFieldY('districtId', e.nativeEvent.layout.y)}
         >
-          <Text style={[styles.fieldLabel, { color: secondary }]}>İlçe</Text>
+          <Text style={[styles.fieldLabel, { color: secondary }]}>
+            İlçe
+            <Text style={{ color: errorColor }}> *</Text>
+          </Text>
           <Pressable
             onPress={() => d.provinceId && setDistrictOpen(true)}
             style={[
@@ -315,6 +323,7 @@ export function PostDetailsStep({
         >
           <PostField
             label="Açık adres"
+            required
             value={d.address}
             onChangeText={(address) => onUpdate({ address })}
             placeholder="Mahalle, cadde, sokak, no, tesis veya çiftlik/hara adı…"
@@ -338,6 +347,7 @@ export function PostDetailsStep({
             iso={d.phoneCountryIso || 'TR'}
             national={d.sellerPhone}
             error={errors.sellerPhone}
+            required
             onChange={onUpdate}
           />
         </View>
@@ -355,6 +365,7 @@ export function PostDetailsStep({
           <View onLayout={(e) => updateFieldY('registeredName', e.nativeEvent.layout.y)}>
             <PostField
               label="Kayıtlı adı"
+              required
               value={d.registeredName}
               onChangeText={(registeredName) => onUpdate({ registeredName })}
               placeholder="Atın adı"
@@ -366,7 +377,10 @@ export function PostDetailsStep({
             style={styles.fieldBlock}
             onLayout={(e) => updateFieldY('gender', e.nativeEvent.layout.y)}
           >
-            <Text style={[styles.fieldLabel, { color: secondary }]}>Cinsiyet</Text>
+            <Text style={[styles.fieldLabel, { color: secondary }]}>
+              Cinsiyet
+              <Text style={{ color: errorColor }}> *</Text>
+            </Text>
             <View style={styles.chips}>
               {GENDERS.map((g) => {
                 const on = d.gender === g;
@@ -486,7 +500,10 @@ export function PostDetailsStep({
           updateFieldY('media', 0);
         }}
       >
-        <Text style={[styles.section, { color: text }]}>Görseller</Text>
+        <Text style={[styles.section, { color: text }]}>
+          Görseller
+          <Text style={{ color: errorColor }}> *</Text>
+        </Text>
         <PostMediaGrid
           items={draft.media}
           error={errors.media}

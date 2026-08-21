@@ -46,23 +46,28 @@ export async function resolveMediaDisplayUri(
       redirect: 'follow',
     });
 
-  let res = await fetchOnce(token);
-  if (res.status === 401 || res.status === 403) {
-    const refreshed = await getValidAccessToken();
-    if (refreshed && refreshed !== token) {
-      token = refreshed;
-      res = await fetchOnce(token);
+  try {
+    let res = await fetchOnce(token);
+    if (res.status === 401 || res.status === 403) {
+      const refreshed = await getValidAccessToken();
+      if (refreshed && refreshed !== token) {
+        token = refreshed;
+        res = await fetchOnce(token);
+      }
     }
+    if (!res.ok) return null;
+
+    const blob = await res.blob();
+    if (!blob.size) return null;
+
+    revokeCached(trimmed);
+    const objectUrl = URL.createObjectURL(blob);
+    objectUrlCache.set(trimmed, { objectUrl, token });
+    return objectUrl;
+  } catch (error) {
+    console.warn(`[resolveMediaDisplayUri] Medya fetch hatası (${trimmed}):`, error);
+    return null;
   }
-  if (!res.ok) return null;
-
-  const blob = await res.blob();
-  if (!blob.size) return null;
-
-  revokeCached(trimmed);
-  const objectUrl = URL.createObjectURL(blob);
-  objectUrlCache.set(trimmed, { objectUrl, token });
-  return objectUrl;
 }
 
 /** Test / HMR temizliği. */

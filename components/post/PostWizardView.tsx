@@ -5,6 +5,7 @@ import { PostWizardShell } from './PostWizardShell';
 import { PostTypeStep } from './PostTypeStep';
 import { PostDetailsStep } from './PostDetailsStep';
 import { PostPackagesStep } from './PostPackagesStep';
+import { PostPaymentStep } from './PostPaymentStep';
 import { PostReviewStep } from './PostReviewStep';
 import { useCatalogFacets } from '@/hooks/useCatalogFacets';
 import { useListingPackages } from '@/hooks/useListingPackages';
@@ -76,10 +77,10 @@ export function PostWizardView() {
           router.push('/auth/login?next=/post');
           return;
         }
-        await wizard.publishListing(token);
+        await wizard.startPaidCheckout(token);
       } catch (err) {
         setSubmitError(
-          err instanceof Error ? err.message : 'İlan gönderilemedi.'
+          err instanceof Error ? err.message : 'Ödeme başlatılamadı.'
         );
       } finally {
         setSubmitting(false);
@@ -89,9 +90,11 @@ export function PostWizardView() {
     wizard.goNext();
   }, [wizard, isLoggedIn, router]);
 
-  const nextLabel = wizard.step === 'package' ? 'İncelemeye gönder' : 'Devam et';
+  const nextLabel =
+    wizard.step === 'package' ? 'Ödemeye geç' : 'Devam et';
   const showBack = wizard.step !== 'type' || wizard.typePhase !== 'root';
-  const showNext = wizard.step === 'details' || wizard.step === 'package';
+  const showNext =
+    wizard.step === 'details' || wizard.step === 'package';
 
   return (
     <PostWizardShell
@@ -140,6 +143,12 @@ export function PostWizardView() {
           selected={wizard.draft.packageCode}
           error={submitError ?? packageError ?? catalogError}
           onSelect={wizard.selectPackage}
+        />
+      ) : null}
+      {wizard.step === 'payment' ? (
+        <PostPaymentStep
+          iframeUrl={wizard.paytrIframeUrl}
+          error={submitError}
         />
       ) : null}
       {wizard.step === 'review' ? (

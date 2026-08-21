@@ -41,9 +41,10 @@ import {
   serializeProvinceParam,
 } from '@/components/listings/filterConfig';
 import { syncListingsQuery } from '@/components/listings/syncListingsQuery';
-import { categoryLabel } from '@/services/catalog';
+import { categoryLabel, collectCategoryIds } from '@/services/catalog';
 import { locationLookup } from '@/services/location';
-import type { CatalogProductCard } from '@/types';
+import { normalizeSearchText } from '@/services/adverts';
+import type { CatalogProductCard, CategoryTreeNode } from '@/types';
 
 export type ListingsQuery = {
   q?: string | null;
@@ -59,21 +60,31 @@ type ListingsViewProps = {
   query: ListingsQuery;
 };
 
-/** BE sonrası kalan UI filtreleri (fiyat, acil, ırk, metin). */
+/** BE sonrası kalan UI filtreleri (kategori, fiyat, acil, ırk, metin). */
 function applyClientFilters(
   all: CatalogProductCard[],
   filters: ListingsFiltersState,
-  q: string
+  q: string,
+  categoryTree?: CategoryTreeNode[]
 ): CatalogProductCard[] {
   let list = all;
+
+  if (filters.categorySlug && categoryTree && categoryTree.length > 0) {
+    const ids = collectCategoryIds(categoryTree, filters.categorySlug);
+    if (ids && ids.size > 0) {
+      list = list.filter(
+        (p) => ids.has(p.categoryId) || p.categoryId === filters.categorySlug
+      );
+    }
+  }
 
   if (filters.urgentOnly) {
     list = list.filter((p) => p.isUrgent);
   }
 
   if (filters.breed) {
-    const needle = filters.breed.toLowerCase();
-    list = list.filter((p) => (p.brand ?? '').toLowerCase() === needle);
+    const needle = normalizeSearchText(filters.breed);
+    list = list.filter((p) => normalizeSearchText(p.brand) === needle);
   }
 
   if (filters.priceMinTl != null || filters.priceMaxTl != null) {
@@ -88,11 +99,13 @@ function applyClientFilters(
   }
 
   if (q) {
-    const needle = q.toLowerCase();
-    list = list.filter((p) => {
-      const hay = `${p.title} ${p.brand ?? ''}`.toLowerCase();
-      return hay.includes(needle);
-    });
+    const needle = normalizeSearchText(q);
+    if (needle) {
+      list = list.filter((p) => {
+        const hay = normalizeSearchText(`${p.title} ${p.brand ?? ''}`);
+        return hay.includes(needle);
+      });
+    }
   }
 
   return list;
@@ -164,8 +177,8 @@ export const ListingsView = memo(function ListingsView({
   const q = liveQuery.trim();
 
   const items = useMemo(
-    () => apply(applyClientFilters(search.items, filters, q)),
-    [apply, search.items, filters, q]
+    () => apply(applyClientFilters(search.items, filters, q, categoryTree)),
+    [apply, search.items, filters, q, categoryTree]
   );
 
   useEffect(() => {

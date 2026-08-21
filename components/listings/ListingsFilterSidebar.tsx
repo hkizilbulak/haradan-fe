@@ -240,8 +240,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
   }, [value.priceMinTl, value.priceMaxTl]);
 
   useEffect(() => {
-    if (seeded.current || groups.length === 0) return;
-    seeded.current = true;
+    if (groups.length === 0) return;
     const hasAdvanced =
       value.provinceIds.length > 0 ||
       value.priceMinTl != null ||
@@ -262,8 +261,8 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         }
       });
     });
-    setOpenOptions(nextOptions);
-  }, [groups, value]);
+    setOpenOptions((prev) => ({ ...prev, ...nextOptions }));
+  }, [groups, value.categorySlug, value.provinceIds, value.priceMinTl, value.priceMaxTl, value.urgentOnly]);
 
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
@@ -365,8 +364,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     if (group.kind === 'status') {
       return option.slug === 'urgent' && value.urgentOnly;
     }
-    if (value.categorySlug === option.slug) return true;
-    return option.children.some((c) => c.slug === value.categorySlug);
+    return value.categorySlug === option.slug;
   };
 
   const rowTheme = {

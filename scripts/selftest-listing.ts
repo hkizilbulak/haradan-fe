@@ -10,7 +10,7 @@ import { mapPublicPackage } from '../services/listing/mapPackage';
 import { createEmptyDraft } from '../services/listing/listingDraftStore';
 import { HttpCatalogRepository } from '../services/catalog/HttpCatalogRepository';
 import { HttpLocationLookup } from '../services/location/HttpLocationLookup';
-import { isHorseListing } from '../services/listing/validateListingDraft';
+import { isHorseListing, detailsErrors, detailsStepComplete } from '../services/listing/validateListingDraft';
 import type { IMediaUploader } from '../services/media/MediaUploader';
 
 let failed = 0;
@@ -97,16 +97,41 @@ draft.details.title = 'Satılık kısrak';
 draft.details.description = 'Detaylı açıklama metni burada yeterince uzun.';
 draft.details.priceTl = '150000';
 draft.details.districtId = '11111111-1111-1111-1111-111111111111';
+draft.details.address = 'Merkez Mah. No: 1';
   draft.details.horseId = '1b221374-e177-4ba2-9411-43c9339fbb48';
   draft.packageCode = 'PREMIUM';
   const body = mapDraftToCreateAdvert(draft);
 assertEqual(
   Object.keys(body).sort().join(','),
-  'categoryId,description,districtId,horseId,price,title',
+  'address,categoryId,description,districtId,horseId,price,title',
   'create body OpenAPI fields only'
 );
 assertEqual(body.price?.currency, 'TRY', 'price currency TRY');
+
 assertEqual(body.price?.amountMinor, 15000000, 'TL to minor');
+
+const incomplete = createEmptyDraft();
+incomplete.type = draft.type;
+incomplete.details.title = 'Başlık';
+incomplete.details.priceTl = '1000';
+incomplete.details.provinceId = 'p-1';
+incomplete.details.districtId = 'd-1';
+incomplete.details.address = 'Sokak 1 No:2';
+incomplete.details.sellerPhone = '5321234567';
+incomplete.media = [{ localId: 'm1', uri: 'file://x', mimeType: 'image/jpeg', fileName: 'x.jpg', isCover: true, assetId: null }];
+assert(!detailsErrors(incomplete).description, 'description is optional');
+assert(detailsStepComplete(incomplete), 'details complete without description');
+assertEqual(
+  detailsErrors({ ...incomplete, details: { ...incomplete.details, priceTl: '' } }).priceTl,
+  'Geçerli bir fiyat girin.',
+  'price required'
+);
+assertEqual(
+  detailsErrors({ ...incomplete, details: { ...incomplete.details, address: '' } }).address,
+  'Açık adres zorunludur (en az 5 karakter).',
+  'address required'
+);
+
 
 type Call = { url: string; init: RequestInit };
 const calls: Call[] = [];
