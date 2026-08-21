@@ -56,9 +56,5 @@ export function mapDraftToCreateAdvert(
   if (draft.details.address.trim()) body.address = draft.details.address.trim();
   if (draft.details.horseId) body.horseId = draft.details.horseId;
   if (price) body.price = price;
-  const props = buildDraftProperties(draft);
-  if (Object.keys(props).length > 0) {
-    body.properties = props;
-  }
   return body;
 }

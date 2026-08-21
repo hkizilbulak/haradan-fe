@@ -290,20 +290,39 @@ export function useListingWizard(deps: Deps = {}) {
         return publishListing(accessToken);
       }
       const draft = await listingRepo.createDraft(current.draft, accessToken);
-      const checkout = await listingRepo.startPaytrCheckout(
-        draft.advertId,
-        packageCode,
-        accessToken
-      );
-      setListingWizardState((prev) => ({
-        ...prev,
-        submittedDraftId: draft.advertId,
-        submittedStatus: draft.status,
-        paytrMerchantOid: checkout.merchantOid,
-        paytrIframeUrl: checkout.iframeUrl,
-        step: 'payment',
-      }));
-      return checkout;
+      try {
+        const checkout = await listingRepo.startPaytrCheckout(
+          draft.advertId,
+          packageCode,
+          accessToken
+        );
+        setListingWizardState((prev) => ({
+          ...prev,
+          submittedDraftId: draft.advertId,
+          submittedStatus: draft.status,
+          paytrMerchantOid: checkout.merchantOid,
+          paytrIframeUrl: checkout.iframeUrl,
+          step: 'payment',
+        }));
+        return checkout;
+      } catch (err: unknown) {
+        const is404 =
+          err instanceof Error &&
+          (err.message.includes('404') || err.message.includes('bulunamadı'));
+        if (is404) {
+          const published = await listingRepo.publish(current.draft, accessToken);
+          setListingWizardState((prev) => ({
+            ...prev,
+            submittedDraftId: published.advertId,
+            submittedStatus: published.status,
+            step: 'review',
+            paytrMerchantOid: null,
+            paytrIframeUrl: null,
+          }));
+          return;
+        }
+        throw err;
+      }
     },
     [listingRepo, publishListing]
   );

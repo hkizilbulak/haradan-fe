@@ -21,7 +21,7 @@ export {
   canEnterStep,
 } from './validateListingDraft';
 export type { ListingFieldErrors } from './validateListingDraft';
-export { mapDraftToCreateAdvert } from './mapDraftToRequest';
+export { mapDraftToCreateAdvert, buildDraftProperties } from './mapDraftToRequest';
 export {
   getListingWizardState,
   setListingWizardState,

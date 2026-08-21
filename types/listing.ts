@@ -137,7 +137,6 @@ export type CreateAdvertDraftRequest = {
   title?: string | null;
   description?: string | null;
   price?: Money | null;
-  properties?: Record<string, unknown> | null;
 };
 
 /** OpenAPI: OwnerAdvertResponse (özet) */
