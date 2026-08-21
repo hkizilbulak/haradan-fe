@@ -14,6 +14,7 @@ type PostPhoneFieldProps = {
   iso: string;
   national: string;
   error?: string | null;
+  required?: boolean;
   onChange: (next: { phoneCountryIso: string; sellerPhone: string }) => void;
 };
 
@@ -21,6 +22,7 @@ export function PostPhoneField({
   iso,
   national,
   error,
+  required = false,
   onChange,
 }: PostPhoneFieldProps) {
   const text = useThemeColor('text');
@@ -37,7 +39,10 @@ export function PostPhoneField({
 
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.label, { color: secondary }]}>Telefon</Text>
+      <Text style={[styles.label, { color: secondary }]}>
+        Telefon
+        {required ? <Text style={{ color: errorColor }}> *</Text> : null}
+      </Text>
       <View style={[styles.row, { borderColor, backgroundColor: surface }]}>
         <Pressable
           onPress={() => setOpen(true)}

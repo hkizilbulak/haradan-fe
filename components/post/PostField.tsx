@@ -17,6 +17,8 @@ type PostFieldProps = Omit<TextInputProps, 'style'> & {
   hint?: string | null;
   locked?: boolean;
   suffix?: string;
+  /** Red asterisk for required fields. */
+  required?: boolean;
 };
 
 export function PostField({
@@ -25,6 +27,7 @@ export function PostField({
   hint,
   locked = false,
   suffix,
+  required = false,
   onFocus,
   onBlur,
   ...inputProps
@@ -42,7 +45,12 @@ export function PostField({
   return (
     <View style={styles.wrap}>
       <View style={styles.labelRow}>
-        <Text style={[styles.label, { color: secondary }]}>{label}</Text>
+        <Text style={[styles.label, { color: secondary }]}>
+          {label}
+          {required ? (
+            <Text style={[styles.requiredMark, { color: errorColor }]}> *</Text>
+          ) : null}
+        </Text>
         {locked ? (
           <Text style={[styles.lock, { color: muted }]}>TJK</Text>
         ) : null}
@@ -100,6 +108,9 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     fontWeight: '600',
     letterSpacing: 0.3,
+  },
+  requiredMark: {
+    fontWeight: '700',
   },
   lock: {
     ...Typography.caption,

@@ -50,9 +50,6 @@ export function detailsErrors(draft: ListingDraft): ListingFieldErrors {
   const e: ListingFieldErrors = {};
   const d = draft.details;
   if (!d.title.trim()) e.title = 'Başlık gerekli.';
-  if (!d.description.trim() || d.description.trim().length < 20) {
-    e.description = 'En az 20 karakterlik açıklama yazın.';
-  }
   const price = parseTlInput(d.priceTl);
   if (price == null || price <= 0) e.priceTl = 'Geçerli bir fiyat girin.';
   if (!d.provinceId) e.provinceId = 'İl seçin.';
