@@ -4,11 +4,9 @@ import { HttpTjkRepository } from './HttpTjkRepository';
 import { MockTjkRepository } from './MockTjkRepository';
 
 export function createTjkRepository(): ITjkRepository {
-  if (isHttpApiEnabled(process.env.EXPO_PUBLIC_USE_MOCK_TJK)) {
-    const baseUrl = resolveApiBaseUrl();
-    if (baseUrl) return new HttpTjkRepository(baseUrl);
-  }
-  return new MockTjkRepository();
+  const baseUrl = resolveApiBaseUrl() || 'https://haradan-be-production.up.railway.app/api';
+  return new HttpTjkRepository(baseUrl);
 }
 
 export const tjkRepository: ITjkRepository = createTjkRepository();
+

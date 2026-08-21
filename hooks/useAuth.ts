@@ -104,6 +104,13 @@ export function useAuth(repo: IAuthRepository = authRepository) {
     [repo, run]
   );
 
+  const confirmEmailChange = useCallback(
+    async (token: string): Promise<GenericAuthMessageResponse | null> => {
+      return run(() => repo.confirmEmailChange({ token: token.trim() }));
+    },
+    [repo, run]
+  );
+
   const logout = useCallback(
     async (accessToken: string | null): Promise<void> => {
       if (accessToken) {
@@ -163,6 +170,7 @@ export function useAuth(repo: IAuthRepository = authRepository) {
     forgotPassword,
     resendVerification,
     verifyEmail,
+    confirmEmailChange,
     logout,
     changePassword,
     requestEmailChange,

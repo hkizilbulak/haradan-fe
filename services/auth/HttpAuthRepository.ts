@@ -134,6 +134,15 @@ export class HttpAuthRepository implements IAuthRepository {
     );
   }
 
+  confirmEmailChange(payload: TokenRequest): Promise<GenericAuthMessageResponse> {
+    return this.guard(() =>
+      this.http.request<GenericAuthMessageResponse>('/v1/auth/email/confirm', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+    );
+  }
+
   changePassword(
     accessToken: string,
     payload: ChangePasswordRequest

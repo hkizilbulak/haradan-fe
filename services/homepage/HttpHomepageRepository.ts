@@ -7,7 +7,7 @@ import {
   type BePublishedCard,
 } from '@/services/adverts/mapPublishedCard';
 import { resolvePublicMediaUrl } from '@/services/media/publicUrl';
-import { MOCK_HOMEPAGE } from '@/mocks/homepage';
+
 import type {
   ActiveBannerItem,
   ActiveBannerListResponse,
@@ -120,7 +120,7 @@ export class HttpHomepageRepository implements IHomepageRepository {
     }));
 
     return {
-      banners: liveBanners.length > 0 ? liveBanners : MOCK_HOMEPAGE.banners,
+      banners: liveBanners,
       categories,
       showcase: {
         seed: showcase.seed || 'live',
@@ -130,10 +130,22 @@ export class HttpHomepageRepository implements IHomepageRepository {
       trending,
       specialOffers: showcaseItems,
       urgentAdverts,
-      macPromo: MOCK_HOMEPAGE.macPromo,
-      salePromo: MOCK_HOMEPAGE.salePromo,
-      brands: MOCK_HOMEPAGE.brands,
-      blogVideos: MOCK_HOMEPAGE.blogVideos,
+      macPromo: {
+        title: '',
+        subtitle: '',
+        ctaLabel: '',
+        imageUrl: '',
+      },
+      salePromo: {
+        discountLabel: '',
+        title: '',
+        code: '',
+        imageUrl: '',
+      },
+      brands: [],
+      blogVideos: [],
     };
   }
 }
+
+

@@ -46,25 +46,6 @@ type HomeSearchBarProps = {
 
 const EASE = Easing.bezier(0.22, 1, 0.36, 1);
 
-const LISTING_TYPES = [
-  { id: 'satilik-atlar', label: 'Satılık Atlar' },
-  { id: 'satilik-yaris-ati', label: 'Yarış Atı' },
-  { id: 'satilik-kisrak', label: 'Kısrak' },
-  { id: 'satilik-aygir', label: 'Aygır' },
-  { id: 'satilik-binek-ati', label: 'Binek Atı' },
-  { id: 'satilik-pony', label: 'Pony' },
-  { id: 'at-hizmetleri', label: 'At Hizmetleri' },
-  { id: 'asim-hizmetleri', label: 'Aşım Hizmetleri' },
-] as const;
-
-const HORSE_BREEDS = [
-  { id: 'Thoroughbred', label: 'Thoroughbred' },
-  { id: 'Arabian', label: 'Arabian' },
-  { id: 'Warmblood', label: 'Warmblood' },
-  { id: 'Haflinger', label: 'Haflinger' },
-  { id: 'Pony', label: 'Pony' },
-  { id: 'Shetland', label: 'Shetland' },
-] as const;
 
 /**
  * Banner altı arama — büyük alan; sağda tür seçimi ve otomatik canlı arama sonuçları.
@@ -81,7 +62,6 @@ export const HomeSearchBar = memo(function HomeSearchBar({
   const width = useLayoutWidth();
   const isWide = width >= 900;
   const [focused, setFocused] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const focusAnim = useRef(new Animated.Value(0)).current;
 
   const {
@@ -101,13 +81,11 @@ export const HomeSearchBar = memo(function HomeSearchBar({
 
   useEffect(() => {
     setQuery(initialQuery);
-    if (!initialQuery) setMenuOpen(false);
   }, [initialQuery, setQuery]);
 
   const updateQuery = (next: string) => {
     setQuery(next);
     onQueryChange?.(next);
-    if (menuOpen) setMenuOpen(false);
     if (next.trim().length > 0) {
       setIsOpen(true);
     } else {
@@ -131,12 +109,13 @@ export const HomeSearchBar = memo(function HomeSearchBar({
 
   useEffect(() => {
     Animated.timing(focusAnim, {
-      toValue: focused || menuOpen || isDropdownActive ? 1 : 0,
+      toValue: focused || isDropdownActive ? 1 : 0,
       duration: 260,
       easing: EASE,
       useNativeDriver: false,
     }).start();
-  }, [focused, menuOpen, isDropdownActive, focusAnim]);
+  }, [focused, isDropdownActive, focusAnim]);
+
 
   const focusedSurface = isDark ? '#232833' : '#ffffff';
   const focusedBorder = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(12,12,14,0.18)';
@@ -153,7 +132,6 @@ export const HomeSearchBar = memo(function HomeSearchBar({
 
   const goListings = useCallback(
     (params: Record<string, string>) => {
-      setMenuOpen(false);
       closeDropdown();
       navigateToListings(router, params);
     },
@@ -165,7 +143,6 @@ export const HomeSearchBar = memo(function HomeSearchBar({
     closeDropdown();
     if (live) {
       onQueryChange?.(query);
-      setMenuOpen(false);
       return;
     }
     if (q) goListings({ q });
@@ -190,14 +167,6 @@ export const HomeSearchBar = memo(function HomeSearchBar({
     [goListings, closeDropdown]
   );
 
-  const toggleMenu = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    if (!menuOpen) {
-      closeDropdown();
-    }
-    setMenuOpen((v) => !v);
-  };
-
   const handleClear = () => {
     clear();
     onQueryChange?.('');
@@ -211,7 +180,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
         compact && styles.wrapCompact,
         isWide && !fullWidth && styles.wrapWide,
         fullWidth && styles.wrapFull,
-        (isDropdownActive || menuOpen) && styles.wrapActive,
+        isDropdownActive && styles.wrapActive,
       ]}
       accessibilityRole="search"
       {...(Platform.OS === 'web'
@@ -227,7 +196,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
             ...Platform.select({
               web: {
                 boxShadow:
-                  focused || menuOpen || isDropdownActive
+                  focused || isDropdownActive
                     ? isDark
                       ? '0 12px 36px rgba(0, 0, 0, 0.45)'
                       : '0 12px 36px rgba(15, 23, 42, 0.07)'
@@ -241,6 +210,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
           },
         ]}
       >
+
         <Ionicons
           name="search-outline"
           size={22}
@@ -287,25 +257,22 @@ export const HomeSearchBar = memo(function HomeSearchBar({
           </Pressable>
         ) : null}
 
-        <View style={[styles.divider, { backgroundColor: border }]} />
-
         <Pressable
-          onPress={toggleMenu}
+          onPress={submit}
           accessibilityRole="button"
-          accessibilityLabel="İlan ve at türleri"
-          accessibilityState={{ expanded: menuOpen }}
+          accessibilityLabel="Ara"
           style={({ pressed }) => [
             styles.menuBtn,
             {
-              backgroundColor: menuOpen ? header : 'transparent',
+              backgroundColor: header,
               opacity: pressed ? 0.85 : 1,
             },
           ]}
         >
           <Ionicons
-            name="options-outline"
-            size={20}
-            color={menuOpen ? '#fff' : text}
+            name="arrow-forward"
+            size={18}
+            color="#fff"
           />
         </Pressable>
       </Animated.View>
@@ -315,109 +282,17 @@ export const HomeSearchBar = memo(function HomeSearchBar({
         results={results}
         loading={loading}
         query={query}
-        isOpen={isDropdownActive && !menuOpen}
+        isOpen={isDropdownActive}
         onSelectAdvert={handleSelectAdvert}
         onViewAll={handleViewAll}
         onClose={closeDropdown}
         variant="home"
         maxHeight={400}
       />
-
-      {/* Kategori ve Irk Seçim Menüsü */}
-      {menuOpen ? (
-        <View
-          style={[
-            styles.dropdown,
-            {
-              backgroundColor: surface,
-              borderColor: border,
-              ...Platform.select({
-                web: { boxShadow: '0 16px 40px rgba(15, 23, 42, 0.08)' },
-                default: {
-                  shadowColor: '#000',
-                  shadowOpacity: 0.06,
-                  shadowRadius: 16,
-                  elevation: 3,
-                },
-              }),
-            },
-          ]}
-        >
-          <Text style={[styles.groupLabel, { color: textMuted }]}>
-            İlan türleri
-          </Text>
-          <View style={styles.chipRow}>
-            {LISTING_TYPES.map((t) => (
-              <Pressable
-                key={t.id}
-                onPress={() => goListings({ category: t.id })}
-                style={({ pressed }) => [
-                  styles.chip,
-                  {
-                    backgroundColor: background,
-                    borderColor: border,
-                    opacity: pressed ? 0.85 : 1,
-                  },
-                ]}
-              >
-                <Text style={[styles.chipText, { color: textSecondary }]}>
-                  {t.label}
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={12}
-                  color={textMuted}
-                />
-              </Pressable>
-            ))}
-          </View>
-
-          <Text style={[styles.groupLabel, { color: textMuted }]}>
-            At türleri
-          </Text>
-          <View style={styles.chipRow}>
-            {HORSE_BREEDS.map((b) => (
-              <Pressable
-                key={b.id}
-                onPress={() => goListings({ breed: b.id })}
-                style={({ pressed }) => [
-                  styles.chip,
-                  {
-                    backgroundColor: background,
-                    borderColor: border,
-                    opacity: pressed ? 0.85 : 1,
-                  },
-                ]}
-              >
-                <Text style={[styles.chipText, { color: textSecondary }]}>
-                  {b.label}
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={12}
-                  color={textMuted}
-                />
-              </Pressable>
-            ))}
-          </View>
-
-          <Pressable
-            onPress={submit}
-            style={({ pressed }) => [
-              styles.allBtn,
-              {
-                backgroundColor: header,
-                opacity: pressed ? 0.9 : 1,
-              },
-            ]}
-          >
-            <Text style={styles.allBtnText}>Tüm ilanları gör</Text>
-          </Pressable>
-        </View>
-      ) : null}
     </View>
   );
 });
+
 
 const styles = StyleSheet.create({
   wrap: {

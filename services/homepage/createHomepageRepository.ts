@@ -5,11 +5,7 @@ import { HttpHomepageRepository } from './HttpHomepageRepository';
 import { MockHomepageRepository } from './MockHomepageRepository';
 
 export function createHomepageRepository(): IHomepageRepository {
-  if (isHttpApiEnabled(process.env.EXPO_PUBLIC_USE_MOCK_HOMEPAGE)) {
-    const baseUrl = resolveApiBaseUrl();
-    if (baseUrl) {
-      return createCachedHomepageRepository(new HttpHomepageRepository(baseUrl));
-    }
-  }
-  return createCachedHomepageRepository(new MockHomepageRepository());
+  const baseUrl = resolveApiBaseUrl() || 'https://haradan-be-production.up.railway.app/api';
+  return createCachedHomepageRepository(new HttpHomepageRepository(baseUrl));
 }
+

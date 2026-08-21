@@ -146,6 +146,16 @@ export class MockAuthRepository implements IAuthRepository {
     return { message: 'E-posta adresi doğrulandı.' };
   }
 
+  async confirmEmailChange(
+    payload: TokenRequest
+  ): Promise<GenericAuthMessageResponse> {
+    await delay(LATENCY_MS);
+    if (!payload.token.trim()) {
+      throw new AuthError('Doğrulama jetonu geçersiz.', 400, 'TOKEN_INVALID');
+    }
+    return { message: 'E-posta adresi güncellendi.' };
+  }
+
   async changePassword(
     accessToken: string,
     payload: ChangePasswordRequest
