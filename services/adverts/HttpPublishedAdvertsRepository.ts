@@ -5,7 +5,6 @@ import type {
   IPublishedAdvertsRepository,
   PublishedAdvertsSearchParams,
 } from './PublishedAdvertsRepository';
-import { MockPublishedAdvertsRepository } from './MockPublishedAdvertsRepository';
 import {
   mapPublishedCardToCatalog,
   type BePublishedCard,
@@ -98,15 +97,12 @@ export class HttpPublishedAdvertsRepository
         }
       }
 
-      const res = [...merged.values()].sort((a, b) => {
+      return [...merged.values()].sort((a, b) => {
         if (a.publishedAt === b.publishedAt) return a.id < b.id ? 1 : -1;
         return a.publishedAt < b.publishedAt ? 1 : -1;
       });
-
-      if (res.length > 0) return res;
-      return new MockPublishedAdvertsRepository().search(params);
     } catch {
-      return new MockPublishedAdvertsRepository().search(params);
+      return [];
     }
   }
 
