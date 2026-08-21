@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { isListingPackageStepEnabled, isPaytrCheckoutEnabled } from '@/constants/Paytr';
 import type { ListingWizardStep } from '@/types/listing';
 
 const ITEMS: { key: ListingWizardStep; label: string }[] = [
@@ -23,11 +24,16 @@ export function PostStepper({ step, onPressStep }: PostStepperProps) {
   const text = useThemeColor('text');
   const border = useThemeColor('border');
   const success = useThemeColor('success');
-  const activeIndex = ITEMS.findIndex((i) => i.key === step);
+  const items = ITEMS.filter((i) => {
+    if (i.key === 'package' && !isListingPackageStepEnabled()) return false;
+    if (i.key === 'payment' && !isPaytrCheckoutEnabled()) return false;
+    return true;
+  });
+  const activeIndex = items.findIndex((i) => i.key === step);
 
   return (
     <View style={styles.row} accessibilityRole="tablist">
-      {ITEMS.map((item, index) => {
+      {items.map((item, index) => {
         const done = index < activeIndex;
         const active = index === activeIndex;
         const color = active ? primary : done ? success : muted;

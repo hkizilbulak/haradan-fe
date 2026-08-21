@@ -8,6 +8,9 @@ import {
   setListingWizardState,
   subscribeListingWizard,
   listingRepository,
+  isPaytrCheckoutEnabled,
+  isListingPackageStepEnabled,
+  DEFAULT_LISTING_PACKAGE_CODE,
   type IListingRepository,
   type ListingTypePhase,
 } from '@/services/listing';
@@ -27,13 +30,28 @@ type Deps = {
   tjk?: ITjkRepository;
 };
 
-const STEPS: ListingWizardStep[] = [
+const STEPS_FULL: ListingWizardStep[] = [
   'type',
   'details',
   'package',
   'payment',
   'review',
 ];
+
+const STEPS_PACKAGE_ONLY: ListingWizardStep[] = [
+  'type',
+  'details',
+  'package',
+  'review',
+];
+
+/** TEMP: skip package + payment until PayTR is live. */
+const STEPS_DIRECT: ListingWizardStep[] = ['type', 'details', 'review'];
+
+function wizardSteps(): ListingWizardStep[] {
+  if (!isListingPackageStepEnabled()) return STEPS_DIRECT;
+  return isPaytrCheckoutEnabled() ? STEPS_FULL : STEPS_PACKAGE_ONLY;
+}
 
 export function applyTjkProfile(
   details: ListingDraftDetails,
@@ -227,10 +245,14 @@ export function useListingWizard(deps: Deps = {}) {
         if (!detailsStepComplete(prev.draft)) {
           return { ...prev, detailsAttempted: true };
         }
+        if (!isListingPackageStepEnabled()) {
+          return { ...prev, detailsAttempted: false };
+        }
         return { ...prev, step: 'package', detailsAttempted: false };
       }
-      const idx = STEPS.indexOf(prev.step);
-      const next = STEPS[idx + 1];
+      const steps = wizardSteps();
+      const idx = steps.indexOf(prev.step);
+      const next = steps[idx + 1];
       if (!next || !canEnterStep(prev.draft, next)) return prev;
       return { ...prev, step: next };
     });
@@ -245,8 +267,9 @@ export function useListingWizard(deps: Deps = {}) {
           draft: { ...prev.draft, type: null, breed: null },
         };
       }
-      const idx = STEPS.indexOf(prev.step);
-      const prevStep = STEPS[idx - 1];
+      const steps = wizardSteps();
+      const idx = steps.indexOf(prev.step);
+      const prevStep = steps[idx - 1];
       if (!prevStep) return prev;
       return {
         ...prev,
@@ -264,7 +287,18 @@ export function useListingWizard(deps: Deps = {}) {
   const publishListing = useCallback(
     async (accessToken: string): Promise<PublishListingResult> => {
       const current = getListingWizardState();
-      const created = await listingRepo.publish(current.draft, accessToken);
+      const draft = {
+        ...current.draft,
+        packageCode:
+          current.draft.packageCode?.trim() || DEFAULT_LISTING_PACKAGE_CODE,
+      };
+      if (draft.packageCode !== current.draft.packageCode) {
+        setListingWizardState((prev) => ({
+          ...prev,
+          draft: { ...prev.draft, packageCode: draft.packageCode },
+        }));
+      }
+      const created = await listingRepo.publish(draft, accessToken);
       setListingWizardState((prev) => ({
         ...prev,
         submittedDraftId: created.advertId,
@@ -278,9 +312,12 @@ export function useListingWizard(deps: Deps = {}) {
     [listingRepo]
   );
 
-  /** Create draft then open PayTR iframe checkout (live path). */
+  /** Create draft then open PayTR iframe checkout (only when flag enabled). */
   const startPaidCheckout = useCallback(
     async (accessToken: string) => {
+      if (!isPaytrCheckoutEnabled()) {
+        return publishListing(accessToken);
+      }
       const current = getListingWizardState();
       const packageCode = current.draft.packageCode?.trim();
       if (!packageCode) {

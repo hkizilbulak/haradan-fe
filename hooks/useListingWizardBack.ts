@@ -2,7 +2,11 @@ import { useCallback, useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import { useNavigation } from 'expo-router';
 import type { ListingTypePhase } from '@/services/listing';
-import { setListingWizardState } from '@/services/listing';
+import {
+  setListingWizardState,
+  isListingPackageStepEnabled,
+  isPaytrCheckoutEnabled,
+} from '@/services/listing';
 import type { ListingWizardStep } from '@/types/listing';
 
 const HISTORY_KEY = 'haradanWizard';
@@ -17,7 +21,8 @@ function depth(step: ListingWizardStep, typePhase: ListingTypePhase): number {
   if (step === 'details') return 2;
   if (step === 'package') return 3;
   if (step === 'payment') return 4;
-  return 5; // review
+  if (!isListingPackageStepEnabled()) return 3;
+  return isPaytrCheckoutEnabled() ? 5 : 4;
 }
 
 function isFirstStep(step: ListingWizardStep, typePhase: ListingTypePhase): boolean {

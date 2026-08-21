@@ -3,6 +3,10 @@ import type {
   ListingDraftDetails,
   ListingWizardStep,
 } from '@/types/listing';
+import {
+  isListingPackageStepEnabled,
+  isPaytrCheckoutEnabled,
+} from '@/constants/Paytr';
 
 export type ListingTypePhase = 'root' | 'category';
 
@@ -96,8 +100,14 @@ const listeners = new Set<() => void>();
 
 function normalizeStep(raw: unknown): ListingWizardStep {
   if (raw === 'review') return 'review';
-  if (raw === 'payment') return 'payment';
-  if (raw === 'details' || raw === 'package' || raw === 'type') return raw;
+  if (raw === 'payment') {
+    if (isPaytrCheckoutEnabled()) return 'payment';
+    return isListingPackageStepEnabled() ? 'package' : 'details';
+  }
+  if (raw === 'package') {
+    return isListingPackageStepEnabled() ? 'package' : 'details';
+  }
+  if (raw === 'details' || raw === 'type') return raw;
   return 'type';
 }
 

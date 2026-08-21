@@ -11,7 +11,7 @@ export default function PostListingScreen() {
           <title>İlan Ver | Haradan.com</title>
           <meta
             name="description"
-            content="Haradan.com’da at ilanı verin — tür, detay, paket ve ödeme."
+            content="Haradan.com’da at ilanı verin — tür ve detay."
           />
         </Head>
       ) : null}
