@@ -4,13 +4,9 @@ import { HttpBannerRepository } from './HttpBannerRepository';
 import { MockBannerRepository } from './MockBannerRepository';
 
 export function createBannerRepository(): IBannerRepository {
-  if (isHttpApiEnabled(process.env.EXPO_PUBLIC_USE_MOCK_BANNERS)) {
-    const baseUrl = resolveApiBaseUrl();
-    if (baseUrl) {
-      return new HttpBannerRepository(baseUrl);
-    }
-  }
-  return new MockBannerRepository();
+  const baseUrl = resolveApiBaseUrl() || 'https://haradan-be-production.up.railway.app/api';
+  return new HttpBannerRepository(baseUrl);
 }
 
 export const bannerRepository: IBannerRepository = createBannerRepository();
+

@@ -171,9 +171,9 @@ export function mapPublishedDetailToAdvert(
     description: dto.description,
     publishedAt: dto.publishedAt,
     price: dto.price as Money | null,
-    categoryId: dto.category.id,
-    districtId: dto.location.districtId,
-    provinceId: dto.location.provinceId,
+    categoryId: dto.category?.id ?? '',
+    districtId: dto.location?.districtId ?? '',
+    provinceId: dto.location?.provinceId ?? '',
     horseId: dto.horse?.id ?? null,
     cover,
     gallery,
@@ -187,7 +187,7 @@ export function mapPublishedDetailToAdvert(
     viewCount: dto.viewCount ?? 0,
     breadcrumbs: [
       { label: 'Ana sayfa', href: '/' },
-      { label: dto.category.name },
+      ...(dto.category?.name ? [{ label: dto.category.name }] : []),
       { label: dto.title },
     ],
     horse,
@@ -195,6 +195,7 @@ export function mapPublishedDetailToAdvert(
       ? [{ id: 'props', title: 'Özellikler', rows: propRows }]
       : [],
   });
+
 }
 
 export function mapOwnerToAdvertDetail(

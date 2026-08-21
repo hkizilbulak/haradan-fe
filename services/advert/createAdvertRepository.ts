@@ -5,11 +5,9 @@ import { MockAdvertRepository } from './MockAdvertRepository';
 import { createCachedAdvertRepository } from './CachedAdvertRepository';
 
 export function createAdvertRepository(): IAdvertRepository {
-  if (isHttpApiEnabled(process.env.EXPO_PUBLIC_USE_MOCK_ADVERT)) {
-    const baseUrl = resolveApiBaseUrl();
-    if (baseUrl) return createHttpAdvertRepository(baseUrl);
-  }
-  return createCachedAdvertRepository(new MockAdvertRepository());
+  const baseUrl = resolveApiBaseUrl() || 'https://haradan-be-production.up.railway.app/api';
+  return createHttpAdvertRepository(baseUrl);
 }
 
 export const advertRepository: IAdvertRepository = createAdvertRepository();
+

@@ -5,13 +5,9 @@ import { HttpCatalogRepository } from './HttpCatalogRepository';
 import { MockCatalogRepository } from './MockCatalogRepository';
 
 export function createCatalogRepository(): ICatalogRepository {
-  if (isHttpApiEnabled(process.env.EXPO_PUBLIC_USE_MOCK_CATALOG)) {
-    const baseUrl = resolveApiBaseUrl();
-    if (baseUrl) {
-      return createCachedCatalogRepository(new HttpCatalogRepository(baseUrl));
-    }
-  }
-  return createCachedCatalogRepository(new MockCatalogRepository());
+  const baseUrl = resolveApiBaseUrl() || 'https://haradan-be-production.up.railway.app/api';
+  return createCachedCatalogRepository(new HttpCatalogRepository(baseUrl));
 }
 
 export const catalogRepository: ICatalogRepository = createCatalogRepository();
+
