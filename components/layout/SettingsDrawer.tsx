@@ -21,7 +21,7 @@ type SettingsDrawerProps = {
 };
 
 /* ─── Expandable setting item key ─── */
-type SettingKey = 'password' | 'email' | 'photo' | 'name';
+type SettingKey = 'password' | 'email' | 'name';
 
 /* ─── Inline row component (same pattern as ProfileDrawer) ─── */
 type RowProps = {
@@ -192,7 +192,6 @@ export const SettingsDrawer = memo(function SettingsDrawer({
   const textMuted = useThemeColor('textMuted');
   const border = useThemeColor('border');
   const primary = useThemeColor('primary');
-  const header = useThemeColor('header');
 
   const { session } = useAuthSession();
   const {
@@ -377,29 +376,7 @@ export const SettingsDrawer = memo(function SettingsDrawer({
         </View>
       )}
 
-      {/* ── 3. Profil Fotoğrafı Değiştir ── */}
-      <SettingsRow
-        icon="camera-outline"
-        label="Profil Fotoğrafı Değiştir"
-        onPress={() => toggle('photo')}
-        expanded={expanded === 'photo'}
-        text={text}
-        textMuted={textMuted}
-      />
-      {expanded === 'photo' && (
-        <View style={[styles.formWrap, { borderColor: border }]}>
-          <View style={styles.photoSection}>
-            <View style={[styles.photoPreview, { backgroundColor: header }]}>
-              <Ionicons name="person" size={32} color="#fff" />
-            </View>
-            <Text style={[styles.hint, { color: textMuted }]}>
-              Profil fotoğrafı özelliği yakında eklenecek.
-            </Text>
-          </View>
-        </View>
-      )}
-
-      {/* ── 4. Hesap İsmi Değiştir ── */}
+      {/* ── 3. Hesap İsmi Değiştir ── */}
       <SettingsRow
         icon="person-outline"
         label="Hesap İsmi Değiştir"
@@ -505,18 +482,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: -0.1,
-  },
-  photoSection: {
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 8,
-  },
-  photoPreview: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   inputWrap: {
     position: 'relative',
