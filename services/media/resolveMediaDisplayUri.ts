@@ -34,7 +34,7 @@ export async function resolveMediaDisplayUri(
   if (Platform.OS !== 'web') return trimmed;
 
   let token = (await getValidAccessToken()) ?? accessToken?.trim() ?? null;
-  if (!token) return null;
+  if (!token) return trimmed;
 
   const cached = objectUrlCache.get(trimmed);
   if (cached?.token === token) return cached.objectUrl;
@@ -55,18 +55,29 @@ export async function resolveMediaDisplayUri(
         res = await fetchOnce(token);
       }
     }
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const publicRes = await fetch(trimmed, { cache: 'no-store' });
+      if (publicRes.ok) {
+        const blob = await publicRes.blob();
+        if (blob.size) {
+          revokeCached(trimmed);
+          const objectUrl = URL.createObjectURL(blob);
+          objectUrlCache.set(trimmed, { objectUrl, token });
+          return objectUrl;
+        }
+      }
+      return trimmed;
+    }
 
     const blob = await res.blob();
-    if (!blob.size) return null;
+    if (!blob.size) return trimmed;
 
     revokeCached(trimmed);
     const objectUrl = URL.createObjectURL(blob);
     objectUrlCache.set(trimmed, { objectUrl, token });
     return objectUrl;
-  } catch (error) {
-    console.warn(`[resolveMediaDisplayUri] Medya fetch hatası (${trimmed}):`, error);
-    return null;
+  } catch {
+    return trimmed;
   }
 }
 

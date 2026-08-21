@@ -14,6 +14,12 @@ import { formatMoney } from '@/utils/formatMoney';
 import { formatViewCount } from '@/utils/formatViewCount';
 import { WHATSAPP_GREEN } from '@/utils/contactLinks';
 import type { AdvertDetail } from '@/types';
+import {
+  getAdvertCategoryKind,
+  parsePansiyonInfo,
+  parseStudInfo,
+  parseTransportInfo,
+} from './advertCategoryHelper';
 
 type AdvertBuyBoxProps = {
   detail: AdvertDetail;
@@ -41,7 +47,7 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
   const header = useThemeColor('header');
   const success = useThemeColor('success');
 
-  const { horse } = detail;
+  const categoryKind = getAdvertCategoryKind(detail);
   const isSold = detail.backendStatus === 'SOLD';
 
   const location = useMemo(() => {
@@ -50,12 +56,62 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
     return district ? `${district}, ${province}` : province;
   }, [detail.districtId, detail.provinceId]);
 
-  const facts: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }[] = [
-    { icon: 'calendar-outline', label: 'Yaş', value: `${horse.age}` },
-    { icon: 'male-female-outline', label: 'Cinsiyet', value: horse.gender },
-    { icon: 'color-palette-outline', label: 'Don', value: horse.coatColor },
-    { icon: 'speedometer-outline', label: 'Handikap', value: String(horse.handicap) },
-  ];
+  const studInfo = useMemo(() => parseStudInfo(detail), [detail]);
+  const pansiyonInfo = useMemo(() => parsePansiyonInfo(detail), [detail]);
+  const transportInfo = useMemo(() => parseTransportInfo(detail), [detail]);
+
+  const categoryBadge = useMemo(() => {
+    switch (categoryKind) {
+      case 'pansiyon':
+        return 'Pansiyon Haralar';
+      case 'transport':
+        return 'At Nakliyesi';
+      case 'farrier':
+        return 'Nalbantlar';
+      case 'stud':
+        return studInfo.breed ? `Aşım Hizmetleri (${studInfo.breed})` : 'Aşım Hizmetleri';
+      default:
+        return detail.horse.breed || 'Satılık At';
+    }
+  }, [categoryKind, studInfo.breed, detail.horse.breed]);
+
+  const facts = useMemo(() => {
+    if (categoryKind === 'pansiyon') {
+      const list: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }[] = [];
+      if (pansiyonInfo.hasGrassPaddock) list.push({ icon: 'leaf-outline', label: 'Tesis', value: 'Çim Padok' });
+      if (pansiyonInfo.hasSandPaddock) list.push({ icon: 'grid-outline', label: 'Tesis', value: 'Kum Padok' });
+      if (pansiyonInfo.hasStallionPaddock) list.push({ icon: 'shield-outline', label: 'Tesis', value: 'Aygır Padoğu' });
+      if (pansiyonInfo.hasVeterinarian) list.push({ icon: 'medkit-outline', label: 'Sağlık', value: 'Veteriner' });
+      if (pansiyonInfo.hasFarrier) list.push({ icon: 'hammer-outline', label: 'Bakım', value: 'Nalbant' });
+      if (pansiyonInfo.hasFoalingBarn) list.push({ icon: 'home-outline', label: 'Tesis', value: 'Doğumhane' });
+      if (pansiyonInfo.trainingTrack) list.push({ icon: 'fitness-outline', label: 'Pist', value: pansiyonInfo.trainingTrack });
+      return list.slice(0, 4);
+    }
+    if (categoryKind === 'transport') {
+      const list: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }[] = [];
+      if (transportInfo.companyName) list.push({ icon: 'business-outline', label: 'Firma', value: transportInfo.companyName });
+      if (transportInfo.websiteUrl) list.push({ icon: 'globe-outline', label: 'Web', value: transportInfo.websiteUrl });
+      return list;
+    }
+    if (categoryKind === 'farrier') {
+      // Nalbantlar kategorisinde PDF'e göre ek spec/çip alanı yoktur
+      return [];
+    }
+    if (categoryKind === 'stud') {
+      const list: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }[] = [];
+      if (studInfo.breed) list.push({ icon: 'ribbon-outline', label: 'Irk', value: studInfo.breed });
+      if (studInfo.age) list.push({ icon: 'calendar-outline', label: 'Yaş', value: studInfo.age.includes('ya') || studInfo.age.includes('Ya') ? studInfo.age : `${studInfo.age} Yaş` });
+      if (studInfo.coatColor) list.push({ icon: 'color-palette-outline', label: 'Don', value: studInfo.coatColor });
+      if (studInfo.sire) list.push({ icon: 'git-branch-outline', label: 'Baba', value: studInfo.sire });
+      return list;
+    }
+    const list: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }[] = [];
+    if (detail.horse.age > 0) list.push({ icon: 'calendar-outline', label: 'Yaş', value: `${detail.horse.age} Yaş` });
+    if (detail.horse.gender) list.push({ icon: 'male-female-outline', label: 'Cinsiyet', value: detail.horse.gender });
+    if (detail.horse.coatColor) list.push({ icon: 'color-palette-outline', label: 'Don', value: detail.horse.coatColor });
+    if (detail.horse.handicap > 0) list.push({ icon: 'speedometer-outline', label: 'Handikap', value: String(detail.horse.handicap) });
+    return list;
+  }, [categoryKind, pansiyonInfo, transportInfo, studInfo, detail.horse]);
 
   const pressMotion = (pressed: boolean) => ({
     opacity: pressed ? 0.9 : 1,
@@ -72,14 +128,14 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
   return (
     <View style={styles.wrap}>
       <View style={styles.metaRow}>
-        <Text style={[styles.breed, { color: textMuted }]}>{horse.breed}</Text>
+        <Text style={[styles.breed, { color: textMuted }]}>{categoryBadge}</Text>
         {detail.isUrgent ? (
           <Text style={styles.urgent}>ACİL</Text>
         ) : null}
       </View>
 
       <Text style={[styles.name, { color: text }]} numberOfLines={2}>
-        {horse.registeredName}
+        {detail.title}
       </Text>
 
       <View style={styles.subRow}>
@@ -100,24 +156,56 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
         </View>
       ) : null}
 
-      <View style={styles.facts}>
-        {facts.map((f) => (
-          <View key={f.label} style={styles.fact}>
-            <Ionicons name={f.icon} size={15} color={textSecondary} />
-            <View style={styles.factCopy}>
-              <Text style={[styles.factLabel, { color: textMuted }]}>{f.label}</Text>
-              <Text style={[styles.factValue, { color: text }]}>{f.value}</Text>
+      {facts.length > 0 ? (
+        <View style={styles.facts}>
+          {facts.map((f) => (
+            <View key={f.label} style={styles.fact}>
+              <Ionicons name={f.icon} size={15} color={textSecondary} />
+              <View style={styles.factCopy}>
+                <Text style={[styles.factLabel, { color: textMuted }]}>{f.label}</Text>
+                <Text style={[styles.factValue, { color: text }]}>{f.value}</Text>
+              </View>
             </View>
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
+      ) : null}
 
-      <View style={styles.block}>
-        <Text style={[styles.blockLabel, { color: textMuted }]}>Orijin</Text>
-        <InfoLine label="Baba" value={horse.sire} text={text} muted={textMuted} />
-        <InfoLine label="Anne" value={horse.dam} text={text} muted={textMuted} />
-        <InfoLine label="Kısrak babası" value={horse.damsire} text={text} muted={textMuted} />
-      </View>
+      {categoryKind === 'stud' ? (
+        <View style={styles.block}>
+          <Text style={[styles.blockLabel, { color: textMuted }]}>Aygır ve Soy Kütüğü</Text>
+          {studInfo.breed ? <InfoLine label="At Irkı" value={studInfo.breed} text={text} muted={textMuted} /> : null}
+          {studInfo.age ? <InfoLine label="Yaş" value={studInfo.age} text={text} muted={textMuted} /> : null}
+          {studInfo.coatColor ? <InfoLine label="Donu" value={studInfo.coatColor} text={text} muted={textMuted} /> : null}
+          {studInfo.sire ? <InfoLine label="Baba (Sire)" value={studInfo.sire} text={text} muted={textMuted} /> : null}
+          {studInfo.dam ? <InfoLine label="Anne (Dam)" value={studInfo.dam} text={text} muted={textMuted} /> : null}
+        </View>
+      ) : categoryKind === 'pansiyon' ? (
+        <View style={styles.block}>
+          <Text style={[styles.blockLabel, { color: textMuted }]}>Tesis & Hizmet Özellikleri</Text>
+          <InfoLine label="Çim Padok" value={pansiyonInfo.hasGrassPaddock ? 'Mevcut' : 'Yok'} text={text} muted={textMuted} />
+          <InfoLine label="Kum Padok" value={pansiyonInfo.hasSandPaddock ? 'Mevcut' : 'Yok'} text={text} muted={textMuted} />
+          <InfoLine label="Veteriner Hekim" value={pansiyonInfo.hasVeterinarian ? 'Mevcut' : 'Yok'} text={text} muted={textMuted} />
+          {pansiyonInfo.trainingTrack ? (
+            <InfoLine label="İdman Pisti" value={pansiyonInfo.trainingTrack} text={text} muted={textMuted} />
+          ) : null}
+        </View>
+      ) : categoryKind === 'transport' ? (
+        <View style={styles.block}>
+          <Text style={[styles.blockLabel, { color: textMuted }]}>Firma Bilgileri</Text>
+          <InfoLine label="Firma Adı" value={transportInfo.companyName} text={text} muted={textMuted} />
+          {transportInfo.websiteUrl ? (
+            <InfoLine label="Web Sitesi" value={transportInfo.websiteUrl} text={text} muted={textMuted} />
+          ) : null}
+          <InfoLine label="Hizmet" value="At Nakliyesi & Taşımacılık" text={text} muted={textMuted} />
+        </View>
+      ) : categoryKind === 'horse' && (detail.horse.sire || detail.horse.dam) ? (
+        <View style={styles.block}>
+          <Text style={[styles.blockLabel, { color: textMuted }]}>Orijin</Text>
+          {detail.horse.sire ? <InfoLine label="Baba" value={detail.horse.sire} text={text} muted={textMuted} /> : null}
+          {detail.horse.dam ? <InfoLine label="Anne" value={detail.horse.dam} text={text} muted={textMuted} /> : null}
+          {detail.horse.damsire ? <InfoLine label="Kısrak babası" value={detail.horse.damsire} text={text} muted={textMuted} /> : null}
+        </View>
+      ) : null}
 
       {detail.description ? (
         <View style={styles.descBlock}>
@@ -220,12 +308,13 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
         </Pressable>
       </View>
 
-      <Text style={[styles.softLine, { color: textMuted }]}>
-        {horse.owners[0]}
-        {horse.owners.length > 1 ? ` +${horse.owners.length - 1}` : ''}
-        {'  ·  '}
-        {horse.trainer}
-      </Text>
+      {detail.horse.owners.length > 0 || detail.horse.trainer ? (
+        <Text style={[styles.softLine, { color: textMuted }]}>
+          {detail.horse.owners[0]}
+          {detail.horse.owners.length > 1 ? ` +${detail.horse.owners.length - 1}` : ''}
+          {detail.horse.trainer ? `  ·  ${detail.horse.trainer}` : ''}
+        </Text>
+      ) : null}
     </View>
   );
 });

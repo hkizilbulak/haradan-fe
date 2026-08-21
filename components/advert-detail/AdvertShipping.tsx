@@ -1,13 +1,20 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { formatMoney } from '@/utils/formatMoney';
-import type { HorseProfile } from '@/types';
+import type { AdvertDetail, HorseProfile } from '@/types';
+import {
+  getAdvertCategoryKind,
+  parsePansiyonInfo,
+  parseStudInfo,
+  parseTransportInfo,
+} from './advertCategoryHelper';
 
 type AdvertShippingProps = {
-  horse: HorseProfile;
+  horse?: HorseProfile;
+  detail?: AdvertDetail;
 };
 
 type Highlight = {
@@ -18,72 +25,136 @@ type Highlight = {
 
 /**
  * Görsel yanı alt panel — genel bilgilerden en kritik özet +
- * at alımına uygun güven sinyalleri (nakliye / ödeme yerine).
+ * kategoriye uygun güven sinyalleri.
  */
 export const AdvertShipping = memo(function AdvertShipping({
-  horse,
+  horse: propHorse,
+  detail,
 }: AdvertShippingProps) {
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
   const textSecondary = useThemeColor('textSecondary');
 
-  const highlights: Highlight[] = [
-    {
-      icon: 'leaf-outline',
-      label: 'Cins',
-      value: horse.breed,
-    },
-    {
-      icon: 'resize-outline',
-      label: 'Cidago',
-      value: horse.heightCm ? `${horse.heightCm} cm` : '—',
-    },
-    {
-      icon: 'trophy-outline',
-      label: 'Kariyer',
-      value: `${horse.career.starts} start · ${horse.career.first}-${horse.career.second}-${horse.career.third}`,
-    },
-    {
-      icon: 'speedometer-outline',
-      label: 'Handikap',
-      value: String(horse.handicap),
-    },
-    {
-      icon: 'git-branch-outline',
-      label: 'Baba',
-      value: horse.sire,
-    },
-    {
-      icon: 'home-outline',
-      label: 'Yetiştirici',
-      value: horse.breeder,
-    },
-  ];
+  const categoryKind = detail ? getAdvertCategoryKind(detail) : 'horse';
+  const horse = detail?.horse ?? propHorse;
+  const studInfo = useMemo(() => (detail ? parseStudInfo(detail) : null), [detail]);
+  const pansiyonInfo = useMemo(() => (detail ? parsePansiyonInfo(detail) : null), [detail]);
+  const transportInfo = useMemo(() => (detail ? parseTransportInfo(detail) : null), [detail]);
 
-  const yearly = horse.yearly[0];
+  const { title, highlights, trustLines } = useMemo(() => {
+    if (categoryKind === 'pansiyon') {
+      const hl: Highlight[] = [];
+      if (pansiyonInfo?.hasGrassPaddock) hl.push({ icon: 'leaf-outline', label: 'Tesis', value: 'Çim Padok' });
+      if (pansiyonInfo?.hasSandPaddock) hl.push({ icon: 'grid-outline', label: 'Tesis', value: 'Kum Padok' });
+      if (pansiyonInfo?.hasStallionPaddock) hl.push({ icon: 'shield-outline', label: 'Tesis', value: 'Aygır Padoğu' });
+      if (pansiyonInfo?.hasVeterinarian) hl.push({ icon: 'medkit-outline', label: 'Sağlık', value: 'Veteriner Hekim' });
+      if (pansiyonInfo?.hasFarrier) hl.push({ icon: 'hammer-outline', label: 'Bakım', value: 'Nalbant' });
+      if (pansiyonInfo?.hasFoalingBarn) hl.push({ icon: 'home-outline', label: 'Tesis', value: 'Doğumhane' });
+      if (pansiyonInfo?.trainingTrack) hl.push({ icon: 'fitness-outline', label: 'İdman', value: pansiyonInfo.trainingTrack });
+
+      return {
+        title: 'Tesis & Güven Standartları',
+        highlights: hl,
+        trustLines: [
+          { icon: 'eye-outline' as const, title: 'Yerinde İnceleme', body: 'Hara ve padok ziyareti randevu ile gerçekleştirilebilir.' },
+          { icon: 'shield-checkmark-outline' as const, title: 'Güvenli İletişim', body: 'Haradan üzerinden ilan sahibiyle doğrudan iletişime geçebilirsiniz.' },
+        ],
+      };
+    }
+
+    if (categoryKind === 'transport') {
+      const hl: Highlight[] = [];
+      if (transportInfo?.companyName) hl.push({ icon: 'business-outline', label: 'Firma', value: transportInfo.companyName });
+      if (transportInfo?.websiteUrl) hl.push({ icon: 'globe-outline', label: 'Web', value: transportInfo.websiteUrl });
+
+      return {
+        title: 'Firma & Hizmet Bilgisi',
+        highlights: hl,
+        trustLines: [
+          { icon: 'shield-checkmark-outline' as const, title: 'Güvenli İletişim', body: 'Sefer ve taşıma şartlarını ilan sahibiyle doğrudan görüşebilirsiniz.' },
+          { icon: 'calendar-outline' as const, title: 'Randevulu Taşıma', body: 'Belirlenen tarihte adresinizden transfer planlaması.' },
+        ],
+      };
+    }
+
+    if (categoryKind === 'farrier') {
+      return {
+        title: 'Hizmet & Güvenlik',
+        highlights: [],
+        trustLines: [
+          { icon: 'shield-checkmark-outline' as const, title: 'Güvenli İletişim', body: 'Nalbantlık hizmeti için ilan sahibiyle Haradan üzerinden veya telefonla iletişime geçebilirsiniz.' },
+          { icon: 'navigate-outline' as const, title: 'Randevu & Hizmet', body: 'Hizmet şartlarını ve randevuyu ilan sahibiyle doğrudan planlayın.' },
+        ],
+      };
+    }
+
+    if (categoryKind === 'stud') {
+      const hl: Highlight[] = [];
+      if (studInfo?.breed) hl.push({ icon: 'ribbon-outline', label: 'Irk', value: studInfo.breed });
+      if (studInfo?.age) hl.push({ icon: 'calendar-outline', label: 'Yaş', value: studInfo.age.includes('ya') || studInfo.age.includes('Ya') ? studInfo.age : `${studInfo.age} Yaş` });
+      if (studInfo?.coatColor) hl.push({ icon: 'color-palette-outline', label: 'Don', value: studInfo.coatColor });
+      if (studInfo?.sire) hl.push({ icon: 'git-branch-outline', label: 'Baba', value: studInfo.sire });
+
+      return {
+        title: 'Aşım & Bilgi Standartları',
+        highlights: hl,
+        trustLines: [
+          { icon: 'eye-outline' as const, title: 'Yerinde İnceleme', body: 'Aygır ve hara ziyareti randevu ile gerçekleştirilebilir.' },
+          { icon: 'document-text-outline' as const, title: 'Soy Kütüğü & Belgeler', body: 'Pedigree ve sağlık evrakları aşım öncesi taraflarca incelenir.' },
+        ],
+      };
+    }
+
+    // Default horse listing
+    const hl: Highlight[] = [];
+    if (horse?.breed) hl.push({ icon: 'leaf-outline', label: 'Cins', value: horse.breed });
+    if (horse?.heightCm) hl.push({ icon: 'resize-outline', label: 'Cidago', value: `${horse.heightCm} cm` });
+    if (horse && horse.career.starts > 0) {
+      hl.push({ icon: 'trophy-outline', label: 'Kariyer', value: `${horse.career.starts} start · ${horse.career.first}-${horse.career.second}-${horse.career.third}` });
+    }
+    if (horse && horse.handicap > 0) {
+      hl.push({ icon: 'speedometer-outline', label: 'Handikap', value: String(horse.handicap) });
+    }
+    if (horse?.sire) hl.push({ icon: 'git-branch-outline', label: 'Baba', value: horse.sire });
+    if (horse?.breeder) hl.push({ icon: 'home-outline', label: 'Yetiştirici', value: horse.breeder });
+
+    return {
+      title: 'Öne çıkan bilgiler',
+      highlights: hl,
+      trustLines: [
+        { icon: 'medkit-outline' as const, title: 'Sağlık & aşı kaydı', body: 'Veteriner raporu ve aşı kartı talep edilebilir.' },
+        { icon: 'document-text-outline' as const, title: 'Şecere ve kimlik', body: 'Soy ağacı ve kimlik belgeleri satış öncesi paylaşılır.' },
+        { icon: 'eye-outline' as const, title: 'Yerinde inceleme', body: 'Deneme binişi ve hara ziyareti randevu ile.' },
+      ],
+    };
+  }, [categoryKind, horse, pansiyonInfo, studInfo, transportInfo]);
+
+  const yearly = horse && horse.yearly.length > 0 && horse.yearly[0].stats.starts > 0 ? horse.yearly[0] : null;
 
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.title, { color: text }]}>Öne çıkan bilgiler</Text>
+      <Text style={[styles.title, { color: text }]}>{title}</Text>
 
-      <View style={styles.grid}>
-        {highlights.map((h) => (
-          <View key={h.label} style={styles.cell}>
-            <Ionicons name={h.icon} size={15} color={textSecondary} />
-            <View style={styles.cellCopy}>
-              <Text style={[styles.cellLabel, { color: textMuted }]}>
-                {h.label}
-              </Text>
-              <Text
-                style={[styles.cellValue, { color: text }]}
-                numberOfLines={1}
-              >
-                {h.value}
-              </Text>
+      {highlights.length > 0 ? (
+        <View style={styles.grid}>
+          {highlights.map((h) => (
+            <View key={h.label} style={styles.cell}>
+              <Ionicons name={h.icon} size={15} color={textSecondary} />
+              <View style={styles.cellCopy}>
+                <Text style={[styles.cellLabel, { color: textMuted }]}>
+                  {h.label}
+                </Text>
+                <Text
+                  style={[styles.cellValue, { color: text }]}
+                  numberOfLines={1}
+                >
+                  {h.value}
+                </Text>
+              </View>
             </View>
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
+      ) : null}
 
       {yearly ? (
         <View style={styles.season}>
@@ -100,32 +171,19 @@ export const AdvertShipping = memo(function AdvertShipping({
 
       <View style={styles.trust}>
         <Text style={[styles.trustTitle, { color: text }]}>
-          İnceleme ve belgeler
+          Güvence ve İnceleme
         </Text>
-        <TrustLine
-          icon="medkit-outline"
-          title="Sağlık & aşı kaydı"
-          body="Veteriner raporu ve aşı kartı talep edilebilir."
-          text={text}
-          muted={textMuted}
-          iconColor={textSecondary}
-        />
-        <TrustLine
-          icon="document-text-outline"
-          title="Şecere ve kimlik"
-          body="Soy ağacı ve kimlik belgeleri satış öncesi paylaşılır."
-          text={text}
-          muted={textMuted}
-          iconColor={textSecondary}
-        />
-        <TrustLine
-          icon="eye-outline"
-          title="Yerinde inceleme"
-          body="Deneme binisi ve hara ziyareti randevu ile."
-          text={text}
-          muted={textMuted}
-          iconColor={textSecondary}
-        />
+        {trustLines.map((line) => (
+          <TrustLine
+            key={line.title}
+            icon={line.icon}
+            title={line.title}
+            body={line.body}
+            text={text}
+            muted={textMuted}
+            iconColor={textSecondary}
+          />
+        ))}
       </View>
     </View>
   );

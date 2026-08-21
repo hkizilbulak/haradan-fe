@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
 import {
   LayoutAnimation,
   Platform,
@@ -15,10 +15,26 @@ import {
   formatTlInput,
   parseTlInput,
   priceHint,
+  PERIOD_OPTIONS,
+  periodLabel,
+  isHorseCategory,
+  isPansiyonCategory,
+  isTransportCategory,
+  isFarrierCategory,
+  isStudCategory,
+  PANSIYON_FACILITY_OPTIONS,
+  STUD_BREED_OPTIONS,
+  STUD_AGE_OPTIONS,
+  COAT_COLOR_OPTIONS,
+  HORSE_BREED_OPTIONS,
+  HORSE_AGE_OPTIONS,
+  HORSE_GENDER_OPTIONS,
+  type ListingPeriodFilter,
+  type PansiyonFacilityKey,
 } from '@/components/listings/filterConfig';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { locationLookup } from '@/services/location';
-import { useProvinces } from '@/hooks/useLocation';
+import { useDistricts, useProvinces } from '@/hooks/useLocation';
 import type { CatalogFacetGroup, CatalogFacetOption, CatalogFacets } from '@/types';
 
 if (
@@ -28,13 +44,23 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+export type PansiyonFacilityFilters = Partial<Record<PansiyonFacilityKey, boolean>>;
+
 export type ListingsFiltersState = {
   categorySlug: string | null;
   breed: string | null;
   urgentOnly: boolean;
   provinceIds: string[];
+  districtId: string | null;
   priceMinTl: number | null;
   priceMaxTl: number | null;
+  period: ListingPeriodFilter | null;
+  facilities: PansiyonFacilityFilters;
+  breeds: string[];
+  ages: string[];
+  colors: string[];
+  genders?: string[];
+  features?: string[];
 };
 
 type ListingsFilterSidebarProps = {
@@ -42,6 +68,17 @@ type ListingsFilterSidebarProps = {
   value: ListingsFiltersState;
   onChange: (next: ListingsFiltersState) => void;
   resultCount: number;
+};
+
+export const FACILITY_OPTIONS = PANSIYON_FACILITY_OPTIONS;
+
+export {
+  HORSE_BREED_OPTIONS,
+  HORSE_AGE_OPTIONS,
+  HORSE_GENDER_OPTIONS,
+  STUD_BREED_OPTIONS,
+  STUD_AGE_OPTIONS,
+  COAT_COLOR_OPTIONS,
 };
 
 function toggleAnim() {
@@ -204,13 +241,21 @@ function FilterRow({
   );
 }
 
-const EMPTY: ListingsFiltersState = {
+export const EMPTY_LISTINGS_FILTERS: ListingsFiltersState = {
   categorySlug: null,
   breed: null,
   urgentOnly: false,
   provinceIds: [],
+  districtId: null,
   priceMinTl: null,
   priceMaxTl: null,
+  period: null,
+  facilities: {},
+  breeds: [],
+  ages: [],
+  colors: [],
+  genders: [],
+  features: [],
 };
 
 /** Sol filtre — kapalı akordeon; detay basınca açılır. */
@@ -220,19 +265,36 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
   onChange,
   resultCount,
 }: ListingsFilterSidebarProps) {
-  const groups = facets?.groups ?? [];
+  const groups = useMemo(() => facets?.groups ?? [], [facets?.groups]);
   const { items: provinces } = useProvinces();
+  const selectedProvinceId =
+    value.provinceIds.length === 1 ? value.provinceIds[0] : null;
+  const { items: districts } = useDistricts(selectedProvinceId);
+
+  const isHorseActive = isHorseCategory(value.categorySlug);
+  const isPansiyonActive = isPansiyonCategory(value.categorySlug);
+  const isTransportActive = isTransportCategory(value.categorySlug);
+  const isFarrierActive = isFarrierCategory(value.categorySlug);
+  const isStudActive = isStudCategory(value.categorySlug);
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     'listing-type': true,
-    'horse-breed': true,
+    'horse-breeds': true,
+    'horse-ages': true,
+    'horse-colors': true,
+    'horse-genders': true,
+    facilities: true,
+    'stud-breeds': true,
+    'stud-ages': true,
+    'stud-colors': true,
+    period: true,
     advanced: false,
   });
   const [openOptions, setOpenOptions] = useState<Record<string, boolean>>({});
   const [cityQuery, setCityQuery] = useState('');
+  const [districtQuery, setDistrictQuery] = useState('');
   const [minText, setMinText] = useState(formatTlInput(value.priceMinTl));
   const [maxText, setMaxText] = useState(formatTlInput(value.priceMaxTl));
-  const seeded = useRef(false);
 
   useEffect(() => {
     setMinText(formatTlInput(value.priceMinTl));
@@ -243,6 +305,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     if (groups.length === 0) return;
     const hasAdvanced =
       value.provinceIds.length > 0 ||
+      value.districtId != null ||
       value.priceMinTl != null ||
       value.priceMaxTl != null ||
       value.urgentOnly;
@@ -262,7 +325,15 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
       });
     });
     setOpenOptions((prev) => ({ ...prev, ...nextOptions }));
-  }, [groups, value.categorySlug, value.provinceIds, value.priceMinTl, value.priceMaxTl, value.urgentOnly]);
+  }, [
+    groups,
+    value.categorySlug,
+    value.provinceIds,
+    value.districtId,
+    value.priceMinTl,
+    value.priceMaxTl,
+    value.urgentOnly,
+  ]);
 
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
@@ -288,8 +359,16 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     value.breed != null ||
     value.urgentOnly ||
     value.provinceIds.length > 0 ||
+    value.districtId != null ||
     value.priceMinTl != null ||
-    value.priceMaxTl != null;
+    value.priceMaxTl != null ||
+    value.period != null ||
+    (value.breeds && value.breeds.length > 0) ||
+    (value.ages && value.ages.length > 0) ||
+    (value.colors && value.colors.length > 0) ||
+    (value.genders && value.genders.length > 0) ||
+    (value.features && value.features.length > 0) ||
+    Object.values(value.facilities ?? {}).some(Boolean);
 
   const advancedHint =
     [
@@ -298,6 +377,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         : value.provinceIds.length > 1
           ? `${locationLookup.getProvinceName(value.provinceIds[0])} +${value.provinceIds.length - 1}`
           : null,
+      value.districtId ? locationLookup.getDistrictName(value.districtId) : null,
       priceHint(value.priceMinTl, value.priceMaxTl),
       value.urgentOnly ? 'Acil' : null,
     ]
@@ -311,6 +391,14 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
       p.name.toLocaleLowerCase('tr').includes(needle)
     );
   }, [cityQuery, provinces]);
+
+  const filteredDistricts = useMemo(() => {
+    const needle = districtQuery.trim().toLocaleLowerCase('tr');
+    if (!needle) return districts;
+    return districts.filter((d) =>
+      d.name.toLocaleLowerCase('tr').includes(needle)
+    );
+  }, [districtQuery, districts]);
 
   const commitPrice = (minRaw: string, maxRaw: string) => {
     onChange({
@@ -376,7 +464,9 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
   };
 
   const categoryGroup = groups.find((g) => g.kind === 'category');
-  const breedGroup = groups.find((g) => g.kind === 'breed');
+
+  const facilityCount = Object.values(value.facilities ?? {}).filter(Boolean).length;
+  const facilityHint = facilityCount > 0 ? `${facilityCount} seçili` : null;
 
   return (
     <View
@@ -394,7 +484,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         <View style={styles.headMeta}>
           <Text style={[styles.count, { color: textMuted }]}>{resultCount}</Text>
           <Pressable
-            onPress={() => onChange(EMPTY)}
+            onPress={() => onChange(EMPTY_LISTINGS_FILTERS)}
             hitSlop={8}
             disabled={!hasActive}
             accessibilityLabel="Filtreleri sıfırla"
@@ -407,6 +497,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         </View>
       </View>
 
+      {/* 1. Kategori Seçimi (Her Zaman Görünür) */}
       {categoryGroup ? (
         <Accordion
           title={categoryGroup.label}
@@ -465,28 +556,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         </Accordion>
       ) : null}
 
-      {breedGroup ? (
-        <Accordion
-          title={breedGroup.label}
-          open={!!openGroups[breedGroup.id]}
-          onToggle={() => toggleGroup(breedGroup.id)}
-          hint={value.breed}
-          text={text}
-          textMuted={textMuted}
-          border={border}
-        >
-          {breedGroup.options.map((option) => (
-            <FilterRow
-              key={option.id}
-              label={option.label}
-              selected={value.breed === option.slug}
-              onSelect={() => applyOption(breedGroup, option)}
-              {...rowTheme}
-            />
-          ))}
-        </Accordion>
-      ) : null}
-
+      {/* 2. Detaylı Filtreleme (Konum, Fiyat, Acil - İlan Türünün Hemen Altında) */}
       <Accordion
         title="Detaylı filtreleme"
         open={!!openGroups.advanced}
@@ -496,7 +566,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         textMuted={textMuted}
         border={border}
       >
-        <Text style={[styles.subLabel, { color: textMuted }]}>Konum</Text>
+        <Text style={[styles.subLabel, { color: textMuted }]}>İl</Text>
         <View
           style={[
             styles.searchField,
@@ -548,6 +618,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
                   provinceIds: on
                     ? value.provinceIds.filter((id) => id !== p.id)
                     : [...value.provinceIds, p.id],
+                  districtId: on && value.districtId ? null : value.districtId,
                 });
               }}
               {...rowTheme}
@@ -559,6 +630,74 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
             </Text>
           ) : null}
         </ScrollView>
+
+        {/* Seçili il için İlçe Listesi */}
+        {selectedProvinceId && districts.length > 0 ? (
+          <>
+            <Text style={[styles.subLabel, styles.subSpaced, { color: textMuted }]}>
+              İlçe
+            </Text>
+            <View
+              style={[
+                styles.searchField,
+                { borderColor: border, backgroundColor: surface },
+              ]}
+            >
+              <Ionicons name="search-outline" size={14} color={textMuted} />
+              <TextInput
+                value={districtQuery}
+                onChangeText={setDistrictQuery}
+                placeholder="İlçe ara…"
+                placeholderTextColor={textMuted}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="search"
+                style={[
+                  styles.searchInput,
+                  {
+                    color: text,
+                    ...(Platform.OS === 'web'
+                      ? ({ outlineStyle: 'none', outlineWidth: 0 } as object)
+                      : null),
+                  },
+                ]}
+              />
+              {districtQuery.length > 0 ? (
+                <Pressable onPress={() => setDistrictQuery('')} hitSlop={6}>
+                  <Ionicons name="close-circle" size={14} color={textMuted} />
+                </Pressable>
+              ) : null}
+            </View>
+            <ScrollView
+              style={[styles.cityList, { borderColor: border }]}
+              contentContainerStyle={styles.cityListContent}
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator
+            >
+              <FilterRow
+                label="Tüm ilçeler"
+                selected={!value.districtId}
+                onSelect={() => onChange({ ...value, districtId: null })}
+                {...rowTheme}
+              />
+              {filteredDistricts.map((d) => (
+                <FilterRow
+                  key={d.id}
+                  label={d.name}
+                  selected={value.districtId === d.id}
+                  onSelect={() =>
+                    onChange({
+                      ...value,
+                      districtId: value.districtId === d.id ? null : d.id,
+                    })
+                  }
+                  {...rowTheme}
+                />
+              ))}
+            </ScrollView>
+          </>
+        ) : null}
 
         <Text style={[styles.subLabel, styles.subSpaced, { color: textMuted }]}>
           Fiyat
@@ -654,6 +793,319 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
             <View style={styles.switchKnob} />
           </View>
         </Pressable>
+      </Accordion>
+
+      {/* 3. SATILIK ATLAR: Irk, Don, Yaş, Cinsiyet (YALNIZCA Satılık Atlar Seçiliyken) */}
+      {isHorseActive ? (
+        <>
+          <Accordion
+            title="At Irkı"
+            open={!!openGroups['horse-breeds']}
+            onToggle={() => toggleGroup('horse-breeds')}
+            hint={value.breeds?.length ? value.breeds.join(', ') : null}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            {HORSE_BREED_OPTIONS.map((breed) => {
+              const selected = (value.breeds ?? []).includes(breed);
+              return (
+                <FilterRow
+                  key={breed}
+                  label={breed}
+                  multi
+                  selected={selected}
+                  onSelect={() => {
+                    const curr = value.breeds ?? [];
+                    const next = selected
+                      ? curr.filter((b) => b !== breed)
+                      : [...curr, breed];
+                    onChange({ ...value, breeds: next });
+                  }}
+                  {...rowTheme}
+                />
+              );
+            })}
+          </Accordion>
+
+          <Accordion
+            title="Donu (Renk)"
+            open={!!openGroups['horse-colors']}
+            onToggle={() => toggleGroup('horse-colors')}
+            hint={value.colors?.length ? value.colors.join(', ') : null}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            {COAT_COLOR_OPTIONS.map((color) => {
+              const selected = (value.colors ?? []).includes(color);
+              return (
+                <FilterRow
+                  key={color}
+                  label={color}
+                  multi
+                  selected={selected}
+                  onSelect={() => {
+                    const curr = value.colors ?? [];
+                    const next = selected
+                      ? curr.filter((c) => c !== color)
+                      : [...curr, color];
+                    onChange({ ...value, colors: next });
+                  }}
+                  {...rowTheme}
+                />
+              );
+            })}
+          </Accordion>
+
+          <Accordion
+            title="Yaş"
+            open={!!openGroups['horse-ages']}
+            onToggle={() => toggleGroup('horse-ages')}
+            hint={value.ages?.length ? `${value.ages.length} seçili` : null}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            {HORSE_AGE_OPTIONS.map((age) => {
+              const selected = (value.ages ?? []).includes(age);
+              return (
+                <FilterRow
+                  key={age}
+                  label={age}
+                  multi
+                  selected={selected}
+                  onSelect={() => {
+                    const curr = value.ages ?? [];
+                    const next = selected
+                      ? curr.filter((a) => a !== age)
+                      : [...curr, age];
+                    onChange({ ...value, ages: next });
+                  }}
+                  {...rowTheme}
+                />
+              );
+            })}
+          </Accordion>
+
+          <Accordion
+            title="Cinsiyet"
+            open={!!openGroups['horse-genders']}
+            onToggle={() => toggleGroup('horse-genders')}
+            hint={value.genders?.length ? value.genders.join(', ') : null}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            {HORSE_GENDER_OPTIONS.map((gender) => {
+              const selected = (value.genders ?? []).includes(gender);
+              return (
+                <FilterRow
+                  key={gender}
+                  label={gender}
+                  multi
+                  selected={selected}
+                  onSelect={() => {
+                    const curr = value.genders ?? [];
+                    const next = selected
+                      ? curr.filter((g) => g !== gender)
+                      : [...curr, gender];
+                    onChange({ ...value, genders: next });
+                  }}
+                  {...rowTheme}
+                />
+              );
+            })}
+          </Accordion>
+        </>
+      ) : null}
+
+      {/* 3. PANSİYON HARALAR: Tesis & Hizmet Özellikleri (YALNIZCA Pansiyon Seçiliyken) */}
+      {isPansiyonActive ? (
+        <Accordion
+          title="Tesis / Hizmet Özellikleri"
+          open={!!openGroups.facilities}
+          onToggle={() => toggleGroup('facilities')}
+          hint={facilityHint}
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        >
+          {FACILITY_OPTIONS.map((fac) => {
+            const on = Boolean(value.facilities?.[fac.key]);
+            return (
+              <Pressable
+                key={fac.key}
+                onPress={() =>
+                  onChange({
+                    ...value,
+                    facilities: {
+                      ...value.facilities,
+                      [fac.key]: !on,
+                    },
+                  })
+                }
+                accessibilityRole="switch"
+                accessibilityState={{ checked: on }}
+                style={({ pressed }) => [
+                  styles.toggleRow,
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.rowText,
+                    {
+                      color: on ? text : textSecondary,
+                      fontWeight: on ? '600' : '400',
+                      flex: 1,
+                    },
+                  ]}
+                >
+                  {fac.label}
+                </Text>
+                <View
+                  style={[
+                    styles.switch,
+                    {
+                      backgroundColor: on ? header : border,
+                      justifyContent: on ? 'flex-end' : 'flex-start',
+                    },
+                  ]}
+                >
+                  <View style={styles.switchKnob} />
+                </View>
+              </Pressable>
+            );
+          })}
+        </Accordion>
+      ) : null}
+
+      {/* 4. AŞIM HİZMETLERİ: At Irkı, Yaş, Don (Renk) (YALNIZCA Aşım Seçiliyken) */}
+      {isStudActive ? (
+        <>
+          <Accordion
+            title="At Irkı"
+            open={!!openGroups['stud-breeds']}
+            onToggle={() => toggleGroup('stud-breeds')}
+            hint={value.breeds?.length ? value.breeds.join(', ') : null}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            {STUD_BREED_OPTIONS.map((breed) => {
+              const selected = (value.breeds ?? []).includes(breed);
+              return (
+                <FilterRow
+                  key={breed}
+                  label={breed}
+                  multi
+                  selected={selected}
+                  onSelect={() => {
+                    const curr = value.breeds ?? [];
+                    const next = selected
+                      ? curr.filter((b) => b !== breed)
+                      : [...curr, breed];
+                    onChange({ ...value, breeds: next });
+                  }}
+                  {...rowTheme}
+                />
+              );
+            })}
+          </Accordion>
+
+          <Accordion
+            title="Yaş"
+            open={!!openGroups['stud-ages']}
+            onToggle={() => toggleGroup('stud-ages')}
+            hint={value.ages?.length ? `${value.ages.length} seçili` : null}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            {STUD_AGE_OPTIONS.map((age) => {
+              const selected = (value.ages ?? []).includes(age);
+              return (
+                <FilterRow
+                  key={age}
+                  label={age}
+                  multi
+                  selected={selected}
+                  onSelect={() => {
+                    const curr = value.ages ?? [];
+                    const next = selected
+                      ? curr.filter((a) => a !== age)
+                      : [...curr, age];
+                    onChange({ ...value, ages: next });
+                  }}
+                  {...rowTheme}
+                />
+              );
+            })}
+          </Accordion>
+
+          <Accordion
+            title="Donu (Renk)"
+            open={!!openGroups['stud-colors']}
+            onToggle={() => toggleGroup('stud-colors')}
+            hint={value.colors?.length ? value.colors.join(', ') : null}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            {COAT_COLOR_OPTIONS.map((color) => {
+              const selected = (value.colors ?? []).includes(color);
+              return (
+                <FilterRow
+                  key={color}
+                  label={color}
+                  multi
+                  selected={selected}
+                  onSelect={() => {
+                    const curr = value.colors ?? [];
+                    const next = selected
+                      ? curr.filter((c) => c !== color)
+                      : [...curr, color];
+                    onChange({ ...value, colors: next });
+                  }}
+                  {...rowTheme}
+                />
+              );
+            })}
+          </Accordion>
+        </>
+      ) : null}
+
+      {/* 7. İlan Tarihi (Periyot - Her Zaman Görünür) */}
+      <Accordion
+        title="İlan Tarihi"
+        open={!!openGroups.period}
+        onToggle={() => toggleGroup('period')}
+        hint={periodLabel(value.period)}
+        text={text}
+        textMuted={textMuted}
+        border={border}
+      >
+        <FilterRow
+          label="Tümü"
+          selected={value.period == null}
+          onSelect={() => onChange({ ...value, period: null })}
+          {...rowTheme}
+        />
+        {PERIOD_OPTIONS.map((opt) => (
+          <FilterRow
+            key={opt.id}
+            label={opt.label}
+            selected={value.period === opt.id}
+            onSelect={() =>
+              onChange({
+                ...value,
+                period: value.period === opt.id ? null : opt.id,
+              })
+            }
+            {...rowTheme}
+          />
+        ))}
       </Accordion>
     </View>
   );
@@ -846,8 +1298,9 @@ const styles = StyleSheet.create({
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     minHeight: 40,
-    gap: 10,
+    paddingVertical: 4,
   },
   switch: {
     width: 36,

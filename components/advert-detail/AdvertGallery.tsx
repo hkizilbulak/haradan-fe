@@ -83,12 +83,13 @@ export const AdvertGallery = memo(function AdvertGallery({
       <View style={[styles.main, { height, backgroundColor: surface }]}>
         <Animated.View style={[styles.mainInner, { opacity: fade }]}>
           <Image
+            key={current.assetId || current.publicUrl || index}
             source={mainSource}
             style={[styles.mainImg, { backgroundColor: skeleton }]}
             contentFit="cover"
             transition={280}
             priority="high"
-            cachePolicy={accessToken ? 'memory' : 'memory-disk'}
+            cachePolicy="memory-disk"
             recyclingKey={current.assetId}
           />
         </Animated.View>

@@ -265,7 +265,7 @@ export function AdvertDetailView({
                 onWhatsApp={onWhatsApp}
                 onEdit={() => router.push(`/my-listings/edit/${detail.id}`)}
               />
-              <AdvertShipping horse={detail.horse} />
+              <AdvertShipping horse={detail.horse} detail={detail} />
               <AdvertDetailBanner banner={detailBanners[0] ?? null} />
             </View>
           </View>
@@ -298,7 +298,11 @@ export function AdvertDetailView({
                 collapsable={false}
                 nativeID="advert-specs"
               >
-                <AdvertSpecs groups={detail.specs} horse={detail.horse} />
+                <AdvertSpecs
+                  groups={detail.specs}
+                  horse={detail.horse}
+                  detail={detail}
+                />
               </View>
               <View
                 ref={reviewsAnchorRef}

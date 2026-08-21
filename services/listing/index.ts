@@ -9,6 +9,11 @@ export { LISTING_PACKAGES } from './listingPackages';
 export { mapPublicPackage } from './mapPackage';
 export {
   isHorseListing,
+  isSaleHorseListing,
+  isPansiyonListing,
+  isTransportListing,
+  isFarrierListing,
+  isStudServiceListing,
   typeStepComplete,
   detailsErrors,
   detailsStepComplete,
@@ -16,7 +21,7 @@ export {
   canEnterStep,
 } from './validateListingDraft';
 export type { ListingFieldErrors } from './validateListingDraft';
-export { mapDraftToCreateAdvert } from './mapDraftToRequest';
+export { mapDraftToCreateAdvert, buildDraftProperties } from './mapDraftToRequest';
 export { isPaytrCheckoutEnabled, isListingPackageStepEnabled, DEFAULT_LISTING_PACKAGE_CODE } from '@/constants/Paytr';
 export {
   getListingWizardState,

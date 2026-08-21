@@ -6,12 +6,12 @@ import type {
 } from '@/types';
 
 const BREED_OPTIONS: CatalogFacetOption[] = [
-  { id: 'breed-thoroughbred', slug: 'Thoroughbred', label: 'Thoroughbred', children: [] },
-  { id: 'breed-arabian', slug: 'Arabian', label: 'Arabian', children: [] },
-  { id: 'breed-warmblood', slug: 'Warmblood', label: 'Warmblood', children: [] },
+  { id: 'breed-thoroughbred', slug: 'İngiliz (Thoroughbred)', label: 'İngiliz (Thoroughbred)', children: [] },
+  { id: 'breed-arabian', slug: 'Safkan Arap', label: 'Safkan Arap', children: [] },
+  { id: 'breed-warmblood', slug: 'Warmblood / Spor Atı', label: 'Warmblood / Spor Atı', children: [] },
   { id: 'breed-haflinger', slug: 'Haflinger', label: 'Haflinger', children: [] },
-  { id: 'breed-pony', slug: 'Pony', label: 'Pony', children: [] },
-  { id: 'breed-shetland', slug: 'Shetland', label: 'Shetland', children: [] },
+  { id: 'breed-pony', slug: 'Pony / Midilli', label: 'Pony / Midilli', children: [] },
+  { id: 'breed-rahvan', slug: 'Rahvan', label: 'Rahvan', children: [] },
 ];
 
 function toOption(node: CategoryTreeNode): CatalogFacetOption {

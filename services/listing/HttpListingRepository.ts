@@ -9,7 +9,7 @@ import type {
 } from '@/types/listing';
 import type { PaytrChargeStatus, PaytrCheckoutResult } from '@/types/paytr';
 import type { IListingRepository } from './ListingRepository';
-import { mapDraftToCreateAdvert } from './mapDraftToRequest';
+import { buildDraftProperties, mapDraftToCreateAdvert } from './mapDraftToRequest';
 import {
   mapPublicPackage,
   type PublicPackageListResponse,
@@ -110,6 +110,25 @@ export class HttpListingRepository implements IListingRepository {
         }
       );
       mediaVersion = covered.mediaVersion;
+    }
+
+    const props = buildDraftProperties(draft);
+    if (Object.keys(props).length > 0) {
+      try {
+        await this.http.request<OwnerAdvertResponse>(
+          `/v1/me/adverts/${created.id}/properties`,
+          {
+            method: 'PUT',
+            accessToken,
+            body: JSON.stringify({
+              expectedVersion: created.version,
+              properties: props,
+            }),
+          }
+        );
+      } catch {
+        // Unseeded dynamic properties are ignored gracefully without blocking creation
+      }
     }
 
     return {

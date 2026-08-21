@@ -50,6 +50,23 @@ export function createEmptyDetails(): ListingDraftDetails {
     trainer: '',
     phoneCountryIso: 'TR',
     sellerPhone: '',
+    facilityGrassPaddock: false,
+    facilitySandPaddock: false,
+    facilityStallionPaddock: false,
+    facilityTrainingTrack: '',
+    facilityVeterinarian: false,
+    facilityFarrier: false,
+    facilityFoalingBarn: false,
+    companyName: '',
+    websiteUrl: '',
+    studBreed: '',
+    studAge: '',
+    studCoatColor: '',
+    studHorseName: '',
+    studSire: '',
+    studDam: '',
+    studDamsire: '',
+    properties: {},
   };
 }
 

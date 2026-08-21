@@ -13,6 +13,31 @@ function tlToMinor(tl: number): number {
   return Math.round(tl * 100);
 }
 
+export function buildDraftProperties(draft: ListingDraft): Record<string, unknown> {
+  const d = draft.details;
+  const props: Record<string, unknown> = { ...(d.properties ?? {}) };
+  if (d.facilityGrassPaddock) props.facilityGrassPaddock = true;
+  if (d.facilitySandPaddock) props.facilitySandPaddock = true;
+  if (d.facilityStallionPaddock) props.facilityStallionPaddock = true;
+  if (d.facilityTrainingTrack?.trim()) props.facilityTrainingTrack = d.facilityTrainingTrack.trim();
+  if (d.facilityVeterinarian) props.facilityVeterinarian = true;
+  if (d.facilityFarrier) props.facilityFarrier = true;
+  if (d.facilityFoalingBarn) props.facilityFoalingBarn = true;
+
+  if (d.companyName?.trim()) props.companyName = d.companyName.trim();
+  if (d.websiteUrl?.trim()) props.websiteUrl = d.websiteUrl.trim();
+
+  if (d.studBreed?.trim()) props.studBreed = d.studBreed.trim();
+  if (d.studAge?.trim()) props.studAge = d.studAge.trim();
+  if (d.studCoatColor?.trim()) props.studCoatColor = d.studCoatColor.trim();
+  if (d.studHorseName?.trim()) props.studHorseName = d.studHorseName.trim();
+  if (d.studSire?.trim()) props.studSire = d.studSire.trim();
+  if (d.studDam?.trim()) props.studDam = d.studDam.trim();
+  if (d.studDamsire?.trim()) props.studDamsire = d.studDamsire.trim();
+
+  return props;
+}
+
 export function mapDraftToCreateAdvert(
   draft: ListingDraft
 ): CreateAdvertDraftRequest {
