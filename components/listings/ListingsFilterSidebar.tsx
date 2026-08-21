@@ -22,7 +22,15 @@ import {
   isTransportCategory,
   isFarrierCategory,
   isStudCategory,
+  PANSIYON_FACILITY_OPTIONS,
+  STUD_BREED_OPTIONS,
+  STUD_AGE_OPTIONS,
+  COAT_COLOR_OPTIONS,
+  HORSE_BREED_OPTIONS,
+  HORSE_AGE_OPTIONS,
+  HORSE_GENDER_OPTIONS,
   type ListingPeriodFilter,
+  type PansiyonFacilityKey,
 } from '@/components/listings/filterConfig';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { locationLookup } from '@/services/location';
@@ -36,15 +44,7 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-export type PansiyonFacilityFilters = {
-  grassPaddock?: boolean;
-  sandPaddock?: boolean;
-  stallionPaddock?: boolean;
-  vet?: boolean;
-  farrier?: boolean;
-  foalingBarn?: boolean;
-  trainingTrack?: boolean;
-};
+export type PansiyonFacilityFilters = Partial<Record<PansiyonFacilityKey, boolean>>;
 
 export type ListingsFiltersState = {
   categorySlug: string | null;
@@ -70,67 +70,16 @@ type ListingsFilterSidebarProps = {
   resultCount: number;
 };
 
-export const FACILITY_OPTIONS: { key: keyof PansiyonFacilityFilters; label: string }[] = [
-  { key: 'grassPaddock', label: 'Çim Padok' },
-  { key: 'sandPaddock', label: 'Kum Padok' },
-  { key: 'stallionPaddock', label: 'Aygır Padoğu' },
-  { key: 'vet', label: '7/24 Veteriner' },
-  { key: 'farrier', label: 'Nalbant Hizmeti' },
-  { key: 'foalingBarn', label: 'Doğumhane' },
-  { key: 'trainingTrack', label: 'İdman Pisti' },
-];
+export const FACILITY_OPTIONS = PANSIYON_FACILITY_OPTIONS;
 
-export const HORSE_BREED_OPTIONS = [
-  'İngiliz (Thoroughbred)',
-  'Safkan Arap',
-  'Warmblood / Spor Atı',
-  'Konkur / Engel Atlama',
-  'Rahvan',
-  'Pony / Midilli',
-  'Haflinger',
-];
-
-export const HORSE_AGE_OPTIONS = [
-  'Tay (0-1 Yaş)',
-  '2 Yaş',
-  '3 Yaş',
-  '4 Yaş',
-  '5+ Yaş',
-];
-
-export const HORSE_GENDER_OPTIONS = ['Erkek', 'Dişi', 'İğdiş'];
-
-export const TRANSPORT_OPTIONS: { key: string; label: string }[] = [
-  { key: 'camera', label: 'Araç İçi Canlı Kamera' },
-  { key: 'ac', label: 'İklimlendirme / Havalandırma' },
-  { key: 'airSuspension', label: 'Havalı Süspansiyon' },
-  { key: 'insurance', label: 'Taşıma Sigortası' },
-];
-
-export const FARRIER_OPTIONS: { key: string; label: string }[] = [
-  { key: 'hotShoeing', label: 'Sıcak Nal Çakımı' },
-  { key: 'orthopedic', label: 'Ortopedik Nallama' },
-  { key: 'mobileService', label: 'Mobil / Yerinde Servis' },
-  { key: 'crackTreatment', label: 'Tırnak Bakımı & Tedavi' },
-];
-
-export const STUD_BREED_OPTIONS = ['Safkan Arap', 'Safkan İngiliz'];
-export const STUD_AGE_OPTIONS = ['3-4 Yaş', '5-7 Yaş', '8-10 Yaş', '10+ Yaş'];
-export const STUD_GUARANTEE_OPTIONS: { key: string; label: string }[] = [
-  { key: 'liveFoal', label: 'Canlı Tay Garantisi' },
-  { key: 'marePension', label: 'Kısrak Pansiyon Bakımı' },
-  { key: 'ultrasound', label: 'Ultrason Muayenesi' },
-];
-
-export const COAT_COLOR_OPTIONS = [
-  'Doru',
-  'Al',
-  'Kır',
-  'Beyaz',
-  'Yağız',
-  'Kula',
-  'Boz',
-];
+export {
+  HORSE_BREED_OPTIONS,
+  HORSE_AGE_OPTIONS,
+  HORSE_GENDER_OPTIONS,
+  STUD_BREED_OPTIONS,
+  STUD_AGE_OPTIONS,
+  COAT_COLOR_OPTIONS,
+};
 
 function toggleAnim() {
   if (Platform.OS === 'web') return;
@@ -335,12 +284,9 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     'horse-colors': true,
     'horse-genders': true,
     facilities: true,
-    transport: true,
-    farrier: true,
     'stud-breeds': true,
     'stud-ages': true,
     'stud-colors': true,
-    'stud-guarantees': true,
     period: true,
     advanced: false,
   });
@@ -977,7 +923,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
       {/* 3. PANSİYON HARALAR: Tesis & Hizmet Özellikleri (YALNIZCA Pansiyon Seçiliyken) */}
       {isPansiyonActive ? (
         <Accordion
-          title="Tesis & Hizmet Özellikleri"
+          title="Tesis / Hizmet Özellikleri"
           open={!!openGroups.facilities}
           onToggle={() => toggleGroup('facilities')}
           hint={facilityHint}
@@ -1035,129 +981,11 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         </Accordion>
       ) : null}
 
-      {/* 4. AT NAKLİYESİ: Taşıma & Araç Özellikleri (YALNIZCA Nakliye Seçiliyken) */}
-      {isTransportActive ? (
-        <Accordion
-          title="Taşıma & Donanım Özellikleri"
-          open={!!openGroups.transport}
-          onToggle={() => toggleGroup('transport')}
-          hint={value.features?.length ? `${value.features.length} seçili` : null}
-          text={text}
-          textMuted={textMuted}
-          border={border}
-        >
-          {TRANSPORT_OPTIONS.map((opt) => {
-            const on = (value.features ?? []).includes(opt.key);
-            return (
-              <Pressable
-                key={opt.key}
-                onPress={() => {
-                  const curr = value.features ?? [];
-                  const next = on
-                    ? curr.filter((f) => f !== opt.key)
-                    : [...curr, opt.key];
-                  onChange({ ...value, features: next });
-                }}
-                accessibilityRole="switch"
-                accessibilityState={{ checked: on }}
-                style={({ pressed }) => [
-                  styles.toggleRow,
-                  { opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.rowText,
-                    {
-                      color: on ? text : textSecondary,
-                      fontWeight: on ? '600' : '400',
-                      flex: 1,
-                    },
-                  ]}
-                >
-                  {opt.label}
-                </Text>
-                <View
-                  style={[
-                    styles.switch,
-                    {
-                      backgroundColor: on ? header : border,
-                      justifyContent: on ? 'flex-end' : 'flex-start',
-                    },
-                  ]}
-                >
-                  <View style={styles.switchKnob} />
-                </View>
-              </Pressable>
-            );
-          })}
-        </Accordion>
-      ) : null}
-
-      {/* 5. NALBANTLAR: Nalbantlık & Uzmanlık Özellikleri (YALNIZCA Nalbant Seçiliyken) */}
-      {isFarrierActive ? (
-        <Accordion
-          title="Nalbantlık Hizmet Kapsamı"
-          open={!!openGroups.farrier}
-          onToggle={() => toggleGroup('farrier')}
-          hint={value.features?.length ? `${value.features.length} seçili` : null}
-          text={text}
-          textMuted={textMuted}
-          border={border}
-        >
-          {FARRIER_OPTIONS.map((opt) => {
-            const on = (value.features ?? []).includes(opt.key);
-            return (
-              <Pressable
-                key={opt.key}
-                onPress={() => {
-                  const curr = value.features ?? [];
-                  const next = on
-                    ? curr.filter((f) => f !== opt.key)
-                    : [...curr, opt.key];
-                  onChange({ ...value, features: next });
-                }}
-                accessibilityRole="switch"
-                accessibilityState={{ checked: on }}
-                style={({ pressed }) => [
-                  styles.toggleRow,
-                  { opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.rowText,
-                    {
-                      color: on ? text : textSecondary,
-                      fontWeight: on ? '600' : '400',
-                      flex: 1,
-                    },
-                  ]}
-                >
-                  {opt.label}
-                </Text>
-                <View
-                  style={[
-                    styles.switch,
-                    {
-                      backgroundColor: on ? header : border,
-                      justifyContent: on ? 'flex-end' : 'flex-start',
-                    },
-                  ]}
-                >
-                  <View style={styles.switchKnob} />
-                </View>
-              </Pressable>
-            );
-          })}
-        </Accordion>
-      ) : null}
-
-      {/* 6. AŞIM HİZMETLERİ: Aygır Irkı, Yaş, Don, Şartlar (YALNIZCA Aşım Seçiliyken) */}
+      {/* 4. AŞIM HİZMETLERİ: At Irkı, Yaş, Don (Renk) (YALNIZCA Aşım Seçiliyken) */}
       {isStudActive ? (
         <>
           <Accordion
-            title="Aygır Irkı"
+            title="At Irkı"
             open={!!openGroups['stud-breeds']}
             onToggle={() => toggleGroup('stud-breeds')}
             hint={value.breeds?.length ? value.breeds.join(', ') : null}
@@ -1187,7 +1015,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
           </Accordion>
 
           <Accordion
-            title="Aygır Yaşı"
+            title="Yaş"
             open={!!openGroups['stud-ages']}
             onToggle={() => toggleGroup('stud-ages')}
             hint={value.ages?.length ? `${value.ages.length} seçili` : null}
@@ -1242,62 +1070,6 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
                   }}
                   {...rowTheme}
                 />
-              );
-            })}
-          </Accordion>
-
-          <Accordion
-            title="Aşım Şartları & Garanti"
-            open={!!openGroups['stud-guarantees']}
-            onToggle={() => toggleGroup('stud-guarantees')}
-            hint={value.features?.length ? `${value.features.length} seçili` : null}
-            text={text}
-            textMuted={textMuted}
-            border={border}
-          >
-            {STUD_GUARANTEE_OPTIONS.map((opt) => {
-              const on = (value.features ?? []).includes(opt.key);
-              return (
-                <Pressable
-                  key={opt.key}
-                  onPress={() => {
-                    const curr = value.features ?? [];
-                    const next = on
-                      ? curr.filter((f) => f !== opt.key)
-                      : [...curr, opt.key];
-                    onChange({ ...value, features: next });
-                  }}
-                  accessibilityRole="switch"
-                  accessibilityState={{ checked: on }}
-                  style={({ pressed }) => [
-                    styles.toggleRow,
-                    { opacity: pressed ? 0.7 : 1 },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.rowText,
-                      {
-                        color: on ? text : textSecondary,
-                        fontWeight: on ? '600' : '400',
-                        flex: 1,
-                      },
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                  <View
-                    style={[
-                      styles.switch,
-                      {
-                        backgroundColor: on ? header : border,
-                        justifyContent: on ? 'flex-end' : 'flex-start',
-                      },
-                    ]}
-                  >
-                    <View style={styles.switchKnob} />
-                  </View>
-                </Pressable>
               );
             })}
           </Accordion>

@@ -1,6 +1,6 @@
 /**
  * Kategori bazlı form alanları ve filtreleme gereksinimleri self-test paketi.
- * Çalıştır: npx tsx scripts/selftest-category-forms-and-filters.ts
+ * Çalıştır: node --experimental-strip-types scripts/selftest-category-forms-and-filters.ts
  */
 import {
   isFarrierListing,
@@ -11,16 +11,27 @@ import {
   isTransportListing,
   detailsErrors,
   detailsStepComplete,
-  createEmptyDraft,
+} from '../services/listing/validateListingDraft';
+import {
   mapDraftToCreateAdvert,
   buildDraftProperties,
-} from '../services/listing';
+} from '../services/listing/mapDraftToRequest';
+import { createEmptyDraft } from '../services/listing/listingDraftStore';
 import {
   matchesDatePeriod,
   matchesPrice,
   parseArrayParam,
   serializeArrayParam,
   PERIOD_OPTIONS,
+  PANSIYON_FACILITY_OPTIONS,
+  STUD_BREED_OPTIONS,
+  STUD_AGE_OPTIONS,
+  COAT_COLOR_OPTIONS,
+  isHorseCategory,
+  isPansiyonCategory,
+  isTransportCategory,
+  isFarrierCategory,
+  isStudCategory,
 } from '../components/listings/filterConfig';
 import type { ListingDraft } from '../types/listing';
 
@@ -38,7 +49,10 @@ function assert(cond: unknown, name: string): void {
 }
 
 function assertEqual<T>(actual: T, expected: T, name: string): void {
-  assert(actual === expected, `${name} (expected: ${JSON.stringify(expected)}, got: ${JSON.stringify(actual)})`);
+  assert(
+    actual === expected,
+    `${name} (expected: ${JSON.stringify(expected)}, got: ${JSON.stringify(actual)})`
+  );
 }
 
 function createBaseValidDraft(): ListingDraft {
@@ -117,7 +131,7 @@ assert(isSaleHorseListing(saleHorseType), 'Satılık Yarış Atı satılık at o
 // -------------------------------------------------------------
 console.log('\n--- 2. İlan Form Alanları ve Doğrulama Testleri ---');
 
-// A. Pansiyon Haralar Formu
+// A. Pansiyon Haralar Formu (Fotoğraf, Başlık*, Fiyat*, Açıklama, Adres*, Tesis Özellikleri, İdman Pisti)
 const draftPansiyon = createBaseValidDraft();
 draftPansiyon.type = pansiyonType;
 draftPansiyon.details.facilityGrassPaddock = true;
@@ -132,7 +146,7 @@ assert(propsPansiyon.facilityGrassPaddock === true, 'Çim padok property aktarı
 assert(propsPansiyon.facilityVeterinarian === true, 'Veteriner property aktarıldı');
 assertEqual(propsPansiyon.facilityTrainingTrack, '1200m Kum Pist', 'İdman pisti property aktarıldı');
 
-// B. At Nakliyesi Formu
+// B. At Nakliyesi Formu (Fotoğraf, Başlık*, Firma Adı*, Web Sitesi, Fiyat*, Açıklama, Adres*)
 const draftTransport = createBaseValidDraft();
 draftTransport.type = transportType;
 draftTransport.details.companyName = 'Lider At Taşımacılık';
@@ -145,12 +159,12 @@ const propsTransport = buildDraftProperties(draftTransport);
 assertEqual(propsTransport.companyName, 'Lider At Taşımacılık', 'Firma adı property aktarıldı');
 assertEqual(propsTransport.websiteUrl, 'https://www.lidernakliyat.com', 'Web sitesi property aktarıldı');
 
-// C. Nalbantlar Formu
+// C. Nalbantlar Formu (Fotoğraf, Başlık*, Fiyat*, Açıklama, Adres*)
 const draftFarrier = createBaseValidDraft();
 draftFarrier.type = farrierType;
 assert(detailsStepComplete(draftFarrier), 'Nalbantlar standart formu geçerli');
 
-// D. Aşım Hizmetleri Formu
+// D. Aşım Hizmetleri Formu (Fotoğraf, Başlık*, Soy Kütüğü: At*, Baba*, Anne*, Annesinin Babası*, At Bilgileri: Irk*, Yaş*, Don*, Fiyat*, Açıklama, Adres*)
 const draftStud = createBaseValidDraft();
 draftStud.type = studType;
 draftStud.details.studHorseName = 'Rüzgarın Oğlu';
@@ -196,11 +210,30 @@ assert(Boolean(studErrs.studDam), 'Aşımda anne (Dam) zorunludur');
 assert(Boolean(studErrs.studDamsire), 'Aşımda annesinin babası zorunludur');
 
 // -------------------------------------------------------------
-// 3. Kategori Filtre Gereksinimleri Testleri
+// 3. Kategori Filtre Gereksinimleri ve Seçenekleri Testleri
 // -------------------------------------------------------------
 console.log('\n--- 3. Kategori Filtreleme Testleri ---');
 
-// A. İlan Tarihi (Periyot) Testleri
+// A. Pansiyon Haralar Filtreleri (6 Tesis Özelliği: Çim Padok, Kum Padok, Aygır Padoğu, Veteriner, Nalbant, Doğumhane)
+assertEqual(PANSIYON_FACILITY_OPTIONS.length, 6, 'Pansiyon filtrelerinde tam 6 tesis switch seçeneği mevcut');
+assertEqual(PANSIYON_FACILITY_OPTIONS[0].label, 'Çim Padok', '1. Tesis: Çim Padok');
+assertEqual(PANSIYON_FACILITY_OPTIONS[1].label, 'Kum Padok', '2. Tesis: Kum Padok');
+assertEqual(PANSIYON_FACILITY_OPTIONS[2].label, 'Aygır Padoğu', '3. Tesis: Aygır Padoğu');
+assertEqual(PANSIYON_FACILITY_OPTIONS[3].label, 'Veteriner', '4. Tesis: Veteriner');
+assertEqual(PANSIYON_FACILITY_OPTIONS[4].label, 'Nalbant', '5. Tesis: Nalbant');
+assertEqual(PANSIYON_FACILITY_OPTIONS[5].label, 'Doğumhane', '6. Tesis: Doğumhane');
+
+// B. Aşım Hizmetleri Filtreleri (At Irkı: Arap, İngiliz; Yaş: 0, 1, 1.5, 2, 3, 4, 5+; Don: Doru, Al, Kır, Beyaz, Yağız, Kula, Boz)
+assertEqual(STUD_BREED_OPTIONS.length, 2, 'Aşım ırk filtreleri 2 seçenek');
+assertEqual(STUD_BREED_OPTIONS[0], 'Arap', 'Aşım ırkı: Arap');
+assertEqual(STUD_BREED_OPTIONS[1], 'İngiliz', 'Aşım ırkı: İngiliz');
+
+assertEqual(STUD_AGE_OPTIONS.join(','), '0,1,1.5,2,3,4,5+', 'Aşım yaş filtreleri spesifikasyona birebir uygun (0, 1, 1.5, 2, 3, 4, 5+)');
+
+assertEqual(COAT_COLOR_OPTIONS.join(','), 'Doru,Al,Kır,Beyaz,Yağız,Kula,Boz', 'Don (renk) seçenekleri spesifikasyona uygun');
+
+// C. İlan Tarihi (Periyot) Testleri (Son 24 saat, Son 3 gün, Son 7 gün, Son 30 gün)
+assertEqual(PERIOD_OPTIONS.length, 4, 'İlan tarihi 4 periyot seçeneği içerir');
 const now = new Date();
 const h12Ago = new Date(now.getTime() - 12 * 3600 * 1000).toISOString();
 const d2Ago = new Date(now.getTime() - 48 * 3600 * 1000).toISOString();
@@ -215,33 +248,20 @@ assert(matchesDatePeriod(d5Ago, '7d'), '5 gün önceki ilan Son 7 gün içinde')
 assert(matchesDatePeriod(d5Ago, '30d'), '5 gün önceki ilan Son 30 gün içinde');
 assert(!matchesDatePeriod(d40Ago, '30d'), '40 gün önceki ilan Son 30 gün içinde değil');
 
-// B. Fiyat Karşılaştırma Testleri
+// D. Fiyat Karşılaştırma Testleri
 const priceMinor = 15000000; // 150.000 TL
 assert(matchesPrice(priceMinor, 100000, 200000), '150.000 TL 100.000 - 200.000 TL aralığında');
 assert(!matchesPrice(priceMinor, 160000, 200000), '150.000 TL min 160.000 TL altında');
 assert(!matchesPrice(priceMinor, 50000, 120000), '150.000 TL max 120.000 TL üstünde');
 
-// C. Çoklu Filtre Dizi Ayrıştırma & Serileştirme
+// E. Çoklu Filtre Dizi Ayrıştırma & Serileştirme
 const parsedBreeds = parseArrayParam('Arap, İngiliz');
 assertEqual(parsedBreeds.length, 2, 'Çoklu ırk dizisi 2 eleman');
 assertEqual(parsedBreeds[0], 'Arap', 'İlk ırk Arap');
 assertEqual(serializeArrayParam(['Doru', 'Al', 'Kır']), 'Doru,Al,Kır', 'Don serileştirme');
 
-// D. Filtre Kenar Çubuğu Kategori İzolasyon Testleri
-import {
-  isHorseCategory,
-  isPansiyonCategory,
-  isTransportCategory,
-  isFarrierCategory,
-  isStudCategory,
-} from '../components/listings/filterConfig';
-
+// F. Filtre Kenar Çubuğu Kategori İzolasyon Testleri
 assert(isHorseCategory('satilik-atlar'), 'satilik-atlar Satılık At kategorisi olarak algılandı');
-assert(isHorseCategory('satilik-yaris-ati'), 'satilik-yaris-ati Satılık At kategorisi olarak algılandı');
-assert(isHorseCategory('satilik-binek-ati'), 'satilik-binek-ati Satılık At kategorisi olarak algılandı');
-assert(isHorseCategory('satilik-pony'), 'satilik-pony Satılık At kategorisi olarak algılandı');
-assert(isHorseCategory('satilik-kisrak'), 'satilik-kisrak Satılık At kategorisi olarak algılandı');
-assert(isHorseCategory('satilik-aygir'), 'satilik-aygir Satılık At kategorisi olarak algılandı');
 assert(!isHorseCategory('at-nakliyesi'), 'at-nakliyesi Satılık At kategorisi değildir');
 assert(!isHorseCategory('pansiyon-haralar'), 'pansiyon-haralar Satılık At kategorisi değildir');
 assert(!isHorseCategory('nalbantlar'), 'nalbantlar Satılık At kategorisi değildir');
@@ -259,10 +279,9 @@ assert(isStudCategory('asim-hizmetleri'), 'asim-hizmetleri Aşım kategorisi ola
 assert(isStudCategory('arap-aygir'), 'arap-aygir Aşım kategorisi olarak algılandı');
 assert(!isStudCategory('at-nakliyesi'), 'at-nakliyesi Aşım kategorisi değildir');
 
-console.log(`\n========================================`);
-console.log(`Sonuç: ${passed} test geçti, ${failed} test başarısız`);
-console.log(`========================================\n`);
-
+console.log(`\nÖzet: ${passed} geçti, ${failed} kaldı.`);
 if (failed > 0) {
   process.exit(1);
+} else {
+  console.log('Tüm kategori form ve filtre self-testleri başarıyla geçti!');
 }

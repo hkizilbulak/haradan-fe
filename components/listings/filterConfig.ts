@@ -63,6 +63,57 @@ export const PERIOD_OPTIONS: { id: ListingPeriodFilter; label: string; hours: nu
   { id: '30d', label: 'Son 30 gün', hours: 720 },
 ];
 
+export type PansiyonFacilityKey =
+  | 'grassPaddock'
+  | 'sandPaddock'
+  | 'stallionPaddock'
+  | 'vet'
+  | 'farrier'
+  | 'foalingBarn';
+
+export const PANSIYON_FACILITY_OPTIONS: { key: PansiyonFacilityKey; label: string }[] = [
+  { key: 'grassPaddock', label: 'Çim Padok' },
+  { key: 'sandPaddock', label: 'Kum Padok' },
+  { key: 'stallionPaddock', label: 'Aygır Padoğu' },
+  { key: 'vet', label: 'Veteriner' },
+  { key: 'farrier', label: 'Nalbant' },
+  { key: 'foalingBarn', label: 'Doğumhane' },
+];
+
+export const STUD_BREED_OPTIONS = ['Arap', 'İngiliz'];
+
+export const STUD_AGE_OPTIONS = ['0', '1', '1.5', '2', '3', '4', '5+'];
+
+export const COAT_COLOR_OPTIONS = [
+  'Doru',
+  'Al',
+  'Kır',
+  'Beyaz',
+  'Yağız',
+  'Kula',
+  'Boz',
+];
+
+export const HORSE_BREED_OPTIONS = [
+  'İngiliz (Thoroughbred)',
+  'Safkan Arap',
+  'Warmblood / Spor Atı',
+  'Konkur / Engel Atlama',
+  'Rahvan',
+  'Pony / Midilli',
+  'Haflinger',
+];
+
+export const HORSE_AGE_OPTIONS = [
+  'Tay (0-1 Yaş)',
+  '2 Yaş',
+  '3 Yaş',
+  '4 Yaş',
+  '5+ Yaş',
+];
+
+export const HORSE_GENDER_OPTIONS = ['Erkek', 'Dişi', 'İğdiş'];
+
 export function parseArrayParam(raw: string | null | undefined): string[] {
   if (!raw) return [];
   return raw

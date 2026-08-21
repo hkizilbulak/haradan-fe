@@ -168,6 +168,7 @@ function applyClientFilters(
         if (b === 'arap') {
           return (
             normBrand.includes('arab') ||
+            normBrand.includes('arap') ||
             normTitle.includes('arap') ||
             p.categoryId === 'cat-arap-aygir'
           );
@@ -175,6 +176,7 @@ function applyClientFilters(
         if (b === 'ingiliz') {
           return (
             normBrand.includes('thorough') ||
+            normBrand.includes('ingiliz') ||
             normTitle.includes('ingiliz') ||
             p.categoryId === 'cat-ingiliz-aygir'
           );
@@ -184,18 +186,24 @@ function applyClientFilters(
     });
   }
 
-  // 9. Çoklu Yaş
+  // 9. Çoklu Yaş (0, 1, 1.5, 2, 3, 4, 5+)
   if (filters.ages && filters.ages.length > 0) {
     list = list.filter((p) => {
       const normTitle = normalizeSearchText(p.title);
       return filters.ages.some((age) => {
-        if (age === '5+') {
-          const match = normTitle.match(/(\d+)\s*ya/);
+        if (age === '5+' || age === '5+ Yas' || age === '5+ Yaş') {
+          const match = normTitle.match(/(\d+(?:\.\d+)?)\s*ya/);
           if (match) {
-            const num = parseInt(match[1], 10);
+            const num = parseFloat(match[1]);
             return num >= 5;
           }
           return false;
+        }
+        if (age === '1.5' || age === '1,5') {
+          return normTitle.includes('1.5') || normTitle.includes('1,5') || normTitle.includes('1 bucuk');
+        }
+        if (age === '0' || age.includes('Tay')) {
+          return normTitle.includes('0 ya') || normTitle.includes('tay') || normTitle.includes('0-1');
         }
         return normTitle.includes(`${age} ya`) || normTitle.includes(`${age}ya`);
       });
@@ -223,7 +231,30 @@ function applyClientFilters(
     });
   }
 
-  // 12. Donanım / Hizmet Özellikleri (Nakliye, Nalbant, Aşım)
+  // 12. Tesis & Hizmet Özellikleri (Pansiyon Haralar)
+  const activeFacilityKeys = (
+    Object.keys(filters.facilities ?? {}) as (keyof PansiyonFacilityFilters)[]
+  ).filter((k) => Boolean(filters.facilities[k]));
+
+  if (activeFacilityKeys.length > 0) {
+    const facilityKeywords: Record<keyof PansiyonFacilityFilters, string[]> = {
+      grassPaddock: ['cim', 'grass', 'padok', 'çim'],
+      sandPaddock: ['kum', 'sand'],
+      stallionPaddock: ['aygir', 'stallion', 'aygır'],
+      vet: ['veteriner', 'hekim', 'saglik', 'sağlık'],
+      farrier: ['nalbant', 'nal'],
+      foalingBarn: ['dogum', 'kısrak', 'kisrak', 'doğum'],
+    };
+    list = list.filter((p) => {
+      const hay = normalizeSearchText(`${p.title} ${p.brand ?? ''}`);
+      return activeFacilityKeys.every((fKey) => {
+        const keywords = facilityKeywords[fKey] ?? [];
+        return keywords.some((kw) => hay.includes(kw));
+      });
+    });
+  }
+
+  // 13. Donanım / Hizmet Özellikleri
   if (filters.features && filters.features.length > 0) {
     const featureKeywords: Record<string, string[]> = {
       camera: ['kamera', 'izleme'],
@@ -576,7 +607,7 @@ export const ListingsView = memo(function ListingsView({
                       {search.error}
                     </Text>
                     <Pressable
-                      onPress={search.retry}
+                      onPress={() => void search.refetch()}
                       accessibilityRole="button"
                       accessibilityLabel="Yeniden dene"
                       style={({ pressed }) => [

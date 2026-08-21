@@ -13,21 +13,15 @@ import {
   isTransportListing,
   type ListingFieldErrors,
 } from '@/services/listing';
+import {
+  COAT_COLOR_OPTIONS,
+  STUD_AGE_OPTIONS,
+  STUD_BREED_OPTIONS,
+} from '@/components/listings/filterConfig';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { ListingDraft, ListingDraftDetails } from '@/types/listing';
-
-const STUD_BREEDS = ['Arap', 'İngiliz'];
-const COAT_COLORS = [
-  'Doru',
-  'Al',
-  'Kır',
-  'Beyaz',
-  'Yağız',
-  'Kula',
-  'Boz',
-];
 
 type PostCategoryPropertiesProps = {
   draft: ListingDraft;
@@ -217,26 +211,15 @@ export function PostCategoryProperties({
   if (isStudServiceListing(type)) {
     return (
       <>
-        {/* Aygır Bilgileri */}
+        {/* At Bilgileri */}
         <View
           style={[styles.card, { backgroundColor: surface, borderColor: border }]}
           onLayout={(e) => onLayoutSection?.('studInfo', e.nativeEvent.layout.y)}
         >
-          <Text style={[styles.section, { color: text }]}>Aygır Bilgileri</Text>
+          <Text style={[styles.section, { color: text }]}>At Bilgileri</Text>
           <Text style={[styles.desc, { color: secondary }]}>
             Aşım hizmeti sunulan aygırın ırk, yaş ve don bilgilerini eksiksiz girin.
           </Text>
-
-          <PostField
-            label="Aygır Adı"
-            required
-            value={d.registeredName || (d.studHorseName ?? '')}
-            onChangeText={(val) =>
-              onUpdate({ registeredName: val, studHorseName: val })
-            }
-            placeholder="Aygırın adı"
-            error={errors.studHorseName || errors.registeredName}
-          />
 
           <View style={styles.fieldBlock}>
             <Text style={[styles.fieldLabel, { color: secondary }]}>
@@ -244,7 +227,7 @@ export function PostCategoryProperties({
               <Text style={{ color: errorColor }}> *</Text>
             </Text>
             <View style={styles.chips}>
-              {STUD_BREEDS.map((breed) => {
+              {STUD_BREED_OPTIONS.map((breed) => {
                 const on =
                   (d.studBreed ?? '').toLocaleLowerCase('tr') ===
                   breed.toLocaleLowerCase('tr');
@@ -277,13 +260,50 @@ export function PostCategoryProperties({
             ) : null}
           </View>
 
+          <View style={styles.fieldBlock}>
+            <Text style={[styles.fieldLabel, { color: secondary }]}>
+              Yaş
+              <Text style={{ color: errorColor }}> *</Text>
+            </Text>
+            <View style={styles.chips}>
+              {STUD_AGE_OPTIONS.map((ageVal) => {
+                const on =
+                  (d.studAge || d.age || '') === ageVal;
+                return (
+                  <Pressable
+                    key={ageVal}
+                    onPress={() =>
+                      onUpdate({ studAge: ageVal, age: ageVal })
+                    }
+                    style={[
+                      styles.chip,
+                      {
+                        borderColor: on ? header : border,
+                        backgroundColor: on ? header : 'transparent',
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.chipLabel,
+                        { color: on ? '#fff' : text },
+                      ]}
+                    >
+                      {ageVal}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
           <PostField
-            label="Yaş"
+            label="Yaş (Doğrudan Giriş)"
             required
             value={d.studAge || d.age || ''}
             onChangeText={(studAge) => onUpdate({ studAge, age: studAge })}
-            placeholder="Örn: 8"
-            keyboardType="number-pad"
+            placeholder="Örn: 5"
+            keyboardType="numeric"
             error={errors.studAge}
           />
 
@@ -293,7 +313,7 @@ export function PostCategoryProperties({
               <Text style={{ color: errorColor }}> *</Text>
             </Text>
             <View style={styles.chips}>
-              {COAT_COLORS.map((color) => {
+              {COAT_COLOR_OPTIONS.map((color) => {
                 const on =
                   (d.studCoatColor || d.coatColor || '').toLocaleLowerCase('tr') ===
                   color.toLocaleLowerCase('tr');
@@ -340,8 +360,19 @@ export function PostCategoryProperties({
             Soy Kütüğü (Pedigree)
           </Text>
           <Text style={[styles.desc, { color: secondary }]}>
-            Aygırın soy kütüğü / anne, baba ve anne babası bilgileri zorunludur.
+            Aygırın soy kütüğü / at, baba, anne ve annesinin babası bilgileri zorunludur.
           </Text>
+
+          <PostField
+            label="At / Aygır Adı"
+            required
+            value={d.registeredName || (d.studHorseName ?? '')}
+            onChangeText={(val) =>
+              onUpdate({ registeredName: val, studHorseName: val })
+            }
+            placeholder="Atın adı"
+            error={errors.studHorseName || errors.registeredName}
+          />
 
           <PostField
             label="Baba"
