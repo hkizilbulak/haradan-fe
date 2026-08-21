@@ -508,7 +508,7 @@ export function PostDetailsStep({
           />
         </View>
       ) : (
-        <PostCategoryProperties draft={draft} onUpdate={onUpdate} />
+        <PostCategoryProperties draft={draft} onUpdate={onUpdate} errors={errors} />
       )}
 
       <View

@@ -11,6 +11,7 @@ import {
   isPansiyonListing,
   isStudServiceListing,
   isTransportListing,
+  type ListingFieldErrors,
 } from '@/services/listing';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
@@ -31,6 +32,7 @@ const COAT_COLORS = [
 type PostCategoryPropertiesProps = {
   draft: ListingDraft;
   onUpdate: (partial: Partial<ListingDraftDetails>) => void;
+  errors?: ListingFieldErrors;
   onLayoutSection?: (key: string, y: number) => void;
 };
 
@@ -85,6 +87,7 @@ function ToggleItem({ label, value, onToggle }: ToggleItemProps) {
 export function PostCategoryProperties({
   draft,
   onUpdate,
+  errors = {},
   onLayoutSection,
 }: PostCategoryPropertiesProps) {
   const text = useThemeColor('text');
@@ -92,6 +95,7 @@ export function PostCategoryProperties({
   const surface = useThemeColor('surface');
   const border = useThemeColor('border');
   const header = useThemeColor('header');
+  const errorColor = useThemeColor('error');
 
   const d = draft.details;
   const type = draft.type;
@@ -105,9 +109,10 @@ export function PostCategoryProperties({
       >
         <Text style={[styles.section, { color: text }]}>
           Tesis & Hizmet Bilgileri
+          <Text style={{ color: errorColor }}> *</Text>
         </Text>
         <Text style={[styles.desc, { color: secondary }]}>
-          Tesisinizde sağladığınız padok, bakım ve hizmet olanaklarını belirtin.
+          Tesisinizde sağladığınız padok, bakım ve hizmet olanaklarını belirtin (en az 1 özellik seçilmelidir).
         </Text>
 
         <View style={styles.toggleGrid}>
@@ -155,6 +160,10 @@ export function PostCategoryProperties({
           />
         </View>
 
+        {errors.facility ? (
+          <Text style={[styles.err, { color: errorColor }]}>{errors.facility}</Text>
+        ) : null}
+
         <PostField
           label="İdman Pisti"
           value={d.facilityTrainingTrack ?? ''}
@@ -179,14 +188,16 @@ export function PostCategoryProperties({
           Firma ve Hizmet Bilgileri
         </Text>
         <Text style={[styles.desc, { color: secondary }]}>
-          Nakliye firmanız veya web siteniz varsa bilgilerini ekleyebilirsiniz.
+          Nakliye firmanız ve hizmet detaylarınızı eksiksiz tamamlayın.
         </Text>
 
         <PostField
           label="Firma Adı"
+          required
           value={d.companyName ?? ''}
           onChangeText={(companyName) => onUpdate({ companyName })}
           placeholder="Örn: Anadolu At Taşımacılığı Ltd."
+          error={errors.companyName}
         />
 
         <PostField
@@ -206,14 +217,14 @@ export function PostCategoryProperties({
   if (isStudServiceListing(type)) {
     return (
       <>
-        {/* At Bilgileri */}
+        {/* Aygır Bilgileri */}
         <View
           style={[styles.card, { backgroundColor: surface, borderColor: border }]}
           onLayout={(e) => onLayoutSection?.('studInfo', e.nativeEvent.layout.y)}
         >
           <Text style={[styles.section, { color: text }]}>Aygır Bilgileri</Text>
           <Text style={[styles.desc, { color: secondary }]}>
-            Aşım hizmeti sunulan aygırın ırk, yaş ve don bilgilerini girin.
+            Aşım hizmeti sunulan aygırın ırk, yaş ve don bilgilerini eksiksiz girin.
           </Text>
 
           <PostField
@@ -224,11 +235,13 @@ export function PostCategoryProperties({
               onUpdate({ registeredName: val, studHorseName: val })
             }
             placeholder="Aygırın adı"
+            error={errors.studHorseName || errors.registeredName}
           />
 
           <View style={styles.fieldBlock}>
             <Text style={[styles.fieldLabel, { color: secondary }]}>
               At Irkı
+              <Text style={{ color: errorColor }}> *</Text>
             </Text>
             <View style={styles.chips}>
               {STUD_BREEDS.map((breed) => {
@@ -259,19 +272,25 @@ export function PostCategoryProperties({
                 );
               })}
             </View>
+            {errors.studBreed ? (
+              <Text style={[styles.err, { color: errorColor }]}>{errors.studBreed}</Text>
+            ) : null}
           </View>
 
           <PostField
             label="Yaş"
+            required
             value={d.studAge || d.age || ''}
             onChangeText={(studAge) => onUpdate({ studAge, age: studAge })}
             placeholder="Örn: 8"
             keyboardType="number-pad"
+            error={errors.studAge}
           />
 
           <View style={styles.fieldBlock}>
             <Text style={[styles.fieldLabel, { color: secondary }]}>
               Donu (Renk)
+              <Text style={{ color: errorColor }}> *</Text>
             </Text>
             <View style={styles.chips}>
               {COAT_COLORS.map((color) => {
@@ -304,10 +323,13 @@ export function PostCategoryProperties({
                 );
               })}
             </View>
+            {errors.studCoatColor ? (
+              <Text style={[styles.err, { color: errorColor }]}>{errors.studCoatColor}</Text>
+            ) : null}
           </View>
         </View>
 
-        {/* Soy Kütüğü */}
+        {/* Soy Kütüğü (Pedigree) */}
         <View
           style={[styles.card, { backgroundColor: surface, borderColor: border }]}
           onLayout={(e) =>
@@ -318,30 +340,36 @@ export function PostCategoryProperties({
             Soy Kütüğü (Pedigree)
           </Text>
           <Text style={[styles.desc, { color: secondary }]}>
-            Aygırın soy kütüğü / anne, baba ve anne babası bilgileri.
+            Aygırın soy kütüğü / anne, baba ve anne babası bilgileri zorunludur.
           </Text>
 
           <PostField
             label="Baba"
+            required
             value={d.studSire || d.sire || ''}
             onChangeText={(studSire) => onUpdate({ studSire, sire: studSire })}
             placeholder="Baba adı"
+            error={errors.studSire}
           />
 
           <PostField
             label="Anne"
+            required
             value={d.studDam || d.dam || ''}
             onChangeText={(studDam) => onUpdate({ studDam, dam: studDam })}
             placeholder="Anne adı"
+            error={errors.studDam}
           />
 
           <PostField
             label="Annesinin Babası"
+            required
             value={d.studDamsire || d.damsire || ''}
             onChangeText={(studDamsire) =>
               onUpdate({ studDamsire, damsire: studDamsire })
             }
             placeholder="Annesinin babası"
+            error={errors.studDamsire}
           />
         </View>
       </>
@@ -409,4 +437,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipLabel: { ...Typography.small, fontWeight: '600' },
+  err: {
+    ...Typography.caption,
+    marginTop: -2,
+  },
 });

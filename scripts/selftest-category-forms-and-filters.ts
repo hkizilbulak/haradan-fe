@@ -166,12 +166,28 @@ assertEqual(reqStud.properties?.studSire, 'Özgünhan', 'Baba adı aktarıldı')
 assertEqual(reqStud.properties?.studDam, 'Kemiyetülırak.55', 'Anne adı aktarıldı');
 assertEqual(reqStud.properties?.studDamsire, 'Havuçerol', 'Annesinin babası aktarıldı');
 
-// Aşım Hizmetlerinde aygır adı eksikse hata vermeli
+// Zorunlu alan testleri
+// 1. Pansiyon tesis seçilmezse hata vermeli
+const emptyPansiyon = createBaseValidDraft();
+emptyPansiyon.type = pansiyonType;
+assert(Boolean(detailsErrors(emptyPansiyon).facility), 'Pansiyonda en az 1 tesis seçilmelidir');
+
+// 2. Nakliyede firma adı boşsa hata vermeli
+const emptyTransport = createBaseValidDraft();
+emptyTransport.type = transportType;
+assert(Boolean(detailsErrors(emptyTransport).companyName), 'Nakliyede firma adı zorunludur');
+
+// 3. Aşım Hizmetlerinde eksik alanlar hata vermeli
 const invalidStud = createBaseValidDraft();
 invalidStud.type = studType;
-invalidStud.details.registeredName = '';
-invalidStud.details.studHorseName = '';
-assert(Boolean(detailsErrors(invalidStud).registeredName), 'Aşım hizmetinde aygır adı zorunludur');
+const studErrs = detailsErrors(invalidStud);
+assert(Boolean(studErrs.studHorseName), 'Aşımda aygır adı zorunludur');
+assert(Boolean(studErrs.studBreed), 'Aşımda at ırkı zorunludur');
+assert(Boolean(studErrs.studAge), 'Aşımda yaş zorunludur');
+assert(Boolean(studErrs.studCoatColor), 'Aşımda don seçimi zorunludur');
+assert(Boolean(studErrs.studSire), 'Aşımda baba (Sire) zorunludur');
+assert(Boolean(studErrs.studDam), 'Aşımda anne (Dam) zorunludur');
+assert(Boolean(studErrs.studDamsire), 'Aşımda annesinin babası zorunludur');
 
 // -------------------------------------------------------------
 // 3. Kategori Filtre Gereksinimleri Testleri

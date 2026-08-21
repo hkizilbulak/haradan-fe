@@ -27,7 +27,16 @@ export type ListingFieldErrors = Partial<
     | 'registeredName'
     | 'gender'
     | 'media'
-    | 'sellerPhone',
+    | 'sellerPhone'
+    | 'facility'
+    | 'companyName'
+    | 'studHorseName'
+    | 'studBreed'
+    | 'studAge'
+    | 'studCoatColor'
+    | 'studSire'
+    | 'studDam'
+    | 'studDamsire',
     string
   >
 >;
@@ -122,16 +131,62 @@ export function detailsErrors(draft: ListingDraft): ListingFieldErrors {
   if (!draft.media || draft.media.length === 0) {
     e.media = 'En az bir görsel eklemelisiniz.';
   }
-  if (isSaleHorseListing(draft.type)) {
+
+  // Kategoriye özel zorunlu alanlar
+  if (isPansiyonListing(draft.type)) {
+    const hasAnyFacility = Boolean(
+      d.facilityGrassPaddock ||
+      d.facilitySandPaddock ||
+      d.facilityStallionPaddock ||
+      d.facilityVeterinarian ||
+      d.facilityFarrier ||
+      d.facilityFoalingBarn ||
+      d.facilityTrainingTrack?.trim()
+    );
+    if (!hasAnyFacility) {
+      e.facility = 'En az bir tesis veya hizmet özelliği seçmelisiniz.';
+    }
+  } else if (isTransportListing(draft.type)) {
+    if (!d.companyName?.trim()) {
+      e.companyName = 'Firma adı zorunludur.';
+    }
+  } else if (isStudServiceListing(draft.type)) {
+    const hasName = Boolean(d.registeredName?.trim() || d.studHorseName?.trim());
+    if (!hasName) {
+      e.studHorseName = 'Aygır adı zorunludur.';
+      e.registeredName = 'Aygır adı zorunludur.';
+    }
+    if (!d.studBreed?.trim()) {
+      e.studBreed = 'At ırkı seçimi zorunludur.';
+    }
+    const hasAge = Boolean(d.studAge?.trim() || d.age?.trim());
+    if (!hasAge) {
+      e.studAge = 'Yaş bilgisi zorunludur.';
+    }
+    const hasColor = Boolean(d.studCoatColor?.trim() || d.coatColor?.trim());
+    if (!hasColor) {
+      e.studCoatColor = 'Donu (renk) seçimi zorunludur.';
+    }
+    const hasSire = Boolean(d.studSire?.trim() || d.sire?.trim());
+    if (!hasSire) {
+      e.studSire = 'Baba (Sire) adı zorunludur.';
+    }
+    const hasDam = Boolean(d.studDam?.trim() || d.dam?.trim());
+    if (!hasDam) {
+      e.studDam = 'Anne (Dam) adı zorunludur.';
+    }
+    const hasDamsire = Boolean(d.studDamsire?.trim() || d.damsire?.trim());
+    if (!hasDamsire) {
+      e.studDamsire = 'Annesinin babası zorunludur.';
+    }
+  } else if (isSaleHorseListing(draft.type)) {
     if (!d.registeredName.trim()) e.registeredName = 'Atın adı gerekli.';
     if (!d.gender) e.gender = 'Cinsiyet seçin.';
-  } else if (isStudServiceListing(draft.type)) {
-    const hasName = Boolean(d.registeredName.trim() || d.studHorseName?.trim());
-    if (!hasName) e.registeredName = 'Aygır adı gerekli.';
   } else if (isHorseListing(draft.type)) {
     if (!d.registeredName.trim()) e.registeredName = 'Atın adı gerekli.';
     if (!d.gender) e.gender = 'Cinsiyet seçin.';
   }
+
   return e;
 }
 
