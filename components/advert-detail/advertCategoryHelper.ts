@@ -48,7 +48,6 @@ export type ParsedStudInfo = {
 export function parseStudInfo(detail: AdvertDetail): ParsedStudInfo {
   const horse = detail.horse;
   const title = detail.title;
-  const desc = detail.description;
 
   const specMap: Record<string, string> = {};
   (detail.specs ?? []).forEach((g) => {
@@ -58,7 +57,9 @@ export function parseStudInfo(detail: AdvertDetail): ParsedStudInfo {
   });
 
   const name =
+    specMap['at / aygır adı'] ||
     specMap['aygır adı'] ||
+    specMap['at adı'] ||
     specMap['studhorsename'] ||
     (horse.registeredName && horse.registeredName !== 'Başlıksız ilan'
       ? horse.registeredName
@@ -74,48 +75,39 @@ export function parseStudInfo(detail: AdvertDetail): ParsedStudInfo {
       ? 'Arap'
       : title.toLowerCase().includes('ingiliz')
       ? 'İngiliz'
-      : 'Safkan İngiliz');
+      : '');
 
   const age =
     specMap['yaş'] ||
     specMap['studage'] ||
-    (horse.age > 0 ? `${horse.age} Yaş` : '7 Yaş');
+    (horse.age > 0 ? `${horse.age} Yaş` : '');
 
   const coatColor =
-    specMap['don'] ||
+    specMap['donu (renk)'] ||
     specMap['donu'] ||
+    specMap['don'] ||
     specMap['studcoatcolor'] ||
     (horse.coatColor && horse.coatColor !== 'Bilinmiyor'
       ? horse.coatColor
-      : '') ||
-    (desc.toLowerCase().includes('doru')
-      ? 'Doru'
-      : desc.toLowerCase().includes('al')
-      ? 'Al'
-      : desc.toLowerCase().includes('kır')
-      ? 'Kır'
-      : 'Doru');
+      : '');
 
   const sire =
     specMap['baba'] ||
     specMap['baba (sire)'] ||
     specMap['studsire'] ||
-    (horse.sire && horse.sire !== 'Bilinmiyor' ? horse.sire : '') ||
-    (desc.includes('LUXOR') ? 'LUXOR' : desc.includes('ÖZGÜNHAN') ? 'ÖZGÜNHAN' : '—');
+    (horse.sire && horse.sire !== 'Bilinmiyor' ? horse.sire : '');
 
   const dam =
     specMap['anne'] ||
     specMap['anne (dam)'] ||
     specMap['studdam'] ||
-    (horse.dam && horse.dam !== 'Bilinmiyor' ? horse.dam : '') ||
-    (desc.includes('QUEEN OF SPADES') ? 'QUEEN OF SPADES' : '—');
+    (horse.dam && horse.dam !== 'Bilinmiyor' ? horse.dam : '');
 
   const damsire =
     specMap['annesinin babası'] ||
     specMap['kısrak babası'] ||
     specMap['studdamsire'] ||
-    (horse.damsire && horse.damsire !== 'Bilinmiyor' ? horse.damsire : '') ||
-    (desc.includes('UNACCOUNTED FOR') ? 'UNACCOUNTED FOR' : '—');
+    (horse.damsire && horse.damsire !== 'Bilinmiyor' ? horse.damsire : '');
 
   return { name, breed, age, coatColor, sire, dam, damsire };
 }
@@ -131,65 +123,90 @@ export type ParsedPansiyonInfo = {
 };
 
 export function parsePansiyonInfo(detail: AdvertDetail): ParsedPansiyonInfo {
+  const specMap: Record<string, string> = {};
+  (detail.specs ?? []).forEach((g) => {
+    g.rows.forEach((r) => {
+      specMap[r.label.toLowerCase()] = r.value;
+    });
+  });
+
   const text = `${detail.title} ${detail.description} ${JSON.stringify(
     detail.specs ?? []
   )}`.toLowerCase();
 
+  const isSpecTrue = (key: string) => {
+    const val = specMap[key]?.toLowerCase();
+    return val === 'true' || val === 'evet' || val === 'var' || val === 'mevcut';
+  };
+
   return {
     hasGrassPaddock:
-      text.includes('çim') ||
-      text.includes('cim') ||
-      text.includes('grass') ||
-      text.includes('padok'),
-    hasSandPaddock: text.includes('kum') || text.includes('sand'),
+      isSpecTrue('çim padok') ||
+      isSpecTrue('facilitygrasspaddock') ||
+      text.includes('çim padok') ||
+      text.includes('cim padok') ||
+      text.includes('çim'),
+    hasSandPaddock:
+      isSpecTrue('kum padok') ||
+      isSpecTrue('facilitysandpaddock') ||
+      text.includes('kum padok') ||
+      text.includes('kum'),
     hasStallionPaddock:
-      text.includes('aygır') ||
-      text.includes('aygir') ||
-      text.includes('stallion'),
+      isSpecTrue('aygır padoğu') ||
+      isSpecTrue('facilitystallionpaddock') ||
+      text.includes('aygır padoğu') ||
+      text.includes('aygir padogu'),
     hasVeterinarian:
+      isSpecTrue('veteriner') ||
+      isSpecTrue('facilityveterinarian') ||
       text.includes('veteriner') ||
-      text.includes('hekim') ||
-      text.includes('saglik') ||
-      text.includes('sağlık'),
-    hasFarrier: text.includes('nalbant') || text.includes('nal'),
+      text.includes('hekim'),
+    hasFarrier:
+      isSpecTrue('nalbant') ||
+      isSpecTrue('facilityfarrier') ||
+      text.includes('nalbant') ||
+      text.includes('nal'),
     hasFoalingBarn:
-      text.includes('doğum') ||
-      text.includes('dogum') ||
-      text.includes('kısrak') ||
-      text.includes('kisrak'),
-    trainingTrack: text.includes('1200m')
-      ? '1200m Kum İdman Pisti'
-      : text.includes('kum pist')
-      ? 'Kum İdman Pisti'
-      : 'Mevcut',
+      isSpecTrue('doğumhane') ||
+      isSpecTrue('facilityfoalingbarn') ||
+      text.includes('doğumhane') ||
+      text.includes('dogumhane') ||
+      text.includes('doğum'),
+    trainingTrack:
+      specMap['idman pisti'] ||
+      specMap['facilitytrainingtrack'] ||
+      (text.includes('1200m')
+        ? '1200m Kum İdman Pisti'
+        : text.includes('kum pist')
+        ? 'Kum İdman Pisti'
+        : ''),
   };
 }
 
 export type ParsedTransportInfo = {
   companyName: string;
-  route: string;
-  hasCamera: boolean;
-  hasAirSuspension: boolean;
-  hasInsurance: boolean;
+  websiteUrl: string;
 };
 
 export function parseTransportInfo(detail: AdvertDetail): ParsedTransportInfo {
-  const text = `${detail.title} ${detail.description} ${JSON.stringify(
-    detail.specs ?? []
-  )}`.toLowerCase();
+  const specMap: Record<string, string> = {};
+  (detail.specs ?? []).forEach((g) => {
+    g.rows.forEach((r) => {
+      specMap[r.label.toLowerCase()] = r.value;
+    });
+  });
 
   return {
-    companyName: detail.title.includes('—')
-      ? detail.title.split('—')[0].trim()
-      : 'Lider At Taşımacılık',
-    route: text.includes('adana')
-      ? 'İstanbul / İzmir / Adana Hattı'
-      : 'Tüm Türkiye & Hipodromlar Arası',
-    hasCamera: text.includes('kamera') || text.includes('izleme'),
-    hasAirSuspension:
-      text.includes('havalı') ||
-      text.includes('süspansiyon') ||
-      text.includes('suspansiyon'),
-    hasInsurance: text.includes('sigorta') || text.includes('sigortalı'),
+    companyName:
+      specMap['firma adı'] ||
+      specMap['companyname'] ||
+      (detail.title.includes('—')
+        ? detail.title.split('—')[0].trim()
+        : detail.brand || detail.title),
+    websiteUrl:
+      specMap['web sitesi'] ||
+      specMap['websiteurl'] ||
+      specMap['website'] ||
+      '',
   };
 }

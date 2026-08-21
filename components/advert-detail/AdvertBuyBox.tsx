@@ -63,13 +63,13 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
   const categoryBadge = useMemo(() => {
     switch (categoryKind) {
       case 'pansiyon':
-        return 'Pansiyon Hara Hizmeti';
+        return 'Pansiyon Haralar';
       case 'transport':
-        return 'At Nakliyesi & Taşımacılık';
+        return 'At Nakliyesi';
       case 'farrier':
-        return 'Nalbantlık & Tırnak Bakımı';
+        return 'Nalbantlar';
       case 'stud':
-        return `Aşım Hizmeti (${studInfo.breed})`;
+        return studInfo.breed ? `Aşım Hizmetleri (${studInfo.breed})` : 'Aşım Hizmetleri';
       default:
         return detail.horse.breed || 'Satılık At';
     }
@@ -77,44 +77,41 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
 
   const facts = useMemo(() => {
     if (categoryKind === 'pansiyon') {
-      return [
-        { icon: 'leaf-outline' as const, label: 'Padoklar', value: 'Çim & Kum' },
-        { icon: 'medkit-outline' as const, label: 'Sağlık', value: '7/24 Veteriner' },
-        { icon: 'shield-checkmark-outline' as const, label: 'Güvenlik', value: 'Kamera & Nöbet' },
-        { icon: 'fitness-outline' as const, label: 'İdman', value: 'Kum Pisti' },
-      ];
+      const list: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }[] = [];
+      if (pansiyonInfo.hasGrassPaddock) list.push({ icon: 'leaf-outline', label: 'Tesis', value: 'Çim Padok' });
+      if (pansiyonInfo.hasSandPaddock) list.push({ icon: 'grid-outline', label: 'Tesis', value: 'Kum Padok' });
+      if (pansiyonInfo.hasStallionPaddock) list.push({ icon: 'shield-outline', label: 'Tesis', value: 'Aygır Padoğu' });
+      if (pansiyonInfo.hasVeterinarian) list.push({ icon: 'medkit-outline', label: 'Sağlık', value: 'Veteriner' });
+      if (pansiyonInfo.hasFarrier) list.push({ icon: 'hammer-outline', label: 'Bakım', value: 'Nalbant' });
+      if (pansiyonInfo.hasFoalingBarn) list.push({ icon: 'home-outline', label: 'Tesis', value: 'Doğumhane' });
+      if (pansiyonInfo.trainingTrack) list.push({ icon: 'fitness-outline', label: 'Pist', value: pansiyonInfo.trainingTrack });
+      return list.slice(0, 4);
     }
     if (categoryKind === 'transport') {
-      return [
-        { icon: 'car-outline' as const, label: 'Hizmet', value: 'VIP Taşıma' },
-        { icon: 'snow-outline' as const, label: 'Konfor', value: 'İklimlendirme' },
-        { icon: 'videocam-outline' as const, label: 'Takip', value: 'İç Kamera' },
-        { icon: 'shield-outline' as const, label: 'Güvence', value: 'Taşıma Sigortası' },
-      ];
+      const list: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }[] = [];
+      if (transportInfo.companyName) list.push({ icon: 'business-outline', label: 'Firma', value: transportInfo.companyName });
+      if (transportInfo.websiteUrl) list.push({ icon: 'globe-outline', label: 'Web', value: transportInfo.websiteUrl });
+      return list;
     }
     if (categoryKind === 'farrier') {
-      return [
-        { icon: 'hammer-outline' as const, label: 'Uzmanlık', value: 'Ortopedik Nal' },
-        { icon: 'navigate-outline' as const, label: 'Servis', value: 'Yerinde Servis' },
-        { icon: 'time-outline' as const, label: 'Randevu', value: 'Haftanın 7 Günü' },
-        { icon: 'checkmark-circle-outline' as const, label: 'Kapsam', value: 'Sıcak & Soğuk' },
-      ];
+      // Nalbantlar kategorisinde PDF'e göre ek spec/çip alanı yoktur
+      return [];
     }
     if (categoryKind === 'stud') {
-      return [
-        { icon: 'ribbon-outline' as const, label: 'Irk', value: studInfo.breed },
-        { icon: 'calendar-outline' as const, label: 'Yaş', value: studInfo.age },
-        { icon: 'color-palette-outline' as const, label: 'Don', value: studInfo.coatColor },
-        { icon: 'checkmark-done-outline' as const, label: 'Aşım Durumu', value: 'Sezona Açık' },
-      ];
+      const list: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }[] = [];
+      if (studInfo.breed) list.push({ icon: 'ribbon-outline', label: 'Irk', value: studInfo.breed });
+      if (studInfo.age) list.push({ icon: 'calendar-outline', label: 'Yaş', value: studInfo.age.includes('ya') || studInfo.age.includes('Ya') ? studInfo.age : `${studInfo.age} Yaş` });
+      if (studInfo.coatColor) list.push({ icon: 'color-palette-outline', label: 'Don', value: studInfo.coatColor });
+      if (studInfo.sire) list.push({ icon: 'git-branch-outline', label: 'Baba', value: studInfo.sire });
+      return list;
     }
     const list: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }[] = [];
-    if (detail.horse.age > 0) list.push({ icon: 'calendar-outline', label: 'Yaş', value: `${detail.horse.age}` });
+    if (detail.horse.age > 0) list.push({ icon: 'calendar-outline', label: 'Yaş', value: `${detail.horse.age} Yaş` });
     if (detail.horse.gender) list.push({ icon: 'male-female-outline', label: 'Cinsiyet', value: detail.horse.gender });
     if (detail.horse.coatColor) list.push({ icon: 'color-palette-outline', label: 'Don', value: detail.horse.coatColor });
     if (detail.horse.handicap > 0) list.push({ icon: 'speedometer-outline', label: 'Handikap', value: String(detail.horse.handicap) });
     return list;
-  }, [categoryKind, studInfo, detail.horse]);
+  }, [categoryKind, pansiyonInfo, transportInfo, studInfo, detail.horse]);
 
   const pressMotion = (pressed: boolean) => ({
     opacity: pressed ? 0.9 : 1,
@@ -175,25 +172,31 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
 
       {categoryKind === 'stud' ? (
         <View style={styles.block}>
-          <Text style={[styles.blockLabel, { color: textMuted }]}>Soy Kütüğü (Pedigree)</Text>
-          <InfoLine label="Baba (Sire)" value={studInfo.sire} text={text} muted={textMuted} />
-          <InfoLine label="Anne (Dam)" value={studInfo.dam} text={text} muted={textMuted} />
-          <InfoLine label="Annesinin Babası" value={studInfo.damsire} text={text} muted={textMuted} />
+          <Text style={[styles.blockLabel, { color: textMuted }]}>Aygır ve Soy Kütüğü</Text>
+          {studInfo.breed ? <InfoLine label="At Irkı" value={studInfo.breed} text={text} muted={textMuted} /> : null}
+          {studInfo.age ? <InfoLine label="Yaş" value={studInfo.age} text={text} muted={textMuted} /> : null}
+          {studInfo.coatColor ? <InfoLine label="Donu" value={studInfo.coatColor} text={text} muted={textMuted} /> : null}
+          {studInfo.sire ? <InfoLine label="Baba (Sire)" value={studInfo.sire} text={text} muted={textMuted} /> : null}
+          {studInfo.dam ? <InfoLine label="Anne (Dam)" value={studInfo.dam} text={text} muted={textMuted} /> : null}
         </View>
       ) : categoryKind === 'pansiyon' ? (
         <View style={styles.block}>
-          <Text style={[styles.blockLabel, { color: textMuted }]}>Tesis & Hizmet Bilgileri</Text>
-          <InfoLine label="Çim Padok" value={pansiyonInfo.hasGrassPaddock ? 'Mevcut' : '—'} text={text} muted={textMuted} />
-          <InfoLine label="Veteriner Hekim" value={pansiyonInfo.hasVeterinarian ? '7/24 Mevcut' : '—'} text={text} muted={textMuted} />
-          <InfoLine label="İdman Pisti" value={pansiyonInfo.trainingTrack} text={text} muted={textMuted} />
-          <InfoLine label="Doğumhane & Nalbant" value="Mevcut" text={text} muted={textMuted} />
+          <Text style={[styles.blockLabel, { color: textMuted }]}>Tesis & Hizmet Özellikleri</Text>
+          <InfoLine label="Çim Padok" value={pansiyonInfo.hasGrassPaddock ? 'Mevcut' : 'Yok'} text={text} muted={textMuted} />
+          <InfoLine label="Kum Padok" value={pansiyonInfo.hasSandPaddock ? 'Mevcut' : 'Yok'} text={text} muted={textMuted} />
+          <InfoLine label="Veteriner Hekim" value={pansiyonInfo.hasVeterinarian ? 'Mevcut' : 'Yok'} text={text} muted={textMuted} />
+          {pansiyonInfo.trainingTrack ? (
+            <InfoLine label="İdman Pisti" value={pansiyonInfo.trainingTrack} text={text} muted={textMuted} />
+          ) : null}
         </View>
       ) : categoryKind === 'transport' ? (
         <View style={styles.block}>
-          <Text style={[styles.blockLabel, { color: textMuted }]}>Firma & Hizmet Bilgileri</Text>
+          <Text style={[styles.blockLabel, { color: textMuted }]}>Firma Bilgileri</Text>
           <InfoLine label="Firma Adı" value={transportInfo.companyName} text={text} muted={textMuted} />
-          <InfoLine label="Güzergah" value={transportInfo.route} text={text} muted={textMuted} />
-          <InfoLine label="Sigorta & Takip" value="Tam Kapsamlı Sigorta + Canlı Kamera" text={text} muted={textMuted} />
+          {transportInfo.websiteUrl ? (
+            <InfoLine label="Web Sitesi" value={transportInfo.websiteUrl} text={text} muted={textMuted} />
+          ) : null}
+          <InfoLine label="Hizmet" value="At Nakliyesi & Taşımacılık" text={text} muted={textMuted} />
         </View>
       ) : categoryKind === 'horse' && (detail.horse.sire || detail.horse.dam) ? (
         <View style={styles.block}>

@@ -43,76 +43,64 @@ export const AdvertShipping = memo(function AdvertShipping({
 
   const { title, highlights, trustLines } = useMemo(() => {
     if (categoryKind === 'pansiyon') {
+      const hl: Highlight[] = [];
+      if (pansiyonInfo?.hasGrassPaddock) hl.push({ icon: 'leaf-outline', label: 'Tesis', value: 'Çim Padok' });
+      if (pansiyonInfo?.hasSandPaddock) hl.push({ icon: 'grid-outline', label: 'Tesis', value: 'Kum Padok' });
+      if (pansiyonInfo?.hasStallionPaddock) hl.push({ icon: 'shield-outline', label: 'Tesis', value: 'Aygır Padoğu' });
+      if (pansiyonInfo?.hasVeterinarian) hl.push({ icon: 'medkit-outline', label: 'Sağlık', value: 'Veteriner Hekim' });
+      if (pansiyonInfo?.hasFarrier) hl.push({ icon: 'hammer-outline', label: 'Bakım', value: 'Nalbant' });
+      if (pansiyonInfo?.hasFoalingBarn) hl.push({ icon: 'home-outline', label: 'Tesis', value: 'Doğumhane' });
+      if (pansiyonInfo?.trainingTrack) hl.push({ icon: 'fitness-outline', label: 'İdman', value: pansiyonInfo.trainingTrack });
+
       return {
         title: 'Tesis & Güven Standartları',
-        highlights: [
-          { icon: 'leaf-outline' as const, label: 'Padoklar', value: 'Geniş Çim & Kum' },
-          { icon: 'medkit-outline' as const, label: 'Sağlık', value: '7/24 Veteriner Hekim' },
-          { icon: 'fitness-outline' as const, label: 'İdman Pisti', value: pansiyonInfo?.trainingTrack || 'Kum İdman Pisti' },
-          { icon: 'videocam-outline' as const, label: 'Güvenlik', value: '7/24 Kamera & Nöbet' },
-          { icon: 'nutrition-outline' as const, label: 'Beslenme', value: 'Özel Rasyon Programı' },
-          { icon: 'home-outline' as const, label: 'Doğumhane', value: 'Steril Doğum Bölümü' },
-        ],
+        highlights: hl,
         trustLines: [
-          { icon: 'shield-checkmark-outline' as const, title: 'Tesis Hijyen & Güvenlik', body: 'Düzenli dezenfeksiyon ve gece nöbetçisi gözetimi.' },
           { icon: 'eye-outline' as const, title: 'Yerinde İnceleme', body: 'Hara ve padok ziyareti randevu ile gerçekleştirilebilir.' },
-          { icon: 'medkit-outline' as const, title: 'Veteriner & Aşı Takibi', body: 'Periyodik hekim muayenesi ve dijital bakım kartı tutulur.' },
+          { icon: 'shield-checkmark-outline' as const, title: 'Güvenli İletişim', body: 'Haradan üzerinden ilan sahibiyle doğrudan iletişime geçebilirsiniz.' },
         ],
       };
     }
 
     if (categoryKind === 'transport') {
+      const hl: Highlight[] = [];
+      if (transportInfo?.companyName) hl.push({ icon: 'business-outline', label: 'Firma', value: transportInfo.companyName });
+      if (transportInfo?.websiteUrl) hl.push({ icon: 'globe-outline', label: 'Web', value: transportInfo.websiteUrl });
+
       return {
-        title: 'Taşıma Standartları & Güvenlik',
-        highlights: [
-          { icon: 'car-outline' as const, label: 'Zemin', value: 'Darbe Emici Kauçuk' },
-          { icon: 'videocam-outline' as const, label: 'Canlı İzleme', value: 'Araç İçi Kamera' },
-          { icon: 'snow-outline' as const, label: 'İklimlendirme', value: 'Otomatik Havalandırma' },
-          { icon: 'shield-outline' as const, label: 'Güvence', value: 'Tam Kapsamlı Taşıma Sigortası' },
-          { icon: 'navigate-outline' as const, label: 'Güzergah', value: transportInfo?.route || 'Şehirlerarası Hat' },
-          { icon: 'person-outline' as const, label: 'Sürücü', value: 'Deneyimli & Lisanslı' },
-        ],
+        title: 'Firma & Hizmet Bilgisi',
+        highlights: hl,
         trustLines: [
-          { icon: 'shield-checkmark-outline' as const, title: 'Taşıma Sigortası', body: 'Yolculuk süresince tam kapsamlı kasko ve nakliyat poliçesi.' },
-          { icon: 'videocam-outline' as const, title: 'Canlı Kamera Takibi', body: 'Seyahat esnasında atınızın durumunu canlı izleme imkanı.' },
-          { icon: 'water-outline' as const, title: 'Hijyen & Dezenfeksiyon', body: 'Her sefer öncesi özel solüsyonlarla araç dezenfekte edilir.' },
+          { icon: 'shield-checkmark-outline' as const, title: 'Güvenli İletişim', body: 'Sefer ve taşıma şartlarını ilan sahibiyle doğrudan görüşebilirsiniz.' },
+          { icon: 'calendar-outline' as const, title: 'Randevulu Taşıma', body: 'Belirlenen tarihte adresinizden transfer planlaması.' },
         ],
       };
     }
 
     if (categoryKind === 'farrier') {
       return {
-        title: 'Nalbantlık & Hizmet Standartları',
-        highlights: [
-          { icon: 'hammer-outline' as const, label: 'Sıcak Nal', value: 'Ocakta Dövme & Çakım' },
-          { icon: 'medkit-outline' as const, label: 'Ortopedik Nal', value: 'Açı & Terapötik Düzeltme' },
-          { icon: 'navigate-outline' as const, label: 'Yerinde Servis', value: 'Haralara Mobil Ulaşım' },
-          { icon: 'time-outline' as const, label: 'Randevu', value: 'Haftanın 7 Günü' },
-          { icon: 'cut-outline' as const, label: 'Tırnak Bakımı', value: 'Düzeltme & Çatlak Tedavisi' },
-          { icon: 'ribbon-outline' as const, label: 'Uzmanlık', value: 'Yarış & Damızlık Atları' },
-        ],
+        title: 'Hizmet & Güvenlik',
+        highlights: [],
         trustLines: [
-          { icon: 'navigate-outline' as const, title: 'Mobil Adrese Servis', body: 'Tüm haralara tam donanımlı araç ile yerinde servis sağlanır.' },
-          { icon: 'ribbon-outline' as const, title: 'Usta Nalbant Güvencesi', body: 'Ortopedik ve sportif at sağlığına uygun sertifikalı işçilik.' },
+          { icon: 'shield-checkmark-outline' as const, title: 'Güvenli İletişim', body: 'Nalbantlık hizmeti için ilan sahibiyle Haradan üzerinden veya telefonla iletişime geçebilirsiniz.' },
+          { icon: 'navigate-outline' as const, title: 'Randevu & Hizmet', body: 'Hizmet şartlarını ve randevuyu ilan sahibiyle doğrudan planlayın.' },
         ],
       };
     }
 
     if (categoryKind === 'stud') {
+      const hl: Highlight[] = [];
+      if (studInfo?.breed) hl.push({ icon: 'ribbon-outline', label: 'Irk', value: studInfo.breed });
+      if (studInfo?.age) hl.push({ icon: 'calendar-outline', label: 'Yaş', value: studInfo.age.includes('ya') || studInfo.age.includes('Ya') ? studInfo.age : `${studInfo.age} Yaş` });
+      if (studInfo?.coatColor) hl.push({ icon: 'color-palette-outline', label: 'Don', value: studInfo.coatColor });
+      if (studInfo?.sire) hl.push({ icon: 'git-branch-outline', label: 'Baba', value: studInfo.sire });
+
       return {
-        title: 'Aşım Koşulları & Güvenlik',
-        highlights: [
-          { icon: 'ribbon-outline' as const, label: 'Irk', value: studInfo?.breed || 'Safkan' },
-          { icon: 'checkmark-done-outline' as const, label: 'Garanti', value: 'Canlı Tay Garantili' },
-          { icon: 'home-outline' as const, label: 'Kısrak Pansiyonu', value: 'Hara Bünyesinde Mevcut' },
-          { icon: 'medkit-outline' as const, label: 'Sağlık Muayenesi', value: 'Ultrason & Veteriner Kontrol' },
-          { icon: 'calendar-outline' as const, label: 'Sezon', value: '2026 Aşım Sezonu' },
-          { icon: 'color-palette-outline' as const, label: 'Don', value: studInfo?.coatColor || '—' },
-        ],
+        title: 'Aşım & Bilgi Standartları',
+        highlights: hl,
         trustLines: [
-          { icon: 'document-text-outline' as const, title: 'Resmi Aşım Sözleşmesi', body: 'Canlı tay garantisi ve resmi aşım sertifikası düzenlenir.' },
-          { icon: 'medkit-outline' as const, title: 'Aşım Öncesi Muayene', body: 'Kısrak ve aygır için kapsamlı veteriner kontrolü sağlanır.' },
-          { icon: 'home-outline' as const, title: 'Kısrak Pansiyon Bakımı', body: 'Aşım süresince kısrağınız için VIP hara bakım hizmeti sunulur.' },
+          { icon: 'eye-outline' as const, title: 'Yerinde İnceleme', body: 'Aygır ve hara ziyareti randevu ile gerçekleştirilebilir.' },
+          { icon: 'document-text-outline' as const, title: 'Soy Kütüğü & Belgeler', body: 'Pedigree ve sağlık evrakları aşım öncesi taraflarca incelenir.' },
         ],
       };
     }

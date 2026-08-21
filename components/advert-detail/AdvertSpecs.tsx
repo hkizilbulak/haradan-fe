@@ -12,6 +12,7 @@ import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { AdvertDetail, AdvertSpecGroup, HorseProfile } from '@/types';
+import { locationLookup } from '@/services/location';
 import {
   getAdvertCategoryKind,
   parsePansiyonInfo,
@@ -58,35 +59,74 @@ export const AdvertSpecs = memo(function AdvertSpecs({
   const pansiyonInfo = useMemo(() => (detail ? parsePansiyonInfo(detail) : null), [detail]);
   const transportInfo = useMemo(() => (detail ? parseTransportInfo(detail) : null), [detail]);
 
+  const locationCity = useMemo(() => {
+    if (!detail) return '';
+    const prov = detail.provinceId
+      ? locationLookup.getProvinceName(detail.provinceId) || detail.provinceId
+      : '';
+    const dist = detail.districtId
+      ? locationLookup.getDistrictName(detail.districtId) || detail.districtId
+      : '';
+    return [dist, prov].filter(Boolean).join(', ') || 'Belirtilmedi';
+  }, [detail]);
+
   const { title, row1, row2, hasRaces } = useMemo(() => {
     if (categoryKind === 'pansiyon') {
       const s1: SoftSection = {
         id: 'pansiyon-facilities',
-        title: 'Tesis ve Padok Özellikleri',
+        title: 'Tesis ve Padoklar',
         rows: [
-          { icon: 'leaf-outline', label: 'Çim Padok', value: 'Geniş Çim Otlatma Padokları' },
-          { icon: 'grid-outline', label: 'Kum Padok', value: 'Drenajlı Kum Dinlenme Alanı' },
-          { icon: 'shield-outline', label: 'Aygır Padoğu', value: 'Yüksek Çitli Özel Güvenli Alan' },
-          { icon: 'fitness-outline', label: 'İdman Pisti', value: pansiyonInfo?.trainingTrack || 'Kum İdman Pisti' },
+          {
+            icon: 'leaf-outline',
+            label: 'Çim Padok',
+            value: pansiyonInfo?.hasGrassPaddock ? 'Mevcut' : 'Yok',
+          },
+          {
+            icon: 'grid-outline',
+            label: 'Kum Padok',
+            value: pansiyonInfo?.hasSandPaddock ? 'Mevcut' : 'Yok',
+          },
+          {
+            icon: 'shield-outline',
+            label: 'Aygır Padoğu',
+            value: pansiyonInfo?.hasStallionPaddock ? 'Mevcut' : 'Yok',
+          },
+          {
+            icon: 'fitness-outline',
+            label: 'İdman Pisti',
+            value: pansiyonInfo?.trainingTrack || 'Mevcut Değil',
+          },
         ],
       };
       const s2: SoftSection = {
         id: 'pansiyon-health',
-        title: 'Sağlık ve Bakım Hizmetleri',
+        title: 'Sağlık ve Bakım Olanakları',
         rows: [
-          { icon: 'medkit-outline', label: 'Veteriner Hekim', value: '7/24 Düzenli Kontrol & Müdahale' },
-          { icon: 'home-outline', label: 'Doğumhane', value: 'Kamera Takipli Steril Doğum Locası' },
-          { icon: 'hammer-outline', label: 'Nalbant Hizmeti', value: 'Periyodik Tırnak ve Nal Bakımı' },
-          { icon: 'nutrition-outline', label: 'Özel Beslenme', value: 'Kaliteli Yem & Rasyon Programı' },
+          {
+            icon: 'medkit-outline',
+            label: 'Veteriner Hekim',
+            value: pansiyonInfo?.hasVeterinarian ? 'Mevcut' : 'Yok',
+          },
+          {
+            icon: 'hammer-outline',
+            label: 'Nalbant Hizmeti',
+            value: pansiyonInfo?.hasFarrier ? 'Mevcut' : 'Yok',
+          },
+          {
+            icon: 'home-outline',
+            label: 'Doğumhane',
+            value: pansiyonInfo?.hasFoalingBarn ? 'Mevcut' : 'Yok',
+          },
         ],
       };
       const s3: SoftSection = {
-        id: 'pansiyon-security',
-        title: 'Güvenlik ve Hara Yönetimi',
+        id: 'pansiyon-location',
+        title: 'Konum ve Adres',
         rows: [
-          { icon: 'videocam-outline', label: 'Kamera Sistemi', value: '7/24 Gece Görüşlü Güvenlik Kamerası' },
-          { icon: 'person-outline', label: 'Gece Nöbetçisi', value: 'Kesintisiz 24 Saat Personel Nöbeti' },
-          { icon: 'calendar-outline', label: 'Ziyaret Saatleri', value: 'Haftanın 7 Günü Randevulu Ziyaret' },
+          { icon: 'location-outline', label: 'Şehir / İlçe', value: locationCity },
+          ...(detail?.address
+            ? [{ icon: 'navigate-outline' as const, label: 'Açık Adres', value: detail.address }]
+            : []),
         ],
       };
       return { title: 'Tesis ve Hizmet Detayları', row1: [s1, s2, s3], row2: [], hasRaces: false };
@@ -94,93 +134,115 @@ export const AdvertSpecs = memo(function AdvertSpecs({
 
     if (categoryKind === 'transport') {
       const s1: SoftSection = {
-        id: 'transport-vehicle',
-        title: 'Araç ve Donanım',
+        id: 'transport-info',
+        title: 'Firma ve Hizmet Bilgileri',
         rows: [
-          { icon: 'car-outline', label: 'Zemin', value: 'Darbe Emici Yumuşak Kauçuk Taban' },
-          { icon: 'snow-outline', label: 'Havalandırma', value: 'Otomatik Termostatlı İklimlendirme' },
-          { icon: 'flash-outline', label: 'Süspansiyon', value: 'Havalı & Sarsıntısız Süspansiyon' },
-          { icon: 'videocam-outline', label: 'İç Kamera', value: 'Yol Boyu Canlı HD Kamera Takibi' },
+          {
+            icon: 'business-outline',
+            label: 'Firma Adı',
+            value: transportInfo?.companyName || detail?.title || 'Belirtilmedi',
+          },
+          ...(transportInfo?.websiteUrl
+            ? [{ icon: 'globe-outline' as const, label: 'Web Sitesi', value: transportInfo.websiteUrl }]
+            : []),
+          {
+            icon: 'car-outline',
+            label: 'Hizmet Alanı',
+            value: 'At Nakliyesi ve Taşımacılık',
+          },
         ],
       };
       const s2: SoftSection = {
-        id: 'transport-routes',
-        title: 'Güzergah ve Seferler',
+        id: 'transport-location',
+        title: 'Konum ve Bölge',
         rows: [
-          { icon: 'navigate-outline', label: 'Hatlar', value: transportInfo?.route || 'Şehirlerarası Düzenli Seferler' },
-          { icon: 'trophy-outline', label: 'Hipodrom', value: 'İstanbul, İzmir, Adana, Bursa, Ankara' },
-          { icon: 'calendar-outline', label: 'Sefer Şekli', value: 'Haftalık Ring & Özel VIP Sevkıyat' },
+          { icon: 'location-outline', label: 'Şehir / İlçe', value: locationCity },
+          ...(detail?.address
+            ? [{ icon: 'navigate-outline' as const, label: 'Açık Adres', value: detail.address }]
+            : []),
         ],
       };
-      const s3: SoftSection = {
-        id: 'transport-insurance',
-        title: 'Güvenlik ve Sigorta',
-        rows: [
-          { icon: 'shield-checkmark-outline', label: 'Taşıma Sigortası', value: 'Tam Kapsamlı Nakliyat Kaskosu' },
-          { icon: 'person-outline', label: 'Sürücüler', value: 'Lisanslı & Deneyimli At Seyisi / Şoför' },
-          { icon: 'water-outline', label: 'Dezenfeksiyon', value: 'Her Sefer Öncesi & Sonrası Temizlik' },
-        ],
-      };
-      return { title: 'Nakliye ve Taşıma Detayları', row1: [s1, s2, s3], row2: [], hasRaces: false };
+      return { title: 'Nakliye ve Firma Detayları', row1: [s1, s2], row2: [], hasRaces: false };
     }
 
     if (categoryKind === 'farrier') {
       const s1: SoftSection = {
-        id: 'farrier-techniques',
-        title: 'Nallama Uygulamaları',
+        id: 'farrier-info',
+        title: 'Hizmet Bilgileri',
         rows: [
-          { icon: 'hammer-outline', label: 'Sıcak Nal Çakımı', value: 'Ocakta Tırnağa Birebir Dövme' },
-          { icon: 'checkmark-circle-outline', label: 'Soğuk Nal', value: 'Standart ve Hızlı Uygulama' },
-          { icon: 'trophy-outline', label: 'Yarış Nalları', value: 'Hafif Alüminyum & Çelik Nallar' },
+          {
+            icon: 'hammer-outline',
+            label: 'Hizmet Türü',
+            value: 'Nalbantlık ve Tırnak Bakımı',
+          },
+          {
+            icon: 'checkmark-circle-outline',
+            label: 'Hizmet Şekli',
+            value: 'Randevulu / Harada Servis',
+          },
         ],
       };
       const s2: SoftSection = {
-        id: 'farrier-health',
-        title: 'Ortopedik ve Terapötik Bakım',
+        id: 'farrier-location',
+        title: 'Konum ve Bölge',
         rows: [
-          { icon: 'medkit-outline', label: 'Açı Dengeleme', value: 'Basış ve Açı Düzeltme İşlemleri' },
-          { icon: 'cut-outline', label: 'Çatlak Tedavisi', value: 'Özel Reçine & Klips Uygulaması' },
-          { icon: 'layers-outline', label: 'Taban Desteği', value: 'Silikon ve Terapötik Tabanlık' },
+          { icon: 'location-outline', label: 'Şehir / İlçe', value: locationCity },
+          ...(detail?.address
+            ? [{ icon: 'navigate-outline' as const, label: 'Açık Adres', value: detail.address }]
+            : []),
         ],
       };
-      const s3: SoftSection = {
-        id: 'farrier-service',
-        title: 'Hizmet ve Randevu',
-        rows: [
-          { icon: 'navigate-outline', label: 'Mobil Hizmet', value: 'Haralara Tam Donanımlı Mobil Servis' },
-          { icon: 'calendar-outline', label: 'Çalışma Günleri', value: 'Haftanın 7 Günü Hizmet' },
-        ],
-      };
-      return { title: 'Nalbantlık Hizmet Detayları', row1: [s1, s2, s3], row2: [], hasRaces: false };
+      return { title: 'Nalbantlık Hizmet Detayları', row1: [s1, s2], row2: [], hasRaces: false };
     }
 
     if (categoryKind === 'stud') {
       const s1: SoftSection = {
         id: 'stud-identity',
-        title: 'Aygır Kimlik Bilgileri',
+        title: 'At / Aygır Bilgileri',
         rows: [
-          { icon: 'ribbon-outline', label: 'Aygır Adı', value: studInfo?.name || detail?.title || 'Aygır' },
-          { icon: 'leaf-outline', label: 'At Irkı', value: studInfo?.breed || 'Safkan' },
-          { icon: 'calendar-outline', label: 'Yaş', value: studInfo?.age || '—' },
-          { icon: 'color-palette-outline', label: 'Don', value: studInfo?.coatColor || '—' },
+          {
+            icon: 'ribbon-outline',
+            label: 'Aygır Adı',
+            value: studInfo?.name || detail?.title || 'Aygır',
+          },
+          {
+            icon: 'leaf-outline',
+            label: 'At Irkı',
+            value: studInfo?.breed || 'Belirtilmedi',
+          },
+          {
+            icon: 'calendar-outline',
+            label: 'Yaş',
+            value: studInfo?.age
+              ? studInfo.age.includes('ya') || studInfo.age.includes('Ya')
+                ? studInfo.age
+                : `${studInfo.age} Yaş`
+              : 'Belirtilmedi',
+          },
+          {
+            icon: 'color-palette-outline',
+            label: 'Donu (Renk)',
+            value: studInfo?.coatColor || 'Belirtilmedi',
+          },
         ],
       };
       const s2: SoftSection = {
         id: 'stud-pedigree',
         title: 'Soy Kütüğü (Pedigree)',
         rows: [
-          { icon: 'git-branch-outline', label: 'Baba (Sire)', value: studInfo?.sire || '—' },
-          { icon: 'git-branch-outline', label: 'Anne (Dam)', value: studInfo?.dam || '—' },
-          { icon: 'git-network-outline', label: 'Annesinin Babası', value: studInfo?.damsire || '—' },
+          { icon: 'git-branch-outline', label: 'Baba (Sire)', value: studInfo?.sire || 'Belirtilmedi' },
+          { icon: 'git-branch-outline', label: 'Anne (Dam)', value: studInfo?.dam || 'Belirtilmedi' },
+          { icon: 'git-network-outline', label: 'Annesinin Babası (Damsire)', value: studInfo?.damsire || 'Belirtilmedi' },
         ],
       };
       const s3: SoftSection = {
-        id: 'stud-conditions',
-        title: 'Aşım Koşulları ve Tesis',
+        id: 'stud-location',
+        title: 'Konum ve Adres',
         rows: [
-          { icon: 'checkmark-done-outline', label: 'Garanti', value: 'Canlı Tay Garantisi' },
-          { icon: 'home-outline', label: 'Kısrak Pansiyonu', value: 'Hara Bünyesinde Bakım Mevcut' },
-          { icon: 'medkit-outline', label: 'Veteriner Muayenesi', value: 'Tam Kapsamlı Ultrason ve Kontrol' },
+          { icon: 'location-outline', label: 'Şehir / İlçe', value: locationCity },
+          ...(detail?.address
+            ? [{ icon: 'navigate-outline' as const, label: 'Açık Adres', value: detail.address }]
+            : []),
         ],
       };
       return { title: 'Aygır ve Aşım Detayları', row1: [s1, s2, s3], row2: [], hasRaces: false };
@@ -204,11 +266,12 @@ export const AdvertSpecs = memo(function AdvertSpecs({
     if (horse && horse.owners.length > 0) people.push({ icon: 'person-outline', label: 'Sahip', value: horse.owners.join(', ') });
     if (horse?.breeder) people.push({ icon: 'home-outline', label: 'Yetiştirici', value: horse.breeder });
     if (horse?.trainer) people.push({ icon: 'fitness-outline', label: 'Antrenör', value: horse.trainer });
+    if (locationCity && locationCity !== 'Belirtilmedi') people.push({ icon: 'location-outline', label: 'Konum', value: locationCity });
 
     const r1: SoftSection[] = [];
     if (identity.length > 0) r1.push({ id: 'identity', title: 'Kimlik ve fiziksel', rows: identity });
     if (pedigree.length > 0) r1.push({ id: 'pedigree', title: 'Orijin (soy ağacı)', rows: pedigree });
-    if (people.length > 0) r1.push({ id: 'people', title: 'İlgili kişiler', rows: people });
+    if (people.length > 0) r1.push({ id: 'people', title: 'İlgili kişiler ve konum', rows: people });
 
     const r2: SoftSection[] = [];
     if (horse && horse.career.starts > 0) {
@@ -228,7 +291,7 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       row2: r2,
       hasRaces: Boolean(horse && horse.races.length > 0),
     };
-  }, [categoryKind, detail, horse, pansiyonInfo, studInfo, transportInfo]);
+  }, [categoryKind, detail, horse, locationCity, pansiyonInfo, studInfo, transportInfo]);
 
   return (
     <View style={styles.wrap}>
