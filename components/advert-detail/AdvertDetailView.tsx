@@ -23,16 +23,25 @@ import {
   AdvertStickyCta,
   AdvertViewedRail,
 } from '@/components/advert-detail';
+import { MobileAdvertStickyBar } from '@/components/advert-detail/mobile/MobileAdvertStickyBar';
+import { MobileAdvertTopBar } from '@/components/advert-detail/mobile/MobileAdvertTopBar';
 import { LazySection } from '@/components/ui/LazySection';
 import { RatingStars } from '@/components/product/RatingStars';
 import { HomeContentContainer } from '@/components/layout';
 import { SiteFooter } from '@/components/home';
-import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
+import {
+  HOME_DESKTOP_BREAKPOINT,
+  mobileDetailScrollInset,
+} from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useFavorites } from '@/hooks/useFavorites';
 import { usePlacementBanners } from '@/hooks/usePlacementBanners';
+import { useAdvertLocation } from '@/services/location';
 import { openPhoneCall, openWhatsApp } from '@/utils/contactLinks';
+import { formatMoney } from '@/utils/formatMoney';
+import { formatViewCount } from '@/utils/formatViewCount';
 import { prepareListingWizardEntry } from '@/services/listing';
 import type { AdvertDetail, AdvertDetailTab, CatalogProductCard } from '@/types';
 
@@ -56,6 +65,9 @@ export function AdvertDetailView({
   const reviewsAnchorRef = useRef<View>(null);
   const { toggle, apply } = useFavorites();
   const { banners: detailBanners } = usePlacementBanners('LISTING_DETAIL');
+  const location = useAdvertLocation(detail);
+  const safeInsets = useSafeInsets();
+  const mobileScrollInset = mobileDetailScrollInset(safeInsets.bottom);
 
   const [tab, setTab] = useState<AdvertDetailTab>('general');
   const [showTop, setShowTop] = useState(false);
@@ -92,9 +104,12 @@ export function AdvertDetailView({
 
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
+  const textSecondary = useThemeColor('textSecondary');
   const surface = useThemeColor('surface');
   const border = useThemeColor('border');
   const bg = useThemeColor('background');
+
+  const galleryHeight = isWide ? 440 : Math.min(Math.round(width * 0.78), 420);
 
   useEffect(() => {
     setTab('general');
@@ -151,9 +166,12 @@ export function AdvertDetailView({
     [router]
   );
 
+  const onEdit = useCallback(() => {
+    router.push(`/my-listings/edit/${detail.id}`);
+  }, [router, detail.id]);
+
   const scrollToAnchor = useCallback(
     (anchor: React.RefObject<View | null>, nativeId: string, attempt = 0) => {
-      // Web: nativeID üzerinden DOM — RN ref bazen host node değil
       if (Platform.OS === 'web' && typeof document !== 'undefined') {
         const el = document.getElementById(nativeId);
         if (el) {
@@ -175,12 +193,13 @@ export function AdvertDetailView({
         return;
       }
 
+      const offset = isWide ? 80 : 64;
       node.measureInWindow((_x, targetY) => {
-        const next = Math.max(0, scrollYRef.current + targetY - 80);
+        const next = Math.max(0, scrollYRef.current + targetY - offset);
         scroll.scrollTo({ y: next, animated: true });
       });
     },
-    []
+    [isWide]
   );
 
   const scrollToReviews = useCallback(() => {
@@ -201,6 +220,231 @@ export function AdvertDetailView({
     },
     [scrollToAnchor]
   );
+
+  const categoryLine =
+    detail.breadcrumbs.length > 1
+      ? detail.breadcrumbs[detail.breadcrumbs.length - 2]?.label
+      : detail.horse.breed || 'İlan';
+
+  const lowerSections = (
+    <>
+      <LazySection
+        fallback={
+          <View
+            style={{
+              marginVertical: 32,
+              height: 280,
+              borderRadius: 16,
+              backgroundColor: border,
+              opacity: 0.45,
+            }}
+          />
+        }
+      >
+        <AdvertBundleOffer
+          title="Öne çıkan ilanlar"
+          items={detail.related}
+          onPress={onRelatedPress}
+        />
+      </LazySection>
+
+      <View style={[styles.lower, !isWide && styles.lowerMobile]}>
+        <View style={styles.lowerMain}>
+          <View
+            ref={specsAnchorRef}
+            collapsable={false}
+            nativeID="advert-specs"
+          >
+            <AdvertSpecs
+              groups={detail.specs}
+              horse={detail.horse}
+              detail={detail}
+            />
+          </View>
+          <View
+            ref={reviewsAnchorRef}
+            collapsable={false}
+            nativeID="advert-reviews"
+          >
+            <AdvertReviews detail={detail} accessToken={accessToken} />
+          </View>
+        </View>
+
+        {isWide ? (
+          <View style={styles.stickyCol}>
+            <View style={styles.stickyInner}>
+              <AdvertStickyCta
+                detail={detail}
+                favorite={favorite}
+                isOwner={isOwner}
+                accessToken={accessToken}
+                onCall={onCall}
+                onWhatsApp={onWhatsApp}
+                onToggleFavorite={() => toggle(favoriteCard)}
+                onEdit={onEdit}
+              />
+            </View>
+          </View>
+        ) : null}
+      </View>
+
+      <LazySection
+        fallback={
+          <View
+            style={{
+              marginTop: 40,
+              height: 280,
+              borderRadius: 12,
+              backgroundColor: border,
+            }}
+          />
+        }
+      >
+        <AdvertViewedRail items={detail.viewed} onPress={onRelatedPress} />
+      </LazySection>
+    </>
+  );
+
+  if (!isWide) {
+    return (
+      <View style={[styles.root, { backgroundColor: bg }]}>
+        <ScrollView
+          ref={scrollRef}
+          style={styles.flex}
+          contentContainerStyle={[
+            styles.mobileContent,
+            { paddingBottom: mobileScrollInset },
+          ]}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          removeClippedSubviews={Platform.OS !== 'web'}
+          onScroll={(e) => {
+            const y = e.nativeEvent.contentOffset.y;
+            scrollYRef.current = y;
+            setShowTop((prev) => {
+              const next = y > 520;
+              return prev === next ? prev : next;
+            });
+          }}
+        >
+          <View style={styles.mobileGalleryWrap}>
+            <AdvertGallery
+              items={detail.gallery}
+              height={galleryHeight}
+              fullBleed
+              showThumbs={false}
+              accessToken={accessToken}
+            />
+            <MobileAdvertTopBar
+              onBack={() => router.back()}
+              favorite={favorite}
+              onToggleFavorite={() => toggle(favoriteCard)}
+            />
+          </View>
+
+          <HomeContentContainer style={styles.mobileBody}>
+            <View style={styles.mobileSummary}>
+              <View style={styles.mobileMetaRow}>
+                <Text style={[styles.mobileCategory, { color: textMuted }]}>
+                  {categoryLine}
+                </Text>
+                {detail.isUrgent ? (
+                  <Text style={styles.mobileUrgent}>ACİL</Text>
+                ) : null}
+              </View>
+
+              <Text style={[styles.mobileTitle, { color: text }]}>
+                {detail.title}
+              </Text>
+
+              <View style={styles.mobilePriceRow}>
+                <Text style={[styles.mobilePrice, { color: text }]}>
+                  {formatMoney(detail.price)}
+                </Text>
+                {detail.oldPrice ? (
+                  <Text style={[styles.mobileOldPrice, { color: textMuted }]}>
+                    {formatMoney(detail.oldPrice)}
+                  </Text>
+                ) : null}
+              </View>
+
+              <View style={styles.mobileSubRow}>
+                <Ionicons name="location-outline" size={14} color={textMuted} />
+                <Text
+                  style={[styles.mobileSub, { color: textMuted }]}
+                  numberOfLines={1}
+                >
+                  {location}
+                </Text>
+                <View style={[styles.mobileDot, { backgroundColor: textMuted }]} />
+                <Ionicons name="eye-outline" size={14} color={textMuted} />
+                <Text style={[styles.mobileSub, { color: textMuted }]}>
+                  {formatViewCount(detail.viewCount)}
+                </Text>
+              </View>
+
+              <Pressable onPress={scrollToReviews} style={styles.mobileRating}>
+                <RatingStars
+                  value={detail.rating}
+                  count={detail.reviewCount || detail.reviews.length}
+                  size={14}
+                />
+                <Ionicons name="chevron-forward" size={14} color={textSecondary} />
+              </Pressable>
+            </View>
+
+            <AdvertDetailTabs
+              tabs={[...tabs]}
+              active={tab}
+              onChange={onTabChange}
+              variant="mobile"
+            />
+
+            <View style={styles.mobileSections}>
+              <AdvertBuyBox
+                detail={detail}
+                favorite={favorite}
+                isOwner={isOwner}
+                variant="mobile"
+                onToggleFavorite={() => toggle(favoriteCard)}
+                onCall={onCall}
+                onWhatsApp={onWhatsApp}
+                onEdit={onEdit}
+              />
+              <AdvertShipping horse={detail.horse} detail={detail} />
+              <AdvertDetailBanner banner={detailBanners[0] ?? null} />
+            </View>
+
+            {lowerSections}
+          </HomeContentContainer>
+        </ScrollView>
+
+        <MobileAdvertStickyBar
+          detail={detail}
+          isOwner={isOwner}
+          onCall={onCall}
+          onWhatsApp={onWhatsApp}
+          onEdit={onEdit}
+        />
+
+        {showTop ? (
+          <Pressable
+            onPress={() =>
+              scrollRef.current?.scrollTo({ y: 0, animated: true })
+            }
+            style={[
+              styles.topBtn,
+              styles.topBtnMobile,
+              { backgroundColor: surface, borderColor: border, bottom: mobileScrollInset - 8 },
+            ]}
+            accessibilityLabel="Yukarı"
+          >
+            <Ionicons name="chevron-up" size={16} color={text} />
+          </Pressable>
+        ) : null}
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.root, { backgroundColor: bg }]}>
@@ -262,11 +506,11 @@ export function AdvertDetailView({
             }
           />
 
-          <View style={[styles.hero, !isWide && styles.heroMobile]}>
+          <View style={styles.hero}>
             <View style={styles.galleryCol}>
               <AdvertGallery
                 items={detail.gallery}
-                height={isWide ? 440 : 320}
+                height={galleryHeight}
                 accessToken={accessToken}
               />
             </View>
@@ -278,93 +522,14 @@ export function AdvertDetailView({
                 onToggleFavorite={() => toggle(favoriteCard)}
                 onCall={onCall}
                 onWhatsApp={onWhatsApp}
-                onEdit={() => router.push(`/my-listings/edit/${detail.id}`)}
+                onEdit={onEdit}
               />
               <AdvertShipping horse={detail.horse} detail={detail} />
               <AdvertDetailBanner banner={detailBanners[0] ?? null} />
             </View>
           </View>
 
-          <LazySection
-            fallback={
-              <View
-                style={{
-                  marginVertical: 32,
-                  height: 280,
-                  borderRadius: 16,
-                  backgroundColor: border,
-                  opacity: 0.45,
-                }}
-              />
-            }
-          >
-            <AdvertBundleOffer
-              title="Öne çıkan ilanlar"
-              items={detail.related}
-              onPress={onRelatedPress}
-            />
-          </LazySection>
-
-          <View style={[styles.lower, !isWide && styles.lowerMobile]}>
-            <View style={styles.lowerMain}>
-              {/* Eager mount — tab scroll hedefleri her zaman mevcut */}
-              <View
-                ref={specsAnchorRef}
-                collapsable={false}
-                nativeID="advert-specs"
-              >
-                <AdvertSpecs
-                  groups={detail.specs}
-                  horse={detail.horse}
-                  detail={detail}
-                />
-              </View>
-              <View
-                ref={reviewsAnchorRef}
-                collapsable={false}
-                nativeID="advert-reviews"
-              >
-                <AdvertReviews detail={detail} accessToken={accessToken} />
-              </View>
-            </View>
-
-            {isWide ? (
-              <View style={styles.stickyCol}>
-                <View style={styles.stickyInner}>
-                  <AdvertStickyCta
-                    detail={detail}
-                    favorite={favorite}
-                    isOwner={isOwner}
-                    accessToken={accessToken}
-                    onCall={onCall}
-                    onWhatsApp={onWhatsApp}
-                    onToggleFavorite={() => toggle(favoriteCard)}
-                    onEdit={() =>
-                      router.push(`/my-listings/edit/${detail.id}`)
-                    }
-                  />
-                </View>
-              </View>
-            ) : null}
-          </View>
-
-          <LazySection
-            fallback={
-              <View
-                style={{
-                  marginTop: 40,
-                  height: 280,
-                  borderRadius: 12,
-                  backgroundColor: border,
-                }}
-              />
-            }
-          >
-            <AdvertViewedRail
-              items={detail.viewed}
-              onPress={onRelatedPress}
-            />
-          </LazySection>
+          {lowerSections}
         </HomeContentContainer>
 
         <SiteFooter
@@ -399,6 +564,82 @@ const styles = StyleSheet.create({
   root: { flex: 1, position: 'relative' },
   flex: { flex: 1 },
   content: { paddingTop: Spacing.lg, paddingBottom: 0 },
+  mobileContent: {},
+  mobileGalleryWrap: {
+    position: 'relative',
+  },
+  mobileBody: {
+    paddingTop: Spacing.lg,
+  },
+  mobileSummary: {
+    gap: 10,
+    marginBottom: Spacing.md,
+  },
+  mobileMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  mobileCategory: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+  },
+  mobileUrgent: {
+    color: '#e11d48',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  mobileTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.4,
+    lineHeight: 28,
+  },
+  mobilePriceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  mobilePrice: {
+    fontSize: 26,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  mobileOldPrice: {
+    fontSize: 14,
+    textDecorationLine: 'line-through',
+  },
+  mobileSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  mobileSub: {
+    fontSize: 12,
+    fontWeight: '500',
+    flexShrink: 1,
+  },
+  mobileDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+    opacity: 0.5,
+    marginHorizontal: 2,
+  },
+  mobileRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  mobileSections: {
+    gap: Spacing.xl,
+    marginTop: Spacing.lg,
+  },
   crumbs: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -419,7 +660,6 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xl,
     alignItems: 'flex-start',
   },
-  heroMobile: { flexDirection: 'column' },
   galleryCol: { flex: 1.15, minWidth: 0 },
   buyCol: { flex: 0.85, minWidth: 0 },
   lower: {
@@ -452,6 +692,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
+  },
+  topBtnMobile: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   topLabel: { fontSize: 9, fontWeight: '700' },
 });

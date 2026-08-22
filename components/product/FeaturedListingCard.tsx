@@ -32,6 +32,8 @@ export type FeaturedCardBadge = 'urgent' | 'featured';
 type FeaturedListingCardProps = {
   product: CatalogProductCard;
   width?: number;
+  /** Mobil grid — daha küçük görsel ve tipografi. */
+  compact?: boolean;
   /** Bölüme göre rozet; verilmezse isUrgent → ACİL. */
   badge?: FeaturedCardBadge | 'auto';
   /** Sahip önizlemesi (incelemede / taslak) için Bearer. */
@@ -49,6 +51,7 @@ type FeaturedListingCardProps = {
 function FeaturedListingCardComponent({
   product,
   width,
+  compact = false,
   badge = 'auto',
   accessToken,
   onPress,
@@ -138,6 +141,7 @@ function FeaturedListingCardComponent({
         : null)}
       style={({ pressed }) => [
         styles.card,
+        compact && styles.cardCompact,
         width ? { width } : null,
         {
           opacity: pressed ? 0.94 : 1,
@@ -153,6 +157,7 @@ function FeaturedListingCardComponent({
       <Animated.View
         style={[
           styles.motion,
+          compact && styles.motionCompact,
           {
             transform: [{ translateY: lift }, { scale: cardScale }],
             backgroundColor: hovered ? '#fff' : 'transparent',
@@ -169,7 +174,7 @@ function FeaturedListingCardComponent({
           },
         ]}
       >
-        <View style={styles.imageWrap}>
+        <View style={[styles.imageWrap, compact && styles.imageWrapCompact]}>
           <Animated.View
             style={[styles.imageInner, { transform: [{ scale: imgScale }] }]}
           >
@@ -189,14 +194,18 @@ function FeaturedListingCardComponent({
           />
           {isSold ? <SoldOverlay /> : null}
           {resolvedBadge === 'urgent' ? (
-            <View style={[styles.pill, styles.urgentPill]}>
-              <Text style={styles.urgentText}>ACİL</Text>
+            <View style={[styles.pill, styles.urgentPill, compact && styles.pillCompact]}>
+              <Text style={[styles.urgentText, compact && styles.urgentTextCompact]}>
+                ACİL
+              </Text>
             </View>
           ) : null}
           {resolvedBadge === 'featured' ? (
-            <View style={[styles.pill, styles.featuredPill]}>
-              <Ionicons name="star" size={10} color="#fff" />
-              <Text style={styles.featuredText}>Öne çıkan</Text>
+            <View style={[styles.pill, styles.featuredPill, compact && styles.pillCompact]}>
+              <Ionicons name="star" size={compact ? 8 : 10} color="#fff" />
+              <Text style={[styles.featuredText, compact && styles.featuredTextCompact]}>
+                Öne çıkan
+              </Text>
             </View>
           ) : null}
           <View style={styles.wishWrap}>
@@ -219,22 +228,25 @@ function FeaturedListingCardComponent({
           </View>
         </View>
 
-        <View style={styles.body}>
-          <Text style={[styles.title, { color: text }]} numberOfLines={2}>
+        <View style={[styles.body, compact && styles.bodyCompact]}>
+          <Text
+            style={[styles.title, compact && styles.titleCompact, { color: text }]}
+            numberOfLines={2}
+          >
             {product.title}
           </Text>
           <View style={styles.metaRow}>
-            <Ionicons name="location-outline" size={13} color={textMuted} />
+            <Ionicons name="location-outline" size={compact ? 11 : 13} color={textMuted} />
             <Text style={[styles.meta, { color: textMuted }]} numberOfLines={1}>
               {location}
             </Text>
           </View>
           <View style={styles.footer}>
-            <Text style={[styles.price, { color: text }]}>
+            <Text style={[styles.price, compact && styles.priceCompact, { color: text }]}>
               {formatMoney(product.price)}
             </Text>
             <View style={styles.views}>
-              <Ionicons name="eye-outline" size={13} color={textMuted} />
+              <Ionicons name="eye-outline" size={compact ? 11 : 13} color={textMuted} />
               <Text style={[styles.viewText, { color: textMuted }]}>{views}</Text>
             </View>
           </View>
@@ -250,11 +262,18 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: 'transparent',
   },
+  cardCompact: {},
   motion: {
     gap: 12,
     borderRadius: 36,
     padding: 8,
     margin: -8,
+  },
+  motionCompact: {
+    gap: 8,
+    borderRadius: 18,
+    padding: 4,
+    margin: -4,
   },
   imageWrap: {
     width: '100%',
@@ -262,6 +281,10 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     overflow: 'hidden',
     position: 'relative',
+  },
+  imageWrapCompact: {
+    aspectRatio: 4 / 3,
+    borderRadius: 14,
   },
   imageInner: {
     width: '100%',
@@ -292,6 +315,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
+  pillCompact: {
+    top: 8,
+    left: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
   urgentPill: {
     backgroundColor: URGENT_RED,
   },
@@ -301,6 +330,10 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1.1,
   },
+  urgentTextCompact: {
+    fontSize: 7,
+    letterSpacing: 0.8,
+  },
   featuredPill: {
     backgroundColor: FEATURED_INK,
   },
@@ -309,6 +342,9 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '700',
     letterSpacing: 0.4,
+  },
+  featuredTextCompact: {
+    fontSize: 7,
   },
   wishWrap: {
     position: 'absolute',
@@ -324,6 +360,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingBottom: 4,
   },
+  bodyCompact: {
+    gap: 4,
+    paddingHorizontal: 2,
+    paddingBottom: 2,
+  },
   title: {
     ...Typography.small,
     fontWeight: '600',
@@ -331,6 +372,11 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     letterSpacing: -0.2,
     minHeight: 38,
+  },
+  titleCompact: {
+    fontSize: 12,
+    lineHeight: 16,
+    minHeight: 32,
   },
   metaRow: {
     flexDirection: 'row',
@@ -353,6 +399,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.25,
     flexShrink: 1,
+  },
+  priceCompact: {
+    fontSize: 13,
   },
   views: {
     flexDirection: 'row',

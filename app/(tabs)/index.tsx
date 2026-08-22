@@ -10,7 +10,6 @@ import { useHomepageFeed } from '@/hooks/useHomepageFeed';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { useFavorites } from '@/hooks/useFavorites';
 import { prepareListingWizardEntry } from '@/services/listing';
 import {
   navigateHome,
@@ -32,7 +31,6 @@ export default function HomeScreen() {
   const isWide = useIsWideLayout();
   const { isLoggedIn } = useAuthSession();
   const drawers = useHeaderDrawers();
-  const { count: favoriteCount } = useFavorites();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const {
@@ -168,8 +166,6 @@ export default function HomeScreen() {
           onPostAdPress={onPostAdPress}
           onToggleFavorite={toggleFavorite}
           onMenuPress={() => setMenuOpen(true)}
-          onFavoritesPress={onOpenFavorites}
-          favoriteCount={favoriteCount}
         />
       )}
 

@@ -28,6 +28,8 @@ type HeroSliderProps = {
   height?: number;
   /** Mobil tam genişlik — köşe yuvarlaklığı yalnızca alt */
   fullBleed?: boolean;
+  /** Mobil: görsel tam alanı kaplar, metin overlay minimal */
+  mobileCover?: boolean;
 };
 
 /**
@@ -38,6 +40,7 @@ export const HeroSlider = memo(function HeroSlider({
   onSlidePress,
   height = 320,
   fullBleed = false,
+  mobileCover = false,
 }: HeroSliderProps) {
   const width = useLayoutWidth();
   const isWide = width >= 900;
@@ -83,6 +86,8 @@ export const HeroSlider = memo(function HeroSlider({
 
   if (sorted.length === 0) return null;
 
+  const useCover = mobileCover && !isWide;
+
   return (
     <View
       style={[
@@ -115,6 +120,7 @@ export const HeroSlider = memo(function HeroSlider({
             accessibilityLabel={item.altText ?? item.title ?? 'Kampanya'}
             style={[
               styles.slide,
+              useCover && styles.slideCover,
               {
                 width: slideWidth,
                 backgroundColor: hero,
@@ -122,6 +128,22 @@ export const HeroSlider = memo(function HeroSlider({
               },
             ]}
           >
+            {useCover ? (
+              <>
+                <Image
+                  source={item.imageUrl}
+                  style={[styles.coverImage, { backgroundColor: hero }]}
+                  contentFit="cover"
+                  transition={320}
+                  recyclingKey={item.id}
+                  priority={i === 0 ? 'high' : 'low'}
+                  cachePolicy="memory-disk"
+                  accessibilityLabel={item.altText ?? item.title ?? 'Kampanya'}
+                />
+                <View pointerEvents="none" style={styles.coverFadeBottom} />
+              </>
+            ) : (
+              <>
             <View style={[styles.copy, !isWide && styles.copyMobile]}>
               <Text style={[styles.eyebrow, { color: textSecondary }]} numberOfLines={1}>
                 {item.altText ?? 'Haradan'}
@@ -145,16 +167,26 @@ export const HeroSlider = memo(function HeroSlider({
                 cachePolicy="memory-disk"
               />
             </View>
+              </>
+            )}
           </Pressable>
         ))}
       </ScrollView>
 
-      <HeroProgress index={index} total={sorted.length} />
+      <HeroProgress index={index} total={sorted.length} lite={useCover} />
     </View>
   );
 });
 
-function HeroProgress({ index, total }: { index: number; total: number }) {
+function HeroProgress({
+  index,
+  total,
+  lite = false,
+}: {
+  index: number;
+  total: number;
+  lite?: boolean;
+}) {
   const widthAnim = useRef(new Animated.Value(((index + 1) / Math.max(total, 1)) * 100)).current;
 
   useEffect(() => {
@@ -172,8 +204,13 @@ function HeroProgress({ index, total }: { index: number; total: number }) {
   });
 
   return (
-    <View style={styles.progressTrack} accessible={false}>
-      <Animated.View style={[styles.progressFill, { width }]} />
+    <View
+      style={[styles.progressTrack, lite && styles.progressTrackLite]}
+      accessible={false}
+    >
+      <Animated.View
+        style={[styles.progressFill, lite && styles.progressFillLite, { width }]}
+      />
     </View>
   );
 }
@@ -198,6 +235,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.lg,
     alignItems: 'center',
+  },
+  slideCover: {
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    overflow: 'hidden',
+  },
+  coverImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  /** BE banner tasarımını korur — yalnız alt panel okunabilirliği. */
+  coverFadeBottom: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '32%',
+    backgroundColor: 'rgba(12,12,14,0.38)',
   },
   copy: {
     flex: 1,
@@ -267,9 +321,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(29,33,41,0.08)',
     overflow: 'hidden',
   },
+  progressTrackLite: {
+    left: Spacing.lg,
+    right: Spacing.lg,
+    bottom: 158,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
   progressFill: {
     height: '100%',
     backgroundColor: 'rgba(29,33,41,0.35)',
     borderRadius: 2,
+  },
+  progressFillLite: {
+    backgroundColor: '#fff',
   },
 });

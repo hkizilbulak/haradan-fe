@@ -160,7 +160,7 @@ export function addMockListingFromDraft(draft: ListingDraft): PublishListingResu
     reviewCount: 0,
     oldPrice: null,
     available: 1,
-    brand: draft.details.breeder || null,
+    brand: draft.breed?.label || draft.details.breeder || null,
     updatedAt: now,
     publishedAt: now,
     soldAt: null,

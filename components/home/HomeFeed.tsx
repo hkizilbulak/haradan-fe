@@ -14,7 +14,6 @@ import { LazySection } from '@/components/ui/LazySection';
 import { SkeletonPulse } from '@/components/ui/Skeleton';
 import { HOME_DESKTOP_BREAKPOINT, MOBILE_HOME_DOCK_INSET } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
-import { Typography } from '@/constants/Typography';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type {
@@ -23,9 +22,9 @@ import type {
   CategoryTreeNode,
   HomepageData,
 } from '@/types';
+import { selectHomeHeroBanners, selectHomePromoBanner } from '@/services/banners/bannerDisplay';
 import { BrandStrip } from './BrandStrip';
 import { CategorySidebar } from './CategorySidebar';
-import { CategoryStrip } from './CategoryStrip';
 import { HeroSlider } from './HeroSlider';
 import { HomeSearchBar } from './HomeSearchBar';
 import { HomeFooter } from './HomeFooter';
@@ -63,8 +62,6 @@ type HomeFeedProps = {
   onPostAdPress: () => void;
   onToggleFavorite?: (product: CatalogProductCard) => void;
   onMenuPress?: () => void;
-  onFavoritesPress?: () => void;
-  favoriteCount?: number;
 };
 
 function HomeFeedComponent({
@@ -81,8 +78,6 @@ function HomeFeedComponent({
   onPostAdPress,
   onToggleFavorite,
   onMenuPress,
-  onFavoritesPress,
-  favoriteCount = 0,
 }: HomeFeedProps) {
   const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
@@ -93,20 +88,14 @@ function HomeFeedComponent({
   const surface = useThemeColor('surface');
   const text = useThemeColor('text');
   const border = useThemeColor('border');
-  const textMuted = useThemeColor('textMuted');
 
   const heroBanners = useMemo(
-    () =>
-      (data?.banners ?? []).filter(
-        (b) => b.placement === 'HOMEPAGE_HERO' || b.placement === 'HOMEPAGE'
-      ),
+    () => selectHomeHeroBanners(data?.banners ?? []),
     [data?.banners]
   );
 
   const promoBanner = useMemo(
-    () =>
-      (data?.banners ?? []).find((b) => b.placement === 'HOMEPAGE_PROMO') ??
-      null,
+    () => selectHomePromoBanner(data?.banners ?? []),
     [data?.banners]
   );
 
@@ -118,7 +107,6 @@ function HomeFeedComponent({
   }, []);
 
   const mobileMenu = onMenuPress ?? (() => {});
-  const mobileFav = onFavoritesPress ?? (() => {});
 
   return (
     <View style={styles.flex}>
@@ -166,16 +154,12 @@ function HomeFeedComponent({
               banners={heroBanners}
               onBannerPress={onBannerPress}
               onMenuPress={mobileMenu}
-              onFavoritesPress={mobileFav}
-              favoriteCount={favoriteCount}
+              onPostAdPress={onPostAdPress}
+              categories={categoryRoots}
+              onCategorySelect={onCategorySelect}
             />
 
             <HomeContentContainer>
-              <CategoryStrip
-                categories={categoryRoots}
-                onSelect={onCategorySelect}
-              />
-
               <NewArrivalsSection
                 products={urgent}
                 onProductPress={onProductPress}
@@ -226,15 +210,6 @@ function HomeFeedComponent({
                   <BrandStrip brands={data.brands} />
                 </LazySection>
               ) : null}
-
-              <View style={styles.mobileFooter}>
-                <Text style={[styles.mobileFooterBrand, { color: primary }]}>
-                  Haradan.com
-                </Text>
-                <Text style={[styles.mobileFooterTag, { color: textMuted }]}>
-                  Satılık atlar, hizmetler ve aşım ilanları.
-                </Text>
-              </View>
             </HomeContentContainer>
           </>
         ) : (
@@ -352,20 +327,6 @@ const styles = StyleSheet.create({
   },
   sidebar: { minWidth: 248, flexShrink: 0, paddingTop: 4, zIndex: 20 },
   hero: { flex: 1, minWidth: 0, zIndex: 1 },
-  mobileFooter: {
-    alignItems: 'center',
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.md,
-    gap: Spacing.xs,
-  },
-  mobileFooterBrand: {
-    ...Typography.h5,
-    fontWeight: '700',
-  },
-  mobileFooterTag: {
-    ...Typography.small,
-    textAlign: 'center',
-  },
   topBtn: {
     position: 'absolute',
     right: 16,

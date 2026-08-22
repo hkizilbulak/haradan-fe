@@ -14,3 +14,7 @@ export {
   collectCategoryIds,
   categoryLabel,
 } from './categoryTree';
+export {
+  getCategoryIcon,
+  pickListingRootCategories,
+} from './categoryDisplay';

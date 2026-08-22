@@ -1,74 +1,88 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useMemo } from 'react';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Spacing } from '@/constants/Spacing';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import { HeroSlider } from '../HeroSlider';
 import { HomeSearchBar } from '../HomeSearchBar';
+import { CategoryStrip } from '../CategoryStrip';
 import { MobileHomeTopBar } from './MobileHomeTopBar';
-import type { ActiveBannerItem } from '@/types';
-
-const MOBILE_HERO_HEIGHT = 300;
+import type { ActiveBannerItem, CategoryTreeNode } from '@/types';
 
 type MobileHomeHeroBlockProps = {
   banners: ActiveBannerItem[];
   onBannerPress: (slide: ActiveBannerItem) => void;
   onMenuPress: () => void;
-  onFavoritesPress: () => void;
-  favoriteCount?: number;
+  onPostAdPress: () => void;
+  categories: CategoryTreeNode[];
+  onCategorySelect: (cat: CategoryTreeNode) => void;
 };
 
+/** Mobil hero — BE banner cover + yüzen arama + premium kısayollar. */
 export function MobileHomeHeroBlock({
   banners,
   onBannerPress,
   onMenuPress,
-  onFavoritesPress,
-  favoriteCount,
+  onPostAdPress,
+  categories,
+  onCategorySelect,
 }: MobileHomeHeroBlockProps) {
+  const { width } = useWindowDimensions();
+  const heroBg = useThemeColor('hero');
+
+  const hasBanners = banners.length > 0;
+
+  const heroHeight = useMemo(
+    () => Math.min(Math.round(width * 1.08), 480),
+    [width]
+  );
+
   return (
     <View style={styles.wrap}>
-      <View style={styles.hero}>
-        <HeroSlider
-          slides={banners}
-          onSlidePress={onBannerPress}
-          height={MOBILE_HERO_HEIGHT}
-          fullBleed
-        />
-        <View style={styles.scrim} pointerEvents="none" />
+      <View
+        style={[
+          styles.hero,
+          { height: heroHeight, backgroundColor: heroBg },
+        ]}
+      >
+        {hasBanners ? (
+          <HeroSlider
+            slides={banners}
+            onSlidePress={onBannerPress}
+            height={heroHeight}
+            fullBleed
+            mobileCover
+          />
+        ) : null}
       </View>
 
-      <MobileHomeTopBar
-        onMenuPress={onMenuPress}
-        onFavoritesPress={onFavoritesPress}
-        badgeCount={favoriteCount}
-      />
+      <MobileHomeTopBar onMenuPress={onMenuPress} onPostAdPress={onPostAdPress} />
 
-      <View style={styles.searchFloat}>
+      <View style={styles.bottomPanel}>
         <HomeSearchBar variant="glass" fullWidth compact />
+        <CategoryStrip
+          variant="premium"
+          categories={categories}
+          onSelect={onCategorySelect}
+        />
       </View>
     </View>
   );
 }
 
-const SEARCH_OVERLAP = 28;
-
 const styles = StyleSheet.create({
   wrap: {
-    marginBottom: Spacing.lg + SEARCH_OVERLAP,
+    marginBottom: Spacing.lg,
     position: 'relative',
   },
   hero: {
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
     overflow: 'hidden',
   },
-  scrim: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(12,12,14,0.08)',
-  },
-  searchFloat: {
+  bottomPanel: {
     position: 'absolute',
     left: Spacing.md,
     right: Spacing.md,
-    bottom: -SEARCH_OVERLAP,
+    bottom: Spacing.md,
     zIndex: 30,
+    gap: 12,
   },
 });
