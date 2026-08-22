@@ -1049,6 +1049,73 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
               </Pressable>
             );
           })}
+          {categoryProperties
+            .filter((prop) => {
+              const codeUpper = (prop.code || '').toUpperCase();
+              if (
+                codeUpper === 'GRASSPADDOCK' ||
+                codeUpper === 'GRASS_PADDOCK' ||
+                codeUpper === 'SANDPADDOCK' ||
+                codeUpper === 'SAND_PADDOCK' ||
+                codeUpper === 'STALLIONPADDOCK' ||
+                codeUpper === 'STALLION_PADDOCK' ||
+                codeUpper === 'VET' ||
+                codeUpper === 'VET_SERVICE' ||
+                codeUpper === 'FARRIER' ||
+                codeUpper === 'FARRIER_SERVICE' ||
+                codeUpper === 'FOALINGBARN' ||
+                codeUpper === 'FOALING_BARN'
+              ) {
+                return false;
+              }
+              return prop.dataType === 'BOOLEAN';
+            })
+            .map((prop) => {
+              const propKey = prop.code || prop.title;
+              const on = (value.features ?? []).includes(propKey);
+              return (
+                <Pressable
+                  key={propKey}
+                  onPress={() => {
+                    const curr = value.features ?? [];
+                    const next = on
+                      ? curr.filter((f) => f !== propKey)
+                      : [...curr, propKey];
+                    onChange({ ...value, features: next });
+                  }}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: on }}
+                  style={({ pressed }) => [
+                    styles.toggleRow,
+                    { opacity: pressed ? 0.7 : 1 },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.rowText,
+                      {
+                        color: on ? text : textSecondary,
+                        fontWeight: on ? '600' : '400',
+                        flex: 1,
+                      },
+                    ]}
+                  >
+                    {prop.title}
+                  </Text>
+                  <View
+                    style={[
+                      styles.switch,
+                      {
+                        backgroundColor: on ? header : border,
+                        justifyContent: on ? 'flex-end' : 'flex-start',
+                      },
+                    ]}
+                  >
+                    <View style={styles.switchKnob} />
+                  </View>
+                </Pressable>
+              );
+            })}
         </Accordion>
       ) : null}
 
@@ -1167,6 +1234,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
               }
               if (isPansiyonActive) {
                 if (
+                  prop.dataType === 'BOOLEAN' ||
                   codeUpper === 'GRASSPADDOCK' ||
                   codeUpper === 'GRASS_PADDOCK' ||
                   codeUpper === 'SANDPADDOCK' ||
