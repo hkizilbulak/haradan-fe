@@ -4,31 +4,34 @@ export type AdvertCategoryKind = 'pansiyon' | 'transport' | 'farrier' | 'stud' |
 
 export function getAdvertCategoryKind(detail: AdvertDetail): AdvertCategoryKind {
   const catId = (detail.categoryId ?? '').toLowerCase();
-  const slug = (detail.slug ?? '').toLowerCase();
-  const title = (detail.title ?? '').toLowerCase();
-  const crumbs = detail.breadcrumbs.map((b) => b.label.toLowerCase()).join(' ');
+  const categoryCrumbs = (detail.breadcrumbs ?? [])
+    .filter((b) => b.href !== '/' && b.href !== '/my-listings' && b.label !== detail.title)
+    .map((b) => b.label.toLowerCase())
+    .join(' ');
 
-  const text = `${catId} ${slug} ${title} ${crumbs}`;
+  const text = `${catId} ${categoryCrumbs}`.trim();
 
-  if (text.includes('pansiyon') || text.includes('hara')) {
+  if (text.includes('pansiyon') || text.includes('haralar') || text.includes('cat-pansiyon')) {
     return 'pansiyon';
   }
   if (
     text.includes('nakliye') ||
     text.includes('tasima') ||
     text.includes('taşıma') ||
-    text.includes('transport')
+    text.includes('transport') ||
+    text.includes('cat-nakliye')
   ) {
     return 'transport';
   }
-  if (text.includes('nalbant') || text.includes('farrier')) {
+  if (text.includes('nalbant') || text.includes('farrier') || text.includes('cat-nalbant')) {
     return 'farrier';
   }
   if (
-    text.includes('aygir') ||
-    text.includes('aygır') ||
     text.includes('asim') ||
-    text.includes('aşım')
+    text.includes('aşım') ||
+    text.includes('cat-asim') ||
+    text.includes('cat-arap-aygir') ||
+    text.includes('cat-ingiliz-aygir')
   ) {
     return 'stud';
   }

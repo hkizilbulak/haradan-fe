@@ -244,18 +244,62 @@ export const AdvertSpecs = memo(function AdvertSpecs({
     }
 
     // Default Horse Listing
+    const specMap: Record<string, string> = {};
+    (groups ?? detail?.specs ?? []).forEach((g) => {
+      g.rows.forEach((r) => {
+        specMap[r.label.toLowerCase()] = r.value;
+      });
+    });
+
+    const horseName =
+      horse?.registeredName ||
+      specMap['at adı'] ||
+      specMap['at / aygır adı'] ||
+      specMap['isim'] ||
+      detail?.title ||
+      '';
+    const horseGender = horse?.gender || specMap['cinsiyet'] || '';
+    const horseBreed =
+      horse?.breed || specMap['at ırkı'] || specMap['ırk'] || specMap['cins'] || '';
+    const horseCoat =
+      horse?.coatColor ||
+      specMap['don'] ||
+      specMap['donu'] ||
+      specMap['donu (renk)'] ||
+      '';
+    const horseAge =
+      horse && horse.age > 0
+        ? `${horse.age} yaş`
+        : specMap['yaş'] || (horse?.birthDate ? horse.birthDate : '');
+    const horseSire =
+      horse?.sire || specMap['baba'] || specMap['baba (sire)'] || '';
+    const horseDam =
+      horse?.dam || specMap['anne'] || specMap['anne (dam)'] || '';
+    const horseDamsire =
+      horse?.damsire ||
+      specMap['kısrak babası'] ||
+      specMap['annesinin babası'] ||
+      '';
+
     const identity: SoftRow[] = [];
-    if (horse?.registeredName) identity.push({ icon: 'ribbon-outline', label: 'İsim', value: horse.registeredName });
-    if (horse && horse.age > 0) identity.push({ icon: 'calendar-outline', label: 'Yaş / doğum', value: `${horse.age} yaş`, hint: horse.birthDate });
-    if (horse?.gender) identity.push({ icon: 'male-female-outline', label: 'Cinsiyet', value: horse.gender });
-    if (horse?.coatColor) identity.push({ icon: 'color-palette-outline', label: 'Don', value: horse.coatColor });
-    if (horse?.breed) identity.push({ icon: 'leaf-outline', label: 'Cins', value: horse.breed });
+    if (horseName) identity.push({ icon: 'ribbon-outline', label: 'İsim', value: horseName });
+    if (horseAge) {
+      identity.push({
+        icon: 'calendar-outline',
+        label: 'Yaş / doğum',
+        value: horseAge.includes('ya') || horseAge.includes('Ya') ? horseAge : `${horseAge} yaş`,
+        hint: horse?.birthDate,
+      });
+    }
+    if (horseGender) identity.push({ icon: 'male-female-outline', label: 'Cinsiyet', value: horseGender });
+    if (horseCoat) identity.push({ icon: 'color-palette-outline', label: 'Don', value: horseCoat });
+    if (horseBreed) identity.push({ icon: 'leaf-outline', label: 'Cins', value: horseBreed });
     if (horse?.heightCm) identity.push({ icon: 'resize-outline' as const, label: 'Cidago', value: `${horse.heightCm} cm` });
 
     const pedigree: SoftRow[] = [];
-    if (horse?.sire) pedigree.push({ icon: 'git-branch-outline', label: 'Baba', value: horse.sire });
-    if (horse?.dam) pedigree.push({ icon: 'git-branch-outline', label: 'Anne', value: horse.dam });
-    if (horse?.damsire) pedigree.push({ icon: 'git-network-outline', label: 'Kısrak babası', value: horse.damsire });
+    if (horseSire) pedigree.push({ icon: 'git-branch-outline', label: 'Baba', value: horseSire });
+    if (horseDam) pedigree.push({ icon: 'git-branch-outline', label: 'Anne', value: horseDam });
+    if (horseDamsire) pedigree.push({ icon: 'git-network-outline', label: 'Kısrak babası', value: horseDamsire });
 
     const people: SoftRow[] = [];
     if (horse && horse.owners.length > 0) people.push({ icon: 'person-outline', label: 'Sahip', value: horse.owners.join(', ') });
