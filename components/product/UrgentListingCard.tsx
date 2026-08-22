@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { locationLookup } from '@/services/location';
+import { useAdvertLocation } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
 import { formatViewCount } from '@/utils/formatViewCount';
 import { WishlistButton } from '@/components/advert/WishlistButton';
@@ -47,11 +47,7 @@ function UrgentListingCardComponent({
   const fade = useRef(new Animated.Value(1)).current;
   const bar = useRef(new Animated.Value(0)).current;
 
-  const location = useMemo(() => {
-    const district = locationLookup.getDistrictName(product.districtId);
-    const province = locationLookup.getProvinceName(product.provinceId);
-    return district ? `${district}, ${province}` : province;
-  }, [product.districtId, product.provinceId]);
+  const location = useAdvertLocation(product);
 
   const views = formatViewCount(product.viewCount);
 

@@ -1,5 +1,6 @@
 import { HttpClient } from '@/services/http';
 import { getAuthSession } from '@/services/auth/sessionStore';
+import { locationLookup } from '@/services/location';
 import type { CatalogProductCard } from '@/types';
 import type {
   IPublishedAdvertsRepository,
@@ -138,6 +139,17 @@ export class HttpPublishedAdvertsRepository
           ...(accessToken ? { accessToken } : null),
         }
       );
+
+      const provinceIds = new Set<string>();
+      for (const item of page.items ?? []) {
+        if (item.provinceId) provinceIds.add(item.provinceId);
+      }
+      if (provinceIds.size > 0) {
+        await Promise.allSettled(
+          Array.from(provinceIds).map((p) => locationLookup.listDistricts(p))
+        );
+      }
+
       const mapped = (page.items ?? []).map((item) =>
         mapPublishedCardToCatalog(item, this.baseUrl)
       );

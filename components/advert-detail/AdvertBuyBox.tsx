@@ -9,7 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Radius } from '@/constants/Radius';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { locationLookup } from '@/services/location';
+import { useAdvertLocation } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
 import { formatViewCount } from '@/utils/formatViewCount';
 import { WHATSAPP_GREEN } from '@/utils/contactLinks';
@@ -50,11 +50,7 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
   const categoryKind = getAdvertCategoryKind(detail);
   const isSold = detail.backendStatus === 'SOLD';
 
-  const location = useMemo(() => {
-    const district = locationLookup.getDistrictName(detail.districtId);
-    const province = locationLookup.getProvinceName(detail.provinceId);
-    return district ? `${district}, ${province}` : province;
-  }, [detail.districtId, detail.provinceId]);
+  const location = useAdvertLocation(detail);
 
   const studInfo = useMemo(() => parseStudInfo(detail), [detail]);
   const pansiyonInfo = useMemo(() => parsePansiyonInfo(detail), [detail]);

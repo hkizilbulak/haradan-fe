@@ -12,7 +12,7 @@ import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { AdvertDetail, AdvertSpecGroup, HorseProfile } from '@/types';
-import { locationLookup } from '@/services/location';
+import { useAdvertLocation } from '@/services/location';
 import {
   getAdvertCategoryKind,
   parsePansiyonInfo,
@@ -30,6 +30,9 @@ type SoftRow = {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value: string;
+  badge?: string;
+  badgeTone?: 'primary' | 'muted' | 'success';
+  onPress?: () => void;
   hint?: string;
 };
 
@@ -59,16 +62,8 @@ export const AdvertSpecs = memo(function AdvertSpecs({
   const pansiyonInfo = useMemo(() => (detail ? parsePansiyonInfo(detail) : null), [detail]);
   const transportInfo = useMemo(() => (detail ? parseTransportInfo(detail) : null), [detail]);
 
-  const locationCity = useMemo(() => {
-    if (!detail) return '';
-    const prov = detail.provinceId
-      ? locationLookup.getProvinceName(detail.provinceId) || detail.provinceId
-      : '';
-    const dist = detail.districtId
-      ? locationLookup.getDistrictName(detail.districtId) || detail.districtId
-      : '';
-    return [dist, prov].filter(Boolean).join(', ') || 'Belirtilmedi';
-  }, [detail]);
+  const rawLocation = useAdvertLocation(detail);
+  const locationCity = rawLocation || 'Belirtilmedi';
 
   const { title, row1, row2, hasRaces } = useMemo(() => {
     if (categoryKind === 'pansiyon') {

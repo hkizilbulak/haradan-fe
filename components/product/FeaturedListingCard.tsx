@@ -14,7 +14,7 @@ import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useMediaImageSource } from '@/hooks/useMediaImageSource';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { locationLookup } from '@/services/location';
+import { useAdvertLocation } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
 import { formatViewCount } from '@/utils/formatViewCount';
 import { WishlistButton } from '@/components/advert/WishlistButton';
@@ -64,11 +64,7 @@ function FeaturedListingCardComponent({
   const hover = useRef(new Animated.Value(0)).current;
   const [hovered, setHovered] = useState(false);
 
-  const location = useMemo(() => {
-    const district = locationLookup.getDistrictName(product.districtId);
-    const province = locationLookup.getProvinceName(product.provinceId);
-    return district ? `${district}, ${province}` : province;
-  }, [product.districtId, product.provinceId]);
+  const location = useAdvertLocation(product);
 
   const views = formatViewCount(product.viewCount);
   const coverSource = useMediaImageSource(

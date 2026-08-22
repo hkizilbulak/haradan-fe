@@ -8,6 +8,8 @@ import {
 } from '@/services/adverts/mapPublishedCard';
 import { resolvePublicMediaUrl } from '@/services/media/publicUrl';
 
+import { locationLookup } from '@/services/location';
+
 import type {
   ActiveBannerItem,
   ActiveBannerListResponse,
@@ -105,6 +107,22 @@ export class HttpHomepageRepository implements IHomepageRepository {
           items: [...(hero?.items ?? []), ...(promo?.items ?? []), ...(legacy?.items ?? [])],
         })),
       ]);
+
+    // Preload districts for all provinces present on the homepage cards so both district & province names resolve
+    const provinceIds = new Set<string>();
+    for (const card of [
+      ...(urgentPage.items ?? []),
+      ...(featuredPage.items ?? []),
+      ...(newPage.items ?? []),
+      ...(showcase.items ?? []),
+    ]) {
+      if (card.provinceId) provinceIds.add(card.provinceId);
+    }
+    if (provinceIds.size > 0) {
+      await Promise.allSettled(
+        Array.from(provinceIds).map((p) => locationLookup.listDistricts(p))
+      );
+    }
 
     const mapItems = (items: BePublishedCard[]) =>
       (items ?? []).map((item) => mapPublishedCardToCatalog(item, this.apiBase));

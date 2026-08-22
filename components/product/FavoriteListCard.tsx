@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { locationLookup } from '@/services/location';
+import { useAdvertLocation } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
 import type { CatalogProductCard } from '@/types';
 
@@ -24,12 +24,7 @@ function FavoriteListCardComponent({
   const skeleton = useThemeColor('skeleton');
   const [hovered, setHovered] = useState(false);
 
-  const location = [
-    locationLookup.getDistrictName(product.districtId),
-    locationLookup.getProvinceName(product.provinceId),
-  ]
-    .filter(Boolean)
-    .join(', ');
+  const location = useAdvertLocation(product);
 
   const handlePress = useCallback(
     () => onPress?.(product.id),

@@ -27,6 +27,9 @@ export type PublishedAdvertCard = {
   isFeatured?: boolean;
   featuredUntil?: string | null;
   viewCount: number;
+  provinceName?: string | null;
+  districtName?: string | null;
+  locationName?: string | null;
 };
 
 /** OpenAPI: PublishedAdvertSearchResponse */

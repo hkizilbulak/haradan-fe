@@ -3,6 +3,7 @@ import {
   mediaDeliveryUrl,
   resolvePublicMediaUrl,
 } from '@/services/media/publicUrl';
+import { locationLookup, formatAdvertLocation } from '@/services/location';
 import type { OwnerAdvertDto } from '@/services/my-listings/mapOwnerAdvert';
 import type {
   AdvertDetail,
@@ -118,9 +119,15 @@ function emptyDetailShell(
     | 'horse'
     | 'specs'
     | 'viewCount'
+    | 'provinceName'
+    | 'districtName'
+    | 'locationName'
   >
 ): AdvertDetail {
   return {
+    provinceName: null,
+    districtName: null,
+    locationName: null,
     ...partial,
     slug: partial.id,
     rating: 0,
@@ -165,6 +172,25 @@ export function mapPublishedDetailToAdvert(
     }))
     .filter((r) => r.value);
 
+  const districtId = dto.location?.districtId ?? '';
+  const provinceId = dto.location?.provinceId ?? '';
+  const districtName = (dto.location?.districtName ?? '').trim();
+  const provinceName = (dto.location?.provinceName ?? '').trim();
+
+  if (provinceId && provinceName) {
+    locationLookup.registerProvince(provinceId, provinceName);
+  }
+  if (districtId && districtName) {
+    locationLookup.registerDistrict(districtId, districtName, provinceId);
+  }
+
+  const locationName = formatAdvertLocation({
+    districtId,
+    provinceId,
+    districtName,
+    provinceName,
+  });
+
   return emptyDetailShell({
     id: dto.id,
     title: dto.title,
@@ -172,8 +198,11 @@ export function mapPublishedDetailToAdvert(
     publishedAt: dto.publishedAt,
     price: dto.price as Money | null,
     categoryId: dto.category?.id ?? '',
-    districtId: dto.location?.districtId ?? '',
-    provinceId: dto.location?.provinceId ?? '',
+    districtId,
+    provinceId,
+    provinceName: provinceName || null,
+    districtName: districtName || null,
+    locationName: locationName || null,
     horseId: dto.horse?.id ?? null,
     cover,
     gallery,
@@ -218,6 +247,10 @@ export function mapOwnerToAdvertDetail(
   const publishedAt =
     dto.publishedAt ?? dto.updatedAt ?? new Date().toISOString();
 
+  const districtId = dto.districtId ?? '';
+  const provinceId = dto.provinceId ?? '';
+  const locationName = formatAdvertLocation({ districtId, provinceId });
+
   return emptyDetailShell({
     id: dto.id,
     title,
@@ -225,8 +258,11 @@ export function mapOwnerToAdvertDetail(
     publishedAt,
     price: dto.price,
     categoryId: dto.categoryId ?? '',
-    districtId: dto.districtId ?? '',
-    provinceId: dto.provinceId ?? '',
+    districtId,
+    provinceId,
+    provinceName: null,
+    districtName: null,
+    locationName: locationName || null,
     horseId: dto.horseId,
     cover,
     gallery,
@@ -247,3 +283,4 @@ export function mapOwnerToAdvertDetail(
     specs: [],
   });
 }
+

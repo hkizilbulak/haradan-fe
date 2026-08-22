@@ -1,3 +1,4 @@
+import { formatAdvertLocation } from '@/services/location';
 import type {
   ActiveBannerItem,
   BlogVideoItem,
@@ -66,6 +67,9 @@ function product(
     isFeatured?: boolean;
     districtId?: string;
     provinceId?: string;
+    districtName?: string;
+    provinceName?: string;
+    locationName?: string;
     viewCount?: number;
     horseId?: string | null;
   }
@@ -77,11 +81,22 @@ function product(
     isFeatured = false,
     viewCount,
     horseId = null,
+    districtId = 'dist-34-sil',
+    provinceId = 'prov-34',
     ...rest
   } = partial;
+  const locationName =
+    partial.locationName ??
+    formatAdvertLocation({
+      districtId,
+      provinceId,
+      districtName: partial.districtName,
+      provinceName: partial.provinceName,
+    });
   return {
-    districtId: partial.districtId ?? 'dist-34-sil',
-    provinceId: partial.provinceId ?? 'prov-34',
+    districtId,
+    provinceId,
+    locationName,
     horseId,
     isUrgent,
     isFeatured,

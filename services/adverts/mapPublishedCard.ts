@@ -1,4 +1,5 @@
 import { resolvePublicMediaUrl } from '@/services/media/publicUrl';
+import { formatAdvertLocation } from '@/services/location';
 import type {
   CatalogProductCard,
   PublishedAdvertCard,
@@ -13,6 +14,9 @@ type BePublishedCard = {
   categoryId: string;
   districtId: string;
   provinceId: string;
+  districtName?: string | null;
+  provinceName?: string | null;
+  locationName?: string | null;
   horseId?: string | null;
   cover: {
     assetId: string;
@@ -51,14 +55,31 @@ export function mapPublishedCardToCatalog(
   card: BePublishedCard | PublishedAdvertCard,
   apiBase: string
 ): CatalogProductCard {
+  const districtId = card.districtId ?? '';
+  const provinceId = card.provinceId ?? '';
+  const districtName = card.districtName ?? null;
+  const provinceName = card.provinceName ?? null;
+  const locationName =
+    card.locationName ??
+    formatAdvertLocation({
+      districtId,
+      provinceId,
+      districtName,
+      provinceName,
+    }) ??
+    null;
+
   return {
     id: card.id,
     title: card.title,
     publishedAt: card.publishedAt,
     price: card.price,
     categoryId: card.categoryId,
-    districtId: card.districtId,
-    provinceId: card.provinceId,
+    districtId,
+    provinceId,
+    districtName,
+    provinceName,
+    locationName,
     horseId: card.horseId ?? null,
     cover: mapCover(card.cover as BePublishedCard['cover'], apiBase),
     isFavorite: card.isFavorite,

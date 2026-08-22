@@ -13,7 +13,7 @@ import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { locationLookup } from '@/services/location';
+import { useAdvertLocation } from '@/services/location';
 import { formatRelativeTime } from '@/utils/formatRelativeTime';
 import { formatViewCount } from '@/utils/formatViewCount';
 import type { PublishedAdvertCard } from '@/types';
@@ -45,11 +45,7 @@ function AdvertCardComponent({
   const textMuted = useThemeColor('textMuted');
   const skeleton = useThemeColor('skeleton');
 
-  const location = useMemo(() => {
-    const district = locationLookup.getDistrictName(advert.districtId);
-    const province = locationLookup.getProvinceName(advert.provinceId);
-    return district ? `${district}, ${province}` : province;
-  }, [advert.districtId, advert.provinceId]);
+  const location = useAdvertLocation(advert);
 
   const relative = useMemo(
     () => formatRelativeTime(advert.publishedAt),

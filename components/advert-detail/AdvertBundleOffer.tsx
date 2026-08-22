@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { locationLookup } from '@/services/location';
+import { useAdvertLocation } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
 import { formatViewCount } from '@/utils/formatViewCount';
 import type { CatalogProductCard } from '@/types';
@@ -234,11 +234,7 @@ const FeaturedSlideCard = memo(function FeaturedSlideCard({
   textSecondary: string;
   skeleton: string;
 }) {
-  const location = useMemo(() => {
-    const district = locationLookup.getDistrictName(product.districtId);
-    const province = locationLookup.getProvinceName(product.provinceId);
-    return district ? `${district}, ${province}` : province;
-  }, [product.districtId, product.provinceId]);
+  const location = useAdvertLocation(product);
 
   const views = formatViewCount(product.viewCount);
   const breed = product.brand;

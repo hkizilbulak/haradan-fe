@@ -13,7 +13,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Radius } from '@/constants/Radius';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { locationLookup } from '@/services/location';
+import { useAdvertLocation } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
 import type { CatalogProductCard } from '@/types';
 
@@ -47,19 +47,7 @@ function SearchDropdownItem({
   const border = useThemeColor('border');
   const badgeUrgentBg = '#ef4444';
 
-  const locationText = useMemo(() => {
-    const province = advert.provinceId
-      ? locationLookup.getProvinceName(advert.provinceId)
-      : null;
-    const district =
-      advert.provinceId && advert.districtId
-        ? locationLookup.getDistrictName(advert.districtId)
-        : null;
-
-    if (district && province) return `${province}, ${district}`;
-    if (province) return province;
-    return null;
-  }, [advert.provinceId, advert.districtId]);
+  const locationText = useAdvertLocation(advert) || null;
 
   const subtitle = [advert.brand, locationText].filter(Boolean).join(' · ');
 

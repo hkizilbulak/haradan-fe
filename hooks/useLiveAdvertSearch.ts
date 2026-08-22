@@ -76,13 +76,16 @@ export function useLiveAdvertSearch({
   // Filter resolver for extra fields (il, ilçe, kategori adı)
   const resolveExtra = useCallback(
     (advert: CatalogProductCard) => {
-      const provinceName = advert.provinceId
-        ? locationLookup.getProvinceName(advert.provinceId)
-        : null;
+      const provinceName =
+        advert.provinceName ||
+        (advert.provinceId
+          ? locationLookup.getProvinceName(advert.provinceId)
+          : null);
       const districtName =
-        advert.districtId
+        advert.districtName ||
+        (advert.districtId
           ? locationLookup.getDistrictName(advert.districtId)
-          : null;
+          : null);
       const categoryName =
         categoryTree && advert.categoryId
           ? findCategoryById(categoryTree, advert.categoryId)?.name ?? null
