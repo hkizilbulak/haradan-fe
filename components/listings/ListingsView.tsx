@@ -187,6 +187,15 @@ function applyClientFilters(
   ).filter((k) => Boolean(filters.facilities[k]));
 
   if (activeFacilityKeys.length > 0) {
+    const facilityPropKeys: Record<keyof PansiyonFacilityFilters, string[]> = {
+      grassPaddock: ['facilitygrasspaddock', 'grasspaddock', 'grass_paddock', 'cimpadok', 'cimpaddock', 'çimpadok'],
+      sandPaddock: ['facilitysandpaddock', 'sandpaddock', 'sand_paddock', 'kumpadok', 'kumpaddock'],
+      stallionPaddock: ['facilitystallionpaddock', 'stallionpaddock', 'stallion_paddock', 'aygirpadogu', 'aygirpadoğu'],
+      vet: ['facilityveterinarian', 'vet', 'vet_service', 'veteriner'],
+      farrier: ['facilityfarrier', 'farrier', 'farrier_service', 'nalbant'],
+      foalingBarn: ['facilityfoalingbarn', 'foalingbarn', 'foaling_barn', 'dogumhane', 'doğumhane'],
+    };
+
     const facilityKeywords: Record<keyof PansiyonFacilityFilters, string[]> = {
       grassPaddock: ['cim', 'grass', 'padok', 'çim'],
       sandPaddock: ['kum', 'sand'],
@@ -195,9 +204,23 @@ function applyClientFilters(
       farrier: ['nalbant', 'nal'],
       foalingBarn: ['dogum', 'kısrak', 'kisrak', 'doğum'],
     };
+
     list = list.filter((p) => {
       const hay = normalizeSearchText(`${p.title} ${p.brand ?? ''}`);
+      const props = p.properties || {};
+      const normPropKeys = Object.keys(props).filter(
+        (k) => props[k] === true || props[k] === 'true' || props[k] === 1 || props[k] === '1'
+      ).map((k) => normalizeSearchText(k).replace(/[^a-z0-9]+/g, ''));
+
       return activeFacilityKeys.every((fKey) => {
+        // 1. Check properties boolean
+        const matchingPropKeys = facilityPropKeys[fKey] ?? [];
+        const hasProp = matchingPropKeys.some((target) =>
+          normPropKeys.includes(target) || normPropKeys.some((npk) => npk.includes(target) || target.includes(npk))
+        );
+        if (hasProp) return true;
+
+        // 2. Check title keywords
         const keywords = facilityKeywords[fKey] ?? [];
         return keywords.some((kw) => hay.includes(kw));
       });

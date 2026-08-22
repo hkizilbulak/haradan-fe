@@ -224,16 +224,37 @@ export function isStudCategory(slug: string | null): boolean {
 }
 
 export function matchHorseGender(
-  card: { title?: string; brand?: string | null; categoryId?: string },
+  card: { title?: string; brand?: string | null; categoryId?: string; properties?: Record<string, unknown> | null },
   selectedGenders?: string[] | null
 ): boolean {
   if (!selectedGenders || selectedGenders.length === 0) return true;
+  const props = card.properties || {};
+  const rawPropGender = String(
+    props.HORSE_GENDER ??
+      props['Cinsiyet'] ??
+      props.gender ??
+      props['cinsiyet'] ??
+      props.cinsiyeti ??
+      props.sex ??
+      (card as any).gender ??
+      ''
+  ).trim().toLocaleLowerCase('tr');
+
   const rawTitle = (card.title ?? '').toLocaleLowerCase('tr');
   const rawBrand = (card.brand ?? '').toLocaleLowerCase('tr');
   const catId = (card.categoryId ?? '').toLocaleLowerCase('tr');
-  const text = `${rawTitle} ${rawBrand} ${catId}`;
+  const text = `${rawTitle} ${rawBrand} ${catId} ${rawPropGender}`;
 
   const isFemale =
+    rawPropGender === 'dişi' ||
+    rawPropGender === 'disi' ||
+    rawPropGender === 'k' ||
+    rawPropGender === 'f' ||
+    rawPropGender === 'female' ||
+    rawPropGender === 'kısrak' ||
+    rawPropGender === 'kisrak' ||
+    rawPropGender === 'mare' ||
+    rawPropGender === 'filly' ||
     catId === 'cat-kisrak' ||
     text.includes('kısrak') ||
     text.includes('kisrak') ||
@@ -244,6 +265,10 @@ export function matchHorseGender(
     text.includes('dişi tay');
 
   const isGelding =
+    rawPropGender === 'iğdiş' ||
+    rawPropGender === 'igdis' ||
+    rawPropGender === 'i' ||
+    rawPropGender === 'gelding' ||
     catId === 'cat-pony' ||
     text.includes('iğdiş') ||
     text.includes('igdis') ||
@@ -252,18 +277,26 @@ export function matchHorseGender(
     text.includes('midilli');
 
   const isMale =
-    !isFemale &&
-    (catId === 'cat-aygir' ||
-      catId === 'cat-arap-aygir' ||
-      catId === 'cat-ingiliz-aygir' ||
-      catId === 'cat-yaris-ati' ||
-      text.includes('aygır') ||
-      text.includes('aygir') ||
-      text.includes('erkek') ||
-      text.includes('stallion') ||
-      text.includes('colt') ||
-      text.includes('erkek tay') ||
-      !isGelding);
+    rawPropGender === 'erkek' ||
+    rawPropGender === 'e' ||
+    rawPropGender === 'm' ||
+    rawPropGender === 'male' ||
+    rawPropGender === 'aygır' ||
+    rawPropGender === 'aygir' ||
+    rawPropGender === 'stallion' ||
+    rawPropGender === 'colt' ||
+    (!isFemale &&
+      (catId === 'cat-aygir' ||
+        catId === 'cat-arap-aygir' ||
+        catId === 'cat-ingiliz-aygir' ||
+        catId === 'cat-yaris-ati' ||
+        text.includes('aygır') ||
+        text.includes('aygir') ||
+        text.includes('erkek') ||
+        text.includes('stallion') ||
+        text.includes('colt') ||
+        text.includes('erkek tay') ||
+        !isGelding));
 
   return selectedGenders.some((g) => {
     const norm = g.trim().toLocaleLowerCase('tr');
@@ -275,14 +308,29 @@ export function matchHorseGender(
 }
 
 export function matchHorseBreed(
-  card: { title?: string; brand?: string | null; categoryId?: string },
+  card: { title?: string; brand?: string | null; categoryId?: string; properties?: Record<string, unknown> | null },
   selectedBreeds?: string[] | null
 ): boolean {
   if (!selectedBreeds || selectedBreeds.length === 0) return true;
+  const props = card.properties || {};
+  const rawPropBreed = String(
+    props.HORSE_BREED ??
+      props.STALLION_BREED ??
+      props['At Irkı'] ??
+      props['Aygır Irkı'] ??
+      props.studBreed ??
+      props.breed ??
+      props.horseBreed ??
+      props['Irk'] ??
+      props['ırk'] ??
+      (card as any).breed ??
+      ''
+  ).trim().toLocaleLowerCase('tr');
+
   const rawTitle = (card.title ?? '').toLocaleLowerCase('tr');
   const rawBrand = (card.brand ?? '').toLocaleLowerCase('tr');
   const catId = (card.categoryId ?? '').toLocaleLowerCase('tr');
-  const text = `${rawTitle} ${rawBrand} ${catId}`;
+  const text = `${rawTitle} ${rawBrand} ${catId} ${rawPropBreed}`;
 
   return selectedBreeds.some((b) => {
     const norm = b.trim().toLocaleLowerCase('tr');
@@ -338,15 +386,32 @@ export function matchHorseBreed(
 }
 
 export function matchHorseAge(
-  card: { title?: string; brand?: string | null },
+  card: { title?: string; brand?: string | null; properties?: Record<string, unknown> | null },
   selectedAges?: string[] | null
 ): boolean {
   if (!selectedAges || selectedAges.length === 0) return true;
+  const props = card.properties || {};
+  const rawPropAge =
+    props.HORSE_AGE ??
+    props.STALLION_AGE ??
+    props['Yaş'] ??
+    props['Aşım Yaşı'] ??
+    props.studAge ??
+    props.age ??
+    (props.birthYear && Number(props.birthYear) > 1900
+      ? new Date().getFullYear() - Number(props.birthYear)
+      : null);
+
+  const propAgeNum =
+    rawPropAge != null && !isNaN(Number(String(rawPropAge).replace(',', '.')))
+      ? parseFloat(String(rawPropAge).replace(',', '.'))
+      : null;
+
   const text = (card.title ?? '').toLocaleLowerCase('tr');
 
   // Extract age number from title if exists: e.g. "3 yaş", "5 yaş", "7 yaşlı", "1.5 yaş"
   const ageMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(?:yaş|yas|ya)/);
-  const parsedAge = ageMatch ? parseFloat(ageMatch[1].replace(',', '.')) : null;
+  const parsedAge = propAgeNum != null ? propAgeNum : (ageMatch ? parseFloat(ageMatch[1].replace(',', '.')) : null);
 
   return selectedAges.some((ageOption) => {
     const norm = ageOption.trim().toLocaleLowerCase('tr');
@@ -356,12 +421,7 @@ export function matchHorseAge(
       if (parsedAge != null && parsedAge >= 5) return true;
       return (
         text.includes('5+') ||
-        text.includes('5 ya') ||
-        text.includes('6 ya') ||
-        text.includes('7 ya') ||
-        text.includes('8 ya') ||
-        text.includes('9 ya') ||
-        text.includes('10 ya')
+        /\b(?:5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20)\s*(?:yaş|yas|ya)\b/i.test(text)
       );
     }
 
@@ -375,10 +435,7 @@ export function matchHorseAge(
       if (parsedAge != null && parsedAge <= 1.5) return true;
       return (
         text.includes('tay') ||
-        text.includes('0 yaş') ||
-        text.includes('0 yas') ||
-        text.includes('1 yaş') ||
-        text.includes('1 yas') ||
+        /\b[01]\s*(?:yaş|yas|ya)\b/i.test(text) ||
         text.includes('0-1')
       );
     }
@@ -399,54 +456,245 @@ export function matchHorseAge(
     if (targetNumMatch) {
       const targetNum = parseInt(targetNumMatch[1], 10);
       if (parsedAge != null && Math.floor(parsedAge) === targetNum) return true;
-      return (
-        text.includes(`${targetNum} yaş`) ||
-        text.includes(`${targetNum} yas`) ||
-        text.includes(`${targetNum}ya`)
-      );
+      const regex = new RegExp(`\\b${targetNum}\\s*(?:yaş|yas|ya)\\b`, 'i');
+      return regex.test(text);
     }
 
     return text.includes(norm);
   });
 }
 
+export function normalizeCoat(raw: string | null | undefined): string {
+  if (!raw) return '';
+  const value = raw.trim().toLocaleLowerCase('tr');
+  if (!value) return '';
+  if (
+    value === 'k' ||
+    value === 'kır' ||
+    value === 'kir' ||
+    value === 'kr' ||
+    value === 'grey' ||
+    value === 'gray' ||
+    value === 'gr' ||
+    value.startsWith('kır ') ||
+    value.startsWith('kir ') ||
+    value.includes('kır don') ||
+    value.includes('kir don')
+  ) {
+    return 'Kır';
+  }
+  if (
+    value === 'd' ||
+    value === 'doru' ||
+    value === 'bay' ||
+    value === 'da' ||
+    value === 'doru al' ||
+    value.startsWith('doru ') ||
+    value.includes('doru don')
+  ) {
+    return 'Doru';
+  }
+  if (
+    value === 'a' ||
+    value === 'al' ||
+    value === 'chestnut' ||
+    value === 'sorrel' ||
+    value === 'ch' ||
+    value.startsWith('al ') ||
+    value.includes('al don')
+  ) {
+    return 'Al';
+  }
+  if (
+    value === 'y' ||
+    value === 'ya' ||
+    value === 'yağız' ||
+    value === 'yagiz' ||
+    value === 'black' ||
+    value === 'bl' ||
+    value.startsWith('yağız ') ||
+    value.startsWith('yagiz ')
+  ) {
+    return 'Yağız';
+  }
+  if (
+    value === 'b' ||
+    value === 'beyaz' ||
+    value === 'white' ||
+    value === 'wh' ||
+    value === 'ak'
+  ) {
+    return 'Beyaz';
+  }
+  if (
+    value === 'ku' ||
+    value === 'kula' ||
+    value === 'dun' ||
+    value === 'buckskin'
+  ) {
+    return 'Kula';
+  }
+  if (
+    value === 'boz' ||
+    value === 'roan' ||
+    value === 'grullo'
+  ) {
+    return 'Boz';
+  }
+  if (value === 'ka' || value === 'kestane') {
+    return 'Kestane';
+  }
+  return raw.trim();
+}
+
 export function matchHorseColor(
-  card: { title?: string; brand?: string | null },
+  card: { title?: string; brand?: string | null; properties?: Record<string, unknown> | null },
   selectedColors?: string[] | null
 ): boolean {
   if (!selectedColors || selectedColors.length === 0) return true;
-  const text = `${card.title ?? ''} ${card.brand ?? ''}`.toLocaleLowerCase('tr');
+  const props = card.properties || {};
+  const rawPropColor = String(
+    props.COAT_COLOR ??
+      props['Donu (Renk)'] ??
+      props['Donu'] ??
+      props['Don'] ??
+      props['Renk'] ??
+      props.studCoatColor ??
+      props.coatColor ??
+      props.coat ??
+      props.horseCoat ??
+      props.don ??
+      props.color ??
+      (card as any).coatColor ??
+      (card as any).coat ??
+      ''
+  ).trim();
+
+  const normPropCoat = normalizeCoat(rawPropColor);
+  const rawLower = rawPropColor.toLocaleLowerCase('tr');
+  const text = `${card.title ?? ''} ${card.brand ?? ''} ${rawPropColor}`.toLocaleLowerCase('tr');
 
   return selectedColors.some((c) => {
+    const targetNorm = normalizeCoat(c);
     const norm = c.trim().toLocaleLowerCase('tr');
-    if (norm === 'al') {
+
+    // 1. Direct match on normalized coat
+    if (targetNorm && normPropCoat && targetNorm === normPropCoat) {
+      return true;
+    }
+
+    // 2. Target is Kır
+    if (norm === 'kır' || norm === 'kir' || targetNorm === 'Kır') {
       return (
+        normPropCoat === 'Kır' ||
+        rawLower === 'k' ||
+        rawLower === 'kır' ||
+        rawLower === 'kir' ||
+        rawLower === 'grey' ||
+        rawLower === 'gray' ||
+        rawLower === 'gr' ||
+        rawLower === 'kr' ||
+        text.includes('kır') ||
+        text.includes('kir') ||
+        text.includes('kır don') ||
+        text.includes('grey') ||
+        text.includes('gray')
+      );
+    }
+
+    // 3. Target is Doru
+    if (norm === 'doru' || targetNorm === 'Doru') {
+      return (
+        normPropCoat === 'Doru' ||
+        rawLower === 'd' ||
+        rawLower === 'doru' ||
+        rawLower === 'bay' ||
+        rawLower === 'da' ||
+        rawLower === 'doru al' ||
+        text.includes('doru') ||
+        text.includes('bay')
+      );
+    }
+
+    // 4. Target is Al
+    if (norm === 'al' || targetNorm === 'Al') {
+      return (
+        normPropCoat === 'Al' ||
+        rawLower === 'a' ||
+        rawLower === 'al' ||
+        rawLower === 'chestnut' ||
+        rawLower === 'sorrel' ||
+        rawLower === 'ch' ||
         /\bal\b/i.test(text) ||
         text.includes('al don') ||
         text.includes('al kısrak') ||
         text.includes('al aygır') ||
-        text.includes('al tay')
+        text.includes('al tay') ||
+        text.includes('chestnut')
       );
     }
-    if (norm === 'kır' || norm === 'kir') {
-      return text.includes('kır') || text.includes('kir') || text.includes('kır don');
+
+    // 5. Target is Yağız
+    if (norm === 'yağız' || norm === 'yagiz' || targetNorm === 'Yağız') {
+      return (
+        normPropCoat === 'Yağız' ||
+        rawLower === 'y' ||
+        rawLower === 'ya' ||
+        rawLower === 'yağız' ||
+        rawLower === 'yagiz' ||
+        rawLower === 'black' ||
+        rawLower === 'bl' ||
+        text.includes('yağız') ||
+        text.includes('yagiz') ||
+        text.includes('black')
+      );
     }
-    if (norm === 'doru') {
-      return text.includes('doru');
+
+    // 6. Target is Beyaz
+    if (norm === 'beyaz' || targetNorm === 'Beyaz') {
+      return (
+        normPropCoat === 'Beyaz' ||
+        rawLower === 'b' ||
+        rawLower === 'beyaz' ||
+        rawLower === 'white' ||
+        rawLower === 'wh' ||
+        rawLower === 'ak' ||
+        text.includes('beyaz') ||
+        text.includes('white')
+      );
     }
-    if (norm === 'yağız' || norm === 'yagiz') {
-      return text.includes('yağız') || text.includes('yagiz');
+
+    // 7. Target is Kula
+    if (norm === 'kula' || targetNorm === 'Kula') {
+      return (
+        normPropCoat === 'Kula' ||
+        rawLower === 'ku' ||
+        rawLower === 'kula' ||
+        rawLower === 'dun' ||
+        rawLower === 'buckskin' ||
+        text.includes('kula') ||
+        text.includes('dun') ||
+        text.includes('buckskin')
+      );
     }
-    if (norm === 'kula') {
-      return text.includes('kula');
+
+    // 8. Target is Boz
+    if (norm === 'boz' || targetNorm === 'Boz') {
+      return (
+        normPropCoat === 'Boz' ||
+        rawLower === 'boz' ||
+        rawLower === 'roan' ||
+        rawLower === 'grullo' ||
+        text.includes('boz') ||
+        text.includes('roan')
+      );
     }
-    if (norm === 'boz') {
-      return text.includes('boz');
-    }
-    if (norm === 'beyaz') {
-      return text.includes('beyaz') || text.includes('white');
-    }
-    return text.includes(norm);
+
+    return (
+      rawLower === norm ||
+      (normPropCoat ? normPropCoat.toLocaleLowerCase('tr') === norm : false) ||
+      text.includes(norm)
+    );
   });
 }
 

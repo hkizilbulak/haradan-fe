@@ -66,6 +66,42 @@ export class MockPublishedAdvertsRepository
 
     let list = [...processedStored, ...otherBase];
 
+    // Enrich items with TJK data if horseId is present
+    const tjkHorses = (await import('@/mocks/tjkHorses')).MOCK_TJK_HORSES;
+    list = list.map((item) => {
+      if (item.horseId) {
+        const horse = tjkHorses.find((h) => h.horseId === item.horseId || h.tjkNumber === item.horseId);
+        if (horse) {
+          const props = item.properties ? { ...item.properties } : {};
+          if (!props.COAT_COLOR && !props.coatColor && horse.coatColor) {
+            props.COAT_COLOR = horse.coatColor;
+            props.coatColor = horse.coatColor;
+          }
+          if (!props.HORSE_BREED && !props.breed && horse.breed) {
+            props.HORSE_BREED = horse.breed;
+            props.breed = horse.breed;
+          }
+          if (!props.HORSE_GENDER && !props.gender && horse.gender) {
+            props.HORSE_GENDER = horse.gender;
+            props.gender = horse.gender;
+          }
+          if (
+            (props.HORSE_AGE == null || props.HORSE_AGE === 0) &&
+            (props.age == null || props.age === 0) &&
+            horse.age
+          ) {
+            props.HORSE_AGE = horse.age;
+            props.age = horse.age;
+          }
+          if (!item.brand && horse.breed) {
+            return { ...item, brand: horse.breed, properties: props };
+          }
+          return { ...item, properties: props };
+        }
+      }
+      return item;
+    });
+
 
     if (params.categoryIds && params.categoryIds.length > 0) {
       const set = new Set(params.categoryIds);

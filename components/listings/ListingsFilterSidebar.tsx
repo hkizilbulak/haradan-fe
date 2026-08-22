@@ -275,6 +275,64 @@ export const EMPTY_LISTINGS_FILTERS: ListingsFiltersState = {
   features: [],
 };
 
+function isBreedProperty(p: CategoryPropertyPublic): boolean {
+  const c = (p.code || p.title || '').toLocaleLowerCase('tr');
+  return (
+    c.includes('irk') ||
+    c.includes('ırk') ||
+    c.includes('breed') ||
+    c === 'horse_breed' ||
+    c === 'stallion_breed'
+  );
+}
+
+function isColorProperty(p: CategoryPropertyPublic): boolean {
+  const c = (p.code || p.title || '').toLocaleLowerCase('tr');
+  return (
+    c.includes('don') ||
+    c.includes('renk') ||
+    c.includes('color') ||
+    c === 'coat_color' ||
+    c === 'coat'
+  );
+}
+
+function isAgeProperty(p: CategoryPropertyPublic): boolean {
+  const c = (p.code || p.title || '').toLocaleLowerCase('tr');
+  return (
+    c.includes('yaş') ||
+    c.includes('yas') ||
+    c.includes('age') ||
+    c === 'horse_age' ||
+    c === 'stallion_age'
+  );
+}
+
+function isGenderProperty(p: CategoryPropertyPublic): boolean {
+  const c = (p.code || p.title || '').toLocaleLowerCase('tr');
+  return (
+    c.includes('cinsiyet') ||
+    c.includes('gender') ||
+    c.includes('sex') ||
+    c === 'horse_gender'
+  );
+}
+
+function isFacilityProperty(p: CategoryPropertyPublic): boolean {
+  const c = (p.code || p.title || '').toLocaleLowerCase('tr');
+  return (
+    c.includes('padok') ||
+    c.includes('paddock') ||
+    c.includes('veteriner') ||
+    c.includes('vet') ||
+    c.includes('nalbant') ||
+    c.includes('farrier') ||
+    c.includes('dogum') ||
+    c.includes('doğum') ||
+    c.includes('foaling')
+  );
+}
+
 /** Sol filtre — kapalı akordeon; detay basınca açılır. */
 export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
   facets,
@@ -295,10 +353,12 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
   const isStudActive = isStudCategory(value.categorySlug);
 
   const [categoryProperties, setCategoryProperties] = useState<CategoryPropertyPublic[]>([]);
+  const [propsLoaded, setPropsLoaded] = useState(false);
 
   useEffect(() => {
     if (!value.categorySlug) {
       setCategoryProperties([]);
+      setPropsLoaded(true);
       return;
     }
     let cancelled = false;
@@ -314,22 +374,39 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     };
     groups.forEach((g) => walk(g.options));
 
-    catalogRepository
-      .getCategoryFormDefinition(categoryId || value.categorySlug)
-      .then((def) => {
-        if (cancelled) return;
-        if (def && Array.isArray(def.properties)) {
-          setCategoryProperties(def.properties);
-        } else {
-          setCategoryProperties([]);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setCategoryProperties([]);
-      });
+    const loadProps = () => {
+      catalogRepository
+        .getCategoryFormDefinition(categoryId || value.categorySlug!, { fresh: true })
+        .then((def) => {
+          if (cancelled) return;
+          if (def && Array.isArray(def.properties)) {
+            setCategoryProperties(def.properties);
+          } else {
+            setCategoryProperties([]);
+          }
+          setPropsLoaded(true);
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setCategoryProperties([]);
+            setPropsLoaded(true);
+          }
+        });
+    };
+
+    loadProps();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('haradan_category_properties_changed', loadProps);
+      window.addEventListener('storage', loadProps);
+    }
 
     return () => {
       cancelled = true;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('haradan_category_properties_changed', loadProps);
+        window.removeEventListener('storage', loadProps);
+      }
     };
   }, [value.categorySlug, groups]);
 
@@ -424,6 +501,71 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     groups.forEach((g) => walk(g.options));
     return map;
   }, [groups]);
+
+  const breedProp = propsLoaded
+    ? categoryProperties.find(isBreedProperty)
+    : isHorseActive || isStudActive
+    ? {
+        code: isStudActive ? 'STALLION_BREED' : 'HORSE_BREED',
+        title: 'At Irkı',
+        options: (isStudActive ? STUD_BREED_OPTIONS : HORSE_BREED_OPTIONS).map(
+          (o) => ({ value: o, label: o })
+        ),
+      }
+    : null;
+
+  const colorProp = propsLoaded
+    ? categoryProperties.find(isColorProperty)
+    : isHorseActive || isStudActive
+    ? {
+        code: 'COAT_COLOR',
+        title: 'Donu (Renk)',
+        options: COAT_COLOR_OPTIONS.map((o) => ({ value: o, label: o })),
+      }
+    : null;
+
+  const ageProp = propsLoaded
+    ? categoryProperties.find(isAgeProperty)
+    : isHorseActive || isStudActive
+    ? {
+        code: isStudActive ? 'STALLION_AGE' : 'HORSE_AGE',
+        title: isStudActive ? 'Aşım Yaşı' : 'Yaş',
+        options: (isStudActive ? STUD_AGE_OPTIONS : HORSE_AGE_OPTIONS).map(
+          (o) => ({ value: o, label: o })
+        ),
+      }
+    : null;
+
+  const genderProp = propsLoaded
+    ? categoryProperties.find(isGenderProperty)
+    : isHorseActive
+    ? {
+        code: 'HORSE_GENDER',
+        title: 'Cinsiyet',
+        options: HORSE_GENDER_OPTIONS.map((o) => ({ value: o, label: o })),
+      }
+    : null;
+
+  const dynamicProps = value.categorySlug
+    ? categoryProperties.filter((p: any) => {
+        if (
+          p.isActive === false ||
+          p.is_active === false ||
+          p.active === false ||
+          p.isFilterable === false ||
+          p.is_filterable === false
+        ) {
+          return false;
+        }
+        return (
+          !isBreedProperty(p) &&
+          !isColorProperty(p) &&
+          !isAgeProperty(p) &&
+          !isGenderProperty(p) &&
+          !(isPansiyonActive && isFacilityProperty(p))
+        );
+      })
+    : [];
 
   const hasActive =
     value.categorySlug != null ||
@@ -991,135 +1133,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         </>
       ) : null}
 
-      {/* 4. PANSİYON HARALAR: Tesis & Hizmet Özellikleri (YALNIZCA Pansiyon Seçiliyken) */}
-      {isPansiyonActive ? (
-        <Accordion
-          title="Tesis / Hizmet Özellikleri"
-          open={!!openGroups.facilities}
-          onToggle={() => toggleGroup('facilities')}
-          hint={facilityHint}
-          text={text}
-          textMuted={textMuted}
-          border={border}
-        >
-          {FACILITY_OPTIONS.map((fac) => {
-            const on = Boolean(value.facilities?.[fac.key]);
-            return (
-              <Pressable
-                key={fac.key}
-                onPress={() =>
-                  onChange({
-                    ...value,
-                    facilities: {
-                      ...value.facilities,
-                      [fac.key]: !on,
-                    },
-                  })
-                }
-                accessibilityRole="switch"
-                accessibilityState={{ checked: on }}
-                style={({ pressed }) => [
-                  styles.toggleRow,
-                  { opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.rowText,
-                    {
-                      color: on ? text : textSecondary,
-                      fontWeight: on ? '600' : '400',
-                      flex: 1,
-                    },
-                  ]}
-                >
-                  {fac.label}
-                </Text>
-                <View
-                  style={[
-                    styles.switch,
-                    {
-                      backgroundColor: on ? header : border,
-                      justifyContent: on ? 'flex-end' : 'flex-start',
-                    },
-                  ]}
-                >
-                  <View style={styles.switchKnob} />
-                </View>
-              </Pressable>
-            );
-          })}
-          {categoryProperties
-            .filter((prop) => {
-              const codeUpper = (prop.code || '').toUpperCase();
-              if (
-                codeUpper === 'GRASSPADDOCK' ||
-                codeUpper === 'GRASS_PADDOCK' ||
-                codeUpper === 'SANDPADDOCK' ||
-                codeUpper === 'SAND_PADDOCK' ||
-                codeUpper === 'STALLIONPADDOCK' ||
-                codeUpper === 'STALLION_PADDOCK' ||
-                codeUpper === 'VET' ||
-                codeUpper === 'VET_SERVICE' ||
-                codeUpper === 'FARRIER' ||
-                codeUpper === 'FARRIER_SERVICE' ||
-                codeUpper === 'FOALINGBARN' ||
-                codeUpper === 'FOALING_BARN'
-              ) {
-                return false;
-              }
-              return prop.dataType === 'BOOLEAN';
-            })
-            .map((prop) => {
-              const propKey = prop.code || prop.title;
-              const on = (value.features ?? []).includes(propKey);
-              return (
-                <Pressable
-                  key={propKey}
-                  onPress={() => {
-                    const curr = value.features ?? [];
-                    const next = on
-                      ? curr.filter((f) => f !== propKey)
-                      : [...curr, propKey];
-                    onChange({ ...value, features: next });
-                  }}
-                  accessibilityRole="switch"
-                  accessibilityState={{ checked: on }}
-                  style={({ pressed }) => [
-                    styles.toggleRow,
-                    { opacity: pressed ? 0.7 : 1 },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.rowText,
-                      {
-                        color: on ? text : textSecondary,
-                        fontWeight: on ? '600' : '400',
-                        flex: 1,
-                      },
-                    ]}
-                  >
-                    {prop.title}
-                  </Text>
-                  <View
-                    style={[
-                      styles.switch,
-                      {
-                        backgroundColor: on ? header : border,
-                        justifyContent: on ? 'flex-end' : 'flex-start',
-                      },
-                    ]}
-                  >
-                    <View style={styles.switchKnob} />
-                  </View>
-                </Pressable>
-              );
-            })}
-        </Accordion>
-      ) : null}
-
-      {/* 5. AŞIM HİZMETLERİ: At Irkı, Yaş, Don (Renk) (YALNIZCA Aşım Seçiliyken) */}
+      {/* 4. AŞIM HİZMETLERİ: At Irkı, Aşım Yaşı, Don (Renk) */}
       {isStudActive ? (
         <>
           <Accordion
@@ -1153,7 +1167,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
           </Accordion>
 
           <Accordion
-            title="Yaş"
+            title="Aşım Yaşı"
             open={!!openGroups['stud-ages']}
             onToggle={() => toggleGroup('stud-ages')}
             hint={value.ages?.length ? `${value.ages.length} seçili` : null}
@@ -1214,190 +1228,129 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         </>
       ) : null}
 
+      {/* 5. PANSİYON HARALAR: Tesis & Hizmet Özellikleri */}
+      {isPansiyonActive ? (
+        <Accordion
+          title="Tesis / Hizmet Özellikleri"
+          open={!!openGroups.facilities}
+          onToggle={() => toggleGroup('facilities')}
+          hint={facilityHint}
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        >
+          {FACILITY_OPTIONS.map((fac) => {
+            const on = Boolean(value.facilities?.[fac.key]);
+            return (
+              <Pressable
+                key={fac.key}
+                onPress={() =>
+                  onChange({
+                    ...value,
+                    facilities: {
+                      ...value.facilities,
+                      [fac.key]: !on,
+                    },
+                  })
+                }
+                accessibilityRole="switch"
+                accessibilityState={{ checked: on }}
+                style={({ pressed }) => [
+                  styles.toggleRow,
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.rowText,
+                    {
+                      color: on ? text : textSecondary,
+                      fontWeight: on ? '600' : '400',
+                      flex: 1,
+                    },
+                  ]}
+                >
+                  {fac.label}
+                </Text>
+                <View
+                  style={[
+                    styles.switch,
+                    {
+                      backgroundColor: on ? header : border,
+                      justifyContent: on ? 'flex-end' : 'flex-start',
+                    },
+                  ]}
+                >
+                  <View style={styles.switchKnob} />
+                </View>
+              </Pressable>
+            );
+          })}
+        </Accordion>
+      ) : null}
+
       {/* 6. BO'DAN GELEN DİNAMİK / ÖZEL KATEGORİ ÖZELLİKLERİ */}
-      {value.categorySlug && categoryProperties.length > 0 ? (
+      {dynamicProps.length > 0 ? (
         <>
-          {categoryProperties
-            .filter((prop) => {
-              const codeUpper = (prop.code || '').toUpperCase();
-              if (isHorseActive || isStudActive) {
-                if (
-                  codeUpper === 'HORSE_BREED' ||
-                  codeUpper === 'STALLION_BREED' ||
-                  codeUpper === 'COAT_COLOR' ||
-                  codeUpper === 'HORSE_AGE' ||
-                  codeUpper === 'STALLION_AGE' ||
-                  codeUpper === 'HORSE_GENDER'
-                ) {
-                  return false;
-                }
-              }
-              if (isPansiyonActive) {
-                if (
-                  prop.dataType === 'BOOLEAN' ||
-                  codeUpper === 'GRASSPADDOCK' ||
-                  codeUpper === 'GRASS_PADDOCK' ||
-                  codeUpper === 'SANDPADDOCK' ||
-                  codeUpper === 'SAND_PADDOCK' ||
-                  codeUpper === 'STALLIONPADDOCK' ||
-                  codeUpper === 'STALLION_PADDOCK' ||
-                  codeUpper === 'VET' ||
-                  codeUpper === 'VET_SERVICE' ||
-                  codeUpper === 'FARRIER' ||
-                  codeUpper === 'FARRIER_SERVICE' ||
-                  codeUpper === 'FOALINGBARN' ||
-                  codeUpper === 'FOALING_BARN'
-                ) {
-                  return false;
-                }
-              }
-              return true;
-            })
-            .map((prop) => {
-              const propKey = prop.code || prop.title;
-              if (prop.dataType === 'BOOLEAN') {
-                const on = Boolean(value.facilities?.[prop.code as PansiyonFacilityKey] ?? value.features?.includes(propKey));
-                return (
-                  <Pressable
-                    key={propKey}
-                    onPress={() => {
-                      if (prop.code in (value.facilities || {})) {
-                        onChange({
-                          ...value,
-                          facilities: {
-                            ...value.facilities,
-                            [prop.code as PansiyonFacilityKey]: !on,
-                          },
-                        });
-                      } else {
-                        const curr = value.features ?? [];
-                        const next = on
-                          ? curr.filter((f) => f !== propKey)
-                          : [...curr, propKey];
-                        onChange({ ...value, features: next });
-                      }
-                    }}
-                    accessibilityRole="switch"
-                    accessibilityState={{ checked: on }}
-                    style={({ pressed }) => [
-                      styles.toggleRow,
-                      { opacity: pressed ? 0.7 : 1 },
+          {dynamicProps.map((prop) => {
+            const propKey = prop.code || prop.title;
+            if (prop.dataType === 'BOOLEAN') {
+              const on = Boolean(value.facilities?.[prop.code as PansiyonFacilityKey] ?? value.features?.includes(propKey));
+              return (
+                <Pressable
+                  key={propKey}
+                  onPress={() => {
+                    if (prop.code in (value.facilities || {})) {
+                      onChange({
+                        ...value,
+                        facilities: {
+                          ...value.facilities,
+                          [prop.code as PansiyonFacilityKey]: !on,
+                        },
+                      });
+                    } else {
+                      const curr = value.features ?? [];
+                      const next = on
+                        ? curr.filter((f) => f !== propKey)
+                        : [...curr, propKey];
+                      onChange({ ...value, features: next });
+                    }
+                  }}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: on }}
+                  style={({ pressed }) => [
+                    styles.toggleRow,
+                    { opacity: pressed ? 0.7 : 1 },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.rowText,
+                      {
+                        color: on ? text : textSecondary,
+                        fontWeight: on ? '600' : '400',
+                        flex: 1,
+                      },
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.rowText,
-                        {
-                          color: on ? text : textSecondary,
-                          fontWeight: on ? '600' : '400',
-                          flex: 1,
-                        },
-                      ]}
-                    >
-                      {prop.title}
-                    </Text>
-                    <View
-                      style={[
-                        styles.switch,
-                        {
-                          backgroundColor: on ? header : border,
-                          justifyContent: on ? 'flex-end' : 'flex-start',
-                        },
-                      ]}
-                    >
-                      <View style={styles.switchKnob} />
-                    </View>
-                  </Pressable>
-                );
-              }
-
-              if (prop.options && prop.options.length > 0) {
-                return (
-                  <Accordion
-                    key={propKey}
-                    title={prop.title}
-                    open={openGroups[propKey] ?? true}
-                    onToggle={() => toggleGroup(propKey)}
-                    hint={
-                      value.features
-                        ?.filter((f) =>
-                          prop.options.some(
-                            (o) =>
-                              f === o.value ||
-                              f === o.label ||
-                              f === `${prop.code}:${o.value}` ||
-                              f === `${propKey}:${o.value}` ||
-                              f === `${prop.code}:${o.label}`
-                          )
-                        )
-                        .map((f) => {
-                          const valPart = f.includes(':') ? f.split(':')[1] : f;
-                          const foundOpt = prop.options.find((o) => o.value === valPart || o.label === valPart);
-                          return foundOpt ? foundOpt.label || foundOpt.value : valPart;
-                        })
-                        .join(', ') || null
-                    }
-                    text={text}
-                    textMuted={textMuted}
-                    border={border}
+                    {prop.title}
+                  </Text>
+                  <View
+                    style={[
+                      styles.switch,
+                      {
+                        backgroundColor: on ? header : border,
+                        justifyContent: on ? 'flex-end' : 'flex-start',
+                      },
+                    ]}
                   >
-                    {prop.options.map((opt) => {
-                      const optVal = opt.value || opt.label;
-                      const featureToken = `${prop.code || propKey}:${opt.value || optVal}`;
-                      const selected = (value.features ?? []).some(
-                        (f) =>
-                          f === featureToken ||
-                          f === optVal ||
-                          f === opt.value ||
-                          f === opt.label ||
-                          f === `${propKey}:${opt.value}`
-                      );
-                      return (
-                        <FilterRow
-                          key={optVal}
-                          label={opt.label || opt.value}
-                          multi
-                          selected={selected}
-                          onSelect={() => {
-                            const curr = value.features ?? [];
-                            const isCurrentlySelected = curr.some(
-                              (f) =>
-                                f === featureToken ||
-                                f === optVal ||
-                                f === opt.value ||
-                                f === opt.label ||
-                                f === `${propKey}:${opt.value}`
-                            );
-                            const next = isCurrentlySelected
-                              ? curr.filter(
-                                  (f) =>
-                                    f !== featureToken &&
-                                    f !== optVal &&
-                                    f !== opt.value &&
-                                    f !== opt.label &&
-                                    f !== `${propKey}:${opt.value}` &&
-                                    f !== `${prop.code}:${opt.value}`
-                                )
-                              : [...curr, featureToken];
-                            onChange({ ...value, features: next });
-                          }}
-                          {...rowTheme}
-                        />
-                      );
-                    })}
-                  </Accordion>
-                );
-              }
-
-              // Text / String / Number dynamic properties
-              const rawFeature = value.features?.find(
-                (f) => f.startsWith(`${prop.code}:`) || f.startsWith(`${propKey}:`)
+                    <View style={styles.switchKnob} />
+                  </View>
+                </Pressable>
               );
-              const textVal =
-                rawFeature && rawFeature.includes(':')
-                  ? rawFeature.slice(rawFeature.indexOf(':') + 1)
-                  : rawFeature ?? '';
+            }
 
+            if (prop.options && prop.options.length > 0) {
               return (
                 <Accordion
                   key={propKey}
@@ -1406,44 +1359,121 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
                   onToggle={() => toggleGroup(propKey)}
                   hint={
                     value.features
-                      ?.find((f) => f.startsWith(`${prop.code}:`) || f.startsWith(`${propKey}:`))
-                      ?.split(':')[1] || null
+                      ?.filter((f) =>
+                        prop.options.some(
+                          (o) =>
+                            f === o.value ||
+                            f === o.label ||
+                            f === `${prop.code}:${o.value}` ||
+                            f === `${propKey}:${o.value}` ||
+                            f === `${prop.code}:${o.label}`
+                        )
+                      )
+                      .map((f) => {
+                        const valPart = f.includes(':') ? f.split(':')[1] : f;
+                        const foundOpt = prop.options.find((o) => o.value === valPart || o.label === valPart);
+                        return foundOpt ? foundOpt.label || foundOpt.value : valPart;
+                      })
+                      .join(', ') || null
                   }
                   text={text}
                   textMuted={textMuted}
                   border={border}
                 >
-                  <View style={{ paddingVertical: 6, paddingHorizontal: 2 }}>
-                    <TextInput
-                      value={
-                        value.features
-                          ?.find((f) => f.startsWith(`${prop.code}:`) || f.startsWith(`${propKey}:`))
-                          ?.split(':')[1] ?? ''
-                      }
-                      onChangeText={(t) => {
-                        const others = (value.features ?? []).filter(
-                          (f) => !f.startsWith(`${prop.code}:`) && !f.startsWith(`${propKey}:`)
-                        );
-                        const next = t.trim() ? [...others, `${prop.code || propKey}:${t}`] : others;
-                        onChange({ ...value, features: next });
-                      }}
-                      placeholder={`${prop.title} ile filtrele...`}
-                      placeholderTextColor={textMuted}
-                      style={{
-                        color: text,
-                        borderColor: border,
-                        backgroundColor: surface,
-                        paddingHorizontal: 12,
-                        height: 38,
-                        borderRadius: 8,
-                        borderWidth: 1,
-                        fontSize: 13,
-                      }}
-                    />
-                  </View>
+                  {prop.options.map((opt) => {
+                    const optVal = opt.value || opt.label;
+                    const featKey = `${prop.code || propKey}:${opt.value || optVal}`;
+                    const selected = (value.features ?? []).some(
+                      (f) =>
+                        f === featKey ||
+                        f === optVal ||
+                        f === opt.value ||
+                        f === opt.label ||
+                        f === `${propKey}:${opt.value}`
+                    );
+                    return (
+                      <FilterRow
+                        key={optVal}
+                        label={opt.label || opt.value}
+                        multi
+                        selected={selected}
+                        onSelect={() => {
+                          const curr = value.features ?? [];
+                          const isCurrentlySelected = curr.some(
+                            (f) =>
+                              f === featKey ||
+                              f === optVal ||
+                              f === opt.value ||
+                              f === opt.label ||
+                              f === `${propKey}:${opt.value}`
+                          );
+                          const next = isCurrentlySelected
+                            ? curr.filter(
+                                (f) =>
+                                  f !== featKey &&
+                                  f !== optVal &&
+                                  f !== opt.value &&
+                                  f !== opt.label &&
+                                  f !== `${propKey}:${opt.value}` &&
+                                  f !== `${prop.code}:${opt.value}`
+                              )
+                            : [...curr, featKey];
+                          onChange({ ...value, features: next });
+                        }}
+                        {...rowTheme}
+                      />
+                    );
+                  })}
                 </Accordion>
               );
-            })}
+            }
+
+            return (
+              <Accordion
+                key={propKey}
+                title={prop.title}
+                open={openGroups[propKey] ?? true}
+                onToggle={() => toggleGroup(propKey)}
+                hint={
+                  value.features
+                    ?.find((f) => f.startsWith(`${prop.code}:`) || f.startsWith(`${propKey}:`))
+                    ?.split(':')[1] || null
+                }
+                text={text}
+                textMuted={textMuted}
+                border={border}
+              >
+                <View style={{ paddingVertical: 6, paddingHorizontal: 2 }}>
+                  <TextInput
+                    value={
+                      value.features
+                        ?.find((f) => f.startsWith(`${prop.code}:`) || f.startsWith(`${propKey}:`))
+                        ?.split(':')[1] ?? ''
+                    }
+                    onChangeText={(t) => {
+                      const others = (value.features ?? []).filter(
+                        (f) => !f.startsWith(`${prop.code}:`) && !f.startsWith(`${propKey}:`)
+                      );
+                      const next = t.trim() ? [...others, `${prop.code || propKey}:${t}`] : others;
+                      onChange({ ...value, features: next });
+                    }}
+                    placeholder={`${prop.title} ile filtrele...`}
+                    placeholderTextColor={textMuted}
+                    style={{
+                      color: text,
+                      borderColor: border,
+                      backgroundColor: surface,
+                      paddingHorizontal: 12,
+                      height: 38,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      fontSize: 13,
+                    }}
+                  />
+                </View>
+              </Accordion>
+            );
+          })}
         </>
       ) : null}
 

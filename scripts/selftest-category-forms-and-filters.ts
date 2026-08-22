@@ -341,6 +341,21 @@ assert(matchHorseColor({ title: 'Al kısrak 3 yaş' }, ['Al']), 'Al don eşleşt
 assert(matchHorseColor({ title: 'Kır aygır' }, ['Kır']), 'Kır don eşleşti');
 assert(!matchHorseColor({ title: 'Doru tay' }, ['Kır']), 'Doru tay Kır ile eşleşmedi');
 
+// TJK Kısaltma ve Uluslararası Don Testleri (k, d, a, y, GREY, BAY vb.)
+assert(matchHorseColor({ title: 'A FINE DAY TO FLY', properties: { COAT_COLOR: 'k' } }, ['Kır']), 'TJK coat="k" Kır filtresiyle eşleşti');
+assert(matchHorseColor({ title: 'A FINE DAY TO FLY', properties: { coatColor: 'k' } }, ['Kır']), 'TJK coatColor="k" Kır filtresiyle eşleşti');
+assert(matchHorseColor({ title: 'A FINE DAY TO FLY', properties: { COAT_COLOR: 'GREY' } }, ['Kır']), 'TJK coat="GREY" Kır filtresiyle eşleşti');
+assert(matchHorseColor({ title: 'A FINE DAY TO FLY', properties: { COAT_COLOR: 'kir' } }, ['Kır']), 'TJK coat="kir" Kır filtresiyle eşleşti');
+assert(matchHorseColor({ title: 'Yarış Atı', properties: { COAT_COLOR: 'd' } }, ['Doru']), 'TJK coat="d" Doru filtresiyle eşleşti');
+assert(matchHorseColor({ title: 'Yarış Atı', properties: { COAT_COLOR: 'BAY' } }, ['Doru']), 'TJK coat="BAY" Doru filtresiyle eşleşti');
+assert(matchHorseColor({ title: 'Yarış Atı', properties: { COAT_COLOR: 'a' } }, ['Al']), 'TJK coat="a" Al filtresiyle eşleşti');
+assert(matchHorseColor({ title: 'Yarış Atı', properties: { COAT_COLOR: 'y' } }, ['Yağız']), 'TJK coat="y" Yağız filtresiyle eşleşti');
+assert(matchHorseColor({ title: 'Yarış Atı', properties: { COAT_COLOR: 'b' } }, ['Beyaz']), 'TJK coat="b" Beyaz filtresiyle eşleşti');
+assert(matchHorseColor({ title: 'Yarış Atı', properties: { COAT_COLOR: 'ku' } }, ['Kula']), 'TJK coat="ku" Kula filtresiyle eşleşti');
+assert(matchHorseColor({ title: 'Yarış Atı', properties: { COAT_COLOR: 'boz' } }, ['Boz']), 'TJK coat="boz" Boz filtresiyle eşleşti');
+assert(!matchHorseColor({ title: 'A FINE DAY TO FLY', properties: { COAT_COLOR: 'k' } }, ['Doru']), 'TJK coat="k" Doru ile eşleşmedi');
+assert(!matchHorseColor({ title: 'A FINE DAY TO FLY', properties: { COAT_COLOR: 'k' } }, ['Al']), 'TJK coat="k" Al ile eşleşmedi');
+
 // -------------------------------------------------------------
 // 5. Dinamik BO Özellikleri İlan Oluşturma ve Filtreleme Testleri
 // -------------------------------------------------------------
@@ -421,6 +436,133 @@ assert(!matchCustomFeature(customProductCard2, 'deneme1'), 'deneme1 filtresi 2. 
 assert(matchCustomFeature(customProductCard2, 'deneme2'), 'deneme2 filtresi 2. ilanla eşleşti');
 assert(matchCustomFeature(customProductCard, 'deneme:deneme1'), 'deneme:deneme1 key-value filtresi eşleşti');
 assert(matchCustomFeature(customProductCard, 'kameraSistemi'), 'Boolean switch özelliği filtresi eşleşti');
+
+// -------------------------------------------------------------
+// 6. Tüm Kategoriler Kapsamlı Doğrulama Testleri (Satılık Atlar, Nakliye, Pansiyon, Nalbant, Aşım, Yeni Kategoriler)
+// -------------------------------------------------------------
+console.log('\n--- 6. Tüm Kategoriler Kapsamlı Doğrulama Testleri ---');
+
+// A. TJK / Bağlı Atlı İlan (Örn: ABOV gibi başlıkta renk yazmayan ilan)
+const linkedHorseCard = {
+  id: 'adv-abov-1',
+  title: 'ABOV',
+  brand: null,
+  categoryId: 'cat-yaris-ati',
+  properties: {
+    HORSE_BREED: 'İngiliz',
+    COAT_COLOR: 'Al',
+    HORSE_GENDER: 'Dişi',
+    HORSE_AGE: 13,
+  },
+};
+
+assert(matchHorseColor(linkedHorseCard, ['Al']), 'ABOV (başlıkta renk yokken) properties COAT_COLOR="Al" ile eşleşti');
+assert(!matchHorseColor(linkedHorseCard, ['Doru']), 'ABOV Doru ile eşleşmedi');
+assert(matchHorseBreed(linkedHorseCard, ['İngiliz (Thoroughbred)']), 'ABOV properties HORSE_BREED="İngiliz" ile eşleşti');
+assert(matchHorseGender(linkedHorseCard, ['Dişi']), 'ABOV properties HORSE_GENDER="Dişi" ile eşleşti');
+assert(matchHorseAge(linkedHorseCard, ['5+ Yaş']), 'ABOV properties HORSE_AGE=13 ile 5+ Yaş filtresiyle eşleşti');
+
+// A2. A FINE DAY TO FLY (Kır Donu - Başlıkta renk yazmayan İngiliz Kısrak)
+const fineDayCard = {
+  id: 'adv-fine-day-1',
+  title: 'A FINE DAY TO FLY',
+  brand: null,
+  categoryId: 'cat-yaris-ati',
+  properties: {
+    HORSE_BREED: 'İngiliz',
+    COAT_COLOR: 'Kır',
+    HORSE_GENDER: 'Dişi',
+    HORSE_AGE: 8,
+  },
+};
+assert(matchHorseColor(fineDayCard, ['Kır']), 'A FINE DAY TO FLY properties COAT_COLOR="Kır" ile eşleşti');
+assert(!matchHorseColor(fineDayCard, ['Al']), 'A FINE DAY TO FLY Al ile eşleşmedi');
+assert(matchHorseBreed(fineDayCard, ['İngiliz (Thoroughbred)']), 'A FINE DAY TO FLY İngiliz ile eşleşti');
+assert(matchHorseAge(fineDayCard, ['5+ Yaş']), 'A FINE DAY TO FLY 5+ Yaş ile eşleşti');
+
+// B. Pansiyon Haralar - Yeni Eklenen Dinamik Tesisler (Örn: saç bakımı, kamera, çim padok)
+const pansiyonCard = {
+  id: 'adv-pansiyon-1',
+  title: 'Ege At Çiftliği ve Pansiyonu',
+  brand: null,
+  categoryId: 'cat-pansiyon',
+  properties: {
+    facilityGrassPaddock: true,
+    facilityVeterinarian: true,
+    sacBakimi: true,
+    geceGozetimi: true,
+  },
+};
+assert(matchCustomFeature(pansiyonCard, 'sacBakimi'), 'Pansiyon yeni dinamik özelliği "sacBakimi" filtresiyle eşleşti');
+assert(matchCustomFeature(pansiyonCard, 'geceGozetimi'), 'Pansiyon yeni dinamik özelliği "geceGozetimi" ile eşleşti');
+
+// C. At Nakliyesi - Dinamik & Standart Donanımlar
+const transportCard = {
+  id: 'adv-transport-1',
+  title: 'Marmara Vip At Taşımacılığı',
+  brand: null,
+  categoryId: 'cat-nakliye',
+  properties: {
+    companyName: 'Marmara Vip Taşımacılık',
+    ac: true,
+    camera: true,
+    sigortaliTasima: true,
+    aracKapasitesi: '4_atli',
+  },
+};
+assert(matchCustomFeature(transportCard, 'camera'), 'Nakliye kamera özelliği filtresiyle eşleşti');
+assert(matchCustomFeature(transportCard, 'sigortaliTasima'), 'Nakliye özel sigorta özelliğiyle eşleşti');
+assert(matchCustomFeature(transportCard, 'aracKapasitesi:4_atli'), 'Nakliye araç kapasitesi key-value filtresiyle eşleşti');
+
+// D. Nalbantlar - Hizmet ve Dinamik Alanlar
+const farrierCard = {
+  id: 'adv-farrier-1',
+  title: 'Usta Nalbant Hüseyin',
+  brand: null,
+  categoryId: 'cat-nalbant',
+  properties: {
+    hotShoeing: true,
+    ortopedikNallama: true,
+    calismaBolgesi: 'Izmir',
+  },
+};
+assert(matchCustomFeature(farrierCard, 'hotShoeing'), 'Nalbant sıcak nallama özelliğiyle eşleşti');
+assert(matchCustomFeature(farrierCard, 'ortopedikNallama'), 'Nalbant özel ortopedik nallama özelliğiyle eşleşti');
+
+// E. Aşım Hizmetleri - Üst ve Alt Kategori Dinamik Özellikleri (Örn: deneme, asim_garantisi)
+const studCard = {
+  id: 'adv-stud-1',
+  title: 'KAFKASLI OĞLU',
+  brand: null,
+  categoryId: 'cat-arap-aygir',
+  properties: {
+    HORSE_BREED: 'Arap',
+    COAT_COLOR: 'Kır',
+    HORSE_AGE: 8,
+    deneme: 'ozel_deger',
+    asimGarantisi: 'canli_tay',
+  },
+};
+assert(matchHorseBreed(studCard, ['Arap']), 'Aşım aygırı Arap ırkı ile eşleşti');
+assert(matchHorseColor(studCard, ['Kır']), 'Aşım aygırı Kır don ile eşleşti');
+assert(matchCustomFeature(studCard, 'deneme:ozel_deger'), 'Aşım aygırı dinamik "deneme" özelliğiyle eşleşti');
+assert(matchCustomFeature(studCard, 'asimGarantisi:canli_tay'), 'Aşım aygırı dinamik "asimGarantisi" ile eşleşti');
+
+// F. Sonradan Eklenecek Yepyeni Bir Kategori (Örn: Binicilik Kulübü / At Malzemeleri)
+const newCategoryCard = {
+  id: 'adv-new-cat-1',
+  title: 'Özel Binicilik Dersi & Ekipman',
+  brand: null,
+  categoryId: 'cat-binicilik-kursu',
+  properties: {
+    dersSeviyesi: 'ileri_duzey',
+    kapaliManej: true,
+    antrenorLisansi: '1_kademe',
+  },
+};
+assert(matchCustomFeature(newCategoryCard, 'dersSeviyesi:ileri_duzey'), 'Yeni kategori dinamik select filtresi eşleşti');
+assert(matchCustomFeature(newCategoryCard, 'kapaliManej'), 'Yeni kategori dinamik boolean switch filtresi eşleşti');
+assert(matchCustomFeature(newCategoryCard, 'antrenorLisansi:1_kademe'), 'Yeni kategori dinamik lisans filtresi eşleşti');
 
 console.log(`\nÖzet: ${passed} geçti, ${failed} kaldı.`);
 if (failed > 0) {

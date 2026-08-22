@@ -31,6 +31,8 @@ export default function ListingsScreen() {
     breeds?: string | string[];
     ages?: string | string[];
     colors?: string | string[];
+    genders?: string | string[];
+    features?: string | string[];
   }>();
   const bg = useThemeColor('background');
   const { isLoggedIn } = useAuthSession();
@@ -52,6 +54,8 @@ export default function ListingsScreen() {
         breeds: null,
         ages: null,
         colors: null,
+        genders: null,
+        features: null,
       };
     }
     return {
@@ -68,6 +72,8 @@ export default function ListingsScreen() {
       breeds: first(params.breeds),
       ages: first(params.ages),
       colors: first(params.colors),
+      genders: first(params.genders),
+      features: first(params.features),
     };
   }, [
     hydrated,
@@ -84,6 +90,8 @@ export default function ListingsScreen() {
     params.breeds,
     params.ages,
     params.colors,
+    params.genders,
+    params.features,
   ]);
 
   const onLogin = useCallback(() => router.push('/auth/login'), [router]);

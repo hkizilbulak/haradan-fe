@@ -547,6 +547,8 @@ export function PostCategoryProperties({
               <Text style={[styles.err, { color: errorColor }]}>{errors.studCoatColor}</Text>
             ) : null}
           </View>
+
+          {customProperties.map((prop) => renderPropertyItem(prop))}
         </View>
 
         {/* Soy Kütüğü (Pedigree) */}
@@ -603,7 +605,6 @@ export function PostCategoryProperties({
             error={errors.studDamsire}
           />
         </View>
-        {customProperties.length > 0 ? renderCustomPropertiesCard() : null}
       </>
     );
   }

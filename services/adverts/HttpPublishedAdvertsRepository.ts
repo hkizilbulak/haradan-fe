@@ -6,6 +6,9 @@ import type {
   IPublishedAdvertsRepository,
   PublishedAdvertsSearchParams,
 } from './PublishedAdvertsRepository';
+import { HttpTjkRepository } from '@/services/tjk/HttpTjkRepository';
+import type { ITjkRepository } from '@/services/tjk/TjkRepository';
+import type { TjkHorseProfile } from '@/types/listing';
 import {
   mapPublishedCardToCatalog,
   type BePublishedCard,
@@ -46,9 +49,12 @@ export class HttpPublishedAdvertsRepository
   implements IPublishedAdvertsRepository
 {
   private readonly http: HttpClient;
+  private readonly tjkRepo: ITjkRepository;
+  private static readonly horseCache = new Map<string, TjkHorseProfile>();
 
-  constructor(private readonly baseUrl: string) {
+  constructor(private readonly baseUrl: string, tjkRepo?: ITjkRepository) {
     this.http = new HttpClient(baseUrl);
+    this.tjkRepo = tjkRepo ?? new HttpTjkRepository(baseUrl);
   }
 
   async search(
@@ -95,6 +101,68 @@ export class HttpPublishedAdvertsRepository
       for (const chunk of chunks) {
         for (const item of chunk) {
           merged.set(item.id, item);
+        }
+      }
+
+      // Collect horseIds that need enrichment
+      const horseIdsToFetch = new Set<string>();
+      for (const item of merged.values()) {
+        if (item.horseId && !HttpPublishedAdvertsRepository.horseCache.has(item.horseId)) {
+          const props = item.properties || {};
+          const hasColor = Boolean(props.COAT_COLOR || props.coatColor || props['Donu (Renk)']);
+          const hasAge = Boolean(props.HORSE_AGE || props.age || props['Yaş']);
+          if (!hasColor || !hasAge) {
+            horseIdsToFetch.add(item.horseId);
+          }
+        }
+      }
+
+      if (horseIdsToFetch.size > 0) {
+        await Promise.allSettled(
+          Array.from(horseIdsToFetch).map(async (hId) => {
+            try {
+              const h = await this.tjkRepo.getById(hId);
+              if (h) {
+                HttpPublishedAdvertsRepository.horseCache.set(hId, h);
+              }
+            } catch {
+              /* ignore */
+            }
+          })
+        );
+      }
+
+      // Enrich cards with horse details
+      for (const item of merged.values()) {
+        if (item.horseId) {
+          const horse = HttpPublishedAdvertsRepository.horseCache.get(item.horseId);
+          if (horse) {
+            const props = item.properties ? { ...item.properties } : {};
+            if (!props.COAT_COLOR && !props.coatColor && horse.coatColor) {
+              props.COAT_COLOR = horse.coatColor;
+              props.coatColor = horse.coatColor;
+            }
+            if (!props.HORSE_BREED && !props.breed && horse.breed) {
+              props.HORSE_BREED = horse.breed;
+              props.breed = horse.breed;
+            }
+            if (!props.HORSE_GENDER && !props.gender && horse.gender) {
+              props.HORSE_GENDER = horse.gender;
+              props.gender = horse.gender;
+            }
+            if (
+              (props.HORSE_AGE == null || props.HORSE_AGE === 0) &&
+              (props.age == null || props.age === 0) &&
+              horse.age
+            ) {
+              props.HORSE_AGE = horse.age;
+              props.age = horse.age;
+            }
+            if (!item.brand && horse.breed) {
+              item.brand = horse.breed;
+            }
+            item.properties = props;
+          }
         }
       }
 

@@ -80,12 +80,15 @@ function ageFromBirthYear(year: number | null | undefined): number {
 export function mapTjkCoat(raw: string | null | undefined): string {
   const value = (raw ?? '').trim().toLocaleLowerCase('tr');
   if (!value) return '';
-  if (value === 'a' || value === 'al') return 'Al';
-  if (value === 'd' || value === 'doru') return 'Doru';
-  if (value === 'k' || value === 'kır' || value === 'kir') return 'Kır';
-  if (value === 'y' || value === 'ya' || value === 'yağız' || value === 'yagiz') return 'Yağız';
+  if (value === 'a' || value === 'al' || value === 'chestnut' || value === 'sorrel' || value === 'ch') return 'Al';
+  if (value === 'd' || value === 'doru' || value === 'bay') return 'Doru';
+  if (value === 'k' || value === 'kır' || value === 'kir' || value === 'grey' || value === 'gray' || value === 'gr' || value === 'kr') return 'Kır';
+  if (value === 'y' || value === 'ya' || value === 'yağız' || value === 'yagiz' || value === 'black' || value === 'bl') return 'Yağız';
   if (value === 'ka' || value === 'kestane') return 'Kestane';
   if (value === 'da' || value === 'doru al') return 'Doru Al';
+  if (value === 'b' || value === 'beyaz' || value === 'white' || value === 'wh' || value === 'ak') return 'Beyaz';
+  if (value === 'ku' || value === 'kula' || value === 'dun' || value === 'buckskin') return 'Kula';
+  if (value === 'boz' || value === 'roan' || value === 'grullo') return 'Boz';
   return (raw ?? '').trim();
 }
 

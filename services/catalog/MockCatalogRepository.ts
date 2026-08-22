@@ -54,15 +54,6 @@ const HORSE_PROPERTIES: CategoryPropertyPublic[] = [
     sortOrder: 4,
     options: HORSE_GENDER_OPTIONS.map((g) => ({ value: g, label: g })),
   },
-  {
-    code: 'deneme',
-    title: 'deneme',
-    dataType: 'STRING',
-    isRequired: false,
-    isFilterable: true,
-    sortOrder: 5,
-    options: [],
-  },
 ];
 
 
@@ -142,9 +133,16 @@ export class MockCatalogRepository implements ICatalogRepository {
           localStorage.getItem(`haradan_category_properties_${categoryId.replace(/^cat-/, '')}`);
         if (stored) {
           const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             const activeProps: CategoryPropertyPublic[] = parsed
-              .filter((p: { isActive?: boolean }) => p.isActive !== false)
+              .filter(
+                (p: any) =>
+                  p.isActive !== false &&
+                  p.is_active !== false &&
+                  p.active !== false &&
+                  p.isFilterable !== false &&
+                  p.is_filterable !== false
+              )
               .map((p: any) => ({
                 code: p.code || p.id,
                 title: p.title,
