@@ -21,11 +21,13 @@ export function collectCategoryIds(
   const ids = new Set<string>();
   const walk = (n: CategoryTreeNode) => {
     ids.add(n.id);
+    ids.add(n.slug);
     n.children.forEach(walk);
   };
   walk(found);
   return ids;
 }
+
 
 export function findCategoryById(
   nodes: CategoryTreeNode[],

@@ -173,6 +173,7 @@ type RowProps = {
   expanded?: boolean;
   onToggle?: () => void;
   indent?: boolean;
+  depth?: number;
   multi?: boolean;
   text: string;
   textMuted: string;
@@ -189,6 +190,7 @@ function FilterRow({
   expanded,
   onToggle,
   indent,
+  depth = 0,
   multi,
   text,
   textMuted,
@@ -196,8 +198,16 @@ function FilterRow({
   header,
   border,
 }: RowProps) {
+  const dynamicIndent = depth > 0 ? (depth === 1 ? 16 : 16 + (depth - 1) * 14) : 0;
   return (
-    <View style={[styles.row, indent && styles.rowIndent]}>
+    <View
+      style={[
+        styles.row,
+        indent && styles.rowIndent,
+        depth > 0 && { paddingLeft: dynamicIndent },
+      ]}
+    >
+
       <Pressable
         onPress={onSelect}
         hitSlop={6}
@@ -360,17 +370,30 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
       setOpenGroups((p) => ({ ...p, advanced: true }));
     }
     if (!value.categorySlug) return;
+
     const nextOptions: Record<string, boolean> = {};
-    groups.forEach((g) => {
-      g.options.forEach((o) => {
+    const hasDescendant = (opt: CatalogFacetOption, targetSlug: string): boolean => {
+      return (
+        opt.children.some((c) => c.slug === targetSlug) ||
+        opt.children.some((c) => hasDescendant(c, targetSlug))
+      );
+    };
+
+    const walkTree = (opts: CatalogFacetOption[]) => {
+      opts.forEach((o) => {
         if (
           o.slug === value.categorySlug ||
-          o.children.some((c) => c.slug === value.categorySlug)
+          hasDescendant(o, value.categorySlug!)
         ) {
           nextOptions[o.id] = true;
         }
+        if (o.children && o.children.length > 0) {
+          walkTree(o.children);
+        }
       });
-    });
+    };
+
+    groups.forEach((g) => walkTree(g.options));
     setOpenOptions((prev) => ({ ...prev, ...nextOptions }));
   }, [
     groups,
@@ -381,6 +404,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     value.priceMaxTl,
     value.urgentOnly,
   ]);
+
 
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
@@ -559,49 +583,49 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
           textMuted={textMuted}
           border={border}
         >
-          {categoryGroup.options.map((option) => {
-            const hasKids = option.children.length > 0;
-            const optionOpen = !!openOptions[option.id];
-            const active = isOptionActive(categoryGroup, option);
-            return (
-              <View key={option.id}>
-                <FilterRow
-                  label={option.label}
-                  selected={active}
-                  onSelect={() => applyOption(categoryGroup, option)}
-                  expandable={hasKids}
-                  expanded={optionOpen}
-                  onToggle={() => {
-                    toggleAnim();
-                    setOpenOptions((p) => ({ ...p, [option.id]: !optionOpen }));
-                  }}
-                  {...rowTheme}
-                />
-                {hasKids && optionOpen
-                  ? option.children.map((child) => (
-                      <FilterRow
-                        key={child.id}
-                        label={child.label}
-                        selected={value.categorySlug === child.slug}
-                        onSelect={() =>
-                          onChange({
-                            ...value,
-                            categorySlug:
-                              value.categorySlug === child.slug
-                                ? option.slug
-                                : child.slug,
-                          })
-                        }
-                        indent
-                        {...rowTheme}
-                      />
-                    ))
-                  : null}
-              </View>
+          {(() => {
+            const renderOption = (
+              option: CatalogFacetOption,
+              depth: number = 0
+            ): React.ReactNode => {
+              const hasKids = option.children && option.children.length > 0;
+              const optionOpen = !!openOptions[option.id];
+              const active = isOptionActive(categoryGroup, option);
+
+              return (
+                <View key={option.id}>
+                  <FilterRow
+                    label={option.label}
+                    selected={active}
+                    onSelect={() => applyOption(categoryGroup, option)}
+                    expandable={hasKids}
+                    expanded={optionOpen}
+                    onToggle={() => {
+                      toggleAnim();
+                      setOpenOptions((p) => ({
+                        ...p,
+                        [option.id]: !optionOpen,
+                      }));
+                    }}
+                    depth={depth}
+                    {...rowTheme}
+                  />
+                  {hasKids && optionOpen
+                    ? option.children.map((child) =>
+                        renderOption(child, depth + 1)
+                      )
+                    : null}
+                </View>
+              );
+            };
+
+            return categoryGroup.options.map((option) =>
+              renderOption(option, 0)
             );
-          })}
+          })()}
         </Accordion>
       ) : null}
+
 
       {/* 2. Detaylı Filtreleme (Konum, Fiyat, Acil - İlan Türünün Hemen Altında) */}
       <Accordion
