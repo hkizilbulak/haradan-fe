@@ -4,6 +4,11 @@
  */
 import { MockBannerRepository } from '../services/banners/MockBannerRepository';
 import { HttpBannerRepository } from '../services/banners/HttpBannerRepository';
+import {
+  normalizeBannerItem,
+  resolveBannerImageUrl,
+  selectHomeHeroBanners,
+} from '../services/banners/bannerDisplay';
 import { resolvePublicMediaUrl } from '../services/media/publicUrl';
 import { MOCK_BANNERS } from '../mocks/homepage';
 
@@ -38,6 +43,27 @@ async function runTests(): Promise<void> {
     resolvePublicMediaUrl('https://images.unsplash.com/photo-test', apiBase),
     'https://images.unsplash.com/photo-test',
     'preserves external absolute banner URLs'
+  );
+
+  assertEqual(
+    resolveBannerImageUrl(
+      'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
+      apiBase
+    ),
+    `${apiBase}/v1/media/aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee/BANNER`,
+    'resolves bare asset UUID to BANNER delivery URL'
+  );
+
+  const normalized = normalizeBannerItem(MOCK_BANNERS[0], apiBase);
+  assert(Boolean(normalized.imageUrl), 'normalizeBannerItem sets imageUrl');
+
+  const heroOnly = selectHomeHeroBanners(MOCK_BANNERS);
+  assert(heroOnly.length === 3, 'selectHomeHeroBanners returns HOMEPAGE_HERO only');
+  assert(
+    heroOnly.every(
+      (b) => b.placement === 'HOMEPAGE_HERO' || b.placement === 'HOMEPAGE'
+    ),
+    'hero selection excludes promo/detail/search'
   );
 
   // 2. MockBannerRepository tests

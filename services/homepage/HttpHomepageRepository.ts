@@ -6,7 +6,7 @@ import {
   mapPublishedCardToCatalog,
   type BePublishedCard,
 } from '@/services/adverts/mapPublishedCard';
-import { resolvePublicMediaUrl } from '@/services/media/publicUrl';
+import { normalizeBannerItem } from '@/services/banners/bannerDisplay';
 
 import { locationLookup } from '@/services/location';
 
@@ -132,10 +132,9 @@ export class HttpHomepageRepository implements IHomepageRepository {
     const newAdverts = mapItems(newPage.items);
     const showcaseItems = mapItems(showcase.items);
 
-    const liveBanners = (bannersRes?.items ?? []).map((item) => ({
-      ...item,
-      imageUrl: resolvePublicMediaUrl(item.imageUrl, this.apiBase),
-    }));
+    const liveBanners = (bannersRes?.items ?? []).map((item) =>
+      normalizeBannerItem(item, this.apiBase)
+    );
 
     return {
       banners: liveBanners,

@@ -16,15 +16,8 @@ import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { getCategoryIcon } from '@/services/catalog/categoryDisplay';
 import type { CategoryTreeNode } from '@/types';
-
-const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  'satilik-atlar': 'trophy-outline',
-  'at-hizmetleri': 'briefcase-outline',
-  'asim-hizmetleri': 'pulse-outline',
-  'ekipman-malzemeler': 'construct-outline',
-  'ahir-tesisler': 'home-outline',
-};
 
 const EASE = Easing.bezier(0.22, 1, 0.36, 1);
 const IDLE_TEXT = '#6c727f';
@@ -171,7 +164,7 @@ export const CategorySidebar = memo(function CategorySidebar({
             <CategoryRow
               key={cat.id}
               label={cat.name}
-              icon={CATEGORY_ICONS[cat.slug] ?? 'ellipse-outline'}
+              icon={getCategoryIcon(cat.slug)}
               active={cat.id === activeId}
               hasChildren={cat.children.length > 0}
               expanded={cat.id === activeId && cat.children.length > 0}

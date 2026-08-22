@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Modal,
   Platform,
@@ -11,9 +11,14 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BrandMark } from '@/components/layout/BrandMark';
+import { MOBILE_INK } from '@/components/layout/glassStyles';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import {
+  getCategoryIcon,
+  pickListingRootCategories,
+} from '@/services/catalog/categoryDisplay';
 import type { CategoryTreeNode } from '@/types';
 import type { HeaderNavKey } from '@/services/navigation';
 
@@ -28,10 +33,14 @@ type MobileMenuSheetProps = {
   onPostAd: () => void;
 };
 
-const NAV: { key: HeaderNavKey; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+const NAV: {
+  key: HeaderNavKey;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
   { key: 'home', label: 'Anasayfa', icon: 'home-outline' },
-  { key: 'listings', label: 'Tüm ilanlar', icon: 'grid-outline' },
-  { key: 'my-listings', label: 'İlanlarım', icon: 'document-text-outline' },
+  { key: 'listings', label: 'Tüm ilanlar', icon: 'search-outline' },
+  { key: 'my-listings', label: 'İlanlarım', icon: 'layers-outline' },
 ];
 
 export function MobileMenuSheet({
@@ -45,10 +54,17 @@ export function MobileMenuSheet({
   onPostAd,
 }: MobileMenuSheetProps) {
   const insets = useSafeAreaInsets();
-  const text = useThemeColor('text');
-  const textSecondary = useThemeColor('textSecondary');
   const primary = useThemeColor('primary');
-  const border = useThemeColor('border');
+
+  const categoryRoots = useMemo(
+    () => pickListingRootCategories(categories),
+    [categories]
+  );
+
+  const run = (fn: () => void) => {
+    fn();
+    onClose();
+  };
 
   return (
     <Modal
@@ -57,177 +73,277 @@ export function MobileMenuSheet({
       transparent
       onRequestClose={onClose}
     >
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable
+      <View style={styles.root}>
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Kapat" />
+
+        <View
           style={[
             styles.sheet,
             {
-              paddingTop: insets.top + Spacing.md,
+              paddingTop: Spacing.md,
               paddingBottom: insets.bottom + Spacing.lg,
             },
           ]}
-          onPress={(e) => e.stopPropagation()}
         >
           <View style={styles.handle} />
+
           <View style={styles.head}>
-            <BrandMark variant="dark" height={28} />
-            <Pressable onPress={onClose} hitSlop={12} accessibilityLabel="Kapat">
-              <Ionicons name="close" size={24} color={text} />
+            <BrandMark variant="light" height={24} />
+            <Pressable
+              onPress={onClose}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Kapat"
+              style={({ pressed }) => [
+                styles.closeBtn,
+                pressed && { opacity: 0.6 },
+              ]}
+            >
+              <Ionicons name="close" size={20} color="#fff" />
             </Pressable>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <Text style={[styles.section, { color: textSecondary }]}>Menü</Text>
-            {NAV.map((item) => (
-              <Pressable
-                key={item.key}
-                onPress={() => {
-                  onNav(item.key);
-                  onClose();
-                }}
-                style={({ pressed }) => [
-                  styles.row,
-                  { borderBottomColor: border, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Ionicons name={item.icon} size={20} color={primary} />
-                <Text style={[styles.rowLabel, { color: text }]}>{item.label}</Text>
-                <Ionicons name="chevron-forward" size={18} color={textSecondary} />
-              </Pressable>
-            ))}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scroll}
+          >
+            <View style={styles.navGroup}>
+              {NAV.map((item) => (
+                <Pressable
+                  key={item.key}
+                  onPress={() => run(() => onNav(item.key))}
+                  style={({ pressed }) => [
+                    styles.navItem,
+                    pressed && styles.navItemPressed,
+                  ]}
+                >
+                  <View style={styles.navIcon}>
+                    <Ionicons name={item.icon} size={18} color="#fff" />
+                  </View>
+                  <Text style={styles.navLabel}>{item.label}</Text>
+                </Pressable>
+              ))}
+            </View>
 
-            {!isLoggedIn ? (
-              <Pressable
-                onPress={() => {
-                  onLogin();
-                  onClose();
-                }}
-                style={[styles.loginBtn, { backgroundColor: primary }]}
-              >
-                <Text style={styles.loginText}>Giriş yap / Kayıt ol</Text>
-              </Pressable>
-            ) : null}
-
-            <Pressable
-              onPress={() => {
-                onPostAd();
-                onClose();
-              }}
-              style={[styles.postBtn, { borderColor: border }]}
-            >
-              <Ionicons name="add-circle-outline" size={20} color={primary} />
-              <Text style={[styles.postLabel, { color: text }]}>İlan ver</Text>
-            </Pressable>
-
-            {categories.length > 0 ? (
+            {categoryRoots.length > 0 ? (
               <>
-                <Text style={[styles.section, { color: textSecondary }]}>
-                  Kategoriler
-                </Text>
-                {categories.map((cat) => (
-                  <Pressable
-                    key={cat.id}
-                    onPress={() => {
-                      onCategory(cat);
-                      onClose();
-                    }}
-                    style={({ pressed }) => [
-                      styles.row,
-                      { borderBottomColor: border, opacity: pressed ? 0.7 : 1 },
-                    ]}
-                  >
-                    <Ionicons name="folder-outline" size={20} color={textSecondary} />
-                    <Text style={[styles.rowLabel, { color: text }]}>{cat.name}</Text>
-                    <Ionicons name="chevron-forward" size={18} color={textSecondary} />
-                  </Pressable>
-                ))}
+                <Text style={styles.sectionLabel}>Kategoriler</Text>
+                <View style={styles.categoryGrid}>
+                  {categoryRoots.map((cat) => (
+                    <Pressable
+                      key={cat.id}
+                      onPress={() => run(() => onCategory(cat))}
+                      style={({ pressed }) => [
+                        styles.categoryChip,
+                        pressed && styles.categoryChipPressed,
+                      ]}
+                    >
+                      <View style={styles.categoryIconWrap}>
+                        <Ionicons
+                          name={getCategoryIcon(cat.slug)}
+                          size={16}
+                          color="#fff"
+                        />
+                      </View>
+                      <Text style={styles.categoryText} numberOfLines={2}>
+                        {cat.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
               </>
             ) : null}
           </ScrollView>
-        </Pressable>
-      </Pressable>
+
+          <View style={styles.footer}>
+            {!isLoggedIn ? (
+              <Pressable
+                onPress={() => run(onLogin)}
+                style={({ pressed }) => [
+                  styles.primaryBtn,
+                  { backgroundColor: primary },
+                  pressed && { opacity: 0.9 },
+                ]}
+              >
+                <Text style={styles.primaryBtnText}>Giriş yap</Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              onPress={() => run(onPostAd)}
+              style={({ pressed }) => [
+                styles.secondaryBtn,
+                pressed && { opacity: 0.75 },
+              ]}
+            >
+              <Ionicons name="add" size={18} color={primary} />
+              <Text style={[styles.secondaryBtnText, { color: primary }]}>
+                İlan ver
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
+  root: {
     flex: 1,
-    backgroundColor: 'rgba(12,12,14,0.45)',
     justifyContent: 'flex-end',
   },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
   sheet: {
-    maxHeight: '88%',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.96)',
+    maxHeight: '86%',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    backgroundColor: MOBILE_INK,
     paddingHorizontal: Spacing.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.08)',
     ...Platform.select({
       web: {
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        boxShadow: '0 -16px 48px rgba(0,0,0,0.4)',
       } as object,
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -8 },
+        shadowOpacity: 0.35,
+        shadowRadius: 24,
+      },
+      android: { elevation: 24 },
       default: {},
     }),
   },
   handle: {
     alignSelf: 'center',
-    width: 40,
+    width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(12,12,14,0.12)',
-    marginBottom: Spacing.md,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    marginBottom: Spacing.lg,
   },
   head: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.xl,
   },
-  section: {
-    ...Typography.caption,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginBottom: Spacing.sm,
-    marginTop: Spacing.sm,
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
-  row: {
+  scroll: {
+    paddingBottom: Spacing.md,
+  },
+  navGroup: {
+    gap: 6,
+    marginBottom: Spacing.xl,
+  },
+  navItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 14,
   },
-  rowLabel: {
+  navItemPressed: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  navIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  navLabel: {
     ...Typography.body,
-    flex: 1,
+    color: '#fff',
     fontWeight: '500',
+    fontSize: 15,
+    letterSpacing: -0.2,
   },
-  loginBtn: {
-    marginTop: Spacing.lg,
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#8a8a93',
+    letterSpacing: 0.2,
+    marginBottom: Spacing.md,
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: Spacing.md,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    flexBasis: '46%',
+    flexGrow: 1,
+    maxWidth: '48%',
+  },
+  categoryChipPressed: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  categoryIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    flexShrink: 0,
+  },
+  categoryText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: -0.1,
+    flex: 1,
+  },
+  footer: {
+    gap: 10,
+    paddingTop: Spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+  },
+  primaryBtn: {
     minHeight: 48,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  loginText: {
+  primaryBtnText: {
     color: '#fff',
     fontWeight: '700',
     fontSize: 15,
   },
-  postBtn: {
-    marginTop: Spacing.sm,
+  secondaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.sm,
-    minHeight: 48,
+    gap: 6,
+    minHeight: 44,
     borderRadius: 14,
-    borderWidth: 1.5,
   },
-  postLabel: {
+  secondaryBtnText: {
     fontWeight: '600',
-    fontSize: 15,
+    fontSize: 14,
   },
 });

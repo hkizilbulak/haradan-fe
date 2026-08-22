@@ -1,7 +1,10 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { UrgentListingCard } from '@/components/product/UrgentListingCard';
-import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
+import {
+  HOME_DESKTOP_BREAKPOINT,
+  homeContentPadding,
+} from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import type { CatalogProductCard } from '@/types';
@@ -15,9 +18,10 @@ type NewArrivalsSectionProps = {
 };
 
 const ROTATE_MS = 8000;
+const MOBILE_GRID_GAP = 10;
 
 /**
- * Acil Satılık İlanlar — listedeki kartlar büyük alanda sırayla döner.
+ * Acil Satılık İlanlar — mobilde simetrik 2'li grid, masaüstünde featured + liste.
  */
 export const NewArrivalsSection = memo(function NewArrivalsSection({
   products,
@@ -38,18 +42,24 @@ export const NewArrivalsSection = memo(function NewArrivalsSection({
   const [activeIndex, setActiveIndex] = useState(0);
   const featured = items[activeIndex] ?? items[0];
 
+  const mobileColWidth = useMemo(() => {
+    const pad = homeContentPadding(false);
+    const contentWidth = width - pad * 2;
+    return (contentWidth - MOBILE_GRID_GAP) / 2;
+  }, [width]);
+
   useEffect(() => {
     if (activeIndex >= items.length) setActiveIndex(0);
   }, [activeIndex, items.length]);
 
   useEffect(() => {
-    if (items.length < 2) return;
+    if (!isWide || items.length < 2) return;
     const timer = setInterval(() => {
       if (paused.current) return;
       setActiveIndex((i) => (i + 1) % items.length);
     }, ROTATE_MS);
     return () => clearInterval(timer);
-  }, [items.length]);
+  }, [isWide, items.length]);
 
   const columns = useMemo(() => {
     const left: CatalogProductCard[] = [];
@@ -80,6 +90,30 @@ export const NewArrivalsSection = memo(function NewArrivalsSection({
 
   if (!featured) return null;
 
+  if (!isWide) {
+    return (
+      <View style={styles.wrap}>
+        <SectionHeader
+          title="Acil Satılık İlanlar"
+          actionLabel="Tümünü gör"
+          onActionPress={onViewAll}
+        />
+        <View style={[styles.gridMobile, { gap: MOBILE_GRID_GAP }]}>
+          {items.slice(0, 4).map((p) => (
+            <UrgentListingCard
+              key={p.id}
+              product={p}
+              variant="tile"
+              width={mobileColWidth}
+              onPress={onProductPress}
+              onToggleFavorite={onToggleFavorite}
+            />
+          ))}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.wrap}>
       <SectionHeader
@@ -87,11 +121,11 @@ export const NewArrivalsSection = memo(function NewArrivalsSection({
         actionLabel="Tümünü gör"
         onActionPress={onViewAll}
       />
-      <View style={[styles.row, !isWide && styles.rowMobile]}>
+      <View style={styles.row}>
         <Pressable
           onHoverIn={pause}
           onHoverOut={resume}
-          style={[styles.featured, !isWide && styles.featuredMobile]}
+          style={styles.featured}
         >
           <UrgentListingCard
             product={featured}
@@ -101,36 +135,9 @@ export const NewArrivalsSection = memo(function NewArrivalsSection({
             onToggleFavorite={onToggleFavorite}
           />
         </Pressable>
-        <View style={[styles.list, !isWide && styles.listMobile]}>
-          {isWide ? (
-            <>
-              <View style={styles.col}>
-                {columns[0].map((p) => (
-                  <UrgentListingCard
-                    key={p.id}
-                    product={p}
-                    variant="row"
-                    active={p.id === featured.id}
-                    onPress={onRowPress}
-                    onToggleFavorite={onToggleFavorite}
-                  />
-                ))}
-              </View>
-              <View style={styles.col}>
-                {columns[1].map((p) => (
-                  <UrgentListingCard
-                    key={p.id}
-                    product={p}
-                    variant="row"
-                    active={p.id === featured.id}
-                    onPress={onRowPress}
-                    onToggleFavorite={onToggleFavorite}
-                  />
-                ))}
-              </View>
-            </>
-          ) : (
-            items.map((p) => (
+        <View style={styles.list}>
+          <View style={styles.col}>
+            {columns[0].map((p) => (
               <UrgentListingCard
                 key={p.id}
                 product={p}
@@ -139,8 +146,20 @@ export const NewArrivalsSection = memo(function NewArrivalsSection({
                 onPress={onRowPress}
                 onToggleFavorite={onToggleFavorite}
               />
-            ))
-          )}
+            ))}
+          </View>
+          <View style={styles.col}>
+            {columns[1].map((p) => (
+              <UrgentListingCard
+                key={p.id}
+                product={p}
+                variant="row"
+                active={p.id === featured.id}
+                onPress={onRowPress}
+                onToggleFavorite={onToggleFavorite}
+              />
+            ))}
+          </View>
         </View>
       </View>
     </View>
@@ -154,27 +173,19 @@ const styles = StyleSheet.create({
     gap: Spacing.xl,
     alignItems: 'stretch',
   },
-  rowMobile: {
-    flexDirection: 'column',
-    gap: Spacing.lg,
-  },
   featured: {
     width: '36%',
     minWidth: 260,
     minHeight: 420,
-  },
-  featuredMobile: {
-    width: '100%',
-    minHeight: 320,
   },
   list: {
     flex: 1,
     flexDirection: 'row',
     gap: Spacing.lg,
   },
-  listMobile: {
-    flexDirection: 'column',
-    gap: 10,
+  gridMobile: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   col: {
     flex: 1,

@@ -4,78 +4,59 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BrandMark } from '@/components/layout/BrandMark';
 import { Spacing } from '@/constants/Spacing';
+import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { glassSurface, MOBILE_INK } from '@/components/layout/glassStyles';
 
 type MobileHomeTopBarProps = {
   onMenuPress: () => void;
-  onFavoritesPress: () => void;
-  badgeCount?: number;
+  onPostAdPress: () => void;
 };
 
 export function MobileHomeTopBar({
   onMenuPress,
-  onFavoritesPress,
-  badgeCount = 0,
+  onPostAdPress,
 }: MobileHomeTopBarProps) {
   const insets = useSafeAreaInsets();
   const primary = useThemeColor('primary');
-  const badgeSuccess = useThemeColor('badgeSuccess');
 
   return (
     <View
       style={[styles.wrap, { top: insets.top + Spacing.sm }]}
       pointerEvents="box-none"
     >
-      <View style={styles.bar}>
-        <GlassIconBtn
-          icon="menu-outline"
-          label="Menü"
+      <View style={[styles.bar, glassSurface.headerFloat]}>
+        <Pressable
           onPress={onMenuPress}
-        />
+          accessibilityRole="button"
+          accessibilityLabel="Menü"
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.iconBtn,
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <Ionicons name="menu-outline" size={22} color="#fff" />
+        </Pressable>
+
         <View style={styles.brand} pointerEvents="none">
           <BrandMark variant="light" height={26} />
         </View>
-        <View>
-          <GlassIconBtn
-            icon="heart-outline"
-            label="Favoriler"
-            onPress={onFavoritesPress}
-          />
-          {badgeCount > 0 ? (
-            <View style={[styles.badge, { backgroundColor: badgeSuccess }]}>
-              <Text style={styles.badgeText}>
-                {badgeCount > 9 ? '9+' : badgeCount}
-              </Text>
-            </View>
-          ) : null}
-        </View>
+
+        <Pressable
+          onPress={onPostAdPress}
+          accessibilityRole="button"
+          accessibilityLabel="İlan ver"
+          style={({ pressed }) => [
+            styles.postBtn,
+            { backgroundColor: primary, opacity: pressed ? 0.88 : 1 },
+          ]}
+        >
+          <Ionicons name="add" size={16} color="#fff" />
+          <Text style={styles.postLabel}>İlan Ver</Text>
+        </Pressable>
       </View>
     </View>
-  );
-}
-
-function GlassIconBtn({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      hitSlop={8}
-      style={({ pressed }) => [
-        styles.iconBtn,
-        pressed ? { opacity: 0.75 } : null,
-      ]}
-    >
-      <Ionicons name={icon} size={22} color="#fff" />
-    </Pressable>
   );
 }
 
@@ -92,17 +73,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 6,
     paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: 'rgba(12,12,14,0.35)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.22)',
-    ...Platform.select({
-      web: {
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-      } as object,
-      default: {},
-    }),
+    minHeight: 52,
   },
   brand: {
     position: 'absolute',
@@ -116,22 +87,29 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
-  badge: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
+  postBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 14,
+    minHeight: 40,
+    ...Platform.select({
+      web: {
+        transition: 'opacity 160ms ease',
+      } as object,
+      default: {},
+    }),
   },
-  badgeText: {
-    color: '#0c0c0e',
-    fontSize: 9,
-    fontWeight: '800',
+  postLabel: {
+    ...Typography.caption,
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 12,
   },
 });
+
+export { MOBILE_INK };

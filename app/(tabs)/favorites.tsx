@@ -8,10 +8,13 @@ import { ScreenWrapper } from '@/components/ui';
 import { FavoriteListCard } from '@/components/product/FavoriteListCard';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useFavorites } from '@/hooks/useFavorites';
+import { MOBILE_HOME_DOCK_INSET } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
+import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 
 export default function FavoritesScreen() {
   const router = useRouter();
+  const isWide = useIsWideLayout();
   const { isLoggedIn } = useAuthSession();
   const { items, hydrating, remove, requireLogin } = useFavorites();
 
@@ -57,7 +60,10 @@ export default function FavoritesScreen() {
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[
+          styles.list,
+          !isWide && { paddingBottom: MOBILE_HOME_DOCK_INSET },
+        ]}
         renderItem={({ item }) => (
           <View style={styles.row}>
             <FavoriteListCard

@@ -1,5 +1,5 @@
 import { HttpClient } from '@/services/http';
-import { resolvePublicMediaUrl } from '@/services/media/publicUrl';
+import { normalizeBannerItem } from '@/services/banners/bannerDisplay';
 import type {
   ActiveBannerItem,
   ActiveBannerListResponse,
@@ -24,9 +24,6 @@ export class HttpBannerRepository implements IBannerRepository {
       `/v1/banners?placement=${encodeURIComponent(placement)}`,
       { method: 'GET' }
     );
-    return (res.items ?? []).map((item) => ({
-      ...item,
-      imageUrl: resolvePublicMediaUrl(item.imageUrl, this.apiBase),
-    }));
+    return (res.items ?? []).map((item) => normalizeBannerItem(item, this.apiBase));
   }
 }

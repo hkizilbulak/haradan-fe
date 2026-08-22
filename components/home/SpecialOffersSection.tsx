@@ -35,7 +35,7 @@ export const SpecialOffersSection = memo(function SpecialOffersSection({
 }: SpecialOffersSectionProps) {
   const { width } = useWindowDimensions();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
-  const visible = isWide ? 4 : width >= 600 ? 2 : 1;
+  const visible = isWide ? 4 : 2;
   const gap = isWide ? GAP : Spacing.md;
 
   const scrollRef = useRef<ScrollView>(null);
@@ -155,6 +155,7 @@ export const SpecialOffersSection = memo(function SpecialOffersSection({
                 key={p.id}
                 product={p}
                 width={cardWidth}
+                compact={!isWide}
                 onPress={onProductPress}
                 onToggleFavorite={onToggleFavorite}
               />

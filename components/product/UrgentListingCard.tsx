@@ -19,7 +19,7 @@ import { formatViewCount } from '@/utils/formatViewCount';
 import { WishlistButton } from '@/components/advert/WishlistButton';
 import type { CatalogProductCard } from '@/types';
 
-export type UrgentListingCardVariant = 'featured' | 'row';
+export type UrgentListingCardVariant = 'featured' | 'row' | 'tile';
 
 const URGENT_RED = '#e11d48';
 const EASE = Easing.bezier(0.22, 1, 0.36, 1);
@@ -27,7 +27,9 @@ const EASE = Easing.bezier(0.22, 1, 0.36, 1);
 type UrgentListingCardProps = {
   product: CatalogProductCard;
   variant?: UrgentListingCardVariant;
+  width?: number;
   active?: boolean;
+  compact?: boolean;
   progressMs?: number;
   onPress?: (id: string) => void;
   onToggleFavorite?: (product: CatalogProductCard) => void;
@@ -36,13 +38,17 @@ type UrgentListingCardProps = {
 function UrgentListingCardComponent({
   product,
   variant = 'row',
+  width,
   active = false,
+  compact = false,
   progressMs = 0,
   onPress,
   onToggleFavorite,
 }: UrgentListingCardProps) {
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
+  const border = useThemeColor('border');
+  const surface = useThemeColor('surface');
   const skeleton = useThemeColor('skeleton');
   const fade = useRef(new Animated.Value(1)).current;
   const bar = useRef(new Animated.Value(0)).current;
@@ -165,6 +171,62 @@ function UrgentListingCardComponent({
     );
   }
 
+  if (variant === 'tile') {
+    return (
+      <Pressable
+        onPress={handlePress}
+        accessibilityRole="button"
+        accessibilityLabel={`${product.title}, ${location}, ${views} görüntülenme`}
+        style={({ pressed }) => [
+          styles.tile,
+          width ? { width } : null,
+          { backgroundColor: surface, borderColor: border },
+          pressed && { opacity: 0.92 },
+          Platform.select({
+            web: { cursor: 'pointer' as const },
+            default: {},
+          }),
+        ]}
+      >
+        <View style={styles.tileImageWrap}>
+          <Image
+            source={product.cover?.publicUrl}
+            style={[styles.tileImage, { backgroundColor: skeleton }]}
+            contentFit="cover"
+            transition={220}
+            recyclingKey={product.id}
+            priority="low"
+            cachePolicy="memory-disk"
+          />
+          <View style={styles.tileUrgent}>
+            <Text style={styles.tileUrgentText}>Acil</Text>
+          </View>
+          <View style={styles.tileWish}>
+            <WishlistButton
+              size="sm"
+              active={product.isFavorite === true}
+              onPress={handleFavorite}
+            />
+          </View>
+        </View>
+        <View style={styles.tileBody}>
+          <Text style={[styles.tileTitle, { color: text }]} numberOfLines={2}>
+            {product.title}
+          </Text>
+          <Text style={[styles.tileMeta, { color: textMuted }]} numberOfLines={1}>
+            {location}
+          </Text>
+          <View style={styles.tileFooter}>
+            <Text style={[styles.tilePrice, { color: text }]}>
+              {formatMoney(product.price)}
+            </Text>
+            <Text style={[styles.tileViews, { color: textMuted }]}>{views}</Text>
+          </View>
+        </View>
+      </Pressable>
+    );
+  }
+
   return (
     <Pressable
       onPress={handlePress}
@@ -173,6 +235,7 @@ function UrgentListingCardComponent({
       accessibilityLabel={`${product.title}, ${location}, ${views} görüntülenme`}
       style={({ pressed }) => [
         styles.row,
+        compact && styles.rowCompact,
         active && styles.rowActive,
         {
           opacity: pressed ? 0.92 : 1,
@@ -188,7 +251,7 @@ function UrgentListingCardComponent({
         },
       ]}
     >
-      <View style={styles.thumbWrap}>
+      <View style={[styles.thumbWrap, compact && styles.thumbWrapCompact]}>
         <Image
           source={product.cover?.publicUrl}
           style={[styles.thumb, { backgroundColor: skeleton }]}
@@ -209,8 +272,11 @@ function UrgentListingCardComponent({
           />
         </View>
       </View>
-      <View style={styles.rowBody}>
-        <Text style={[styles.rowTitle, { color: text }]} numberOfLines={2}>
+      <View style={[styles.rowBody, compact && styles.rowBodyCompact]}>
+        <Text
+          style={[styles.rowTitle, compact && styles.rowTitleCompact, { color: text }]}
+          numberOfLines={2}
+        >
           {product.title}
         </Text>
         <View style={styles.metaRow}>
@@ -220,7 +286,7 @@ function UrgentListingCardComponent({
           </Text>
         </View>
         <View style={styles.rowFooter}>
-          <Text style={[styles.rowPrice, { color: text }]}>
+          <Text style={[styles.rowPrice, compact && styles.rowPriceCompact, { color: text }]}>
             {formatMoney(product.price)}
           </Text>
           <View style={styles.viewMeta}>
@@ -356,6 +422,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: 'transparent',
   },
+  rowCompact: {
+    gap: 10,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+    marginHorizontal: -4,
+    borderRadius: 14,
+  },
   rowActive: {
     backgroundColor: 'rgba(15,23,42,0.04)',
   },
@@ -365,6 +438,11 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     overflow: 'hidden',
     flexShrink: 0,
+  },
+  thumbWrapCompact: {
+    width: 68,
+    height: 68,
+    borderRadius: 14,
   },
   thumb: {
     width: '100%',
@@ -390,12 +468,19 @@ const styles = StyleSheet.create({
     minWidth: 0,
     gap: 6,
   },
+  rowBodyCompact: {
+    gap: 3,
+  },
   rowTitle: {
     ...Typography.small,
     fontWeight: '600',
     fontSize: 14,
     lineHeight: 19,
     letterSpacing: -0.2,
+  },
+  rowTitleCompact: {
+    fontSize: 12,
+    lineHeight: 16,
   },
   metaRow: {
     flexDirection: 'row',
@@ -418,6 +503,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.25,
   },
+  rowPriceCompact: {
+    fontSize: 13,
+  },
   viewMeta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -425,6 +513,73 @@ const styles = StyleSheet.create({
   },
   rowViews: {
     ...Typography.caption,
+    fontWeight: '500',
+  },
+  tile: {
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  tileImageWrap: {
+    width: '100%',
+    aspectRatio: 1,
+    position: 'relative',
+  },
+  tileImage: {
+    width: '100%',
+    height: '100%',
+  },
+  tileUrgent: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: URGENT_RED,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  tileUrgentText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  tileWish: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+  },
+  tileBody: {
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: 12,
+    gap: 4,
+    minHeight: 88,
+  },
+  tileTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 17,
+    letterSpacing: -0.2,
+    minHeight: 34,
+  },
+  tileMeta: {
+    ...Typography.caption,
+    fontSize: 11,
+  },
+  tileFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  tilePrice: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  tileViews: {
+    fontSize: 11,
     fontWeight: '500',
   },
 });

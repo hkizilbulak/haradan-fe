@@ -2,37 +2,20 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PostChoiceCard } from './PostChoiceCard';
-import { LISTING_GROUP_SLUGS } from '@/constants/listingCatalog';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
+import {
+  getCategoryIcon,
+  pickListingRootCategories,
+} from '@/services/catalog/categoryDisplay';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { CategoryTreeNode } from '@/types';
 import type { ListingTypeSelection } from '@/types/listing';
 import type { ListingTypePhase } from '@/services/listing';
 
 function pickRoots(tree: CategoryTreeNode[]): CategoryTreeNode[] {
-  const bySlug = new Map(tree.map((node) => [node.slug, node]));
-  const preferred = LISTING_GROUP_SLUGS.map((slug) => bySlug.get(slug)).filter(
-    (node): node is CategoryTreeNode => node != null
-  );
-  return preferred.length > 0 ? preferred : tree;
+  return pickListingRootCategories(tree);
 }
-
-const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  'satilik-atlar': 'trophy-outline',
-  'satilik-yaris-ati': 'flag-outline',
-  'satilik-kisrak': 'female-outline',
-  'satilik-aygir': 'male-outline',
-  'satilik-binek-ati': 'walk-outline',
-  'satilik-pony': 'paw-outline',
-  'at-hizmetleri': 'construct-outline',
-  'pansiyon-haralar': 'home-outline',
-  'at-nakliyesi': 'car-outline',
-  nalbantlar: 'hammer-outline',
-  'asim-hizmetleri': 'heart-outline',
-  'arap-aygir': 'flower-outline',
-  'ingiliz-aygir': 'ribbon-outline',
-};
 
 type PostTypeStepProps = {
   phase: ListingTypePhase;
@@ -101,7 +84,7 @@ export function PostTypeStep({
             <PostChoiceCard
               key={node.id}
               title={node.name}
-              icon={CATEGORY_ICONS[node.slug] ?? 'grid-outline'}
+              icon={getCategoryIcon(node.slug)}
               selected={selectedType?.categoryId === node.id}
               onPress={() =>
                 onSelectType(toSelection(node, selectedRootSlug))

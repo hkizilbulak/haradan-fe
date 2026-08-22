@@ -48,6 +48,7 @@ export const TrendingProductsSection = memo(function TrendingProductsSection({
             key={p.id}
             product={p}
             width={colWidth}
+            compact={!isWide}
             badge="featured"
             onPress={onProductPress}
             onToggleFavorite={onToggleFavorite}
