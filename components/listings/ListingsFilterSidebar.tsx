@@ -1252,7 +1252,21 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
                     onToggle={() => toggleGroup(propKey)}
                     hint={
                       value.features
-                        ?.filter((f) => prop.options.some((o) => o.value === f || o.label === f))
+                        ?.filter((f) =>
+                          prop.options.some(
+                            (o) =>
+                              f === o.value ||
+                              f === o.label ||
+                              f === `${prop.code}:${o.value}` ||
+                              f === `${propKey}:${o.value}` ||
+                              f === `${prop.code}:${o.label}`
+                          )
+                        )
+                        .map((f) => {
+                          const valPart = f.includes(':') ? f.split(':')[1] : f;
+                          const foundOpt = prop.options.find((o) => o.value === valPart || o.label === valPart);
+                          return foundOpt ? foundOpt.label || foundOpt.value : valPart;
+                        })
                         .join(', ') || null
                     }
                     text={text}
@@ -1261,7 +1275,15 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
                   >
                     {prop.options.map((opt) => {
                       const optVal = opt.value || opt.label;
-                      const selected = (value.features ?? []).includes(optVal);
+                      const featureToken = `${prop.code || propKey}:${opt.value || optVal}`;
+                      const selected = (value.features ?? []).some(
+                        (f) =>
+                          f === featureToken ||
+                          f === optVal ||
+                          f === opt.value ||
+                          f === opt.label ||
+                          f === `${propKey}:${opt.value}`
+                      );
                       return (
                         <FilterRow
                           key={optVal}
@@ -1270,9 +1292,25 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
                           selected={selected}
                           onSelect={() => {
                             const curr = value.features ?? [];
-                            const next = selected
-                              ? curr.filter((f) => f !== optVal)
-                              : [...curr, optVal];
+                            const isCurrentlySelected = curr.some(
+                              (f) =>
+                                f === featureToken ||
+                                f === optVal ||
+                                f === opt.value ||
+                                f === opt.label ||
+                                f === `${propKey}:${opt.value}`
+                            );
+                            const next = isCurrentlySelected
+                              ? curr.filter(
+                                  (f) =>
+                                    f !== featureToken &&
+                                    f !== optVal &&
+                                    f !== opt.value &&
+                                    f !== opt.label &&
+                                    f !== `${propKey}:${opt.value}` &&
+                                    f !== `${prop.code}:${opt.value}`
+                                )
+                              : [...curr, featureToken];
                             onChange({ ...value, features: next });
                           }}
                           {...rowTheme}
@@ -1284,10 +1322,13 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
               }
 
               // Text / String / Number dynamic properties
+              const rawFeature = value.features?.find(
+                (f) => f.startsWith(`${prop.code}:`) || f.startsWith(`${propKey}:`)
+              );
               const textVal =
-                value.features
-                  ?.find((f) => f.startsWith(`${propKey}:`))
-                  ?.replace(`${propKey}:`, '') ?? '';
+                rawFeature && rawFeature.includes(':')
+                  ? rawFeature.slice(rawFeature.indexOf(':') + 1)
+                  : rawFeature ?? '';
 
               return (
                 <Accordion
@@ -1295,19 +1336,27 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
                   title={prop.title}
                   open={openGroups[propKey] ?? true}
                   onToggle={() => toggleGroup(propKey)}
-                  hint={textVal || null}
+                  hint={
+                    value.features
+                      ?.find((f) => f.startsWith(`${prop.code}:`) || f.startsWith(`${propKey}:`))
+                      ?.split(':')[1] || null
+                  }
                   text={text}
                   textMuted={textMuted}
                   border={border}
                 >
                   <View style={{ paddingVertical: 6, paddingHorizontal: 2 }}>
                     <TextInput
-                      value={textVal}
+                      value={
+                        value.features
+                          ?.find((f) => f.startsWith(`${prop.code}:`) || f.startsWith(`${propKey}:`))
+                          ?.split(':')[1] ?? ''
+                      }
                       onChangeText={(t) => {
                         const others = (value.features ?? []).filter(
-                          (f) => !f.startsWith(`${propKey}:`)
+                          (f) => !f.startsWith(`${prop.code}:`) && !f.startsWith(`${propKey}:`)
                         );
-                        const next = t.trim() ? [...others, `${propKey}:${t}`] : others;
+                        const next = t.trim() ? [...others, `${prop.code || propKey}:${t}`] : others;
                         onChange({ ...value, features: next });
                       }}
                       placeholder={`${prop.title} ile filtrele...`}

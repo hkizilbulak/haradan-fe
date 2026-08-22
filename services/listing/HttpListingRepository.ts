@@ -137,8 +137,8 @@ export class HttpListingRepository implements IListingRepository {
         if (propRes?.version) {
           currentVersion = propRes.version;
         }
-      } catch {
-        // Unseeded dynamic properties are ignored gracefully without blocking creation
+      } catch (err) {
+        console.warn('[HttpListingRepository] Failed to save dynamic properties:', err);
       }
     }
 

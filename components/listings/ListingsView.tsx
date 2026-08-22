@@ -225,40 +225,45 @@ function applyClientFilters(
 
       // Normalize all key-values from the advert's custom properties
       const propEntries = Object.entries(props).map(([k, v]) => ({
+        rawKey: k,
         normKey: normalizeSearchText(k),
+        rawVal: v,
         normVal: typeof v === 'string' || typeof v === 'number' ? normalizeSearchText(String(v)) : '',
-        boolVal: typeof v === 'boolean' ? v : v === 'true' ? true : false,
+        boolVal: typeof v === 'boolean' ? v : v === 'true' || v === '1' ? true : false,
       }));
-
 
       return (filters.features ?? []).every((fKey) => {
         const normFilter = normalizeSearchText(fKey);
+        if (!normFilter) return true;
 
         // 1. Check if filter is in "propKey:value" format
-        if (normFilter.includes(':')) {
-          const [fPropKey, fPropVal] = normFilter.split(':');
+        if (fKey.includes(':')) {
+          const colonIdx = fKey.indexOf(':');
+          const rawPropKey = fKey.slice(0, colonIdx);
+          const rawPropVal = fKey.slice(colonIdx + 1);
+          const fPropKey = normalizeSearchText(rawPropKey);
+          const fPropVal = normalizeSearchText(rawPropVal);
           const matched = propEntries.some(
             (pe) =>
-              (pe.normKey.includes(fPropKey) || fPropKey.includes(pe.normKey)) &&
-              pe.normVal.includes(fPropVal)
+              (pe.normKey === fPropKey || pe.normKey.includes(fPropKey) || fPropKey.includes(pe.normKey)) &&
+              (pe.normVal === fPropVal || pe.normVal.includes(fPropVal) || (pe.boolVal && (fPropVal === 'true' || fPropVal === '1' || fPropVal === 'evet')))
           );
           if (matched) return true;
         }
 
-        // 2. Direct property value match (e.g. user selected "deneme1", property value is "deneme1")
+        // 2. Direct property value match (e.g. user selected option, property value is option/label)
         const valMatch = propEntries.some(
           (pe) =>
             pe.normVal === normFilter ||
-            (pe.normVal && normFilter && pe.normVal.split(/[\s,._-]+/).includes(normFilter))
+            (pe.normVal && normFilter && (pe.normVal.includes(normFilter) || normFilter.includes(pe.normVal)))
         );
         if (valMatch) return true;
-
 
         // 3. Direct boolean switch property match
         const boolMatch = propEntries.some(
           (pe) =>
             pe.boolVal &&
-            (pe.normKey.includes(normFilter) || normFilter.includes(pe.normKey))
+            (pe.normKey === normFilter || pe.normKey.includes(normFilter) || normFilter.includes(pe.normKey))
         );
         if (boolMatch) return true;
 
