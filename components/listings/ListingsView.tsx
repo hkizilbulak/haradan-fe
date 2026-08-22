@@ -219,62 +219,90 @@ function applyClientFilters(
       marePension: ['pansiyon', 'kisrak'],
       ultrasound: ['ultrason', 'muayene', 'veteriner'],
     };
+
+    const normalizeKey = (k: string) =>
+      normalizeSearchText(k).replace(/[^a-z0-9]+/g, '');
+    const normalizeVal = (v: unknown) => {
+      if (v == null) return '';
+      return normalizeSearchText(String(v)).replace(/[^a-z0-9]+/g, '');
+    };
+
     list = list.filter((p) => {
       const hay = normalizeSearchText(`${p.title} ${p.brand ?? ''}`);
       const props = p.properties || {};
 
-      // Normalize all key-values from the advert's custom properties
       const propEntries = Object.entries(props).map(([k, v]) => ({
         rawKey: k,
-        normKey: normalizeSearchText(k),
+        normKey: normalizeKey(k),
         rawVal: v,
-        normVal: typeof v === 'string' || typeof v === 'number' ? normalizeSearchText(String(v)) : '',
-        boolVal: typeof v === 'boolean' ? v : v === 'true' || v === '1' ? true : false,
+        normVal: normalizeVal(v),
+        boolVal: typeof v === 'boolean' ? v : v === 'true' || v === '1' || v === 1,
       }));
 
       return (filters.features ?? []).every((fKey) => {
-        const normFilter = normalizeSearchText(fKey);
-        if (!normFilter) return true;
+        if (!fKey || !fKey.trim()) return true;
 
-        // 1. Check if filter is in "propKey:value" format
+        // 1. "propKey:propVal" format (e.g. "SECIM_DENEME:DENEME2", "renk:doru")
         if (fKey.includes(':')) {
           const colonIdx = fKey.indexOf(':');
           const rawPropKey = fKey.slice(0, colonIdx);
           const rawPropVal = fKey.slice(colonIdx + 1);
-          const fPropKey = normalizeSearchText(rawPropKey);
-          const fPropVal = normalizeSearchText(rawPropVal);
-          const matched = propEntries.some(
-            (pe) =>
-              (pe.normKey === fPropKey || pe.normKey.includes(fPropKey) || fPropKey.includes(pe.normKey)) &&
-              (pe.normVal === fPropVal || pe.normVal.includes(fPropVal) || (pe.boolVal && (fPropVal === 'true' || fPropVal === '1' || fPropVal === 'evet')))
+          const targetKey = normalizeKey(rawPropKey);
+          const targetVal = normalizeVal(rawPropVal);
+
+          // Find the specific property with this key
+          const matchingProp = propEntries.find(
+            (pe) => pe.normKey === targetKey || pe.normKey.includes(targetKey) || targetKey.includes(pe.normKey)
           );
-          if (matched) return true;
+          if (!matchingProp) {
+            return false;
+          }
+
+          // If targetVal is boolean
+          if (targetVal === 'true' || targetVal === '1' || targetVal === 'evet') {
+            return matchingProp.boolVal === true;
+          }
+          if (targetVal === 'false' || targetVal === '0' || targetVal === 'hayir') {
+            return matchingProp.boolVal === false;
+          }
+
+          // Strict value match for this specific property
+          return (
+            matchingProp.normVal === targetVal ||
+            (matchingProp.rawVal != null &&
+              normalizeSearchText(String(matchingProp.rawVal)) === normalizeSearchText(rawPropVal))
+          );
         }
 
-        // 2. Direct property value match (e.g. user selected option, property value is option/label)
-        const valMatch = propEntries.some(
-          (pe) =>
-            pe.normVal === normFilter ||
-            (pe.normVal && normFilter && (pe.normVal.includes(normFilter) || normFilter.includes(pe.normVal)))
-        );
-        if (valMatch) return true;
+        const normFilterKey = normalizeKey(fKey);
+        const normFilterVal = normalizeVal(fKey);
 
-        // 3. Direct boolean switch property match
-        const boolMatch = propEntries.some(
-          (pe) =>
-            pe.boolVal &&
-            (pe.normKey === normFilter || pe.normKey.includes(normFilter) || normFilter.includes(pe.normKey))
-        );
-        if (boolMatch) return true;
+        // 2. Direct property key match for boolean toggle (e.g. user toggled "deneme_evet_hayir" or "saç bakımı")
+        const boolProp = propEntries.find((pe) => pe.normKey === normFilterKey);
+        if (boolProp) {
+          return boolProp.boolVal === true;
+        }
 
-        // 4. Predefined keywords dictionary
-        const keywords = featureKeywords[fKey] ?? [normFilter];
-        if (keywords.some((kw) => hay.includes(normalizeSearchText(kw)))) {
+        // 3. Direct option value exact match across properties (e.g. "deneme2" option token)
+        const exactValMatch = propEntries.some(
+          (pe) =>
+            pe.normVal === normFilterVal ||
+            (pe.rawVal != null &&
+              normalizeSearchText(String(pe.rawVal)) === normalizeSearchText(fKey))
+        );
+        if (exactValMatch) {
           return true;
         }
 
-        // 5. Fallback in title or brand
-        return hay.includes(normFilter);
+        // 4. Predefined keywords dictionary
+        if (featureKeywords[fKey]) {
+          const keywords = featureKeywords[fKey];
+          return keywords.some((kw) => hay.includes(normalizeSearchText(kw)));
+        }
+
+        // 5. Fallback in title or brand (exact token match, not substring)
+        const hayTokens = hay.split(/[\s,._-]+/);
+        return hayTokens.includes(normalizeSearchText(fKey));
       });
     });
   }
