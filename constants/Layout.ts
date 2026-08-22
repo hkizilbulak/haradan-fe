@@ -11,6 +11,19 @@ export const MOBILE_DOCK_BAR_HEIGHT = 64;
 /** Scroll içeriği için alt boşluk — dock + FAB payı. */
 export const MOBILE_HOME_DOCK_INSET = 100;
 
+/** İlan detay — sabit alt CTA şeridi yüksekliği. */
+export const MOBILE_DETAIL_STICKY_BAR_HEIGHT = 72;
+
+/** İlan detay scroll alt boşluğu — dock + sticky CTA (sabit tahmin). */
+export const MOBILE_DETAIL_SCROLL_INSET =
+  MOBILE_HOME_DOCK_INSET + MOBILE_DETAIL_STICKY_BAR_HEIGHT + 12;
+
+/** Cihaz alt inset'ine göre dinamik scroll boşluğu. */
+export function mobileDetailScrollInset(bottomInset = 0): number {
+  const dock = MOBILE_DOCK_BAR_HEIGHT + Math.max(bottomInset, 8) + 8;
+  return dock + MOBILE_DETAIL_STICKY_BAR_HEIGHT + 12;
+}
+
 /** Dock'un gizleneceği rota önekleri (auth, ilan sihirbazı). */
 export const MOBILE_DOCK_HIDDEN_PREFIXES = [
   '/auth',

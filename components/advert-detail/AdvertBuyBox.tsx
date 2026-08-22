@@ -25,6 +25,7 @@ type AdvertBuyBoxProps = {
   detail: AdvertDetail;
   favorite: boolean;
   isOwner?: boolean;
+  variant?: 'default' | 'mobile';
   onToggleFavorite?: () => void;
   onCall?: () => void;
   onWhatsApp?: () => void;
@@ -36,11 +37,13 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
   detail,
   favorite,
   isOwner = false,
+  variant = 'default',
   onToggleFavorite,
   onCall,
   onWhatsApp,
   onEdit,
 }: AdvertBuyBoxProps) {
+  const isMobile = variant === 'mobile';
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
   const textSecondary = useThemeColor('textSecondary');
@@ -130,19 +133,23 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
         ) : null}
       </View>
 
-      <Text style={[styles.name, { color: text }]} numberOfLines={2}>
-        {detail.title}
-      </Text>
-
-      <View style={styles.subRow}>
-        <Ionicons name="location-outline" size={13} color={textMuted} />
-        <Text style={[styles.sub, { color: textMuted }]}>{location}</Text>
-        <View style={[styles.dot, { backgroundColor: textMuted }]} />
-        <Ionicons name="eye-outline" size={13} color={textMuted} />
-        <Text style={[styles.sub, { color: textMuted }]}>
-          {formatViewCount(detail.viewCount)}
+      {!isMobile ? (
+        <Text style={[styles.name, { color: text }]} numberOfLines={2}>
+          {detail.title}
         </Text>
-      </View>
+      ) : null}
+
+      {!isMobile ? (
+        <View style={styles.subRow}>
+          <Ionicons name="location-outline" size={13} color={textMuted} />
+          <Text style={[styles.sub, { color: textMuted }]}>{location}</Text>
+          <View style={[styles.dot, { backgroundColor: textMuted }]} />
+          <Ionicons name="eye-outline" size={13} color={textMuted} />
+          <Text style={[styles.sub, { color: textMuted }]}>
+            {formatViewCount(detail.viewCount)}
+          </Text>
+        </View>
+      ) : null}
       {detail.address ? (
         <View style={[styles.subRow, { marginTop: 4 }]}>
           <Ionicons name="map-outline" size={13} color={textMuted} />
@@ -214,21 +221,23 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
         </View>
       ) : null}
 
-      <View style={styles.priceBlock}>
-        <Text style={[styles.price, { color: text }]}>
-          {formatMoney(detail.price)}
-        </Text>
-        {detail.oldPrice ? (
-          <Text style={[styles.old, { color: textMuted }]}>
-            {formatMoney(detail.oldPrice)}
+      {!isMobile ? (
+        <View style={styles.priceBlock}>
+          <Text style={[styles.price, { color: text }]}>
+            {formatMoney(detail.price)}
           </Text>
-        ) : null}
-        {detail.available ? (
-          <Text style={[styles.open, { color: success }]}>İlana açık</Text>
-        ) : null}
-      </View>
+          {detail.oldPrice ? (
+            <Text style={[styles.old, { color: textMuted }]}>
+              {formatMoney(detail.oldPrice)}
+            </Text>
+          ) : null}
+          {detail.available ? (
+            <Text style={[styles.open, { color: success }]}>İlana açık</Text>
+          ) : null}
+        </View>
+      ) : null}
 
-      {isOwner ? (
+      {!isMobile && isOwner ? (
         <Pressable
           onPress={onEdit}
           accessibilityRole="button"
@@ -244,65 +253,69 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
         </Pressable>
       ) : null}
 
-      <View style={styles.actions}>
-        <Pressable
-          onPress={isSold ? undefined : onCall}
-          disabled={isSold}
-          accessibilityRole="button"
-          accessibilityLabel="Ara"
-          style={({ pressed }) => [
-            styles.cta,
-            { backgroundColor: isSold ? '#9ca3af' : header },
-            !isSold && pressMotion(pressed),
-          ]}
-        >
-          <Ionicons name="call" size={17} color="#fff" />
-          <Text style={styles.ctaText}>{isSold ? 'Satıldı' : 'Ara'}</Text>
-        </Pressable>
+      {!isMobile ? (
+        <View style={styles.actions}>
+          <Pressable
+            onPress={isSold ? undefined : onCall}
+            disabled={isSold}
+            accessibilityRole="button"
+            accessibilityLabel="Ara"
+            style={({ pressed }) => [
+              styles.cta,
+              { backgroundColor: isSold ? '#9ca3af' : header },
+              !isSold && pressMotion(pressed),
+            ]}
+          >
+            <Ionicons name="call" size={17} color="#fff" />
+            <Text style={styles.ctaText}>{isSold ? 'Satıldı' : 'Ara'}</Text>
+          </Pressable>
 
-        <Pressable
-          onPress={isSold ? undefined : onWhatsApp}
-          disabled={isSold}
-          accessibilityRole="button"
-          accessibilityLabel="WhatsApp ile iletişime geç"
-          style={({ pressed }) => [
-            styles.cta,
-            { backgroundColor: isSold ? '#9ca3af' : WHATSAPP_GREEN },
-            !isSold && pressMotion(pressed),
-          ]}
-        >
-          <Ionicons name="logo-whatsapp" size={18} color="#fff" />
-          <Text style={styles.ctaText}>WhatsApp</Text>
-        </Pressable>
-      </View>
+          <Pressable
+            onPress={isSold ? undefined : onWhatsApp}
+            disabled={isSold}
+            accessibilityRole="button"
+            accessibilityLabel="WhatsApp ile iletişime geç"
+            style={({ pressed }) => [
+              styles.cta,
+              { backgroundColor: isSold ? '#9ca3af' : WHATSAPP_GREEN },
+              !isSold && pressMotion(pressed),
+            ]}
+          >
+            <Ionicons name="logo-whatsapp" size={18} color="#fff" />
+            <Text style={styles.ctaText}>WhatsApp</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
-      <View style={styles.iconRow}>
-        <Pressable
-          onPress={onToggleFavorite}
-          accessibilityLabel="Favorilere ekle"
-          hitSlop={6}
-          style={({ pressed }) => [
-            styles.iconBtn,
-            { opacity: pressed ? 0.55 : 1 },
-          ]}
-        >
-          <Ionicons
-            name={favorite ? 'heart' : 'heart-outline'}
-            size={20}
-            color={favorite ? '#e11d48' : textMuted}
-          />
-        </Pressable>
-        <Pressable
-          accessibilityLabel="Karşılaştır"
-          hitSlop={6}
-          style={({ pressed }) => [
-            styles.iconBtn,
-            { opacity: pressed ? 0.55 : 1 },
-          ]}
-        >
-          <Ionicons name="git-compare-outline" size={20} color={textMuted} />
-        </Pressable>
-      </View>
+      {!isMobile ? (
+        <View style={styles.iconRow}>
+          <Pressable
+            onPress={onToggleFavorite}
+            accessibilityLabel="Favorilere ekle"
+            hitSlop={6}
+            style={({ pressed }) => [
+              styles.iconBtn,
+              { opacity: pressed ? 0.55 : 1 },
+            ]}
+          >
+            <Ionicons
+              name={favorite ? 'heart' : 'heart-outline'}
+              size={20}
+              color={favorite ? '#e11d48' : textMuted}
+            />
+          </Pressable>
+          <Pressable
+            accessibilityLabel="Karşılaştır"
+            hitSlop={6}
+            style={({ pressed }) => [
+              styles.iconBtn,
+              { opacity: pressed ? 0.55 : 1 },
+            ]}
+          >
+            <Ionicons name="git-compare-outline" size={20} color={textMuted} />
+          </Pressable>
+        </View>
+      ) : null}
 
       {detail.horse.owners.length > 0 || detail.horse.trainer ? (
         <Text style={[styles.softLine, { color: textMuted }]}>

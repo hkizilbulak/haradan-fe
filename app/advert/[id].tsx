@@ -1,11 +1,12 @@
 import React, { useCallback } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader, HomeContentContainer } from '@/components/layout';
 import { AdvertDetailSkeleton, AdvertDetailView } from '@/components/advert-detail';
 import { ErrorState } from '@/components/ui';
+import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { useAdvert } from '@/hooks/useAdvert';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -14,6 +15,8 @@ import { prepareListingWizardEntry } from '@/services/listing';
 
 export default function AdvertDetailScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const params = useLocalSearchParams<{ id: string | string[] }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const bg = useThemeColor('background');
@@ -47,19 +50,24 @@ export default function AdvertDetailScreen() {
         </Head>
       ) : null}
 
-      <AppHeader
-        brandName="Haradan.com"
-        isLoggedIn={isLoggedIn}
-        onLoginPress={onLogin}
-        onSignupPress={onSignup}
-        onProfilePress={onProfile}
-        onPostAdPress={() => {
-          prepareListingWizardEntry();
-          router.push('/post');
-        }}
-      />
+      {isWide ? (
+        <AppHeader
+          brandName="Haradan.com"
+          isLoggedIn={isLoggedIn}
+          onLoginPress={onLogin}
+          onSignupPress={onSignup}
+          onProfilePress={onProfile}
+          onPostAdPress={() => {
+            prepareListingWizardEntry();
+            router.push('/post');
+          }}
+        />
+      ) : null}
 
-      <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.flex}>
+      <SafeAreaView
+        edges={isWide ? ['left', 'right', 'bottom'] : ['left', 'right']}
+        style={styles.flex}
+      >
         {isError ? (
           <ErrorState
             variant="notFound"
@@ -69,9 +77,13 @@ export default function AdvertDetailScreen() {
             onSecondaryAction={() => router.push('/')}
           />
         ) : isLoading || !data ? (
-          <HomeContentContainer style={styles.loadingPad}>
-            <AdvertDetailSkeleton />
-          </HomeContentContainer>
+          isWide ? (
+            <HomeContentContainer style={styles.loadingPad}>
+              <AdvertDetailSkeleton />
+            </HomeContentContainer>
+          ) : (
+            <AdvertDetailSkeleton variant="mobile" />
+          )
         ) : (
           <AdvertDetailView
             detail={data}

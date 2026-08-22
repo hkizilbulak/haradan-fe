@@ -10,4 +10,6 @@ export { AdvertReviews } from './AdvertReviews';
 export { AdvertViewedRail } from './AdvertViewedRail';
 export { AdvertDetailSkeleton } from './AdvertDetailSkeleton';
 export { AdvertDetailBanner } from './AdvertDetailBanner';
+export { MobileAdvertTopBar } from './mobile/MobileAdvertTopBar';
+export { MobileAdvertStickyBar } from './mobile/MobileAdvertStickyBar';
 

@@ -1,12 +1,71 @@
 import React from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Skeleton, SkeletonPulse } from '@/components/ui/Skeleton';
-import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
+import {
+  HOME_DESKTOP_BREAKPOINT,
+  MOBILE_DETAIL_SCROLL_INSET,
+} from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 
-export function AdvertDetailSkeleton() {
+type AdvertDetailSkeletonProps = {
+  variant?: 'default' | 'mobile';
+};
+
+export function AdvertDetailSkeleton({
+  variant = 'default',
+}: AdvertDetailSkeletonProps) {
   const { width } = useWindowDimensions();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
+  const isMobile = variant === 'mobile' || !isWide;
+
+  if (isMobile) {
+    const galleryH = Math.min(Math.round(width * 0.78), 420);
+    return (
+      <SkeletonPulse>
+        <Skeleton width="100%" height={galleryH} borderRadius={0} />
+        <View style={styles.mobilePad}>
+          <Skeleton width={100} height={10} borderRadius={5} />
+          <Skeleton
+            width="92%"
+            height={24}
+            borderRadius={8}
+            style={{ marginTop: 12 }}
+          />
+          <Skeleton
+            width={140}
+            height={28}
+            borderRadius={8}
+            style={{ marginTop: 12 }}
+          />
+          <Skeleton
+            width="60%"
+            height={12}
+            borderRadius={6}
+            style={{ marginTop: 10 }}
+          />
+          <Skeleton
+            width="100%"
+            height={36}
+            borderRadius={8}
+            style={{ marginTop: 20 }}
+          />
+          <Skeleton
+            width="100%"
+            height={120}
+            borderRadius={12}
+            style={{ marginTop: 24 }}
+          />
+          <Skeleton
+            width="100%"
+            height={200}
+            borderRadius={12}
+            style={{ marginTop: 24 }}
+          />
+        </View>
+        <View style={{ height: MOBILE_DETAIL_SCROLL_INSET }} />
+      </SkeletonPulse>
+    );
+  }
 
   return (
     <SkeletonPulse>
@@ -44,6 +103,10 @@ export function AdvertDetailSkeleton() {
 }
 
 const styles = StyleSheet.create({
+  mobilePad: {
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.lg,
+  },
   hero: {
     flexDirection: 'row',
     gap: Spacing.xl,

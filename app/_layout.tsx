@@ -2,7 +2,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme, View } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { HeaderDrawersProvider } from '@/components/layout/HeaderDrawersContext';
 import { MobileDockHost } from '@/components/layout/MobileDockHost';
 import { Colors } from '@/constants/Colors';
@@ -29,7 +29,7 @@ export default function RootLayout() {
   };
 
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics ?? undefined}>
       <ThemeProvider value={navTheme}>
         <HeaderDrawersProvider>
           <View style={{ flex: 1 }}>

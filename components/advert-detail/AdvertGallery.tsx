@@ -21,6 +21,10 @@ const EASE = Easing.bezier(0.22, 1, 0.36, 1);
 type AdvertGalleryProps = {
   items: PublicMediaItem[];
   height?: number;
+  /** Kenardan kenara — mobil detay hero. */
+  fullBleed?: boolean;
+  /** Alt küçük görsel şeridi; mobilde genelde kapalı. */
+  showThumbs?: boolean;
   /** Sahip önizlemesi — yayınlanmamış ilan görselleri için Bearer. */
   accessToken?: string | null;
 };
@@ -28,6 +32,8 @@ type AdvertGalleryProps = {
 export const AdvertGallery = memo(function AdvertGallery({
   items,
   height = 420,
+  fullBleed = false,
+  showThumbs = true,
   accessToken,
 }: AdvertGalleryProps) {
   const [index, setIndex] = useState(0);
@@ -68,9 +74,11 @@ export const AdvertGallery = memo(function AdvertGallery({
 
   if (!current) return null;
 
+  const bleed = fullBleed;
+
   return (
     <Pressable
-      style={styles.wrap}
+      style={[styles.wrap, bleed && styles.wrapBleed]}
       onHoverIn={() => {
         paused.current = true;
       }}
@@ -80,7 +88,13 @@ export const AdvertGallery = memo(function AdvertGallery({
       // Hover only — dokunma galeriyi seçmesin
       accessible={false}
     >
-      <View style={[styles.main, { height, backgroundColor: surface }]}>
+      <View
+        style={[
+          styles.main,
+          { height, backgroundColor: surface },
+          bleed && styles.mainBleed,
+        ]}
+      >
         <Animated.View style={[styles.mainInner, { opacity: fade }]}>
           <Image
             key={current.assetId || current.publicUrl || index}
@@ -94,7 +108,7 @@ export const AdvertGallery = memo(function AdvertGallery({
           />
         </Animated.View>
 
-        {items.length > 1 ? (
+        {items.length > 1 && !bleed ? (
           <>
             <Pressable
               onPress={() => go(-1)}
@@ -120,45 +134,73 @@ export const AdvertGallery = memo(function AdvertGallery({
             </Pressable>
           </>
         ) : null}
+
+        {items.length > 1 && bleed ? (
+          <>
+            <Pressable
+              onPress={() => go(-1)}
+              accessibilityLabel="Önceki görsel"
+              style={[styles.bleedTap, styles.bleedTapLeft]}
+            />
+            <Pressable
+              onPress={() => go(1)}
+              accessibilityLabel="Sonraki görsel"
+              style={[styles.bleedTap, styles.bleedTapRight]}
+            />
+            <View style={styles.dots} pointerEvents="none">
+              {items.map((item, i) => (
+                <View
+                  key={item.assetId}
+                  style={[
+                    styles.dot,
+                    i === index ? styles.dotActive : styles.dotIdle,
+                  ]}
+                />
+              ))}
+            </View>
+          </>
+        ) : null}
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.thumbs}
-      >
-        {items.map((item, i) => {
-          const active = i === index;
-          return (
-            <Pressable
-              key={item.assetId}
-              onPress={() => setIndex(i)}
-              style={[
-                styles.thumb,
-                {
-                  borderColor: active ? header : border,
-                  borderWidth: active ? 2 : 1,
-                  ...Platform.select({
-                    web: {
-                      transition: 'border-color 180ms ease',
-                      cursor: 'pointer' as const,
-                    },
-                    default: {},
-                  }),
-                },
-              ]}
-            >
-              <AuthMediaImage
-                uri={item.publicUrl}
-                accessToken={accessToken}
-                style={[styles.thumbImg, { backgroundColor: skeleton }]}
-                transition={180}
-                priority="low"
-              />
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      {showThumbs && items.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.thumbs}
+        >
+          {items.map((item, i) => {
+            const active = i === index;
+            return (
+              <Pressable
+                key={item.assetId}
+                onPress={() => setIndex(i)}
+                style={[
+                  styles.thumb,
+                  {
+                    borderColor: active ? header : border,
+                    borderWidth: active ? 2 : 1,
+                    ...Platform.select({
+                      web: {
+                        transition: 'border-color 180ms ease',
+                        cursor: 'pointer' as const,
+                      },
+                      default: {},
+                    }),
+                  },
+                ]}
+              >
+                <AuthMediaImage
+                  uri={item.publicUrl}
+                  accessToken={accessToken}
+                  style={[styles.thumbImg, { backgroundColor: skeleton }]}
+                  transition={180}
+                  priority="low"
+                />
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      ) : null}
     </Pressable>
   );
 });
@@ -190,10 +232,14 @@ function AuthMediaImage({
 }
 const styles = StyleSheet.create({
   wrap: { gap: Spacing.md },
+  wrapBleed: { gap: 0 },
   main: {
     borderRadius: Radius.sheet,
     overflow: 'hidden',
     position: 'relative',
+  },
+  mainBleed: {
+    borderRadius: 0,
   },
   mainInner: { flex: 1 },
   mainImg: { width: '100%', height: '100%' },
@@ -226,4 +272,34 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   thumbImg: { width: '100%', height: '100%' },
+  dots: {
+    position: 'absolute',
+    bottom: 14,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  dot: {
+    height: 6,
+    borderRadius: 3,
+  },
+  dotActive: {
+    width: 18,
+    backgroundColor: '#fff',
+  },
+  dotIdle: {
+    width: 6,
+    backgroundColor: 'rgba(255,255,255,0.45)',
+  },
+  bleedTap: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: '34%',
+    zIndex: 2,
+  },
+  bleedTapLeft: { left: 0 },
+  bleedTapRight: { right: 0 },
 });
