@@ -147,10 +147,6 @@ export class HttpLocationLookup implements ILocationLookup {
         this.provinceNames.set(p.id.toLowerCase(), p.name);
         this.staticLookup.registerProvince(p.id, p.name);
       });
-      this.notifyListeners();
-      if (items.length === 0) {
-        return await this.staticLookup.listProvinces();
-      }
       this.provinces = items;
       this.provincesFetchedAt = Date.now();
       return items;

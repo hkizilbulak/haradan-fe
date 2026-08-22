@@ -149,6 +149,7 @@ function emptyDetailShell(
     | 'isUrgent'
     | 'urgentActivatedAt'
     | 'sellerId'
+    | 'sellerPhone'
     | 'breadcrumbs'
     | 'horse'
     | 'specs'
@@ -170,7 +171,7 @@ function emptyDetailShell(
     oldPrice: null,
     brand: null,
     available: true,
-    sellerPhone: null,
+    sellerPhone: partial.sellerPhone ?? null,
     shipping: [],
     warranties: [],
     bundleTitle: '',
@@ -221,6 +222,15 @@ export function mapPublishedDetailToAdvert(
     provinceName,
   });
 
+  const sellerPhone =
+    dto.sellerPhone?.trim() ||
+    dto.phone?.trim() ||
+    dto.seller?.phone?.trim() ||
+    dto.properties?.find((p) => p.code === 'sellerPhone' || p.code === 'phone')?.displayValue?.trim() ||
+    (typeof dto.properties?.find((p) => p.code === 'sellerPhone' || p.code === 'phone')?.value === 'string'
+      ? (dto.properties?.find((p) => p.code === 'sellerPhone' || p.code === 'phone')?.value as string).trim()
+      : null);
+
   return emptyDetailShell({
     id: dto.id,
     title: dto.title,
@@ -243,6 +253,7 @@ export function mapPublishedDetailToAdvert(
     isUrgent: dto.isUrgent,
     urgentActivatedAt: dto.urgentActivatedAt ?? null,
     sellerId: sellerId ?? null,
+    sellerPhone: sellerPhone || null,
     viewCount: dto.viewCount ?? 0,
     breadcrumbs: [
       { label: 'Ana sayfa', href: '/' },
@@ -254,7 +265,6 @@ export function mapPublishedDetailToAdvert(
       ? [{ id: 'props', title: 'Özellikler', rows: propRows }]
       : [],
   });
-
 }
 
 export function mapOwnerToAdvertDetail(

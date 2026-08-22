@@ -22,7 +22,8 @@
     "selftest:live-search": "npx --yes tsx scripts/selftest-live-search.ts",
     "selftest:media": "npx --yes tsx scripts/selftest-media.ts",
     "selftest:banners": "npx --yes tsx scripts/selftest-banners.ts",
-    "selftest:category-forms-and-filters": "npx --yes tsx scripts/selftest-category-forms-and-filters.ts"
+    "selftest:category-forms-and-filters": "npx --yes tsx scripts/selftest-category-forms-and-filters.ts",
+    "selftest:contact-links": "npx --yes tsx scripts/selftest-contact-links.ts"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.5",

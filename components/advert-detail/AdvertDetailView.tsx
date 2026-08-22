@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -117,15 +118,29 @@ export function AdvertDetailView({
   const phone = detail.sellerPhone ?? '';
 
   const onCall = useCallback(() => {
-    if (!phone) return;
+    if (!phone) {
+      if (Platform.OS === 'web') {
+        window.alert('Bu ilan için telefon numarası belirtilmemiş.');
+      } else {
+        Alert.alert('İletişim Bilgisi', 'Bu ilan için telefon numarası belirtilmemiş.');
+      }
+      return;
+    }
     void openPhoneCall(phone);
   }, [phone]);
 
   const onWhatsApp = useCallback(() => {
-    if (!phone) return;
+    if (!phone) {
+      if (Platform.OS === 'web') {
+        window.alert('Bu ilan için WhatsApp numarası belirtilmemiş.');
+      } else {
+        Alert.alert('İletişim Bilgisi', 'Bu ilan için WhatsApp numarası belirtilmemiş.');
+      }
+      return;
+    }
     void openWhatsApp(
       phone,
-      `Merhaba, Haradan'daki "${detail.title}" ilanı hakkında bilgi almak istiyorum.`
+      `Merhaba, Haradan.com'daki "${detail.title}" ilanınız hakkında bilgi almak istiyorum.`
     );
   }, [phone, detail.title]);
 

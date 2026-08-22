@@ -1,3 +1,4 @@
+import { composeInternationalPhone } from '@/services/phone';
 import type { ListingDraft } from '@/types/listing';
 import type { Money } from '@/types/money';
 import type { CreateAdvertDraftRequest } from '@/types/listing';
@@ -16,6 +17,15 @@ function tlToMinor(tl: number): number {
 export function buildDraftProperties(draft: ListingDraft): Record<string, unknown> {
   const d = draft.details;
   const props: Record<string, unknown> = { ...(d.properties ?? {}) };
+  if (d.sellerPhone?.trim()) {
+    const fullPhone =
+      composeInternationalPhone(
+        d.phoneCountryIso || 'TR',
+        d.sellerPhone
+      ) ?? d.sellerPhone.trim();
+    props.sellerPhone = fullPhone;
+    props.phone = fullPhone;
+  }
   if (d.facilityGrassPaddock) props.facilityGrassPaddock = true;
   if (d.facilitySandPaddock) props.facilitySandPaddock = true;
   if (d.facilityStallionPaddock) props.facilityStallionPaddock = true;
