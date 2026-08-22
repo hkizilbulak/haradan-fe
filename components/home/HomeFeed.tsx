@@ -26,7 +26,6 @@ import { BrandStrip } from './BrandStrip';
 import { CategorySidebar } from './CategorySidebar';
 import { HeroSlider } from './HeroSlider';
 import { HomeSearchBar } from './HomeSearchBar';
-import { NewsletterBlogSection } from './NewsletterBlogSection';
 import { NewArrivalsSection } from './NewArrivalsSection';
 import { HomepageAdBanner } from './HomepageAdBanner';
 import { SiteFooter } from './SiteFooter';
@@ -35,7 +34,6 @@ import { TrendingProductsSection } from './TrendingProductsSection';
 import {
   HomeBrandsSkeleton,
   HomeHeroSkeleton,
-  HomeNewsletterSkeleton,
   HomeSaleSkeleton,
   HomeSpecialSkeleton,
   HomeTrendingSkeleton,
@@ -130,7 +128,6 @@ function HomeFeedComponent({
               <HomeSaleSkeleton isWide={isWide} />
               <HomeSpecialSkeleton isWide={isWide} />
               <HomeBrandsSkeleton />
-              <HomeNewsletterSkeleton />
             </SkeletonPulse>
           ) : (
             <>
@@ -192,17 +189,17 @@ function HomeFeedComponent({
                 />
               </LazySection>
 
-              <LazySection
-                fallback={
-                  <SkeletonPulse>
-                    <HomeBrandsSkeleton />
-                    <HomeNewsletterSkeleton />
-                  </SkeletonPulse>
-                }
-              >
-                <BrandStrip brands={data.brands} />
-                <NewsletterBlogSection />
-              </LazySection>
+              {data.brands.length > 0 ? (
+                <LazySection
+                  fallback={
+                    <SkeletonPulse>
+                      <HomeBrandsSkeleton />
+                    </SkeletonPulse>
+                  }
+                >
+                  <BrandStrip brands={data.brands} />
+                </LazySection>
+              ) : null}
             </>
           )}
         </HomeContentContainer>

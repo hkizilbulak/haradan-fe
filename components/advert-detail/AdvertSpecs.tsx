@@ -280,13 +280,29 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       });
     }
 
+    if (groups && groups.length > 0) {
+      for (const g of groups) {
+        if (g.rows && g.rows.length > 0) {
+          r2.push({
+            id: g.id || 'extra-specs',
+            title: g.title || 'Özellikler',
+            rows: g.rows.map((r) => ({
+              icon: 'information-circle-outline',
+              label: r.label,
+              value: r.value,
+            })),
+          });
+        }
+      }
+    }
+
     return {
       title: 'Genel bilgiler',
       row1: r1,
       row2: r2,
       hasRaces: Boolean(horse && horse.races.length > 0),
     };
-  }, [categoryKind, detail, horse, locationCity, pansiyonInfo, studInfo, transportInfo]);
+  }, [categoryKind, detail, groups, horse, locationCity, pansiyonInfo, studInfo, transportInfo]);
 
   return (
     <View style={styles.wrap}>

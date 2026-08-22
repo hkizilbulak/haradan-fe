@@ -15,7 +15,7 @@ export default function LoginScreen() {
           />
         </Head>
       ) : null}
-      <AuthLayout formKey="login" variant="luxury">
+      <AuthLayout formKey="login" variant="luxury" mobileLayout="glass">
         <LoginForm />
       </AuthLayout>
     </>

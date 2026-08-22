@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { AuthBanner } from './AuthBanner';
 import { AuthCheckbox } from './AuthCheckbox';
+import { AuthFormHeader } from './AuthFormHeader';
+import { useAuthLayout } from './AuthLayoutContext';
+import { AuthScreenFooter } from './AuthScreenFooter';
 import { AuthSubmitButton } from './AuthSubmitButton';
 import { AuthTextField } from './AuthTextField';
 import { useAuthTheme } from './AuthThemeContext';
@@ -27,7 +31,7 @@ function firstParam(raw: string | string[] | undefined): string | null {
   return value?.trim() || null;
 }
 
-export function LoginForm({ onSuccess }: LoginFormProps) {
+function LoginFormBody({ onSuccess }: LoginFormProps) {
   const router = useRouter();
   const params = useLocalSearchParams<{
     next?: string | string[];
@@ -37,6 +41,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   const { login, resendVerification, loading, error, errorCode, clearError } =
     useAuth();
   const { tokens } = useAuthTheme();
+  const { isGlass } = useAuthLayout();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
@@ -78,29 +83,26 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   const needsVerify = errorCode === 'EMAIL_NOT_VERIFIED';
 
   return (
-    <View style={styles.wrap}>
-      <Text style={[styles.title, { color: tokens.text }]}>Giriş yap</Text>
+    <View style={[styles.wrap, isGlass && styles.wrapGlass]}>
+      <AuthFormHeader title="Giriş yap" />
 
-      <Text style={[styles.sub, { color: tokens.textSecondary }]}>
-        Hesabınız yok mu?{' '}
-        <Link href="/auth/signup" style={[styles.link, { color: tokens.text }]}>
-          Hesap oluştur
-        </Link>
-      </Text>
-
-      {info ? (
-        <Text style={[styles.info, { color: tokens.text }]}>{info}</Text>
+      {info ? <AuthBanner message={info} variant="success" /> : null}
+      {error && !needsVerify ? (
+        <AuthBanner message={error} variant="error" />
       ) : null}
+      {resendNote ? <AuthBanner message={resendNote} variant="info" /> : null}
 
-      <View style={styles.fields}>
+      <View style={[styles.fields, isGlass && styles.fieldsGlass]}>
         <AuthTextField
           label="E-posta"
-          placeholder="E-posta"
+          placeholder="ornek@email.com"
           value={email}
           onChangeText={(v) => {
             clearError();
+            setInfo(null);
             setEmail(v);
           }}
+          leftIcon="mail-outline"
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
@@ -109,12 +111,13 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         />
         <AuthTextField
           label="Parola"
-          placeholder="Parola"
+          placeholder="••••••••"
           value={password}
           onChangeText={(v) => {
             clearError();
             setPassword(v);
           }}
+          leftIcon="lock-closed-outline"
           secureTextEntry={!showPassword}
           autoComplete="password"
           textContentType="password"
@@ -125,7 +128,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         />
       </View>
 
-      <View style={styles.utility}>
+      <View style={[styles.utility, isGlass && styles.utilityGlass]}>
         <AuthCheckbox
           label="Beni hatırla"
           checked={remember}
@@ -133,26 +136,26 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         />
         <Link
           href="/auth/forgot-password"
-          style={[styles.forgot, { color: tokens.text }]}
+          style={[styles.forgot, { color: tokens.primary }]}
         >
           Parolamı unuttum
         </Link>
       </View>
 
-      {error ? (
-        <Text style={[styles.errorText, { color: tokens.error }]}>{error}</Text>
-      ) : null}
-      {resendNote ? (
-        <Text style={[styles.info, { color: tokens.text }]}>{resendNote}</Text>
-      ) : null}
-
       {needsVerify ? (
-        <AuthSubmitButton
-          label="Doğrulama e-postasını gönder"
-          onPress={handleResend}
-          loading={loading}
-          disabled={!email.trim()}
-        />
+        <View style={styles.verifyBlock}>
+          <AuthBanner
+            message={error ?? 'E-posta adresinizi doğrulamanız gerekiyor.'}
+            variant="error"
+          />
+          <AuthSubmitButton
+            label="Doğrulama e-postasını tekrar gönder"
+            onPress={handleResend}
+            loading={loading}
+            disabled={!email.trim()}
+            variant="secondary"
+          />
+        </View>
       ) : null}
 
       <AuthSubmitButton
@@ -160,6 +163,12 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         onPress={handleSubmit}
         loading={loading}
         disabled={!email.trim() || !password}
+      />
+
+      <AuthScreenFooter
+        prompt="Hesabınız yok mu?"
+        actionLabel="Hesap oluştur"
+        href="/auth/signup"
       />
 
       {__DEV__ && !isHttpAuthEnabled() ? (
@@ -179,36 +188,25 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   );
 }
 
+export function LoginForm(props: LoginFormProps) {
+  return <LoginFormBody {...props} />;
+}
+
 const styles = StyleSheet.create({
   wrap: {
     gap: Spacing.lg,
     width: '100%',
     maxWidth: AUTH_FORM_MAX_WIDTH,
   },
-  title: {
-    ...Typography.h1,
-    fontSize: 32,
-    lineHeight: 38,
-    fontWeight: '700',
-    letterSpacing: -0.4,
-  },
-  sub: {
-    ...Typography.body,
-    marginTop: -Spacing.sm,
-  },
-  link: {
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-    ...Platform.select({
-      web: { cursor: 'pointer' as const },
-      default: {},
-    }),
-  },
-  info: {
-    ...Typography.small,
+  wrapGlass: {
+    gap: Spacing.md,
+    maxWidth: undefined,
   },
   fields: {
     gap: Spacing.md,
+  },
+  fieldsGlass: {
+    gap: Spacing.sm + 4,
   },
   utility: {
     flexDirection: 'row',
@@ -216,17 +214,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.md,
     flexWrap: 'wrap',
+    marginTop: -Spacing.xs,
+  },
+  utilityGlass: {
+    marginTop: 0,
+  },
+  verifyBlock: {
+    gap: Spacing.sm,
   },
   forgot: {
     ...Typography.small,
     fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
-  errorText: {
-    ...Typography.small,
+    ...Platform.select({
+      web: { cursor: 'pointer' as const },
+      default: {},
+    }),
   },
   demoHint: {
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
   },
   demoText: {
     ...Typography.caption,

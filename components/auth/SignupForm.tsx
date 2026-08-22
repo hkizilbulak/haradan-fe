@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
-import { Link, useRouter } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { AuthBanner } from './AuthBanner';
+import { AuthFormHeader } from './AuthFormHeader';
+import { AuthScreenFooter } from './AuthScreenFooter';
 import { AuthSubmitButton } from './AuthSubmitButton';
 import { AuthTextField } from './AuthTextField';
+import { PasswordStrengthBar } from './PasswordStrengthBar';
 import { useAuthTheme } from './AuthThemeContext';
 import { AUTH_FORM_MAX_WIDTH } from '@/constants/AuthTheme';
 import { Spacing } from '@/constants/Spacing';
@@ -50,13 +54,11 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
     if (!result) return;
     onSuccess?.(result.message);
 
-    // Kayıt başarılı — otomatik giriş yap
     const session = await login(email.trim(), password);
     if (session) {
       setAuthSession(session);
       router.replace('/(tabs)');
     } else {
-      // Otomatik giriş başarısız olursa login sayfasına yönlendir
       router.replace({
         pathname: '/auth/login',
         params: { registered: '1' },
@@ -64,94 +66,119 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
     }
   };
 
+  const displayError = fieldError ?? error;
+
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.title, { color: tokens.text }]}>Hesap oluştur</Text>
-      <Text style={[styles.sub, { color: tokens.textSecondary }]}>
-        Zaten hesabınız var mı?{' '}
-        <Link href="/auth/login" style={[styles.link, { color: tokens.text }]}>
-          Giriş yap
-        </Link>
-      </Text>
+      <AuthFormHeader
+        title="Hesap oluştur"
+        subtitle={
+          <Text style={[styles.lead, { color: tokens.textSecondary }]}>
+            Ücretsiz hesap açın, ilan verin ve favorilerinizi kaydedin.
+          </Text>
+        }
+      />
+
+      {displayError ? (
+        <AuthBanner message={displayError} variant="error" />
+      ) : null}
 
       <View style={styles.fields}>
         <View style={styles.nameRow}>
           <View style={styles.nameCol}>
             <AuthTextField
               label="Ad"
-              placeholder="Ad"
+              placeholder="Adınız"
               value={firstName}
               onChangeText={(v) => {
                 clearError();
+                setFieldError(null);
                 setFirstName(v);
               }}
+              leftIcon="person-outline"
               autoComplete="given-name"
               textContentType="givenName"
+              returnKeyType="next"
             />
           </View>
           <View style={styles.nameCol}>
             <AuthTextField
               label="Soyad"
-              placeholder="Soyad"
+              placeholder="Soyadınız"
               value={lastName}
               onChangeText={(v) => {
                 clearError();
+                setFieldError(null);
                 setLastName(v);
               }}
               autoComplete="family-name"
               textContentType="familyName"
+              returnKeyType="next"
             />
           </View>
         </View>
         <AuthTextField
           label="E-posta"
-          placeholder="E-posta"
+          placeholder="ornek@email.com"
           value={email}
           onChangeText={(v) => {
             clearError();
+            setFieldError(null);
             setEmail(v);
           }}
+          leftIcon="mail-outline"
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
           textContentType="emailAddress"
+          returnKeyType="next"
         />
-        <AuthTextField
-          label="Parola"
-          placeholder="En az 8 karakter"
-          value={password}
-          onChangeText={(v) => {
-            clearError();
-            setFieldError(null);
-            setPassword(v);
-          }}
-          secureTextEntry={!showPassword}
-          autoComplete="new-password"
-          textContentType="newPassword"
-          rightIcon={showPassword ? 'eye-off' : 'eye'}
-          onRightIconPress={() => setShowPassword((s) => !s)}
-        />
+        <View>
+          <AuthTextField
+            label="Parola"
+            placeholder="En az 8 karakter"
+            value={password}
+            onChangeText={(v) => {
+              clearError();
+              setFieldError(null);
+              setPassword(v);
+            }}
+            leftIcon="lock-closed-outline"
+            secureTextEntry={!showPassword}
+            autoComplete="new-password"
+            textContentType="newPassword"
+            rightIcon={showPassword ? 'eye-off' : 'eye'}
+            onRightIconPress={() => setShowPassword((s) => !s)}
+          />
+          <PasswordStrengthBar password={password} />
+        </View>
         <AuthTextField
           label="Parola tekrar"
-          placeholder="Parolayı doğrulayın"
+          placeholder="Parolayı tekrar girin"
           value={confirm}
           onChangeText={(v) => {
             setFieldError(null);
             setConfirm(v);
           }}
+          leftIcon="shield-checkmark-outline"
           secureTextEntry={!showPassword}
           autoComplete="new-password"
           textContentType="newPassword"
           returnKeyType="done"
           onSubmitEditing={handleSubmit}
+          error={
+            confirm && password !== confirm ? 'Parolalar eşleşmiyor.' : null
+          }
         />
       </View>
 
-      {fieldError || error ? (
-        <Text style={[styles.errorText, { color: tokens.error }]}>
-          {fieldError ?? error}
-        </Text>
-      ) : null}
+      <Text style={[styles.terms, { color: tokens.textMuted }]}>
+        Hesap oluşturarak{' '}
+        <Text style={{ color: tokens.textSecondary, fontWeight: '600' }}>
+          kullanım koşullarını
+        </Text>{' '}
+        kabul etmiş olursunuz.
+      </Text>
 
       <AuthSubmitButton
         label="Hesap oluştur"
@@ -165,6 +192,12 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
           !confirm
         }
       />
+
+      <AuthScreenFooter
+        prompt="Zaten hesabınız var mı?"
+        actionLabel="Giriş yap"
+        href="/auth/login"
+      />
     </View>
   );
 }
@@ -175,24 +208,8 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: AUTH_FORM_MAX_WIDTH,
   },
-  title: {
-    ...Typography.h1,
-    fontSize: 32,
-    lineHeight: 38,
-    fontWeight: '700',
-    letterSpacing: -0.4,
-  },
-  sub: {
+  lead: {
     ...Typography.body,
-    marginTop: -Spacing.sm,
-  },
-  link: {
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-    ...Platform.select({
-      web: { cursor: 'pointer' as const },
-      default: {},
-    }),
   },
   fields: {
     gap: Spacing.md,
@@ -204,7 +221,10 @@ const styles = StyleSheet.create({
   nameCol: {
     flex: 1,
   },
-  errorText: {
-    ...Typography.small,
+  terms: {
+    ...Typography.caption,
+    textAlign: 'center',
+    lineHeight: 16,
+    marginTop: -Spacing.sm,
   },
 });

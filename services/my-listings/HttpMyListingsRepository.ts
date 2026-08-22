@@ -1,6 +1,9 @@
 import { HttpClient, ApiError } from '@/services/http';
 import { catalogRepository, type ICatalogRepository } from '@/services/catalog';
 import { getAuthSession } from '@/services/auth/sessionStore';
+import { applyTjkProfile } from '@/hooks/useListingWizard';
+import { HttpTjkRepository } from '@/services/tjk/HttpTjkRepository';
+import type { ITjkRepository } from '@/services/tjk/TjkRepository';
 import type {
   MyListingCard,
   MyListingListResponse,
@@ -23,13 +26,16 @@ import { backendStatusesForTab } from './statusTabs';
 export class HttpMyListingsRepository implements IMyListingsRepository {
   private readonly http: HttpClient;
   private readonly catalog: ICatalogRepository;
+  private readonly tjkRepo: ITjkRepository;
 
   constructor(
     private readonly baseUrl: string,
-    catalog: ICatalogRepository = catalogRepository
+    catalog: ICatalogRepository = catalogRepository,
+    tjkRepo?: ITjkRepository
   ) {
     this.http = new HttpClient(baseUrl);
     this.catalog = catalog;
+    this.tjkRepo = tjkRepo ?? new HttpTjkRepository(baseUrl);
   }
 
   async list(
@@ -73,8 +79,19 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
       { method: 'GET', accessToken }
     );
     const tree = await this.catalog.getCategoryTree();
+    const draft = mapOwnerToListingDraft(dto, tree, this.baseUrl);
+    if (dto.horseId) {
+      try {
+        const horse = await this.tjkRepo.getById(dto.horseId);
+        if (horse) {
+          draft.details = applyTjkProfile(draft.details, horse);
+        }
+      } catch {
+        // ignore
+      }
+    }
     return {
-      draft: mapOwnerToListingDraft(dto, tree, this.baseUrl),
+      draft,
       version: dto.version,
       mediaVersion: dto.mediaVersion,
     };

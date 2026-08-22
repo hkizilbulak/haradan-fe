@@ -160,7 +160,6 @@ export function HomeSkeleton() {
       <HomeSaleSkeleton />
       <HomeSpecialSkeleton isWide={isWide} />
       <HomeBrandsSkeleton />
-      <HomeNewsletterSkeleton />
     </SkeletonPulse>
   );
 }
