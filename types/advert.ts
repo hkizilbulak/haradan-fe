@@ -30,7 +30,9 @@ export type PublishedAdvertCard = {
   provinceName?: string | null;
   districtName?: string | null;
   locationName?: string | null;
+  properties?: Record<string, any> | null;
 };
+
 
 /** OpenAPI: PublishedAdvertSearchResponse */
 export type PublishedAdvertSearchResponse = {

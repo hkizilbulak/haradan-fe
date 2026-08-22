@@ -204,7 +204,7 @@ function applyClientFilters(
     });
   }
 
-  // 13. Donanım / Hizmet Özellikleri
+  // 13. Donanım / Özel Kategori Özellikleri (BO ve Form Alanları ile Tam Uyumlu)
   if (filters.features && filters.features.length > 0) {
     const featureKeywords: Record<string, string[]> = {
       camera: ['kamera', 'izleme'],
@@ -221,12 +221,59 @@ function applyClientFilters(
     };
     list = list.filter((p) => {
       const hay = normalizeSearchText(`${p.title} ${p.brand ?? ''}`);
+      const props = p.properties || {};
+
+      // Normalize all key-values from the advert's custom properties
+      const propEntries = Object.entries(props).map(([k, v]) => ({
+        normKey: normalizeSearchText(k),
+        normVal: typeof v === 'string' || typeof v === 'number' ? normalizeSearchText(String(v)) : '',
+        boolVal: typeof v === 'boolean' ? v : v === 'true' ? true : false,
+      }));
+
+
       return (filters.features ?? []).every((fKey) => {
-        const keywords = featureKeywords[fKey] ?? [fKey];
-        return keywords.some((kw) => hay.includes(kw));
+        const normFilter = normalizeSearchText(fKey);
+
+        // 1. Check if filter is in "propKey:value" format
+        if (normFilter.includes(':')) {
+          const [fPropKey, fPropVal] = normFilter.split(':');
+          const matched = propEntries.some(
+            (pe) =>
+              (pe.normKey.includes(fPropKey) || fPropKey.includes(pe.normKey)) &&
+              pe.normVal.includes(fPropVal)
+          );
+          if (matched) return true;
+        }
+
+        // 2. Direct property value match (e.g. user selected "deneme1", property value is "deneme1")
+        const valMatch = propEntries.some(
+          (pe) =>
+            pe.normVal === normFilter ||
+            (pe.normVal && normFilter && pe.normVal.split(/[\s,._-]+/).includes(normFilter))
+        );
+        if (valMatch) return true;
+
+
+        // 3. Direct boolean switch property match
+        const boolMatch = propEntries.some(
+          (pe) =>
+            pe.boolVal &&
+            (pe.normKey.includes(normFilter) || normFilter.includes(pe.normKey))
+        );
+        if (boolMatch) return true;
+
+        // 4. Predefined keywords dictionary
+        const keywords = featureKeywords[fKey] ?? [normFilter];
+        if (keywords.some((kw) => hay.includes(normalizeSearchText(kw)))) {
+          return true;
+        }
+
+        // 5. Fallback in title or brand
+        return hay.includes(normFilter);
       });
     });
   }
+
 
   // 13. Canlı Arama Metni
   if (q) {

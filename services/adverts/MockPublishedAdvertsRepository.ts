@@ -1,5 +1,5 @@
 import { MOCK_CATALOG_PRODUCTS } from '@/mocks/homepage';
-import { readMockItems } from '@/services/my-listings/mockListingStore';
+import { readMockDrafts, readMockItems } from '@/services/my-listings/mockListingStore';
 import type { CatalogProductCard } from '@/types';
 import type {
   IPublishedAdvertsRepository,
@@ -17,9 +17,15 @@ export class MockPublishedAdvertsRepository
     params: PublishedAdvertsSearchParams
   ): Promise<CatalogProductCard[]> {
     await wait(180);
-    const userItems: CatalogProductCard[] = readMockItems()
-      .filter((card) => !MOCK_CATALOG_PRODUCTS.some((p) => p.id === card.id))
-      .map((card) => ({
+    const drafts = readMockDrafts();
+    const storedItems = readMockItems();
+    const storedMap = new Map<string, typeof storedItems[0]>();
+    storedItems.forEach((item) => storedMap.set(item.id, item));
+
+    // 1. Process all stored items (both newly created and edited existing ones)
+    const processedStored: CatalogProductCard[] = storedItems.map((card) => {
+      const draft = drafts[card.id];
+      return {
         id: card.id,
         title: card.title,
         publishedAt: card.publishedAt ?? card.updatedAt ?? new Date().toISOString(),
@@ -43,9 +49,23 @@ export class MockPublishedAdvertsRepository
         oldPrice: card.oldPrice ?? null,
         available: card.available ?? null,
         brand: card.brand ?? null,
-      }));
+        properties: draft?.details?.properties || (card as any).properties || {},
+      };
+    });
 
-    let list = [...userItems, ...MOCK_CATALOG_PRODUCTS.map((p) => ({ ...p }))];
+    // 2. Base catalog products not yet in storedItems
+    const otherBase: CatalogProductCard[] = MOCK_CATALOG_PRODUCTS
+      .filter((p) => !storedMap.has(p.id))
+      .map((p) => {
+        const draft = drafts[p.id];
+        return {
+          ...p,
+          properties: draft?.details?.properties || (p as any).properties || {},
+        };
+      });
+
+    let list = [...processedStored, ...otherBase];
+
 
     if (params.categoryIds && params.categoryIds.length > 0) {
       const set = new Set(params.categoryIds);

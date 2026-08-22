@@ -115,6 +115,13 @@ export class HttpListingRepository implements IListingRepository {
     let currentVersion = created.version;
     const props = buildDraftProperties(draft);
     if (Object.keys(props).length > 0) {
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem(`haradan_advert_properties_${created.id}`, JSON.stringify(props));
+        } catch {
+          /* ignore */
+        }
+      }
       try {
         const propRes = await this.http.request<OwnerAdvertResponse>(
           `/v1/me/adverts/${created.id}/properties`,
@@ -134,6 +141,7 @@ export class HttpListingRepository implements IListingRepository {
         // Unseeded dynamic properties are ignored gracefully without blocking creation
       }
     }
+
 
     return {
       advertId: created.id,

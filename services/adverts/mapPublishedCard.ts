@@ -69,6 +69,18 @@ export function mapPublishedCardToCatalog(
     }) ??
     null;
 
+  let cardProps = (card as any).properties ?? null;
+  if (!cardProps && typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      const rawStored = localStorage.getItem(`haradan_advert_properties_${card.id}`);
+      if (rawStored) {
+        cardProps = JSON.parse(rawStored);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   return {
     id: card.id,
     title: card.title,
@@ -96,7 +108,10 @@ export function mapPublishedCardToCatalog(
     oldPrice: null,
     available: null,
     brand: null,
+    properties: cardProps ?? {},
   };
+
+
 }
 
 export type { BePublishedCard };

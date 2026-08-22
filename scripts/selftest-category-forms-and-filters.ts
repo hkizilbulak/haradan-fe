@@ -38,8 +38,11 @@ import {
   matchHorseColor,
 } from '../components/listings/filterConfig';
 import type { ListingDraft } from '../types/listing';
+import { normalizeSearchText } from '../services/adverts/filterAdverts';
 
 let passed = 0;
+
+
 let failed = 0;
 
 function assert(cond: unknown, name: string): void {
@@ -338,9 +341,92 @@ assert(matchHorseColor({ title: 'Al kısrak 3 yaş' }, ['Al']), 'Al don eşleşt
 assert(matchHorseColor({ title: 'Kır aygır' }, ['Kır']), 'Kır don eşleşti');
 assert(!matchHorseColor({ title: 'Doru tay' }, ['Kır']), 'Doru tay Kır ile eşleşmedi');
 
+// -------------------------------------------------------------
+// 5. Dinamik BO Özellikleri İlan Oluşturma ve Filtreleme Testleri
+// -------------------------------------------------------------
+console.log('\n--- 5. Dinamik BO Özellikleri ve Filtre Eşleştirme Testleri ---');
+
+const draftWithCustomProp = createBaseValidDraft();
+draftWithCustomProp.type = transportType;
+draftWithCustomProp.details.companyName = 'Lider Taşımacılık';
+draftWithCustomProp.details.properties = {
+  deneme: 'deneme1',
+  'seçim deneme': 'seçenek_a',
+  kameraSistemi: true,
+};
+
+assert(detailsStepComplete(draftWithCustomProp), 'Özel alanlı ilan geçerli');
+assertEqual(draftWithCustomProp.details.properties.deneme, 'deneme1', 'Özel deneme özelliği korundu');
+
+// Kart üzerinden filtreleme doğrulaması
+const customProductCard = {
+  id: 'adv-custom-1',
+  title: 'Satılık Safkan At',
+  brand: 'Thoroughbred',
+  categoryId: 'cat-satilik-yaris-ati',
+  properties: {
+    deneme: 'deneme1',
+    secimDeneme: 'seçenek_a',
+    kameraSistemi: true,
+  },
+};
+
+const customProductCard2 = {
+  id: 'adv-custom-2',
+  title: 'Diğer Yarış Atı',
+  brand: 'Thoroughbred',
+  categoryId: 'cat-satilik-yaris-ati',
+  properties: {
+    deneme: 'deneme2',
+  },
+};
+
+// Filter match helper (ListingsView ile aynı mantık)
+function matchCustomFeature(card: any, featureFilter: string): boolean {
+  const normFilter = normalizeSearchText(featureFilter);
+  const props = card.properties || {};
+  const propEntries = Object.entries(props).map(([k, v]) => ({
+    normKey: normalizeSearchText(k),
+    normVal: typeof v === 'string' || typeof v === 'number' ? normalizeSearchText(String(v)) : '',
+    boolVal: typeof v === 'boolean' ? v : v === 'true' ? true : false,
+  }));
+
+
+  if (normFilter.includes(':')) {
+    const [fKey, fVal] = normFilter.split(':');
+    return propEntries.some(
+      (pe) =>
+        (pe.normKey.includes(fKey) || fKey.includes(pe.normKey)) &&
+        pe.normVal.includes(fVal)
+    );
+  }
+
+  const valMatch = propEntries.some(
+    (pe) =>
+      pe.normVal === normFilter ||
+      (pe.normVal && normFilter && pe.normVal.split(/[\s,._-]+/).includes(normFilter))
+  );
+  if (valMatch) return true;
+
+  const boolMatch = propEntries.some(
+    (pe) => pe.boolVal && (pe.normKey.includes(normFilter) || normFilter.includes(pe.normKey))
+  );
+  if (boolMatch) return true;
+
+  return normalizeSearchText(card.title).split(/[\s,._-]+/).includes(normFilter);
+}
+
+assert(matchCustomFeature(customProductCard, 'deneme1'), 'deneme1 filtresi 1. ilanla eşleşti');
+assert(!matchCustomFeature(customProductCard2, 'deneme1'), 'deneme1 filtresi 2. ilanla (deneme2) eşleşmedi');
+assert(matchCustomFeature(customProductCard2, 'deneme2'), 'deneme2 filtresi 2. ilanla eşleşti');
+assert(matchCustomFeature(customProductCard, 'deneme:deneme1'), 'deneme:deneme1 key-value filtresi eşleşti');
+assert(matchCustomFeature(customProductCard, 'kameraSistemi'), 'Boolean switch özelliği filtresi eşleşti');
+
 console.log(`\nÖzet: ${passed} geçti, ${failed} kaldı.`);
 if (failed > 0) {
   process.exit(1);
 } else {
   console.log('Tüm kategori form ve filtre self-testleri başarıyla geçti!');
 }
+
+

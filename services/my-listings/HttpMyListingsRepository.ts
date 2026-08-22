@@ -131,6 +131,13 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
 
     if (payload.draft) {
       const props = buildDraftProperties(payload.draft);
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem(`haradan_advert_properties_${id}`, JSON.stringify(props));
+        } catch {
+          /* ignore */
+        }
+      }
       if (Object.keys(props).length > 0) {
         try {
           dto = await this.http.request<OwnerAdvertDto>(
@@ -163,7 +170,7 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
                 }
               );
             } catch {
-              // Ignore if phone update also fails
+              // ignore
             }
           }
         }
