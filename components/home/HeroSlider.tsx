@@ -26,6 +26,8 @@ type HeroSliderProps = {
   onSlidePress?: (slide: ActiveBannerItem) => void;
   /** Desktop'ta sidebar yanında daha yüksek */
   height?: number;
+  /** Mobil tam genişlik — köşe yuvarlaklığı yalnızca alt */
+  fullBleed?: boolean;
 };
 
 /**
@@ -35,6 +37,7 @@ export const HeroSlider = memo(function HeroSlider({
   slides,
   onSlidePress,
   height = 320,
+  fullBleed = false,
 }: HeroSliderProps) {
   const width = useLayoutWidth();
   const isWide = width >= 900;
@@ -82,7 +85,11 @@ export const HeroSlider = memo(function HeroSlider({
 
   return (
     <View
-      style={[styles.wrap, { height }]}
+      style={[
+        styles.wrap,
+        fullBleed && styles.wrapBleed,
+        { height },
+      ]}
       onLayout={(e) => {
         const w = e.nativeEvent.layout.width;
         containerWidthRef.current = w;
@@ -176,6 +183,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
+  },
+  wrapBleed: {
+    borderRadius: 0,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   scroller: {
     flex: 1,

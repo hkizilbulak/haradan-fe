@@ -12,8 +12,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { HomeContentContainer } from '@/components/layout';
 import { LazySection } from '@/components/ui/LazySection';
 import { SkeletonPulse } from '@/components/ui/Skeleton';
-import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
+import { HOME_DESKTOP_BREAKPOINT, MOBILE_HOME_DOCK_INSET } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
+import { Typography } from '@/constants/Typography';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type {
@@ -24,13 +25,16 @@ import type {
 } from '@/types';
 import { BrandStrip } from './BrandStrip';
 import { CategorySidebar } from './CategorySidebar';
+import { CategoryStrip } from './CategoryStrip';
 import { HeroSlider } from './HeroSlider';
 import { HomeSearchBar } from './HomeSearchBar';
+import { HomeFooter } from './HomeFooter';
 import { NewArrivalsSection } from './NewArrivalsSection';
 import { HomepageAdBanner } from './HomepageAdBanner';
 import { SiteFooter } from './SiteFooter';
 import { SpecialOffersSection } from './SpecialOffersSection';
 import { TrendingProductsSection } from './TrendingProductsSection';
+import { MobileHomeHeroBlock } from './mobile/MobileHomeHeroBlock';
 import {
   HomeBrandsSkeleton,
   HomeHeroSkeleton,
@@ -42,6 +46,8 @@ import {
 
 const HERO_HEIGHT_DESKTOP = 420;
 const HERO_HEIGHT_MOBILE = 360;
+/** Glass dock + copyright için scroll alt boşluğu */
+const MOBILE_DOCK_PADDING = MOBILE_HOME_DOCK_INSET;
 
 type HomeFeedProps = {
   data: HomepageData | null;
@@ -56,6 +62,9 @@ type HomeFeedProps = {
   onCategorySelect: (cat: CategoryTreeNode) => void;
   onPostAdPress: () => void;
   onToggleFavorite?: (product: CatalogProductCard) => void;
+  onMenuPress?: () => void;
+  onFavoritesPress?: () => void;
+  favoriteCount?: number;
 };
 
 function HomeFeedComponent({
@@ -71,6 +80,9 @@ function HomeFeedComponent({
   onCategorySelect,
   onPostAdPress,
   onToggleFavorite,
+  onMenuPress,
+  onFavoritesPress,
+  favoriteCount = 0,
 }: HomeFeedProps) {
   const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
@@ -81,14 +93,20 @@ function HomeFeedComponent({
   const surface = useThemeColor('surface');
   const text = useThemeColor('text');
   const border = useThemeColor('border');
+  const textMuted = useThemeColor('textMuted');
 
   const heroBanners = useMemo(
-    () => (data?.banners ?? []).filter((b) => b.placement === 'HOMEPAGE_HERO' || b.placement === 'HOMEPAGE'),
+    () =>
+      (data?.banners ?? []).filter(
+        (b) => b.placement === 'HOMEPAGE_HERO' || b.placement === 'HOMEPAGE'
+      ),
     [data?.banners]
   );
 
   const promoBanner = useMemo(
-    () => (data?.banners ?? []).find((b) => b.placement === 'HOMEPAGE_PROMO') ?? null,
+    () =>
+      (data?.banners ?? []).find((b) => b.placement === 'HOMEPAGE_PROMO') ??
+      null,
     [data?.banners]
   );
 
@@ -99,12 +117,18 @@ function HomeFeedComponent({
     });
   }, []);
 
+  const mobileMenu = onMenuPress ?? (() => {});
+  const mobileFav = onFavoritesPress ?? (() => {});
+
   return (
     <View style={styles.flex}>
       <ScrollView
         ref={scrollRef}
         style={styles.flex}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          !isWide && styles.contentMobile,
+        ]}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={32}
         removeClippedSubviews={Platform.OS !== 'web'}
@@ -118,37 +142,39 @@ function HomeFeedComponent({
           />
         }
       >
-        <HomeContentContainer>
-          {!data ? (
+        {!data ? (
+          <HomeContentContainer>
             <SkeletonPulse>
-              <HomeHeroSkeleton isWide={isWide} />
-              <HomeSearchBar />
+              {!isWide ? (
+                <>
+                  <HomeHeroSkeleton isWide={false} />
+                  <HomeSearchBar variant="glass" fullWidth compact />
+                </>
+              ) : (
+                <HomeHeroSkeleton isWide={isWide} />
+              )}
               <HomeUrgentSkeleton isWide={isWide} />
               <HomeTrendingSkeleton isWide={isWide} />
               <HomeSaleSkeleton isWide={isWide} />
               <HomeSpecialSkeleton isWide={isWide} />
               <HomeBrandsSkeleton />
             </SkeletonPulse>
-          ) : (
-            <>
-              <View style={[styles.heroRow, !isWide && styles.heroRowMobile]}>
-                <View style={[styles.sidebar, !isWide && styles.sidebarMobile]}>
-                  <CategorySidebar
-                    categories={categoryRoots}
-                    onSelect={onCategorySelect}
-                    maxHeight={isWide ? HERO_HEIGHT_DESKTOP : 280}
-                  />
-                </View>
-                <View style={[styles.hero, !isWide && styles.heroMobile]}>
-                  <HeroSlider
-                    slides={heroBanners}
-                    onSlidePress={onBannerPress}
-                    height={isWide ? HERO_HEIGHT_DESKTOP : HERO_HEIGHT_MOBILE}
-                  />
-                </View>
-              </View>
+          </HomeContentContainer>
+        ) : !isWide ? (
+          <>
+            <MobileHomeHeroBlock
+              banners={heroBanners}
+              onBannerPress={onBannerPress}
+              onMenuPress={mobileMenu}
+              onFavoritesPress={mobileFav}
+              favoriteCount={favoriteCount}
+            />
 
-              <HomeSearchBar />
+            <HomeContentContainer>
+              <CategoryStrip
+                categories={categoryRoots}
+                onSelect={onCategorySelect}
+              />
 
               <NewArrivalsSection
                 products={urgent}
@@ -159,8 +185,8 @@ function HomeFeedComponent({
               <LazySection
                 fallback={
                   <SkeletonPulse>
-                    <HomeTrendingSkeleton isWide={isWide} />
-                    <HomeSaleSkeleton isWide={isWide} />
+                    <HomeTrendingSkeleton isWide={false} />
+                    <HomeSaleSkeleton isWide={false} />
                   </SkeletonPulse>
                 }
               >
@@ -178,7 +204,7 @@ function HomeFeedComponent({
               <LazySection
                 fallback={
                   <SkeletonPulse>
-                    <HomeSpecialSkeleton isWide={isWide} />
+                    <HomeSpecialSkeleton isWide={false} />
                   </SkeletonPulse>
                 }
               >
@@ -200,20 +226,101 @@ function HomeFeedComponent({
                   <BrandStrip brands={data.brands} />
                 </LazySection>
               ) : null}
-            </>
-          )}
-        </HomeContentContainer>
 
-        <SiteFooter onPostAdPress={onPostAdPress} />
+              <View style={styles.mobileFooter}>
+                <Text style={[styles.mobileFooterBrand, { color: primary }]}>
+                  Haradan.com
+                </Text>
+                <Text style={[styles.mobileFooterTag, { color: textMuted }]}>
+                  Satılık atlar, hizmetler ve aşım ilanları.
+                </Text>
+              </View>
+            </HomeContentContainer>
+          </>
+        ) : (
+          <HomeContentContainer>
+            <View style={styles.heroRow}>
+              <View style={styles.sidebar}>
+                <CategorySidebar
+                  categories={categoryRoots}
+                  onSelect={onCategorySelect}
+                  maxHeight={HERO_HEIGHT_DESKTOP}
+                />
+              </View>
+              <View style={styles.hero}>
+                <HeroSlider
+                  slides={heroBanners}
+                  onSlidePress={onBannerPress}
+                  height={HERO_HEIGHT_DESKTOP}
+                />
+              </View>
+            </View>
+
+            <HomeSearchBar />
+
+            <NewArrivalsSection
+              products={urgent}
+              onProductPress={onProductPress}
+              onToggleFavorite={onToggleFavorite}
+            />
+
+            <LazySection
+              fallback={
+                <SkeletonPulse>
+                  <HomeTrendingSkeleton isWide={isWide} />
+                  <HomeSaleSkeleton isWide={isWide} />
+                </SkeletonPulse>
+              }
+            >
+              <TrendingProductsSection
+                products={trending}
+                onProductPress={onProductPress}
+                onToggleFavorite={onToggleFavorite}
+              />
+              <HomepageAdBanner banner={promoBanner} onPress={onBannerPress} />
+            </LazySection>
+
+            <LazySection
+              fallback={
+                <SkeletonPulse>
+                  <HomeSpecialSkeleton isWide={isWide} />
+                </SkeletonPulse>
+              }
+            >
+              <SpecialOffersSection
+                products={specialOffers}
+                onProductPress={onProductPress}
+                onToggleFavorite={onToggleFavorite}
+              />
+            </LazySection>
+
+            {data.brands.length > 0 ? (
+              <LazySection
+                fallback={
+                  <SkeletonPulse>
+                    <HomeBrandsSkeleton />
+                  </SkeletonPulse>
+                }
+              >
+                <BrandStrip brands={data.brands} />
+              </LazySection>
+            ) : null}
+
+            <HomeFooter />
+          </HomeContentContainer>
+        )}
+
+        {isWide ? <SiteFooter onPostAdPress={onPostAdPress} /> : null}
       </ScrollView>
 
       {showTop ? (
         <Pressable
           onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
           accessibilityRole="button"
-          accessibilityLabel="Back to top"
+          accessibilityLabel="Yukarı çık"
           style={[
             styles.topBtn,
+            !isWide && styles.topBtnMobile,
             { backgroundColor: surface, borderColor: border },
           ]}
         >
@@ -233,17 +340,32 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
     paddingBottom: 0,
   },
+  contentMobile: {
+    paddingTop: 0,
+    paddingBottom: MOBILE_DOCK_PADDING,
+  },
   heroRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
     gap: Spacing.lg,
     marginBottom: Spacing.sm,
   },
-  heroRowMobile: { flexDirection: 'column', gap: Spacing.md },
   sidebar: { minWidth: 248, flexShrink: 0, paddingTop: 4, zIndex: 20 },
-  sidebarMobile: { width: '100%', zIndex: 20 },
   hero: { flex: 1, minWidth: 0, zIndex: 1 },
-  heroMobile: { width: '100%' },
+  mobileFooter: {
+    alignItems: 'center',
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.md,
+    gap: Spacing.xs,
+  },
+  mobileFooterBrand: {
+    ...Typography.h5,
+    fontWeight: '700',
+  },
+  mobileFooterTag: {
+    ...Typography.small,
+    textAlign: 'center',
+  },
   topBtn: {
     position: 'absolute',
     right: 16,
@@ -255,6 +377,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
+  },
+  topBtnMobile: {
+    bottom: MOBILE_DOCK_PADDING + 8,
   },
   topLabel: { fontSize: 9, fontWeight: '700' },
 });

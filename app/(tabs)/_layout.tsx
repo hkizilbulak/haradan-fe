@@ -1,14 +1,14 @@
 import { Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { MobileGlassDock } from '@/components/layout/MobileGlassDock';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
 export default function TabsLayout() {
   const primary = useThemeColor('primary');
   const textMuted = useThemeColor('textMuted');
-  const surface = useThemeColor('surface');
-  const border = useThemeColor('border');
   const isWeb = Platform.OS === 'web';
+  const useGlassDock = !isWeb;
 
   return (
     <Tabs
@@ -16,17 +16,21 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: primary,
         tabBarInactiveTintColor: textMuted,
-        tabBarStyle: isWeb
-          ? { display: 'none' }
-          : {
-              backgroundColor: surface,
-              borderTopColor: border,
-            },
+        tabBarStyle: useGlassDock
+          ? {
+              position: 'absolute',
+              backgroundColor: 'transparent',
+              borderTopWidth: 0,
+              elevation: 0,
+              height: 0,
+            }
+          : { display: 'none' },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
         },
       }}
+      tabBar={useGlassDock ? (props) => <MobileGlassDock {...props} /> : undefined}
     >
       <Tabs.Screen
         name="index"

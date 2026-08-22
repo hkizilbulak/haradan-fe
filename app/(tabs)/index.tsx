@@ -2,15 +2,21 @@ import React, { useCallback, useState } from 'react';
 import { Linking, Platform, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader, useHeaderDrawers } from '@/components/layout';
 import { HomeFeed } from '@/components/home';
+import { MobileMenuSheet } from '@/components/home/mobile/MobileMenuSheet';
 import { ErrorState } from '@/components/ui';
 import { useHomepageFeed } from '@/hooks/useHomepageFeed';
 import { useAuthSession } from '@/hooks/useAuthSession';
+import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { useFavorites } from '@/hooks/useFavorites';
 import { prepareListingWizardEntry } from '@/services/listing';
-import { navigateToListings } from '@/services/navigation';
+import {
+  navigateHome,
+  navigateToListings,
+  type HeaderNavKey,
+} from '@/services/navigation';
 import type { ActiveBannerItem, CategoryTreeNode } from '@/types';
 
 const SEO = {
@@ -20,15 +26,14 @@ const SEO = {
   url: 'https://haradan.com',
 };
 
-/**
- * Shell: header anında.
- * Feed: cache-first ATF + viewport lazy BTF.
- */
 export default function HomeScreen() {
   const router = useRouter();
   const bg = useThemeColor('background');
+  const isWide = useIsWideLayout();
   const { isLoggedIn } = useAuthSession();
   const drawers = useHeaderDrawers();
+  const { count: favoriteCount } = useFavorites();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const {
     data,
@@ -53,18 +58,20 @@ export default function HomeScreen() {
     }
   }, [refetch]);
 
-  const onProductPress = useCallback((id: string) => {
-    router.push(`/advert/${id}`);
-  }, [router]);
+  const onProductPress = useCallback(
+    (id: string) => {
+      router.push(`/advert/${id}`);
+    },
+    [router]
+  );
 
   const onBannerPress = useCallback(
     (slide: ActiveBannerItem) => {
-      if (__DEV__) console.log('[home] banner', slide.targetUrl ?? slide.id);
       if (!slide.targetUrl) return;
       if (/^https?:\/\//i.test(slide.targetUrl)) {
         Linking.openURL(slide.targetUrl).catch(() => {});
       } else {
-        router.push(slide.targetUrl as any);
+        router.push(slide.targetUrl as `/listings`);
       }
     },
     [router]
@@ -95,8 +102,29 @@ export default function HomeScreen() {
   }, [router]);
 
   const onOpenFavorites = useCallback(() => {
-    drawers?.openFavorites();
-  }, [drawers]);
+    if (!isLoggedIn) {
+      router.push('/auth/login?next=/');
+      return;
+    }
+    if (drawers) {
+      drawers.openFavorites();
+      return;
+    }
+    router.push('/(tabs)/favorites');
+  }, [drawers, isLoggedIn, router]);
+
+  const onMenuNav = useCallback(
+    (key: HeaderNavKey) => {
+      if (key === 'home') navigateHome(router);
+      else if (key === 'listings') navigateToListings(router, {});
+      else if (key === 'my-listings') {
+        router.push(
+          isLoggedIn ? '/my-listings' : '/auth/login?next=/my-listings'
+        );
+      }
+    },
+    [router, isLoggedIn]
+  );
 
   return (
     <View style={[styles.root, { backgroundColor: bg }]}>
@@ -111,42 +139,56 @@ export default function HomeScreen() {
         </Head>
       ) : null}
 
-      <AppHeader
-        brandName="Haradan.com"
-        isLoggedIn={isLoggedIn}
-        onFavoritesPress={onOpenFavorites}
-        onLoginPress={onLoginPress}
-        onSignupPress={onSignupPress}
-        onProfilePress={onProfilePress}
-        onPostAdPress={onPostAdPress}
-      />
+      {isWide ? (
+        <AppHeader
+          brandName="Haradan.com"
+          isLoggedIn={isLoggedIn}
+          onFavoritesPress={onOpenFavorites}
+          onLoginPress={onLoginPress}
+          onSignupPress={onSignupPress}
+          onProfilePress={onProfilePress}
+          onPostAdPress={onPostAdPress}
+        />
+      ) : null}
 
-      <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.flex}>
-        {isError ? (
-          <ErrorState variant="network" message={error} onRetry={refetch} />
-        ) : (
-          <HomeFeed
-            data={data}
-            categoryRoots={categoryRoots}
-            urgent={urgent}
-            trending={trending}
-            specialOffers={specialOffers}
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            onProductPress={onProductPress}
-            onBannerPress={onBannerPress}
-            onCategorySelect={onCategorySelect}
-            onPostAdPress={onPostAdPress}
-            onToggleFavorite={toggleFavorite}
-          />
-        )}
-      </SafeAreaView>
+      {isError ? (
+        <ErrorState variant="network" message={error} onRetry={refetch} />
+      ) : (
+        <HomeFeed
+          data={data}
+          categoryRoots={categoryRoots}
+          urgent={urgent}
+          trending={trending}
+          specialOffers={specialOffers}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          onProductPress={onProductPress}
+          onBannerPress={onBannerPress}
+          onCategorySelect={onCategorySelect}
+          onPostAdPress={onPostAdPress}
+          onToggleFavorite={toggleFavorite}
+          onMenuPress={() => setMenuOpen(true)}
+          onFavoritesPress={onOpenFavorites}
+          favoriteCount={favoriteCount}
+        />
+      )}
 
+      {!isWide ? (
+        <MobileMenuSheet
+          visible={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          categories={categoryRoots}
+          onNav={onMenuNav}
+          onCategory={onCategorySelect}
+          isLoggedIn={isLoggedIn}
+          onLogin={onLoginPress}
+          onPostAd={onPostAdPress}
+        />
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, position: 'relative' },
-  flex: { flex: 1 },
 });

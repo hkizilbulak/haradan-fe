@@ -4,6 +4,7 @@ export { BrandMark } from './BrandMark';
 export { FavoritesDrawer } from './FavoritesDrawer';
 export { HeaderDrawersProvider, useHeaderDrawers } from './HeaderDrawersContext';
 export { HomeContentContainer } from './HomeContentContainer';
+export { MobileGlassDock } from './MobileGlassDock';
 export { ProfileDrawer } from './ProfileDrawer';
 export { SearchBar } from './SearchBar';
 export { SettingsDrawer } from './SettingsDrawer';

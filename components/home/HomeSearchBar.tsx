@@ -42,6 +42,8 @@ type HomeSearchBarProps = {
   fullWidth?: boolean;
   /** Dış boşlukları sıkıştır (katalog başlığı). */
   compact?: boolean;
+  /** Liquid glass — hero üzerinde yüzen arama */
+  variant?: 'default' | 'glass';
 };
 
 const EASE = Easing.bezier(0.22, 1, 0.36, 1);
@@ -57,6 +59,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
   live = false,
   fullWidth = false,
   compact = false,
+  variant = 'default',
 }: HomeSearchBarProps) {
   const router = useRouter();
   const width = useLayoutWidth();
@@ -117,17 +120,33 @@ export const HomeSearchBar = memo(function HomeSearchBar({
   }, [focused, isDropdownActive, focusAnim]);
 
 
-  const focusedSurface = isDark ? '#232833' : '#ffffff';
-  const focusedBorder = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(12,12,14,0.18)';
+  const isGlass = variant === 'glass';
+
+  const focusedSurface = isGlass
+    ? 'rgba(255,255,255,0.88)'
+    : isDark
+      ? '#232833'
+      : '#ffffff';
+  const focusedBorder = isGlass
+    ? 'rgba(255,255,255,0.65)'
+    : isDark
+      ? 'rgba(255,255,255,0.22)'
+      : 'rgba(12,12,14,0.18)';
 
   const borderColor = focusAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [border, focusedBorder],
+    outputRange: [
+      isGlass ? 'rgba(255,255,255,0.45)' : border,
+      focusedBorder,
+    ],
   });
 
   const bg = focusAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [surface, focusedSurface],
+    outputRange: [
+      isGlass ? 'rgba(255,255,255,0.72)' : surface,
+      focusedSurface,
+    ],
   });
 
   const goListings = useCallback(
@@ -190,19 +209,30 @@ export const HomeSearchBar = memo(function HomeSearchBar({
       <Animated.View
         style={[
           styles.field,
+          isGlass && styles.fieldGlass,
           {
             backgroundColor: bg,
             borderColor,
             ...Platform.select({
               web: {
+                backdropFilter: isGlass
+                  ? 'blur(20px) saturate(160%)'
+                  : undefined,
+                WebkitBackdropFilter: isGlass
+                  ? 'blur(20px) saturate(160%)'
+                  : undefined,
                 boxShadow:
                   focused || isDropdownActive
                     ? isDark
                       ? '0 12px 36px rgba(0, 0, 0, 0.45)'
-                      : '0 12px 36px rgba(15, 23, 42, 0.07)'
-                    : isDark
-                      ? '0 2px 12px rgba(0, 0, 0, 0.25)'
-                      : '0 2px 12px rgba(15, 23, 42, 0.03)',
+                      : isGlass
+                        ? '0 16px 40px rgba(12,12,14,0.12)'
+                        : '0 12px 36px rgba(15, 23, 42, 0.07)'
+                    : isGlass
+                      ? '0 8px 28px rgba(12,12,14,0.08)'
+                      : isDark
+                        ? '0 2px 12px rgba(0, 0, 0, 0.25)'
+                        : '0 2px 12px rgba(15, 23, 42, 0.03)',
                 transition: 'box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1)',
               },
               default: {},
@@ -331,6 +361,12 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     borderRadius: 20,
     borderWidth: 1,
+  },
+  fieldGlass: {
+    minHeight: 54,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    paddingLeft: 16,
   },
   input: {
     flex: 1,
