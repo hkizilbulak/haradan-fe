@@ -507,9 +507,10 @@ export function PostDetailsStep({
             locked={locked}
           />
         </View>
-      ) : (
-        <PostCategoryProperties draft={draft} onUpdate={onUpdate} errors={errors} />
-      )}
+      ) : null}
+
+      <PostCategoryProperties draft={draft} onUpdate={onUpdate} errors={errors} />
+
 
       <View
         style={[styles.card, { backgroundColor: surface, borderColor: border }]}

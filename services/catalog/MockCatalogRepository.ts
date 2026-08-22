@@ -54,7 +54,17 @@ const HORSE_PROPERTIES: CategoryPropertyPublic[] = [
     sortOrder: 4,
     options: HORSE_GENDER_OPTIONS.map((g) => ({ value: g, label: g })),
   },
+  {
+    code: 'deneme',
+    title: 'deneme',
+    dataType: 'STRING',
+    isRequired: false,
+    isFilterable: true,
+    sortOrder: 5,
+    options: [],
+  },
 ];
+
 
 const PANSIYON_PROPERTIES: CategoryPropertyPublic[] = PANSIYON_FACILITY_OPTIONS.map(
   (fac, idx) => ({
@@ -121,6 +131,41 @@ export class MockCatalogRepository implements ICatalogRepository {
     categoryId: string,
     _options?: CatalogQueryOptions
   ): Promise<CategoryFormDefinitionResponse | null> {
+    if (!categoryId) return null;
+
+    // Check browser localStorage for real-time changes from BO
+    if (typeof window !== 'undefined') {
+      try {
+        const stored =
+          localStorage.getItem(`haradan_category_properties_${categoryId}`) ||
+          localStorage.getItem(`haradan_category_properties_cat-${categoryId}`) ||
+          localStorage.getItem(`haradan_category_properties_${categoryId.replace(/^cat-/, '')}`);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const activeProps: CategoryPropertyPublic[] = parsed
+              .filter((p: { isActive?: boolean }) => p.isActive !== false)
+              .map((p: any) => ({
+                code: p.code || p.id,
+                title: p.title,
+                helpText: p.helpText,
+                dataType: p.dataType,
+                isRequired: Boolean(p.isRequired),
+                isFilterable: p.isFilterable !== false,
+                sortOrder: p.sortOrder || 1,
+                options: p.options || [],
+              }));
+            return {
+              categoryId,
+              slug: categoryId,
+              name: categoryId,
+              properties: activeProps,
+            };
+          }
+        }
+      } catch {}
+    }
+
     const cid = (categoryId || '').toLowerCase();
     let props = HORSE_PROPERTIES;
     let slug = 'satilik-yaris-ati';
@@ -134,7 +179,7 @@ export class MockCatalogRepository implements ICatalogRepository {
       props = STUD_PROPERTIES;
       slug = cid.includes('arap') ? 'arap-aygir' : 'ingiliz-aygir';
       name = cid.includes('arap') ? 'Arap Aygır' : 'İngiliz Aygır';
-    } else if (cid.includes('nakliye')) {
+    } else if (cid.includes('nakliye') || cid.includes('transport')) {
       props = [
         {
           code: 'COMPANY_NAME',
@@ -145,21 +190,20 @@ export class MockCatalogRepository implements ICatalogRepository {
           sortOrder: 1,
           options: [],
         },
-      ];
-      slug = 'at-nakliyesi';
-      name = 'At Nakliyesi';
-    } else if (cid.includes('nalbant')) {
-      props = [
         {
-          code: 'SERVICE_AREA',
-          title: 'Hizmet Bölgesi',
+          code: 'WEBSITE_URL',
+          title: 'Web Sitesi',
           dataType: 'STRING',
-          isRequired: true,
-          isFilterable: true,
-          sortOrder: 1,
+          isRequired: false,
+          isFilterable: false,
+          sortOrder: 2,
           options: [],
         },
       ];
+      slug = 'at-nakliyesi';
+      name = 'At Nakliyesi';
+    } else if (cid.includes('nalbant') || cid.includes('farrier')) {
+      props = [];
       slug = 'nalbantlar';
       name = 'Nalbantlar';
     }
@@ -172,3 +216,4 @@ export class MockCatalogRepository implements ICatalogRepository {
     };
   }
 }
+

@@ -1,9 +1,11 @@
 import type {
   CatalogFacets,
   CategoryFormDefinitionResponse,
+  CategoryPropertyPublic,
   CategoryTreeNode,
   CategoryTreeResponse,
 } from '@/types';
+
 import { HttpClient } from '@/services/http';
 import type { CatalogQueryOptions, ICatalogRepository } from './CatalogRepository';
 import { mapCategoryTreeToFacets } from './mapCategoryTreeToFacets';
@@ -57,6 +59,42 @@ export class HttpCatalogRepository implements ICatalogRepository {
     options?: CatalogQueryOptions
   ): Promise<CategoryFormDefinitionResponse | null> {
     if (!categoryId) return null;
+
+    // Check browser localStorage for real-time changes from BO
+    if (typeof window !== 'undefined') {
+      try {
+        const stored =
+          localStorage.getItem(`haradan_category_properties_${categoryId}`) ||
+          localStorage.getItem(`haradan_category_properties_cat-${categoryId}`) ||
+          localStorage.getItem(`haradan_category_properties_${categoryId.replace(/^cat-/, '')}`);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const activeProps: CategoryPropertyPublic[] = parsed
+              .filter((p: { isActive?: boolean }) => p.isActive !== false)
+              .map((p: any) => ({
+                code: p.code || p.id,
+                title: p.title,
+                helpText: p.helpText,
+                dataType: p.dataType,
+                isRequired: Boolean(p.isRequired),
+                isFilterable: p.isFilterable !== false,
+                sortOrder: p.sortOrder || 1,
+                options: p.options || [],
+              }));
+            const res: CategoryFormDefinitionResponse = {
+              categoryId,
+              slug: categoryId,
+              name: categoryId,
+              properties: activeProps,
+            };
+            this.formCache.set(categoryId, res);
+            return res;
+          }
+        }
+      } catch {}
+    }
+
     if (this.formCache.has(categoryId) && !options?.fresh) {
       return this.formCache.get(categoryId) ?? null;
     }
@@ -74,6 +112,7 @@ export class HttpCatalogRepository implements ICatalogRepository {
       return new MockCatalogRepository().getCategoryFormDefinition(categoryId, options);
     }
   }
+
 
   async getFacets(options?: CatalogQueryOptions): Promise<CatalogFacets> {
     if (this.facets && !options?.fresh) {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -18,9 +18,11 @@ import {
   STUD_AGE_OPTIONS,
   STUD_BREED_OPTIONS,
 } from '@/components/listings/filterConfig';
+import { catalogRepository } from '@/services/catalog';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import type { CategoryPropertyPublic } from '@/types';
 import type { ListingDraft, ListingDraftDetails } from '@/types/listing';
 
 type PostCategoryPropertiesProps = {
@@ -94,116 +96,298 @@ export function PostCategoryProperties({
   const d = draft.details;
   const type = draft.type;
 
-  // 1. Pansiyon Haralar
-  if (isPansiyonListing(type)) {
+  const [categoryProperties, setCategoryProperties] = useState<CategoryPropertyPublic[]>([]);
+
+  useEffect(() => {
+    const catId = type?.categoryId || type?.categorySlug;
+    if (!catId) {
+      setCategoryProperties([]);
+      return;
+    }
+    let cancelled = false;
+    catalogRepository
+      .getCategoryFormDefinition(catId)
+      .then((def) => {
+        if (cancelled) return;
+        if (def && Array.isArray(def.properties)) {
+          setCategoryProperties(def.properties);
+        } else {
+          setCategoryProperties([]);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setCategoryProperties([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [type?.categoryId, type?.categorySlug]);
+
+  const customProperties = useMemo(() => {
+    if (!categoryProperties || categoryProperties.length === 0) return [];
+    return categoryProperties.filter((prop) => {
+      const codeUpper = (prop.code || '').toUpperCase();
+      if (
+        codeUpper === 'HORSE_BREED' ||
+        codeUpper === 'STALLION_BREED' ||
+        codeUpper === 'COAT_COLOR' ||
+        codeUpper === 'HORSE_AGE' ||
+        codeUpper === 'STALLION_AGE' ||
+        codeUpper === 'HORSE_GENDER' ||
+        codeUpper === 'GRASS_PADDOCK' ||
+        codeUpper === 'GRASSPADDOCK' ||
+        codeUpper === 'SAND_PADDOCK' ||
+        codeUpper === 'SANDPADDOCK' ||
+        codeUpper === 'STALLION_PADDOCK' ||
+        codeUpper === 'STALLIONPADDOCK' ||
+        codeUpper === 'VET' ||
+        codeUpper === 'VET_SERVICE' ||
+        codeUpper === 'FARRIER' ||
+        codeUpper === 'FARRIER_SERVICE' ||
+        codeUpper === 'FOALING_BARN' ||
+        codeUpper === 'FOALINGBARN' ||
+        codeUpper === 'COMPANY_NAME' ||
+        codeUpper === 'WEBSITE_URL'
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [categoryProperties]);
+
+  const renderCustomPropertiesCard = () => {
+    if (customProperties.length === 0) return null;
+
     return (
       <View
         style={[styles.card, { backgroundColor: surface, borderColor: border }]}
-        onLayout={(e) => onLayoutSection?.('facilities', e.nativeEvent.layout.y)}
+        onLayout={(e) =>
+          onLayoutSection?.('customProperties', e.nativeEvent.layout.y)
+        }
       >
         <Text style={[styles.section, { color: text }]}>
-          Tesis & Hizmet Bilgileri
-          <Text style={{ color: errorColor }}> *</Text>
+          Kategoriye Özel Ek Bilgiler
         </Text>
         <Text style={[styles.desc, { color: secondary }]}>
-          Tesisinizde sağladığınız padok, bakım ve hizmet olanaklarını belirtin (en az 1 özellik seçilmelidir).
+          Bu kategori için tanımlanmış ek özellikleri girin.
         </Text>
 
-        <View style={styles.toggleGrid}>
-          <ToggleItem
-            label="Çim Padok"
-            value={Boolean(d.facilityGrassPaddock)}
-            onToggle={() =>
-              onUpdate({ facilityGrassPaddock: !d.facilityGrassPaddock })
+        {customProperties.map((prop) => {
+          const propKey = prop.code || prop.title;
+          const currentProps = d.properties || {};
+          const val = currentProps[propKey];
+
+          if (prop.dataType === 'BOOLEAN') {
+            return (
+              <ToggleItem
+                key={propKey}
+                label={prop.title}
+                value={Boolean(val)}
+                onToggle={() =>
+                  onUpdate({
+                    properties: {
+                      ...currentProps,
+                      [propKey]: !val,
+                    },
+                  })
+                }
+              />
+            );
+          }
+
+          if (prop.options && prop.options.length > 0) {
+            return (
+              <View key={propKey} style={styles.fieldBlock}>
+                <Text style={[styles.fieldLabel, { color: secondary }]}>
+                  {prop.title}
+                  {prop.isRequired ? (
+                    <Text style={{ color: errorColor }}> *</Text>
+                  ) : null}
+                </Text>
+                <View style={styles.chips}>
+                  {prop.options.map((opt) => {
+                    const optVal = opt.value || opt.label;
+                    const on = String(val ?? '') === optVal;
+                    return (
+                      <Pressable
+                        key={optVal}
+                        onPress={() =>
+                          onUpdate({
+                            properties: {
+                              ...currentProps,
+                              [propKey]: optVal,
+                            },
+                          })
+                        }
+                        style={[
+                          styles.chip,
+                          {
+                            borderColor: on ? header : border,
+                            backgroundColor: on ? header : 'transparent',
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.chipLabel,
+                            { color: on ? '#fff' : text },
+                          ]}
+                        >
+                          {opt.label || opt.value}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            );
+          }
+
+          const isNumeric =
+            prop.dataType === 'INTEGER' ||
+            prop.dataType === 'DECIMAL' ||
+            prop.dataType === 'YEAR';
+
+          return (
+            <PostField
+              key={propKey}
+              label={prop.title}
+              required={prop.isRequired}
+              value={String(val ?? '')}
+              onChangeText={(textVal) =>
+                onUpdate({
+                  properties: {
+                    ...currentProps,
+                    [propKey]: textVal,
+                  },
+                })
+              }
+              placeholder={prop.helpText || `${prop.title} girin`}
+              keyboardType={isNumeric ? 'numeric' : 'default'}
+            />
+          );
+        })}
+      </View>
+    );
+  };
+
+  // 1. Pansiyon Haralar
+  if (isPansiyonListing(type)) {
+    return (
+      <>
+        <View
+          style={[styles.card, { backgroundColor: surface, borderColor: border }]}
+          onLayout={(e) => onLayoutSection?.('facilities', e.nativeEvent.layout.y)}
+        >
+          <Text style={[styles.section, { color: text }]}>
+            Tesis & Hizmet Bilgileri
+            <Text style={{ color: errorColor }}> *</Text>
+          </Text>
+          <Text style={[styles.desc, { color: secondary }]}>
+            Tesisinizde sağladığınız padok, bakım ve hizmet olanaklarını belirtin (en az 1 özellik seçilmelidir).
+          </Text>
+
+          <View style={styles.toggleGrid}>
+            <ToggleItem
+              label="Çim Padok"
+              value={Boolean(d.facilityGrassPaddock)}
+              onToggle={() =>
+                onUpdate({ facilityGrassPaddock: !d.facilityGrassPaddock })
+              }
+            />
+            <ToggleItem
+              label="Kum Padok"
+              value={Boolean(d.facilitySandPaddock)}
+              onToggle={() =>
+                onUpdate({ facilitySandPaddock: !d.facilitySandPaddock })
+              }
+            />
+            <ToggleItem
+              label="Aygır Padoğu"
+              value={Boolean(d.facilityStallionPaddock)}
+              onToggle={() =>
+                onUpdate({ facilityStallionPaddock: !d.facilityStallionPaddock })
+              }
+            />
+            <ToggleItem
+              label="Veteriner"
+              value={Boolean(d.facilityVeterinarian)}
+              onToggle={() =>
+                onUpdate({ facilityVeterinarian: !d.facilityVeterinarian })
+              }
+            />
+            <ToggleItem
+              label="Nalbant"
+              value={Boolean(d.facilityFarrier)}
+              onToggle={() =>
+                onUpdate({ facilityFarrier: !d.facilityFarrier })
+              }
+            />
+            <ToggleItem
+              label="Doğumhane"
+              value={Boolean(d.facilityFoalingBarn)}
+              onToggle={() =>
+                onUpdate({ facilityFoalingBarn: !d.facilityFoalingBarn })
+              }
+            />
+          </View>
+
+          {errors.facility ? (
+            <Text style={[styles.err, { color: errorColor }]}>{errors.facility}</Text>
+          ) : null}
+
+          <PostField
+            label="İdman Pisti"
+            value={d.facilityTrainingTrack ?? ''}
+            onChangeText={(facilityTrainingTrack) =>
+              onUpdate({ facilityTrainingTrack })
             }
-          />
-          <ToggleItem
-            label="Kum Padok"
-            value={Boolean(d.facilitySandPaddock)}
-            onToggle={() =>
-              onUpdate({ facilitySandPaddock: !d.facilitySandPaddock })
-            }
-          />
-          <ToggleItem
-            label="Aygır Padoğu"
-            value={Boolean(d.facilityStallionPaddock)}
-            onToggle={() =>
-              onUpdate({ facilityStallionPaddock: !d.facilityStallionPaddock })
-            }
-          />
-          <ToggleItem
-            label="Veteriner"
-            value={Boolean(d.facilityVeterinarian)}
-            onToggle={() =>
-              onUpdate({ facilityVeterinarian: !d.facilityVeterinarian })
-            }
-          />
-          <ToggleItem
-            label="Nalbant"
-            value={Boolean(d.facilityFarrier)}
-            onToggle={() =>
-              onUpdate({ facilityFarrier: !d.facilityFarrier })
-            }
-          />
-          <ToggleItem
-            label="Doğumhane"
-            value={Boolean(d.facilityFoalingBarn)}
-            onToggle={() =>
-              onUpdate({ facilityFoalingBarn: !d.facilityFoalingBarn })
-            }
+            placeholder="Örn: 1200m Kum Pist, Sentetik Pist..."
+            hint="Mevcut idman pisti özelliklerini ve uzunluğunu yazabilirsiniz."
           />
         </View>
-
-        {errors.facility ? (
-          <Text style={[styles.err, { color: errorColor }]}>{errors.facility}</Text>
-        ) : null}
-
-        <PostField
-          label="İdman Pisti"
-          value={d.facilityTrainingTrack ?? ''}
-          onChangeText={(facilityTrainingTrack) =>
-            onUpdate({ facilityTrainingTrack })
-          }
-          placeholder="Örn: 1200m Kum Pist, Sentetik Pist..."
-          hint="Mevcut idman pisti özelliklerini ve uzunluğunu yazabilirsiniz."
-        />
-      </View>
+        {renderCustomPropertiesCard()}
+      </>
     );
   }
 
   // 2. At Nakliyesi
   if (isTransportListing(type)) {
     return (
-      <View
-        style={[styles.card, { backgroundColor: surface, borderColor: border }]}
-        onLayout={(e) => onLayoutSection?.('transport', e.nativeEvent.layout.y)}
-      >
-        <Text style={[styles.section, { color: text }]}>
-          Firma ve Hizmet Bilgileri
-        </Text>
-        <Text style={[styles.desc, { color: secondary }]}>
-          Nakliye firmanız ve hizmet detaylarınızı eksiksiz tamamlayın.
-        </Text>
+      <>
+        <View
+          style={[styles.card, { backgroundColor: surface, borderColor: border }]}
+          onLayout={(e) => onLayoutSection?.('transport', e.nativeEvent.layout.y)}
+        >
+          <Text style={[styles.section, { color: text }]}>
+            Firma ve Hizmet Bilgileri
+          </Text>
+          <Text style={[styles.desc, { color: secondary }]}>
+            Nakliye firmanız ve hizmet detaylarınızı eksiksiz tamamlayın.
+          </Text>
 
-        <PostField
-          label="Firma Adı"
-          required
-          value={d.companyName ?? ''}
-          onChangeText={(companyName) => onUpdate({ companyName })}
-          placeholder="Örn: Anadolu At Taşımacılığı Ltd."
-          error={errors.companyName}
-        />
+          <PostField
+            label="Firma Adı"
+            required
+            value={d.companyName ?? ''}
+            onChangeText={(companyName) => onUpdate({ companyName })}
+            placeholder="Örn: Anadolu At Taşımacılığı Ltd."
+            error={errors.companyName}
+          />
 
-        <PostField
-          label="Web Sitesi"
-          value={d.websiteUrl ?? ''}
-          onChangeText={(websiteUrl) => onUpdate({ websiteUrl })}
-          placeholder="https://www.firmaadi.com"
-          keyboardType="url"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-      </View>
+          <PostField
+            label="Web Sitesi"
+            value={d.websiteUrl ?? ''}
+            onChangeText={(websiteUrl) => onUpdate({ websiteUrl })}
+            placeholder="https://www.firmaadi.com"
+            keyboardType="url"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
+        {renderCustomPropertiesCard()}
+      </>
     );
   }
 
@@ -403,17 +587,15 @@ export function PostCategoryProperties({
             error={errors.studDamsire}
           />
         </View>
+        {renderCustomPropertiesCard()}
       </>
     );
   }
 
-  // 4. Nalbantlar (yalnızca standart alanlar vardır)
-  if (isFarrierListing(type)) {
-    return null;
-  }
-
-  return null;
+  // 4. Diğer / Standart Satılık Atlar & Nalbantlar
+  return renderCustomPropertiesCard();
 }
+
 
 const styles = StyleSheet.create({
   card: {

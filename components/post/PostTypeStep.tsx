@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PostChoiceCard } from './PostChoiceCard';
 import { Spacing } from '@/constants/Spacing';
@@ -8,6 +8,10 @@ import {
   getCategoryIcon,
   pickListingRootCategories,
 } from '@/services/catalog/categoryDisplay';
+import {
+  findCategoryBySlug,
+  findCategoryParent,
+} from '@/services/catalog/categoryTree';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { CategoryTreeNode } from '@/types';
 import type { ListingTypeSelection } from '@/types/listing';
@@ -52,45 +56,88 @@ export function PostTypeStep({
 }: PostTypeStepProps) {
   const text = useThemeColor('text');
   const secondary = useThemeColor('textSecondary');
+  const primary = useThemeColor('header');
+
+  const [activeParentNode, setActiveParentNode] = useState<CategoryTreeNode | null>(null);
+
+  useEffect(() => {
+    if (!selectedRootSlug) {
+      setActiveParentNode(null);
+      return;
+    }
+    const found = findCategoryBySlug(categoryTree, selectedRootSlug);
+    setActiveParentNode(found);
+  }, [selectedRootSlug, categoryTree]);
 
   const roots = useMemo(() => pickRoots(categoryTree), [categoryTree]);
 
-  const selectedRoot = useMemo(
-    () => roots.find((n) => n.slug === selectedRootSlug) ?? null,
-    [roots, selectedRootSlug]
-  );
+  const currentChildren = useMemo(() => {
+    if (!activeParentNode) return roots;
+    return activeParentNode.children ?? [];
+  }, [activeParentNode, roots]);
 
-  const subtypes = selectedRoot?.children ?? [];
-
-  if (phase === 'category') {
+  if (phase === 'category' || (activeParentNode != null && selectedRootSlug)) {
+    const parentName = activeParentNode?.name ?? 'Kategori';
     return (
       <View style={styles.wrap}>
+        <View style={styles.navRow}>
+          <Pressable
+            onPress={() => {
+              if (activeParentNode && activeParentNode.slug !== selectedRootSlug) {
+                const parent = findCategoryParent(categoryTree, activeParentNode.id);
+                setActiveParentNode(parent);
+              } else {
+                setActiveParentNode(null);
+                onSelectRoot({
+                  categoryId: '',
+                  categorySlug: '',
+                  categoryName: '',
+                  parentSlug: null,
+                });
+              }
+            }}
+            style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
+          >
+            <Ionicons name="arrow-back" size={18} color={primary} />
+            <Text style={[styles.backText, { color: primary }]}>Geri</Text>
+          </Pressable>
+          <Text style={[styles.breadcrumbText, { color: secondary }]} numberOfLines={1}>
+            {parentName}
+          </Text>
+        </View>
+
         <Text style={[styles.kicker, { color: secondary }]}>
           Adım 1 · İlan türü
         </Text>
         <Text style={[styles.title, { color: text }]}>İlan türünü seçin</Text>
         <Text style={[styles.lead, { color: secondary }]}>
-          {selectedRoot
-            ? `${selectedRoot.name} kategorisinde hangi türde ilan vereceksiniz?`
-            : 'Seçtiğiniz gruba uygun ilan türünü işaretleyin.'}
+          {`${parentName} kategorisinde hangi türde ilan vereceksiniz?`}
         </Text>
         <View style={styles.list}>
-          {subtypes.length === 0 ? (
+          {currentChildren.length === 0 ? (
             <Text style={[styles.lead, { color: secondary }]}>
-              Bu kategoride ilan türü bulunamadı.
+              Bu kategoride alt ilan türü bulunamadı.
             </Text>
           ) : (
-            subtypes.map((node) => (
-            <PostChoiceCard
-              key={node.id}
-              title={node.name}
-              icon={getCategoryIcon(node.slug)}
-              selected={selectedType?.categoryId === node.id}
-              onPress={() =>
-                onSelectType(toSelection(node, selectedRootSlug))
-              }
-            />
-            ))
+            currentChildren.map((node) => {
+              const hasKids = node.children && node.children.length > 0;
+              return (
+                <PostChoiceCard
+                  key={node.id}
+                  title={node.name}
+                  subtitle={hasKids ? `${node.children.length} alt tür` : undefined}
+                  icon={getCategoryIcon(node.slug)}
+                  selected={selectedType?.categoryId === node.id}
+                  onPress={() => {
+                    if (hasKids) {
+                      setActiveParentNode(node);
+                    } else {
+                      onSelectType(toSelection(node, activeParentNode?.slug ?? selectedRootSlug));
+                    }
+                  }}
+                />
+              );
+            })
           )}
         </View>
       </View>
@@ -132,6 +179,7 @@ export function PostTypeStep({
                 onSelectType(toSelection(node, null));
                 return;
               }
+              setActiveParentNode(node);
               onSelectRoot(toSelection(node, null));
             }}
           />
@@ -153,4 +201,28 @@ const styles = StyleSheet.create({
   title: { ...Typography.h2 },
   lead: { ...Typography.body },
   list: { gap: Spacing.sm, marginTop: Spacing.sm },
+  navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  backText: {
+    ...Typography.body,
+    fontWeight: '600',
+  },
+  breadcrumbText: {
+    ...Typography.body,
+    fontWeight: '500',
+    flex: 1,
+  },
 });
+
