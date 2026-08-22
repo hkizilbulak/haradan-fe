@@ -56,6 +56,10 @@ export type BePublishedAdvertDetail = {
   isUrgent: boolean;
   urgentActivatedAt?: string | null;
   viewCount?: number;
+  sellerPhone?: string | null;
+  phone?: string | null;
+  sellerId?: string | null;
+  seller?: { phone?: string | null } | null;
 };
 
 const EMPTY_HORSE: HorseProfile = {
@@ -318,6 +322,12 @@ export function mapOwnerToAdvertDetail(
     isUrgent: false,
     urgentActivatedAt: null,
     sellerId,
+    sellerPhone:
+      (typeof dto.properties?.sellerPhone === 'string'
+        ? dto.properties.sellerPhone
+        : typeof dto.properties?.phone === 'string'
+          ? dto.properties.phone
+          : null),
     viewCount: 0,
     breadcrumbs: [
       { label: 'Ana sayfa', href: '/' },

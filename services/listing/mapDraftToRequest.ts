@@ -16,7 +16,14 @@ function tlToMinor(tl: number): number {
 
 export function buildDraftProperties(draft: ListingDraft): Record<string, unknown> {
   const d = draft.details;
-  const props: Record<string, unknown> = { ...(d.properties ?? {}) };
+  const props: Record<string, unknown> = {};
+  if (d.properties) {
+    for (const [k, v] of Object.entries(d.properties)) {
+      if (v !== undefined && v !== null && v !== '') {
+        props[k] = v;
+      }
+    }
+  }
   if (d.sellerPhone?.trim()) {
     const fullPhone =
       composeInternationalPhone(

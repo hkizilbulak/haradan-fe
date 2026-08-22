@@ -14,6 +14,7 @@ import type {
   IMyListingsRepository,
   MyListingEditPayload,
 } from './MyListingsRepository';
+import { buildDraftProperties } from '@/services/listing/mapDraftToRequest';
 import {
   mapOwnerAdvertToCard,
   type OwnerAdvertDto,
@@ -119,7 +120,7 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
       body.price = null;
     }
 
-    const dto = await this.http.request<OwnerAdvertDto>(
+    let dto = await this.http.request<OwnerAdvertDto>(
       `/v1/me/adverts/${encodeURIComponent(id)}`,
       {
         method: 'PATCH',
@@ -127,6 +128,27 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
         body: JSON.stringify(body),
       }
     );
+
+    if (payload.draft) {
+      const props = buildDraftProperties(payload.draft);
+      if (Object.keys(props).length > 0) {
+        try {
+          dto = await this.http.request<OwnerAdvertDto>(
+            `/v1/me/adverts/${encodeURIComponent(id)}/properties`,
+            {
+              method: 'PUT',
+              accessToken,
+              body: JSON.stringify({
+                expectedVersion: dto.version,
+                properties: props,
+              }),
+            }
+          );
+        } catch {
+          // Unseeded dynamic properties are ignored gracefully without blocking update
+        }
+      }
+    }
 
     const sellerId = getAuthSession()?.user.id ?? '';
     return mapOwnerAdvertToCard(dto, {

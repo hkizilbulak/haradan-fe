@@ -112,20 +112,24 @@ export class HttpListingRepository implements IListingRepository {
       mediaVersion = covered.mediaVersion;
     }
 
+    let currentVersion = created.version;
     const props = buildDraftProperties(draft);
     if (Object.keys(props).length > 0) {
       try {
-        await this.http.request<OwnerAdvertResponse>(
+        const propRes = await this.http.request<OwnerAdvertResponse>(
           `/v1/me/adverts/${created.id}/properties`,
           {
             method: 'PUT',
             accessToken,
             body: JSON.stringify({
-              expectedVersion: created.version,
+              expectedVersion: currentVersion,
               properties: props,
             }),
           }
         );
+        if (propRes?.version) {
+          currentVersion = propRes.version;
+        }
       } catch {
         // Unseeded dynamic properties are ignored gracefully without blocking creation
       }
@@ -133,7 +137,7 @@ export class HttpListingRepository implements IListingRepository {
 
     return {
       advertId: created.id,
-      version: created.version,
+      version: currentVersion,
       status: created.status,
     };
   }
