@@ -33,7 +33,12 @@ export type {
   CatalogFacetOption,
   CatalogFacetGroup,
   CatalogFacets,
+  PropertyDataType,
+  CategoryPropertyOption,
+  CategoryPropertyPublic,
+  CategoryFormDefinitionResponse,
 } from './category';
+
 export type { HomepageShowcaseResponse, HomepageData } from './homepage';
 export type {
   CatalogProductCard,

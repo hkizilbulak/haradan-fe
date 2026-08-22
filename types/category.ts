@@ -36,3 +36,39 @@ export type CatalogFacetGroup = {
 export type CatalogFacets = {
   groups: CatalogFacetGroup[];
 };
+
+export type PropertyDataType =
+  | 'STRING'
+  | 'TEXT'
+  | 'INTEGER'
+  | 'DECIMAL'
+  | 'BOOLEAN'
+  | 'SINGLE_SELECT'
+  | 'YEAR';
+
+export type CategoryPropertyOption = {
+  value: string;
+  label: string;
+};
+
+export type CategoryPropertyPublic = {
+  id?: string;
+  code: string;
+  title: string;
+  helpText?: string | null;
+  dataType: PropertyDataType;
+  isRequired: boolean;
+  isFilterable: boolean;
+  sortOrder: number;
+  options: CategoryPropertyOption[];
+  defaultValue?: unknown;
+  uiMetadata?: Record<string, unknown>;
+};
+
+export type CategoryFormDefinitionResponse = {
+  categoryId: string;
+  slug: string;
+  name: string;
+  properties: CategoryPropertyPublic[];
+};
+

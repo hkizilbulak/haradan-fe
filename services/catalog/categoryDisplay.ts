@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LISTING_GROUP_SLUGS } from '@/constants/listingCatalog';
 import type { CategoryTreeNode } from '@/types';
 
 /** Ana kategori (grup) ikonları — BE slug ile eşleşir. */
@@ -26,7 +25,7 @@ const LEAF_CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 function slugHeuristicIcon(slug: string): keyof typeof Ionicons.glyphMap {
-  const s = slug.toLowerCase();
+  const s = (slug || '').toLowerCase();
   if (s.includes('asim') || s.includes('aşım') || s.includes('aygir') || s.includes('aygır')) {
     return 'heart-outline';
   }
@@ -42,21 +41,26 @@ function slugHeuristicIcon(slug: string): keyof typeof Ionicons.glyphMap {
     s.startsWith('satilik-') ||
     s.includes('yaris') ||
     s.includes('binek-ati') ||
-    s.includes('kisrak')
+    s.includes('kisrak') ||
+    s.includes('at')
   ) {
     return 'trophy-outline';
   }
   if (s.includes('ekipman') || s.includes('malzeme')) {
     return 'construct-outline';
   }
+  if (s.includes('ahir') || s.includes('ahır') || s.includes('tesis')) {
+    return 'home-outline';
+  }
   return 'grid-outline';
 }
 
 /**
  * Kategori slug → Ionicons adı.
- * Bilinmeyen slug’lar için heuristik; yeni BE kategorileri ikon alır.
+ * Bilinmeyen slug’lar için heuristik; yeni BE / BO kategorileri dinamik ikon alır.
  */
-export function getCategoryIcon(slug: string): keyof typeof Ionicons.glyphMap {
+export function getCategoryIcon(slug?: string | null): keyof typeof Ionicons.glyphMap {
+  if (!slug) return 'grid-outline';
   return (
     ROOT_CATEGORY_ICONS[slug] ??
     LEAF_CATEGORY_ICONS[slug] ??
@@ -66,21 +70,12 @@ export function getCategoryIcon(slug: string): keyof typeof Ionicons.glyphMap {
 
 /**
  * İlan ver / mobil kısayol / menü — ana kategori grupları.
- * LISTING_GROUP_SLUGS sırası korunur; BE’ye yeni kök eklenirse sona eklenir.
+ * Back Office ve Backend'den gelen dinamik kategori ağacı ve sıralaması korunur.
  */
 export function pickListingRootCategories(
   tree: CategoryTreeNode[]
 ): CategoryTreeNode[] {
-  if (tree.length === 0) return [];
-
-  const bySlug = new Map(tree.map((node) => [node.slug, node]));
-  const ordered = LISTING_GROUP_SLUGS.map((slug) => bySlug.get(slug)).filter(
-    (node): node is CategoryTreeNode => node != null
-  );
-
-  const seen = new Set(ordered.map((n) => n.slug));
-  const extras = tree.filter((node) => !seen.has(node.slug));
-
-  if (ordered.length > 0) return [...ordered, ...extras];
+  if (!tree || tree.length === 0) return [];
   return tree;
 }
+

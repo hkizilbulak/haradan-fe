@@ -52,20 +52,23 @@ export class HttpHomepageRepository implements IHomepageRepository {
     return null;
   }
 
-  async getHomepage(_options?: HomepageQueryOptions): Promise<HomepageData> {
+  async getHomepage(options?: HomepageQueryOptions): Promise<HomepageData> {
     const accessToken = getAuthSession()?.accessToken ?? undefined;
     try {
-      return await this.fetchHomepageData(accessToken);
+      return await this.fetchHomepageData(accessToken, options);
     } catch (err) {
       if (accessToken) {
         // If an authenticated request failed (e.g. 401 session revoked), retry as guest
-        return await this.fetchHomepageData(undefined);
+        return await this.fetchHomepageData(undefined, options);
       }
       throw err;
     }
   }
 
-  private async fetchHomepageData(accessToken?: string): Promise<HomepageData> {
+  private async fetchHomepageData(
+    accessToken?: string,
+    options?: HomepageQueryOptions
+  ): Promise<HomepageData> {
     const auth = accessToken ? { accessToken } : {};
 
     const [newPage, urgentPage, featuredPage, showcase, categories, bannersRes] =
@@ -86,7 +89,7 @@ export class HttpHomepageRepository implements IHomepageRepository {
           method: 'GET',
           ...auth,
         }),
-        this.catalog.getCategoryTree(),
+        this.catalog.getCategoryTree({ fresh: Boolean(options?.fresh) }),
         Promise.all([
           this.http
             .request<ActiveBannerListResponse>('/v1/banners?placement=HOMEPAGE_HERO', {

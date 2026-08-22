@@ -34,8 +34,15 @@ import {
 } from '@/components/listings/filterConfig';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { locationLookup } from '@/services/location';
+import { catalogRepository } from '@/services/catalog';
 import { useDistricts, useProvinces } from '@/hooks/useLocation';
-import type { CatalogFacetGroup, CatalogFacetOption, CatalogFacets } from '@/types';
+import type {
+  CatalogFacetGroup,
+  CatalogFacetOption,
+  CatalogFacets,
+  CategoryPropertyPublic,
+} from '@/types';
+
 
 if (
   Platform.OS === 'android' &&
@@ -277,6 +284,45 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
   const isFarrierActive = isFarrierCategory(value.categorySlug);
   const isStudActive = isStudCategory(value.categorySlug);
 
+  const [categoryProperties, setCategoryProperties] = useState<CategoryPropertyPublic[]>([]);
+
+  useEffect(() => {
+    if (!value.categorySlug) {
+      setCategoryProperties([]);
+      return;
+    }
+    let cancelled = false;
+    let categoryId = '';
+    const walk = (opts: CatalogFacetOption[]) => {
+      for (const o of opts) {
+        if (o.slug === value.categorySlug) {
+          categoryId = o.id;
+          return;
+        }
+        walk(o.children);
+      }
+    };
+    groups.forEach((g) => walk(g.options));
+
+    catalogRepository
+      .getCategoryFormDefinition(categoryId || value.categorySlug)
+      .then((def) => {
+        if (cancelled) return;
+        if (def && Array.isArray(def.properties)) {
+          setCategoryProperties(def.properties);
+        } else {
+          setCategoryProperties([]);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setCategoryProperties([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [value.categorySlug, groups]);
+
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     'listing-type': true,
     'horse-breeds': true,
@@ -290,6 +336,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     period: true,
     advanced: false,
   });
+
   const [openOptions, setOpenOptions] = useState<Record<string, boolean>>({});
   const [cityQuery, setCityQuery] = useState('');
   const [districtQuery, setDistrictQuery] = useState('');
@@ -920,7 +967,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         </>
       ) : null}
 
-      {/* 3. PANSİYON HARALAR: Tesis & Hizmet Özellikleri (YALNIZCA Pansiyon Seçiliyken) */}
+      {/* 4. PANSİYON HARALAR: Tesis & Hizmet Özellikleri (YALNIZCA Pansiyon Seçiliyken) */}
       {isPansiyonActive ? (
         <Accordion
           title="Tesis / Hizmet Özellikleri"
@@ -981,7 +1028,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         </Accordion>
       ) : null}
 
-      {/* 4. AŞIM HİZMETLERİ: At Irkı, Yaş, Don (Renk) (YALNIZCA Aşım Seçiliyken) */}
+      {/* 5. AŞIM HİZMETLERİ: At Irkı, Yaş, Don (Renk) (YALNIZCA Aşım Seçiliyken) */}
       {isStudActive ? (
         <>
           <Accordion
@@ -1075,6 +1122,191 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
           </Accordion>
         </>
       ) : null}
+
+      {/* 6. BO'DAN GELEN DİNAMİK / ÖZEL KATEGORİ ÖZELLİKLERİ */}
+      {value.categorySlug && categoryProperties.length > 0 ? (
+        <>
+          {categoryProperties
+            .filter((prop) => {
+              const codeUpper = (prop.code || '').toUpperCase();
+              if (isHorseActive || isStudActive) {
+                if (
+                  codeUpper === 'HORSE_BREED' ||
+                  codeUpper === 'STALLION_BREED' ||
+                  codeUpper === 'COAT_COLOR' ||
+                  codeUpper === 'HORSE_AGE' ||
+                  codeUpper === 'STALLION_AGE' ||
+                  codeUpper === 'HORSE_GENDER'
+                ) {
+                  return false;
+                }
+              }
+              if (isPansiyonActive) {
+                if (
+                  codeUpper === 'GRASSPADDOCK' ||
+                  codeUpper === 'GRASS_PADDOCK' ||
+                  codeUpper === 'SANDPADDOCK' ||
+                  codeUpper === 'SAND_PADDOCK' ||
+                  codeUpper === 'STALLIONPADDOCK' ||
+                  codeUpper === 'STALLION_PADDOCK' ||
+                  codeUpper === 'VET' ||
+                  codeUpper === 'VET_SERVICE' ||
+                  codeUpper === 'FARRIER' ||
+                  codeUpper === 'FARRIER_SERVICE' ||
+                  codeUpper === 'FOALINGBARN' ||
+                  codeUpper === 'FOALING_BARN'
+                ) {
+                  return false;
+                }
+              }
+              return true;
+            })
+            .map((prop) => {
+              const propKey = prop.code || prop.title;
+              if (prop.dataType === 'BOOLEAN') {
+                const on = Boolean(value.facilities?.[prop.code as PansiyonFacilityKey] ?? value.features?.includes(propKey));
+                return (
+                  <Pressable
+                    key={propKey}
+                    onPress={() => {
+                      if (prop.code in (value.facilities || {})) {
+                        onChange({
+                          ...value,
+                          facilities: {
+                            ...value.facilities,
+                            [prop.code as PansiyonFacilityKey]: !on,
+                          },
+                        });
+                      } else {
+                        const curr = value.features ?? [];
+                        const next = on
+                          ? curr.filter((f) => f !== propKey)
+                          : [...curr, propKey];
+                        onChange({ ...value, features: next });
+                      }
+                    }}
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: on }}
+                    style={({ pressed }) => [
+                      styles.toggleRow,
+                      { opacity: pressed ? 0.7 : 1 },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.rowText,
+                        {
+                          color: on ? text : textSecondary,
+                          fontWeight: on ? '600' : '400',
+                          flex: 1,
+                        },
+                      ]}
+                    >
+                      {prop.title}
+                    </Text>
+                    <View
+                      style={[
+                        styles.switch,
+                        {
+                          backgroundColor: on ? header : border,
+                          justifyContent: on ? 'flex-end' : 'flex-start',
+                        },
+                      ]}
+                    >
+                      <View style={styles.switchKnob} />
+                    </View>
+                  </Pressable>
+                );
+              }
+
+              if (prop.options && prop.options.length > 0) {
+                return (
+                  <Accordion
+                    key={propKey}
+                    title={prop.title}
+                    open={openGroups[propKey] ?? true}
+                    onToggle={() => toggleGroup(propKey)}
+                    hint={
+                      value.features
+                        ?.filter((f) => prop.options.some((o) => o.value === f || o.label === f))
+                        .join(', ') || null
+                    }
+                    text={text}
+                    textMuted={textMuted}
+                    border={border}
+                  >
+                    {prop.options.map((opt) => {
+                      const optVal = opt.value || opt.label;
+                      const selected = (value.features ?? []).includes(optVal);
+                      return (
+                        <FilterRow
+                          key={optVal}
+                          label={opt.label || opt.value}
+                          multi
+                          selected={selected}
+                          onSelect={() => {
+                            const curr = value.features ?? [];
+                            const next = selected
+                              ? curr.filter((f) => f !== optVal)
+                              : [...curr, optVal];
+                            onChange({ ...value, features: next });
+                          }}
+                          {...rowTheme}
+                        />
+                      );
+                    })}
+                  </Accordion>
+                );
+              }
+
+              // Text / String / Number dynamic properties
+              const textVal =
+                value.features
+                  ?.find((f) => f.startsWith(`${propKey}:`))
+                  ?.replace(`${propKey}:`, '') ?? '';
+
+              return (
+                <Accordion
+                  key={propKey}
+                  title={prop.title}
+                  open={openGroups[propKey] ?? true}
+                  onToggle={() => toggleGroup(propKey)}
+                  hint={textVal || null}
+                  text={text}
+                  textMuted={textMuted}
+                  border={border}
+                >
+                  <View style={{ paddingVertical: 6, paddingHorizontal: 2 }}>
+                    <TextInput
+                      value={textVal}
+                      onChangeText={(t) => {
+                        const others = (value.features ?? []).filter(
+                          (f) => !f.startsWith(`${propKey}:`)
+                        );
+                        const next = t.trim() ? [...others, `${propKey}:${t}`] : others;
+                        onChange({ ...value, features: next });
+                      }}
+                      placeholder={`${prop.title} ile filtrele...`}
+                      placeholderTextColor={textMuted}
+                      style={{
+                        color: text,
+                        borderColor: border,
+                        backgroundColor: surface,
+                        paddingHorizontal: 12,
+                        height: 38,
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        fontSize: 13,
+                      }}
+                    />
+                  </View>
+                </Accordion>
+              );
+            })}
+        </>
+      ) : null}
+
+
 
       {/* 7. İlan Tarihi (Periyot - Her Zaman Görünür) */}
       <Accordion
