@@ -13,6 +13,8 @@ import {
   mapOwnerToAdvertDetail,
   mapPublishedDetailToAdvert,
 } from '../services/advert/mapAdvertDetail';
+import { mapOwnerToListingDraft } from '../services/my-listings/mapOwnerToListingDraft';
+import { detailsErrors, detailsStepComplete } from '../services/listing/validateListingDraft';
 import { HttpMyListingsRepository } from '../services/my-listings/HttpMyListingsRepository';
 import { MockMyListingsRepository } from '../services/my-listings/MockMyListingsRepository';
 import { ApiError } from '../services/http';
@@ -316,6 +318,107 @@ async function main(): Promise<void> {
   await http.removeDraft('adv-pub', 1, 'tok');
   const pubDel = calls.find((c) => c.url.includes('adv-pub'));
   assert(pubDel != null, 'http DELETE for published listing called');
+
+  // Test mapOwnerToListingDraft phone mapping and single-field edit validation
+  const mockTree = [
+    {
+      id: 'cat-pansiyon',
+      slug: 'pansiyon-haralar',
+      name: 'Pansiyon Haralar',
+      parentId: null,
+      children: [],
+    },
+    {
+      id: 'cat-horse',
+      slug: 'satilik-yaris-ati',
+      name: 'Satılık Yarış Atı',
+      parentId: 'satilik-atlar',
+      children: [],
+    },
+  ];
+
+  const dtoWithPhone = {
+    id: 'adv-edit-1',
+    status: 'PUBLISHED',
+    version: 3,
+    mediaVersion: 1,
+    categoryId: 'cat-horse',
+    districtId: 'dist-1',
+    provinceId: 'prov-1',
+    horseId: null,
+    title: 'Orijinal Başlık',
+    description: 'Açıklama metni',
+    address: 'Atatürk Cad. No: 15 Çiftlik',
+    price: { amountMinor: 25000000, currency: 'TRY' },
+    properties: {
+      sellerPhone: '+90 532 999 88 77',
+      gender: 'Erkek',
+      registeredName: 'BOLD PILOT',
+      age: 4,
+    },
+    media: [
+      {
+        assetId: 'asset-edit-1',
+        displayOrder: 0,
+        isCover: true,
+        lifecycleStatus: 'MASTER_READY',
+      },
+    ],
+  };
+
+  const editDraft = mapOwnerToListingDraft(dtoWithPhone, mockTree, apiBase);
+  assertEqual(editDraft.details.phoneCountryIso, 'TR', 'mapOwner draft phoneCountryIso is TR');
+  assertEqual(editDraft.details.sellerPhone, '532 999 88 77', 'mapOwner draft sellerPhone formatted');
+  assertEqual(editDraft.details.registeredName, 'BOLD PILOT', 'mapOwner draft registeredName mapped');
+  assertEqual(editDraft.details.gender, 'Erkek', 'mapOwner draft gender mapped');
+  assertEqual(editDraft.details.title, 'Orijinal Başlık', 'mapOwner draft title mapped');
+
+  // Editing ONLY a single field (e.g. title) should pass validation completely
+  const editedDraft = {
+    ...editDraft,
+    details: {
+      ...editDraft.details,
+      title: 'Güncellenmiş Başlık',
+    },
+  };
+  const errors = detailsErrors(editedDraft);
+  assertEqual(Object.keys(errors).length, 0, 'single field edit has zero validation errors');
+  assert(detailsStepComplete(editedDraft), 'single field edit detailsStepComplete is true');
+
+  // Test mapOwnerToListingDraft with pansiyon facilities
+  const dtoPansiyon = {
+    id: 'adv-edit-2',
+    status: 'DRAFT',
+    version: 1,
+    mediaVersion: 1,
+    categoryId: 'cat-pansiyon',
+    districtId: 'dist-1',
+    provinceId: 'prov-1',
+    horseId: null,
+    title: 'Pansiyon Hara İlanı',
+    description: 'Hara açıklaması',
+    address: 'Silivri Çiftlikler Bölgesi',
+    price: { amountMinor: 10000000, currency: 'TRY' },
+    properties: {
+      phone: '+905551234567',
+      facilityGrassPaddock: true,
+      facilityVeterinarian: true,
+    },
+    media: [
+      {
+        assetId: 'asset-edit-2',
+        displayOrder: 0,
+        isCover: true,
+        lifecycleStatus: 'MASTER_READY',
+      },
+    ],
+  };
+
+  const pansiyonDraft = mapOwnerToListingDraft(dtoPansiyon, mockTree, apiBase);
+  assertEqual(pansiyonDraft.details.sellerPhone, '555 123 45 67', 'pansiyon draft sellerPhone parsed');
+  assertEqual(pansiyonDraft.details.facilityGrassPaddock, true, 'facilityGrassPaddock mapped');
+  assertEqual(pansiyonDraft.details.facilityVeterinarian, true, 'facilityVeterinarian mapped');
+  assertEqual(detailsStepComplete(pansiyonDraft), true, 'pansiyon draft passes detailsStepComplete');
 
   console.log(`\n${passed} passed, ${failed} failed`);
   if (failed > 0) process.exit(1);

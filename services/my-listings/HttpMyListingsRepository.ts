@@ -145,7 +145,27 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
             }
           );
         } catch {
-          // Unseeded dynamic properties are ignored gracefully without blocking update
+          // If unseeded custom category properties fail, retry with core sellerPhone/phone
+          if (props.sellerPhone || props.phone) {
+            try {
+              const phoneOnly: Record<string, unknown> = {};
+              if (props.sellerPhone) phoneOnly.sellerPhone = props.sellerPhone;
+              if (props.phone) phoneOnly.phone = props.phone;
+              dto = await this.http.request<OwnerAdvertDto>(
+                `/v1/me/adverts/${encodeURIComponent(id)}/properties`,
+                {
+                  method: 'PUT',
+                  accessToken,
+                  body: JSON.stringify({
+                    expectedVersion: dto.version,
+                    properties: phoneOnly,
+                  }),
+                }
+              );
+            } catch {
+              // Ignore if phone update also fails
+            }
+          }
         }
       }
     }
