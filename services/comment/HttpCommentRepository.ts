@@ -33,15 +33,22 @@ export class HttpCommentRepository implements ICommentRepository {
       offset: String(offset),
     }).toString();
 
-    const data = await this.http.request<BeCommentListResponse>(
-      `/v1/adverts/${encodeURIComponent(advertId)}/comments?${query}`,
-      { method: 'GET' }
-    );
+    try {
+      const data = await this.http.request<BeCommentListResponse>(
+        `/v1/adverts/${encodeURIComponent(advertId)}/comments?${query}`,
+        { method: 'GET' }
+      );
 
-    return {
-      items: (data.items || []).map((item) => this.mapComment(item)),
-      totalCount: data.totalCount || 0,
-    };
+      return {
+        items: (data?.items || []).map((item) => this.mapComment(item)),
+        totalCount: data?.totalCount || 0,
+      };
+    } catch {
+      return {
+        items: [],
+        totalCount: 0,
+      };
+    }
   }
 
   async createComment(

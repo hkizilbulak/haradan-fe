@@ -43,16 +43,19 @@ export function PostWizardView() {
     goBack: wizard.goBack,
   });
 
+  const { updateDetails } = wizard;
+  const sellerPhone = wizard.draft.details.sellerPhone;
+
   useEffect(() => {
     const phone = session?.user.phone;
-    if (phone && !wizard.draft.details.sellerPhone) {
+    if (phone && !sellerPhone) {
       const parsed = parseInternationalPhone(phone);
-      wizard.updateDetails({
+      updateDetails({
         phoneCountryIso: parsed.iso,
         sellerPhone: parsed.national,
       });
     }
-  }, [session?.user.phone, wizard.draft.details.sellerPhone, wizard.updateDetails]);
+  }, [session?.user.phone, sellerPhone, updateDetails]);
 
   const close = useCallback(() => {
     unwindAndExit(() => {

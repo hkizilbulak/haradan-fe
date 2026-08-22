@@ -27,7 +27,7 @@ export class HttpCatalogRepository implements ICatalogRepository {
       const res = await this.http.request<CategoryTreeResponse>('/v1/categories', {
         method: 'GET',
       });
-      if (res.items && res.items.length > 0) {
+      if (res && Array.isArray(res.items)) {
         this.tree = res.items;
         return this.tree;
       }

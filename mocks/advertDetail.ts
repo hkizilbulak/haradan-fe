@@ -448,6 +448,145 @@ function buildDetail(base: CatalogProductCard): AdvertDetail {
   };
 }
 
+function buildDetailFromStored(id: string): AdvertDetail | null {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return null;
+  }
+  try {
+    const rawDrafts = localStorage.getItem('haradan.mockMyListings.drafts');
+    const drafts = rawDrafts ? (JSON.parse(rawDrafts) as Record<string, any>) : {};
+    const rawItems = localStorage.getItem('haradan.mockMyListings.items');
+    const items = rawItems ? (JSON.parse(rawItems) as any[]) : [];
+    const draft = drafts[id];
+    const card = Array.isArray(items) ? items.find((x) => x.id === id) : null;
+
+    if (!draft && !card) return null;
+
+    const title = (draft?.details?.title || card?.title || 'İlan').trim();
+    const mediaList: any[] = draft?.media ?? [];
+    const gallery =
+      mediaList.length > 0
+        ? mediaList.map((m, i) => ({
+            assetId: m.assetId ?? m.localId ?? `g-${i}`,
+            displayOrder: i,
+            isCover: Boolean(
+              m.isCover || (i === 0 && !mediaList.some((x) => x.isCover))
+            ),
+            publicUrl: m.uri,
+            usage: m.isCover ? ('cover' as const) : ('gallery' as const),
+          }))
+        : card?.cover
+          ? [card.cover]
+          : [media(img(H.race), `${id}-g0`, 0)];
+
+    const cover =
+      gallery.find((m) => m.isCover) ?? gallery[0] ?? card?.cover ?? null;
+    const price =
+      card?.price ??
+      (draft?.details?.priceTl
+        ? tryPrice(Number(draft.details.priceTl.replace(/\D/g, '')) || 0)
+        : tryPrice(0));
+
+    const horse: HorseProfile = {
+      registeredName: draft?.details?.registeredName || title,
+      age: Number(draft?.details?.age) || 5,
+      birthDate: draft?.details?.birthDate || '2021-03-14',
+      gender: draft?.details?.gender || 'Erkek',
+      coatColor: draft?.details?.coatColor || 'Doru',
+      heightCm: Number(draft?.details?.heightCm) || 160,
+      breed: draft?.details?.breed || draft?.details?.studBreed || 'İngiliz',
+      sire: draft?.details?.sire || draft?.details?.studSire || '',
+      dam: draft?.details?.dam || draft?.details?.studDam || '',
+      damsire: draft?.details?.damsire || draft?.details?.studDamsire || '',
+      owners: draft?.details?.ownersText
+        ? [draft.details.ownersText]
+        : ['İlan Sahibi'],
+      breeder: draft?.details?.breeder || '',
+      trainer: draft?.details?.trainer || '',
+      career: { starts: 0, first: 0, second: 0, third: 0, fourth: 0, fifth: 0 },
+      yearly: [],
+      careerEarnings: { amountMinor: 0, currency: 'TRY' },
+      handicap: 0,
+      races: [],
+      offspring: null,
+    };
+
+    return {
+      id,
+      slug: id,
+      title,
+      description:
+        draft?.details?.description?.trim() || 'Açıklama belirtilmemiş.',
+      price,
+      oldPrice: null,
+      categoryId:
+        draft?.type?.categorySlug ||
+        draft?.type?.categoryId ||
+        card?.categoryId ||
+        'satilik-yaris-ati',
+      districtId: draft?.details?.districtId || card?.districtId || '3401',
+      provinceId: draft?.details?.provinceId || card?.provinceId || '34',
+      horseId: draft?.details?.horseId ?? null,
+      cover,
+      gallery,
+      isFavorite: false,
+      packageCode: card?.packageCode ?? draft?.packageCode ?? 'STANDARD',
+      packageDisplayName: card?.packageDisplayName ?? 'Standart',
+      packageBadgeText: card?.packageBadgeText ?? null,
+      isUrgent: Boolean(card?.isUrgent),
+      urgentActivatedAt: card?.urgentActivatedAt ?? null,
+      isFeatured: Boolean(card?.isFeatured),
+      featuredUntil: card?.featuredUntil ?? null,
+      rating: card?.rating ?? 5,
+      reviewCount: 0,
+      viewCount: card?.viewCount ?? 0,
+      available: true,
+      brand: horse.breed,
+      publishedAt: card?.publishedAt ?? new Date().toISOString(),
+      sellerPhone: draft?.details?.sellerPhone
+        ? `+90 ${draft.details.sellerPhone}`
+        : '+90 555 123 45 67',
+      sellerId: card?.sellerId ?? DEMO_SELLER_ID,
+      breadcrumbs: [
+        { label: 'Ana sayfa', href: '/' },
+        { label: 'İlanlar', href: '/listings' },
+        { label: title },
+      ],
+      horse,
+      specs: buildSpecs(horse),
+      shipping: [
+        {
+          id: 's1',
+          service: 'Haradan anlaşmalı nakliye',
+          timing: '2–4 gün',
+          cost: 'Teklif',
+        },
+        {
+          id: 's2',
+          service: 'Satıcı teslimi',
+          timing: 'Randevu ile',
+          cost: 'Ücretsiz',
+        },
+      ],
+      warranties: [
+        {
+          id: 'w1',
+          title: 'Sağlık ve belge bilgisi',
+          body: 'Aşı kartı ve veteriner kontrolü satış öncesi paylaşılır.',
+        },
+      ],
+      bundleTitle: 'Birlikte avantajlı',
+      bundleItems: [],
+      reviews: [],
+      ratingBreakdown: [],
+      viewed: [],
+      related: [],
+    };
+  } catch {
+    return null;
+  }
+}
+
 const DETAIL_BY_ID: Record<string, AdvertDetail> = Object.fromEntries(
   cardsFromHome().map((card) => [card.id, buildDetail(card)])
 );
@@ -457,5 +596,8 @@ export const MOCK_ADVERT_FALLBACK = buildDetail(
 );
 
 export function getMockAdvertDetail(id: string): AdvertDetail {
-  return DETAIL_BY_ID[id] ?? { ...MOCK_ADVERT_FALLBACK, id };
+  if (DETAIL_BY_ID[id]) return DETAIL_BY_ID[id];
+  const userDetail = buildDetailFromStored(id);
+  if (userDetail) return userDetail;
+  return { ...MOCK_ADVERT_FALLBACK, id };
 }

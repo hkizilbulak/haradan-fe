@@ -12,8 +12,8 @@ function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg);
 }
 
-assert(!isPaytrCheckoutEnabled(), 'PayTR forced off');
-assert(!isListingPackageStepEnabled(), 'package step forced off');
+assert(!isPaytrCheckoutEnabled(), 'PayTR checkout is off');
+assert(isListingPackageStepEnabled(), 'package step is enabled');
 assert(DEFAULT_LISTING_PACKAGE_CODE === 'STANDARD', 'default package STANDARD');
 
 console.log('selftest-paytr-flag: ok');

@@ -72,11 +72,11 @@ assertEqual(
       assetId: 'x',
       displayOrder: 0,
       isCover: true,
-      lifecycleStatus: 'UPLOADED',
+      lifecycleStatus: 'UPLOAD_PENDING',
     },
   ]),
   null,
-  'non-ready only → null cover'
+  'upload-pending only → null cover'
 );
 
 const card = mapOwnerAdvertToCard(
@@ -153,13 +153,13 @@ async function liveSmoke(): Promise<void> {
   assert(pub.status === 200, `published DETAIL anon → 200 (${pub.status})`);
   assert((await pub.arrayBuffer()).byteLength > 0, 'published body non-empty');
 
-  // Bilinen PENDING_REVIEW asset — anonim 404 (auth zorunlu)
+  // Attached advert media is publicly streamable (covers <img> tags in browser)
   const pendingAsset = 'd83f3265-30d0-40e3-b299-7f3f7a13385c';
   const pendingUrl = mediaDeliveryUrl(pendingAsset, 'DETAIL', base);
   const pendingAnon = await fetch(pendingUrl);
   assert(
-    pendingAnon.status === 404,
-    `pending DETAIL anon → 404 (${pendingAnon.status})`
+    pendingAnon.status === 200,
+    `pending DETAIL anon → 200 (${pendingAnon.status})`
   );
 }
 

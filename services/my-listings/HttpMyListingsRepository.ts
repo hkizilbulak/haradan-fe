@@ -126,14 +126,6 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
     if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
       throw new ApiError('İlan sürümü geçersiz.', 400, 'VALIDATION_ERROR');
     }
-    if (id.startsWith('adv-') || id.startsWith('mock-')) {
-      const { removeMockDraftFromStore, removeMockVersionFromStore } = await import(
-        './mockListingStore'
-      );
-      removeMockDraftFromStore(id);
-      removeMockVersionFromStore(id);
-      return;
-    }
     const q = new URLSearchParams({
       expectedVersion: String(expectedVersion),
     });

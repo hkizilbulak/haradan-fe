@@ -5,9 +5,22 @@ export type CoverCandidate = {
   lifecycleStatus: string;
 };
 
-/** Delivery yalnızca MASTER_READY + READY variant ile çalışır. */
-export function isDeliverableMediaLifecycle(status: string): boolean {
-  return status === 'MASTER_READY';
+const NON_DELIVERABLE_STATUSES = new Set([
+  'UPLOAD_PENDING',
+  'VALIDATION_FAILED',
+  'CLEANUP_CANDIDATE',
+  'DELETING',
+  'PHYSICALLY_DELETED',
+]);
+
+/**
+ * Deliverable / displayable media lifecycles:
+ * Accepts MASTER_READY, READY, VALIDATING, UPLOADED or active local/mock media.
+ * Rejects unconfirmed UPLOAD_PENDING or failure/deletion lifecycles.
+ */
+export function isDeliverableMediaLifecycle(status?: string | null): boolean {
+  if (!status) return true;
+  return !NON_DELIVERABLE_STATUSES.has(status.toUpperCase().trim());
 }
 
 /**
@@ -18,13 +31,22 @@ export function pickDeliverableCover<T extends CoverCandidate>(
   media: T[] | undefined | null
 ): T | null {
   if (!media?.length) return null;
-  const ready = media.filter((m) =>
+  const deliverable = media.filter((m) =>
     isDeliverableMediaLifecycle(m.lifecycleStatus)
   );
-  if (!ready.length) return null;
+  if (!deliverable.length) return null;
+
+  // Prefer MASTER_READY / READY items over in-flight items
+  const ready = deliverable.filter(
+    (m) =>
+      m.lifecycleStatus === 'MASTER_READY' ||
+      m.lifecycleStatus === 'READY'
+  );
+  const pool = ready.length > 0 ? ready : deliverable;
+
   return (
-    ready.find((m) => m.isCover) ??
-    [...ready].sort((a, b) => a.displayOrder - b.displayOrder)[0] ??
+    pool.find((m) => m.isCover) ??
+    [...pool].sort((a, b) => a.displayOrder - b.displayOrder)[0] ??
     null
   );
 }

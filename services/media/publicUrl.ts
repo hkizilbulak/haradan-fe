@@ -26,6 +26,15 @@ export function mediaDeliveryUrl(
   profile: 'DETAIL' | 'HOMEPAGE' | 'SEARCH',
   apiBase: string
 ): string {
-  if (!assetId) return '';
-  return resolvePublicMediaUrl(`/v1/media/${assetId}/${profile}`, apiBase);
+  const trimmed = assetId?.trim();
+  if (!trimmed) return '';
+  if (
+    /^https?:\/\//i.test(trimmed) ||
+    trimmed.startsWith('file:') ||
+    trimmed.startsWith('blob:') ||
+    trimmed.startsWith('data:')
+  ) {
+    return trimmed;
+  }
+  return resolvePublicMediaUrl(`/v1/media/${trimmed}/${profile}`, apiBase);
 }

@@ -10,11 +10,10 @@ export function isPaytrCheckoutEnabled(): boolean {
 }
 
 /**
- * TEMP: hide package selection step; auto-assign STANDARD on publish.
- * Flip to true when package + PayTR flow should return.
+ * Package selection step is enabled for listing creation wizard.
  */
 export function isListingPackageStepEnabled(): boolean {
-  return false;
+  return true;
 }
 
 /** Free default package while paid checkout is disabled. */

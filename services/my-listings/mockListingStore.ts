@@ -116,6 +116,10 @@ export function addMockListingFromDraft(draft: ListingDraft): PublishListingResu
   const newId = `adv-${Date.now().toString(36)}`;
   const coverSlot = draft.media?.find((m) => m.isCover) ?? draft.media?.[0];
   const title = draft.details.title.trim() || 'Yeni İlan';
+  const pkgCode = draft.packageCode?.trim() || 'STANDARD';
+  const isPremium = pkgCode === 'PREMIUM';
+  const isUltimate = pkgCode === 'ULTIMATE';
+  const now = new Date().toISOString();
 
   const card: MyListingCard = {
     id: newId,
@@ -135,19 +139,30 @@ export function addMockListingFromDraft(draft: ListingDraft): PublishListingResu
           usage: 'cover',
         }
       : null,
-    categoryId: draft.type?.categorySlug || 'haflinger',
+    categoryId: draft.type?.categorySlug || draft.type?.categoryId || 'satilik-yaris-ati',
     provinceId: draft.details.provinceId || '34',
     districtId: draft.details.districtId || '3401',
+    horseId: draft.details.horseId ?? null,
+    packageCode: pkgCode,
+    packageDisplayName: isUltimate ? 'Ultimate' : isPremium ? 'Premium' : 'Standart',
+    packageBadgeText: isPremium ? 'Önerilen' : null,
+    isUrgent: isPremium || isUltimate,
+    urgentActivatedAt: isPremium || isUltimate ? now : null,
+    isFeatured: isPremium || isUltimate,
+    featuredUntil: isUltimate
+      ? new Date(Date.now() + 30 * 86400000).toISOString()
+      : isPremium
+        ? new Date(Date.now() + 7 * 86400000).toISOString()
+        : null,
     isFavorite: false,
-    isUrgent: false,
     viewCount: 0,
     rating: 5,
     reviewCount: 0,
     oldPrice: null,
-    available: null,
-    brand: null,
-    updatedAt: new Date().toISOString(),
-    publishedAt: new Date().toISOString(),
+    available: true,
+    brand: draft.details.breed || null,
+    updatedAt: now,
+    publishedAt: now,
     soldAt: null,
     version: 1,
     sellerId: 'user-demo',
