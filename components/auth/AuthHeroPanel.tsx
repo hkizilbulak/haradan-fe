@@ -3,12 +3,11 @@ import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
-/** Cartzilla auth hero — lifestyle, smartphone. */
-export const AUTH_HERO_IMAGE =
-  'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=1200&q=80';
+/** Haradan auth hero — at fotoğrafı. */
+export const AUTH_HERO_IMAGE = require('@/assets/brand/auth-hero.jpg');
 
 type AuthHeroPanelProps = {
-  imageUri?: string;
+  imageUri?: string | number | object;
 };
 
 const EASE = Easing.bezier(0.22, 1, 0.36, 1);
@@ -50,9 +49,9 @@ export function AuthHeroPanel({
         ]}
       >
         <Image
-          source={{ uri: imageUri }}
+          source={typeof imageUri === 'string' ? { uri: imageUri } : imageUri}
           style={styles.image}
-          contentFit="contain"
+          contentFit="cover"
           transition={480}
           accessibilityIgnoresInvertColors
         />
@@ -67,17 +66,15 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: PANEL_RADIUS,
     borderBottomLeftRadius: PANEL_RADIUS,
     overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 40,
+    paddingHorizontal: 40,
+    paddingVertical: 48,
   },
   imageWrap: {
+    flex: 1,
     width: '100%',
     height: '100%',
-    maxWidth: 520,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   image: {
     width: '100%',
