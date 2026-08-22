@@ -15,7 +15,7 @@ export default function SignupScreen() {
           />
         </Head>
       ) : null}
-      <AuthLayout formKey="signup" variant="luxury">
+      <AuthLayout formKey="signup" variant="luxury" mobileTagline="Dakikalar içinde ücretsiz hesap açın">
         <SignupForm />
       </AuthLayout>
     </>

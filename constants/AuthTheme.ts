@@ -20,26 +20,32 @@ export const AuthDarkTheme = {
 } as const;
 
 /**
- * Cartzilla login referansı — beyaz zemin, ince border, siyah vurgular.
+ * Haradan auth — temiz beyaz zemin, marka pembesi CTA.
+ * Mobil ve masaüstü giriş / kayıt ekranları.
  */
 export const AuthLuxuryTheme = {
-  background: '#ffffff',
+  background: '#f3f5f9',
   surface: '#ffffff',
   surfaceElevated: '#ffffff',
   text: '#1d2129',
   textSecondary: '#6c727f',
   textMuted: '#9ca3af',
   border: '#e3e9ef',
-  borderFocus: 'rgba(29,33,41,0.28)',
-  primary: '#0c0c0e',
-  primaryDark: '#000000',
-  accent: '#0c0c0e',
-  accentSoft: 'rgba(12,12,14,0.04)',
-  glow: 'rgba(12,12,14,0.14)',
+  borderFocus: 'rgba(243,71,112,0.45)',
+  primary: '#f34770',
+  primaryDark: '#d63a5f',
+  accent: '#f34770',
+  accentSoft: 'rgba(243,71,112,0.08)',
+  glow: 'rgba(243,71,112,0.22)',
   error: '#dc2626',
+  errorSoft: '#fef2f2',
+  success: '#16a34a',
+  successSoft: '#f0fdf4',
+  infoSoft: '#eff6ff',
   divider: '#e3e9ef',
   checkboxBorder: '#cfd6de',
   frameless: false,
+  heroOverlay: 'rgba(12,12,14,0.55)',
 } as const;
 
 export type AuthThemeVariant = 'light' | 'dark' | 'luxury';
@@ -59,9 +65,14 @@ export type AuthThemeTokens = {
   accentSoft: string;
   glow: string;
   error: string;
+  errorSoft?: string;
+  success?: string;
+  successSoft?: string;
+  infoSoft?: string;
   divider: string;
   checkboxBorder: string;
   frameless: boolean;
+  heroOverlay?: string;
 };
 
 /** Login split oranları — form 40%, hero 60%. */

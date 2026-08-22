@@ -13,21 +13,25 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
+import { useAuthLayout } from './AuthLayoutContext';
 import { useAuthTheme } from './AuthThemeContext';
 
 type AuthTextFieldProps = Omit<TextInputProps, 'style'> & {
   label: string;
   error?: string | null;
+  leftIcon?: keyof typeof Ionicons.glyphMap;
   rightIcon?: 'eye' | 'eye-off' | null;
   onRightIconPress?: () => void;
 };
 
 const EASE = Easing.bezier(0.22, 1, 0.36, 1);
-const FIELD_RADIUS = 8;
+const FIELD_RADIUS = 12;
+const FIELD_HEIGHT = 52;
 
 export function AuthTextField({
   label,
   error,
+  leftIcon,
   rightIcon,
   onRightIconPress,
   onFocus,
@@ -35,13 +39,14 @@ export function AuthTextField({
   ...inputProps
 }: AuthTextFieldProps) {
   const { tokens } = useAuthTheme();
+  const { isGlass } = useAuthLayout();
   const [focused, setFocused] = useState(false);
   const focusAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(focusAnim, {
       toValue: focused ? 1 : 0,
-      duration: 240,
+      duration: 200,
       easing: EASE,
       useNativeDriver: false,
     }).start();
@@ -55,6 +60,22 @@ export function AuthTextField({
     ],
   });
 
+  const bgColor = focusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [
+      isGlass ? 'rgba(255,255,255,0.52)' : tokens.surface,
+      isGlass ? 'rgba(255,255,255,0.72)' : tokens.accentSoft,
+    ],
+  });
+
+  const fieldBorder = isGlass
+    ? error
+      ? tokens.error
+      : focused
+        ? 'rgba(243,71,112,0.55)'
+        : 'rgba(255,255,255,0.65)'
+    : undefined;
+
   return (
     <View style={styles.wrap}>
       <Text style={[styles.label, { color: tokens.text }]}>{label}</Text>
@@ -62,19 +83,20 @@ export function AuthTextField({
         style={[
           styles.field,
           {
-            borderColor,
-            backgroundColor: tokens.surface,
-            ...Platform.select({
-              web: {
-                boxShadow: focused
-                  ? '0 4px 16px rgba(15, 23, 42, 0.04)'
-                  : 'none',
-              },
-              default: {},
-            }),
+            borderColor: fieldBorder ?? borderColor,
+            backgroundColor: bgColor,
+            minHeight: isGlass ? 48 : FIELD_HEIGHT,
           },
         ]}
       >
+        {leftIcon ? (
+          <Ionicons
+            name={leftIcon}
+            size={20}
+            color={focused ? tokens.primary : tokens.textMuted}
+            style={styles.leftIcon}
+          />
+        ) : null}
         <TextInput
           {...inputProps}
           placeholderTextColor={tokens.textMuted}
@@ -92,10 +114,10 @@ export function AuthTextField({
         {rightIcon ? (
           <Pressable
             onPress={onRightIconPress}
-            hitSlop={10}
+            hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel={
-              rightIcon === 'eye' ? 'Show password' : 'Hide password'
+              rightIcon === 'eye' ? 'Parolayı göster' : 'Parolayı gizle'
             }
             style={({ pressed }) => [
               styles.iconBtn,
@@ -104,7 +126,7 @@ export function AuthTextField({
           >
             <Ionicons
               name={rightIcon === 'eye' ? 'eye-outline' : 'eye-off-outline'}
-              size={20}
+              size={22}
               color={tokens.textMuted}
             />
           </Pressable>
@@ -119,24 +141,28 @@ export function AuthTextField({
 
 const styles = StyleSheet.create({
   wrap: {
-    gap: Spacing.sm,
+    gap: 6,
   },
   label: {
     ...Typography.small,
     fontWeight: '600',
+    marginLeft: 2,
   },
   field: {
-    minHeight: 48,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderRadius: FIELD_RADIUS,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
   },
+  leftIcon: {
+    marginRight: Spacing.sm,
+  },
   input: {
     flex: 1,
     ...Typography.body,
-    paddingVertical: Platform.OS === 'web' ? 12 : 10,
+    fontSize: 16,
+    paddingVertical: Platform.OS === 'web' ? 14 : 12,
     ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
   },
   iconBtn: {
@@ -145,5 +171,6 @@ const styles = StyleSheet.create({
   },
   error: {
     ...Typography.caption,
+    marginLeft: 2,
   },
 });
