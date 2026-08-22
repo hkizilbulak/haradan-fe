@@ -9,6 +9,9 @@ import {
   type BePublishedAdvertDetail,
 } from './mapAdvertDetail';
 import { createCachedAdvertRepository } from './CachedAdvertRepository';
+import { HttpTjkRepository } from '@/services/tjk/HttpTjkRepository';
+import type { ITjkRepository } from '@/services/tjk/TjkRepository';
+import type { TjkHorseProfile } from '@/types/listing';
 
 /**
  * PUBLIC detail first; on miss/failure with a session, owner read.
@@ -16,9 +19,11 @@ import { createCachedAdvertRepository } from './CachedAdvertRepository';
  */
 export class HttpAdvertRepository implements IAdvertRepository {
   private readonly http: HttpClient;
+  private readonly tjkRepo: ITjkRepository;
 
-  constructor(private readonly baseUrl: string) {
+  constructor(private readonly baseUrl: string, tjkRepo?: ITjkRepository) {
     this.http = new HttpClient(baseUrl);
+    this.tjkRepo = tjkRepo ?? new HttpTjkRepository(baseUrl);
   }
 
   getCached(_id: string): AdvertDetail | null {
@@ -47,10 +52,21 @@ export class HttpAdvertRepository implements IAdvertRepository {
         accessToken && viewerUserId
           ? await this.isOwned(id, accessToken)
           : false;
+
+      let tjkHorse: TjkHorseProfile | null = null;
+      if (dto.horse?.id) {
+        try {
+          tjkHorse = await this.tjkRepo.getById(dto.horse.id);
+        } catch {
+          // graceful fallback
+        }
+      }
+
       return mapPublishedDetailToAdvert(
         dto,
         this.baseUrl,
-        owned ? viewerUserId : null
+        owned ? viewerUserId : null,
+        tjkHorse
       );
     } catch (err) {
       publicError = err;
@@ -62,7 +78,15 @@ export class HttpAdvertRepository implements IAdvertRepository {
         `/v1/me/adverts/${encodeURIComponent(id)}`,
         { method: 'GET', accessToken: accessToken! }
       );
-      return mapOwnerToAdvertDetail(owner, this.baseUrl, viewerUserId ?? '');
+      let tjkHorse: TjkHorseProfile | null = null;
+      if (owner.horseId) {
+        try {
+          tjkHorse = await this.tjkRepo.getById(owner.horseId);
+        } catch {
+          // graceful fallback
+        }
+      }
+      return mapOwnerToAdvertDetail(owner, this.baseUrl, viewerUserId ?? '', tjkHorse);
     } catch (ownerErr) {
       if (
         ownerErr instanceof ApiError &&

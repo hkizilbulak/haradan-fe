@@ -77,6 +77,18 @@ function ageFromBirthYear(year: number | null | undefined): number {
   return Math.max(0, new Date().getFullYear() - year);
 }
 
+export function mapTjkCoat(raw: string | null | undefined): string {
+  const value = (raw ?? '').trim().toLocaleLowerCase('tr');
+  if (!value) return '';
+  if (value === 'a' || value === 'al') return 'Al';
+  if (value === 'd' || value === 'doru') return 'Doru';
+  if (value === 'k' || value === 'kır' || value === 'kir') return 'Kır';
+  if (value === 'y' || value === 'ya' || value === 'yağız' || value === 'yagiz') return 'Yağız';
+  if (value === 'ka' || value === 'kestane') return 'Kestane';
+  if (value === 'da' || value === 'doru al') return 'Doru Al';
+  return (raw ?? '').trim();
+}
+
 export function mapHorseSelection(item: HorseSelectionItem): TjkHorseSummary {
   return {
     horseId: item.id,
@@ -107,7 +119,7 @@ export function mapHorseDetail(item: HorsePublicDetailResponse): TjkHorseProfile
     ...summary,
     gender: mapTjkGender(item.gender),
     breed: firstLine(item.breed),
-    coatColor: (item.coat ?? '').trim(),
+    coatColor: mapTjkCoat(item.coat),
     birthDate,
     age: ageFromBirthYear(item.birthYear),
     heightCm: null,
@@ -115,8 +127,8 @@ export function mapHorseDetail(item: HorsePublicDetailResponse): TjkHorseProfile
     dam: item.damName ?? '',
     damsire,
     owners: owner ? [owner] : [],
-    breeder: '',
-    trainer: '',
+    breeder: typeof profile.breeder === 'string' ? profile.breeder : '',
+    trainer: typeof profile.trainer === 'string' ? profile.trainer : '',
     handicap: null,
   };
 }

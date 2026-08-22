@@ -7,10 +7,12 @@ import { locationLookup, formatAdvertLocation } from '@/services/location';
 import type { OwnerAdvertDto } from '@/services/my-listings/mapOwnerAdvert';
 import type {
   AdvertDetail,
+  HorseGender,
   HorseProfile,
   Money,
   PublicMediaItem,
 } from '@/types';
+import type { TjkHorseProfile } from '@/types/listing';
 
 type BeMoney = { amountMinor: number; currency: string } | null;
 
@@ -60,7 +62,7 @@ const EMPTY_HORSE: HorseProfile = {
   registeredName: '',
   age: 0,
   birthDate: '',
-  gender: 'Erkek',
+  gender: '' as HorseGender,
   coatColor: '',
   heightCm: null,
   breed: '',
@@ -77,6 +79,38 @@ const EMPTY_HORSE: HorseProfile = {
   races: [],
   offspring: null,
 };
+
+function buildHorseFromTjkOrDto(
+  dtoHorse: BePublishedAdvertDetail['horse'],
+  tjkHorse?: TjkHorseProfile | null
+): HorseProfile {
+  if (tjkHorse) {
+    return {
+      ...EMPTY_HORSE,
+      registeredName: tjkHorse.registeredName || dtoHorse?.originalName || '',
+      gender: (tjkHorse.gender as HorseGender) || ('' as HorseGender),
+      breed: tjkHorse.breed || '',
+      coatColor: tjkHorse.coatColor || '',
+      birthDate: tjkHorse.birthDate || '',
+      age: tjkHorse.age || 0,
+      heightCm: tjkHorse.heightCm ?? null,
+      sire: tjkHorse.sire || '',
+      dam: tjkHorse.dam || '',
+      damsire: tjkHorse.damsire || '',
+      owners: tjkHorse.owners ?? [],
+      breeder: tjkHorse.breeder || '',
+      trainer: tjkHorse.trainer || '',
+      handicap: tjkHorse.handicap ?? 0,
+    };
+  }
+  if (dtoHorse) {
+    return {
+      ...EMPTY_HORSE,
+      registeredName: dtoHorse.originalName,
+    };
+  }
+  return EMPTY_HORSE;
+}
 
 function absolutizeMedia(
   items: BePublicMedia[],
@@ -151,17 +185,13 @@ function emptyDetailShell(
 export function mapPublishedDetailToAdvert(
   dto: BePublishedAdvertDetail,
   apiBase: string,
-  sellerId?: string | null
+  sellerId?: string | null,
+  tjkHorse?: TjkHorseProfile | null
 ): AdvertDetail {
   const gallery = absolutizeMedia(dto.media ?? [], apiBase);
   const cover =
     gallery.find((m) => m.isCover) ?? gallery[0] ?? null;
-  const horse: HorseProfile = dto.horse
-    ? {
-        ...EMPTY_HORSE,
-        registeredName: dto.horse.originalName,
-      }
-    : EMPTY_HORSE;
+  const horse: HorseProfile = buildHorseFromTjkOrDto(dto.horse, tjkHorse);
 
   const propRows = (dto.properties ?? [])
     .map((p) => ({
@@ -230,7 +260,8 @@ export function mapPublishedDetailToAdvert(
 export function mapOwnerToAdvertDetail(
   dto: OwnerAdvertDto,
   apiBase: string,
-  sellerId: string
+  sellerId: string,
+  tjkHorse?: TjkHorseProfile | null
 ): AdvertDetail {
   const media = filterDeliverableMedia(dto.media).sort(
     (a, b) => a.displayOrder - b.displayOrder
@@ -250,6 +281,10 @@ export function mapOwnerToAdvertDetail(
   const districtId = dto.districtId ?? '';
   const provinceId = dto.provinceId ?? '';
   const locationName = formatAdvertLocation({ districtId, provinceId });
+  const horse: HorseProfile = buildHorseFromTjkOrDto(
+    dto.horseId ? { id: dto.horseId, originalName: '', tjkNumber: '' } : null,
+    tjkHorse
+  );
 
   return emptyDetailShell({
     id: dto.id,
@@ -279,7 +314,7 @@ export function mapOwnerToAdvertDetail(
       { label: 'İlanlarım', href: '/my-listings' },
       { label: title },
     ],
-    horse: EMPTY_HORSE,
+    horse,
     specs: [],
   });
 }
