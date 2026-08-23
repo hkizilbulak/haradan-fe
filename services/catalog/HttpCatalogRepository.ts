@@ -123,7 +123,9 @@ export class HttpCatalogRepository implements ICatalogRepository {
                 }));
 
               // If stored properties only contain custom fields, merge core default properties
-              const defaultDef = new MockCatalogRepository().getCategoryFormDefinition(targetSlug || targetId);
+              const defaultDef = await new MockCatalogRepository().getCategoryFormDefinition(
+                targetSlug || targetId
+              );
               const defaultProps = defaultDef?.properties || [];
               const existingCodes = new Set(activeProps.map((p) => (p.code || p.title).toLowerCase()));
               for (const defProp of defaultProps) {
