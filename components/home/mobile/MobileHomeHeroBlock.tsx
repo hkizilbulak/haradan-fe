@@ -5,14 +5,11 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { HeroSlider } from '../HeroSlider';
 import { HomeSearchBar } from '../HomeSearchBar';
 import { CategoryStrip } from '../CategoryStrip';
-import { MobileHomeTopBar } from './MobileHomeTopBar';
 import type { ActiveBannerItem, CategoryTreeNode } from '@/types';
 
 type MobileHomeHeroBlockProps = {
   banners: ActiveBannerItem[];
   onBannerPress: (slide: ActiveBannerItem) => void;
-  onMenuPress: () => void;
-  onPostAdPress: () => void;
   categories: CategoryTreeNode[];
   onCategorySelect: (cat: CategoryTreeNode) => void;
 };
@@ -21,8 +18,6 @@ type MobileHomeHeroBlockProps = {
 export function MobileHomeHeroBlock({
   banners,
   onBannerPress,
-  onMenuPress,
-  onPostAdPress,
   categories,
   onCategorySelect,
 }: MobileHomeHeroBlockProps) {
@@ -54,8 +49,6 @@ export function MobileHomeHeroBlock({
           />
         ) : null}
       </View>
-
-      <MobileHomeTopBar onMenuPress={onMenuPress} onPostAdPress={onPostAdPress} />
 
       <View style={styles.bottomPanel}>
         <HomeSearchBar variant="glass" fullWidth compact />

@@ -6,6 +6,7 @@ export { HeaderDrawersProvider, useHeaderDrawers } from './HeaderDrawersContext'
 export { HomeContentContainer } from './HomeContentContainer';
 export { MobileGlassDock } from './MobileGlassDock';
 export { MobileDockHost } from './MobileDockHost';
+export { MobileScreenHeader } from './mobile/MobileScreenHeader';
 export { ProfileDrawer } from './ProfileDrawer';
 export { SearchBar } from './SearchBar';
 export { SettingsDrawer } from './SettingsDrawer';

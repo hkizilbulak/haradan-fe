@@ -1,12 +1,12 @@
 import React from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { Ionicons } from '@expo/vector-icons';
 import { BrandMark } from '@/components/layout/BrandMark';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { glassSurface, MOBILE_INK } from '@/components/layout/glassStyles';
+import { glassSurface } from '@/components/layout/glassStyles';
 
 type MobileHomeTopBarProps = {
   onMenuPress: () => void;
@@ -17,7 +17,7 @@ export function MobileHomeTopBar({
   onMenuPress,
   onPostAdPress,
 }: MobileHomeTopBarProps) {
-  const insets = useSafeAreaInsets();
+  const insets = useSafeInsets();
   const primary = useThemeColor('primary');
 
   return (
@@ -111,5 +111,3 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 });
-
-export { MOBILE_INK };

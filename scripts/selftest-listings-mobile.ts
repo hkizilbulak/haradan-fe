@@ -71,7 +71,7 @@ const viewSrc = readFileSync(join(root, 'ListingsView.tsx'), 'utf8');
 assert(viewSrc.includes('MobileListingsTopBar'), 'view uses top bar');
 assert(viewSrc.includes('MobileListingsFilterSheet'), 'view uses filter sheet');
 assert(viewSrc.includes('MobileListingsQuickFilters'), 'view uses quick filters');
-assert(viewSrc.includes('MOBILE_HOME_DOCK_INSET'), 'view docks inset');
+assert(viewSrc.includes('mobileDockScrollInset'), 'listings dynamic dock pad');
 assert(viewSrc.includes('compact={!isWide}'), 'compact grid on mobile');
 assert(viewSrc.includes('variant="glass"'), 'glass search on mobile');
 assert(viewSrc.includes('mobileListingsTopInset'), 'dynamic top inset');

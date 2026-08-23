@@ -3,9 +3,10 @@ import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Skeleton, SkeletonPulse } from '@/components/ui/Skeleton';
 import {
   HOME_DESKTOP_BREAKPOINT,
-  MOBILE_DETAIL_SCROLL_INSET,
+  mobileDetailScrollInset,
 } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
+import { useSafeInsets } from '@/hooks/useSafeInsets';
 
 type AdvertDetailSkeletonProps = {
   variant?: 'default' | 'mobile';
@@ -17,6 +18,8 @@ export function AdvertDetailSkeleton({
   const { width } = useWindowDimensions();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const isMobile = variant === 'mobile' || !isWide;
+  const safeInsets = useSafeInsets();
+  const mobileScrollPad = mobileDetailScrollInset(safeInsets.bottom);
 
   if (isMobile) {
     const galleryH = Math.min(Math.round(width * 0.78), 420);
@@ -62,7 +65,7 @@ export function AdvertDetailSkeleton({
             style={{ marginTop: 24 }}
           />
         </View>
-        <View style={{ height: MOBILE_DETAIL_SCROLL_INSET }} />
+        <View style={{ height: mobileScrollPad }} />
       </SkeletonPulse>
     );
   }

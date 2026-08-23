@@ -1,36 +1,166 @@
 /**
- * Account tab — oturum yoksa login; varsa ana sayfa (profil çekmeceden yönetilir).
+ * Hesabım sekmesi — mobilde profil menüsü; geniş ekranda çekmeceye yönlendirir.
  */
-import { useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { MobileScreenHeader } from '@/components/layout/mobile/MobileScreenHeader';
+import {
+  ProfileDrawer,
+  type ProfileDrawerAction,
+} from '@/components/layout/ProfileDrawer';
+import { SettingsDrawer } from '@/components/layout/SettingsDrawer';
+import { ScreenWrapper } from '@/components/ui';
+import { mobileDockScrollInset } from '@/constants/Layout';
+import { useAuth } from '@/hooks/useAuth';
 import { useAuthSession } from '@/hooks/useAuthSession';
+import { useIsWideLayout } from '@/hooks/useLayoutWidth';
+import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useThemeColor } from '@/hooks/useThemeColor';
+
+type MobilePanel = 'menu' | 'settings';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { isLoggedIn } = useAuthSession();
+  const isWide = useIsWideLayout();
+  const safeInsets = useSafeInsets();
+  const dockPad = mobileDockScrollInset(safeInsets.bottom);
   const primary = useThemeColor('primary');
-  const surface = useThemeColor('surface');
+  const textMuted = useThemeColor('textMuted');
+  const { session, isLoggedIn } = useAuthSession();
+  const { logout } = useAuth();
+  const [panel, setPanel] = useState<MobilePanel>('menu');
 
   useEffect(() => {
+    if (!isWide) return;
     if (isLoggedIn) {
       router.replace('/');
       return;
     }
-    router.replace('/auth/login');
-  }, [isLoggedIn, router]);
+    router.replace('/auth/login?next=/profile');
+  }, [isWide, isLoggedIn, router]);
+
+  const goLogin = useCallback(() => {
+    router.push('/auth/login?next=/profile');
+  }, [router]);
+
+  const onLogout = useCallback(() => {
+    void logout(session?.accessToken ?? null);
+    setPanel('menu');
+  }, [logout, session?.accessToken]);
+
+  const onNavigate = useCallback(
+    (action: ProfileDrawerAction) => {
+      if (action === 'favorites') {
+        router.push('/(tabs)/favorites');
+        return;
+      }
+      if (action === 'settings') {
+        setPanel('settings');
+        return;
+      }
+      if (action === 'listings') {
+        router.push('/my-listings');
+      }
+    },
+    [router]
+  );
+
+  if (isWide) {
+    return (
+      <View style={styles.redirect}>
+        <ActivityIndicator color={primary} />
+      </View>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <View style={styles.root}>
+        <MobileScreenHeader title="Hesabım" subtitle="Giriş gerekli" />
+        <ScreenWrapper
+          edges={['left', 'right']}
+          contentInsetBottom={dockPad}
+          isLoading={false}
+          isError={false}
+          isEmpty
+          emptyVariant="default"
+          emptyTitle="Hesabınıza giriş yapın"
+          emptyDescription="İlanlarınızı yönetmek ve favorilerinize erişmek için giriş yapın."
+          emptyActionLabel="Giriş yap"
+          onEmptyAction={goLogin}
+          style={styles.flex}
+        >
+          {null}
+        </ScreenWrapper>
+      </View>
+    );
+  }
+
+  const user = session?.user ?? null;
+  const subtitle =
+    panel === 'settings'
+      ? 'Hesap ayarları'
+      : user?.email ?? undefined;
 
   return (
-    <View style={[styles.wrap, { backgroundColor: surface }]}>
-      <ActivityIndicator color={primary} />
+    <View style={styles.root}>
+      <MobileScreenHeader
+        title={panel === 'settings' ? 'Ayarlar' : 'Hesabım'}
+        subtitle={subtitle}
+        right={
+          panel === 'settings' ? (
+            <Pressable
+              onPress={() => setPanel('menu')}
+              accessibilityRole="button"
+              accessibilityLabel="Profile dön"
+              hitSlop={8}
+              style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
+            >
+              <Ionicons name="chevron-back" size={22} color={textMuted} />
+            </Pressable>
+          ) : null
+        }
+      />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.scroll, { paddingBottom: dockPad }]}
+      >
+        {panel === 'settings' ? (
+          <SettingsDrawer user={user} />
+        ) : (
+          <ProfileDrawer
+            user={user}
+            onNavigate={onNavigate}
+            onLogout={onLogout}
+          />
+        )}
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
+  root: { flex: 1 },
+  flex: { flex: 1 },
+  redirect: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scroll: {
+    flexGrow: 1,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -42,6 +42,8 @@ interface ScreenWrapperProps {
   edges?: readonly Edge[];
   /** Ek kapsayıcı stili */
   style?: ViewStyle;
+  /** Alt dock / safe area için içerik boşluğu (empty/loading/error). */
+  contentInsetBottom?: number;
 
   children: React.ReactNode;
 }
@@ -90,16 +92,23 @@ export function ScreenWrapper({
   scrollable = true,
   edges,
   style,
+  contentInsetBottom = 0,
   children,
 }: ScreenWrapperProps) {
   const bg = useThemeColor('background');
   const safeEdges = edges ?? (['top', 'right', 'bottom', 'left'] as const);
+  const insetStyle =
+    contentInsetBottom > 0
+      ? { paddingBottom: contentInsetBottom }
+      : undefined;
 
   // Öncelik: loading > error > empty > içerik
   if (isLoading) {
     return (
       <SafeAreaView edges={safeEdges} style={[styles.flex, { backgroundColor: bg }]}>
-        <LoadingState variant={loadingVariant} count={loadingCount} />
+        <View style={[styles.flex, insetStyle]}>
+          <LoadingState variant={loadingVariant} count={loadingCount} />
+        </View>
       </SafeAreaView>
     );
   }
@@ -107,14 +116,16 @@ export function ScreenWrapper({
   if (isError) {
     return (
       <SafeAreaView edges={safeEdges} style={[styles.flex, { backgroundColor: bg }]}>
-        <ErrorState
-          variant={errorVariant}
-          title={errorTitle}
-          message={errorMessage}
-          onRetry={onRetry}
-          secondaryLabel={errorSecondaryLabel}
-          onSecondaryAction={onErrorSecondaryAction}
-        />
+        <View style={[styles.flex, insetStyle]}>
+          <ErrorState
+            variant={errorVariant}
+            title={errorTitle}
+            message={errorMessage}
+            onRetry={onRetry}
+            secondaryLabel={errorSecondaryLabel}
+            onSecondaryAction={onErrorSecondaryAction}
+          />
+        </View>
       </SafeAreaView>
     );
   }
@@ -122,13 +133,15 @@ export function ScreenWrapper({
   if (isEmpty) {
     return (
       <SafeAreaView edges={safeEdges} style={[styles.flex, { backgroundColor: bg }]}>
-        <EmptyState
-          variant={emptyVariant}
-          title={emptyTitle}
-          description={emptyDescription}
-          actionLabel={emptyActionLabel}
-          onAction={onEmptyAction}
-        />
+        <View style={[styles.flex, insetStyle]}>
+          <EmptyState
+            variant={emptyVariant}
+            title={emptyTitle}
+            description={emptyDescription}
+            actionLabel={emptyActionLabel}
+            onAction={onEmptyAction}
+          />
+        </View>
       </SafeAreaView>
     );
   }

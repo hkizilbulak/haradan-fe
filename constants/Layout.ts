@@ -8,8 +8,21 @@ export const HOME_DESKTOP_BREAKPOINT = 900;
 /** Mobil alt dock görünür içerik yüksekliği (safe area hariç). */
 export const MOBILE_DOCK_BAR_HEIGHT = 64;
 
-/** Scroll içeriği için alt boşluk — dock + FAB payı. */
+/** Scroll içeriği için alt boşluk — dock + FAB payı (sabit tahmin). */
 export const MOBILE_HOME_DOCK_INSET = 100;
+
+/** Dock + cihaz alt safe area — dinamik scroll boşluğu. */
+export function mobileDockScrollInset(bottomInset = 0, extra = 12): number {
+  return MOBILE_DOCK_BAR_HEIGHT + Math.max(bottomInset, 8) + 8 + extra;
+}
+
+/** Floating pill header yüksekliği (minHeight). */
+export const MOBILE_FLOATING_BAR_HEIGHT = 52;
+
+/** Floating top bar + safe area scroll üst boşluğu. */
+export function mobileFloatingTopInset(topInset: number): number {
+  return topInset + Spacing.sm + MOBILE_FLOATING_BAR_HEIGHT + Spacing.md;
+}
 
 /** İlan detay — sabit alt CTA şeridi yüksekliği. */
 export const MOBILE_DETAIL_STICKY_BAR_HEIGHT = 72;
@@ -44,5 +57,5 @@ export function homeContentPadding(isWide: boolean): number {
 
 /** Ara sayfası — floating top bar + safe area scroll üst boşluğu. */
 export function mobileListingsTopInset(topInset: number): number {
-  return topInset + Spacing.sm + 52 + Spacing.md;
+  return mobileFloatingTopInset(topInset);
 }

@@ -6,7 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { MOBILE_DOCK_BAR_HEIGHT } from '@/constants/Layout';
@@ -60,7 +60,7 @@ function normalizePath(pathname: string): string {
  * Root overlay; web + native mobil viewport.
  */
 export function MobileGlassDock() {
-  const insets = useSafeAreaInsets();
+  const insets = useSafeInsets();
   const router = useRouter();
   const rawPath = usePathname();
   const pathname = normalizePath(rawPath);

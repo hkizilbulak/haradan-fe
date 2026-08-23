@@ -36,7 +36,7 @@ import { HomeSearchBar, SiteFooter } from '@/components/home';
 import { HomeContentContainer } from '@/components/layout';
 import {
   HOME_DESKTOP_BREAKPOINT,
-  MOBILE_HOME_DOCK_INSET,
+  mobileDockScrollInset,
   mobileListingsTopInset,
 } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
@@ -717,6 +717,7 @@ export const ListingsView = memo(function ListingsView({
 
   if (!isWide) {
     const topPad = mobileListingsTopInset(safeInsets.top);
+    const bottomPad = mobileDockScrollInset(safeInsets.bottom);
 
     return (
       <View style={[styles.root, { backgroundColor: bg }]}>
@@ -732,7 +733,7 @@ export const ListingsView = memo(function ListingsView({
             styles.mobileContent,
             {
               paddingTop: topPad,
-              paddingBottom: MOBILE_HOME_DOCK_INSET + Spacing.lg,
+              paddingBottom: bottomPad,
             },
           ]}
           showsVerticalScrollIndicator={false}

@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { Ionicons } from '@expo/vector-icons';
 import { BrandMark } from '@/components/layout/BrandMark';
 import { MOBILE_INK } from '@/components/layout/glassStyles';
@@ -53,7 +53,7 @@ export function MobileMenuSheet({
   onLogin,
   onPostAd,
 }: MobileMenuSheetProps) {
-  const insets = useSafeAreaInsets();
+  const insets = useSafeInsets();
   const primary = useThemeColor('primary');
 
   const categoryRoots = useMemo(

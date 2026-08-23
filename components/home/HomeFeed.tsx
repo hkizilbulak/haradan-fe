@@ -12,9 +12,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { HomeContentContainer } from '@/components/layout';
 import { LazySection } from '@/components/ui/LazySection';
 import { SkeletonPulse } from '@/components/ui/Skeleton';
-import { HOME_DESKTOP_BREAKPOINT, MOBILE_HOME_DOCK_INSET } from '@/constants/Layout';
+import { HOME_DESKTOP_BREAKPOINT, mobileDockScrollInset } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
+import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type {
   ActiveBannerItem,
@@ -45,8 +46,6 @@ import {
 
 const HERO_HEIGHT_DESKTOP = 420;
 const HERO_HEIGHT_MOBILE = 360;
-/** Glass dock + copyright için scroll alt boşluğu */
-const MOBILE_DOCK_PADDING = MOBILE_HOME_DOCK_INSET;
 
 type HomeFeedProps = {
   data: HomepageData | null;
@@ -61,7 +60,6 @@ type HomeFeedProps = {
   onCategorySelect: (cat: CategoryTreeNode) => void;
   onPostAdPress: () => void;
   onToggleFavorite?: (product: CatalogProductCard) => void;
-  onMenuPress?: () => void;
 };
 
 function HomeFeedComponent({
@@ -77,10 +75,11 @@ function HomeFeedComponent({
   onCategorySelect,
   onPostAdPress,
   onToggleFavorite,
-  onMenuPress,
 }: HomeFeedProps) {
   const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
+  const safeInsets = useSafeInsets();
+  const mobileDockPad = mobileDockScrollInset(safeInsets.bottom);
   const scrollRef = useRef<ScrollView>(null);
   const [showTop, setShowTop] = useState(false);
 
@@ -106,8 +105,6 @@ function HomeFeedComponent({
     });
   }, []);
 
-  const mobileMenu = onMenuPress ?? (() => {});
-
   return (
     <View style={styles.flex}>
       <ScrollView
@@ -115,6 +112,7 @@ function HomeFeedComponent({
         style={styles.flex}
         contentContainerStyle={[
           styles.content,
+          !isWide && { paddingBottom: mobileDockPad },
           !isWide && styles.contentMobile,
         ]}
         showsVerticalScrollIndicator={false}
@@ -153,8 +151,6 @@ function HomeFeedComponent({
             <MobileHomeHeroBlock
               banners={heroBanners}
               onBannerPress={onBannerPress}
-              onMenuPress={mobileMenu}
-              onPostAdPress={onPostAdPress}
               categories={categoryRoots}
               onCategorySelect={onCategorySelect}
             />
@@ -296,11 +292,14 @@ function HomeFeedComponent({
           style={[
             styles.topBtn,
             !isWide && styles.topBtnMobile,
+            !isWide && { bottom: mobileDockPad - 4 },
             { backgroundColor: surface, borderColor: border },
           ]}
         >
           <Ionicons name="chevron-up" size={16} color={text} />
-          <Text style={[styles.topLabel, { color: text }]}>TOP</Text>
+          {isWide ? (
+            <Text style={[styles.topLabel, { color: text }]}>TOP</Text>
+          ) : null}
         </Pressable>
       ) : null}
     </View>
@@ -317,7 +316,6 @@ const styles = StyleSheet.create({
   },
   contentMobile: {
     paddingTop: 0,
-    paddingBottom: MOBILE_DOCK_PADDING,
   },
   heroRow: {
     flexDirection: 'row',
@@ -340,7 +338,9 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   topBtnMobile: {
-    bottom: MOBILE_DOCK_PADDING + 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   topLabel: { fontSize: 9, fontWeight: '700' },
 });

@@ -6,6 +6,7 @@ import {
   HOME_DESKTOP_BREAKPOINT,
   MOBILE_DOCK_BAR_HEIGHT,
   MOBILE_HOME_DOCK_INSET,
+  mobileDockScrollInset,
   shouldShowMobileDock,
 } from '../constants/Layout';
 import { buildListingsHref } from '../services/navigation';
@@ -31,6 +32,7 @@ function assert(cond: unknown, name: string): void {
 }
 
 assert(MOBILE_HOME_DOCK_INSET >= MOBILE_DOCK_BAR_HEIGHT, 'dock inset >= bar height');
+assert(mobileDockScrollInset(0) >= MOBILE_DOCK_BAR_HEIGHT + 8, 'dynamic dock inset');
 assert(MOBILE_DOCK_BAR_HEIGHT >= 56, 'dock bar height prod minimum');
 assert(HOME_DESKTOP_BREAKPOINT === 900, 'desktop breakpoint 900');
 
@@ -74,10 +76,15 @@ for (const f of mobileFiles) {
 const dockSrc = readFileSync(join(root, 'layout/MobileGlassDock.tsx'), 'utf8');
 assert(dockSrc.includes('zIndex: 9999'), 'dock uses high z-index');
 assert(dockSrc.includes("nativeID=\"mobile-glass-dock\""), 'dock has test id');
-assert(!dockSrc.includes('height: 0'), 'dock source has no zero height');
+assert(dockSrc.includes('useSafeInsets'), 'dock uses safe insets hook');
+assert(!dockSrc.includes('useSafeAreaInsets'), 'dock no raw safe area hook');
 
 const hostSrc = readFileSync(join(root, 'layout/MobileDockHost.tsx'), 'utf8');
 assert(hostSrc.includes('shouldShowMobileDock'), 'dock host respects route guards');
+
+const homeFeed = readFileSync(join(process.cwd(), 'components/home/HomeFeed.tsx'), 'utf8');
+assert(homeFeed.includes('mobileDockScrollInset'), 'HomeFeed dynamic dock inset');
+assert(homeFeed.includes('useSafeInsets'), 'HomeFeed uses safe insets');
 
 const appLayout = readFileSync(join(process.cwd(), 'app/_layout.tsx'), 'utf8');
 assert(appLayout.includes('MobileDockHost'), 'root layout mounts MobileDockHost');

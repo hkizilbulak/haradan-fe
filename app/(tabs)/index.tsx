@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import { AppHeader, useHeaderDrawers } from '@/components/layout';
 import { HomeFeed } from '@/components/home';
+import { MobileHomeTopBar } from '@/components/home/mobile/MobileHomeTopBar';
 import { MobileMenuSheet } from '@/components/home/mobile/MobileMenuSheet';
 import { ErrorState } from '@/components/ui';
 import { useHomepageFeed } from '@/hooks/useHomepageFeed';
@@ -152,21 +153,28 @@ export default function HomeScreen() {
       {isError ? (
         <ErrorState variant="network" message={error} onRetry={refetch} />
       ) : (
-        <HomeFeed
-          data={data}
-          categoryRoots={categoryRoots}
-          urgent={urgent}
-          trending={trending}
-          specialOffers={specialOffers}
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          onProductPress={onProductPress}
-          onBannerPress={onBannerPress}
-          onCategorySelect={onCategorySelect}
-          onPostAdPress={onPostAdPress}
-          onToggleFavorite={toggleFavorite}
-          onMenuPress={() => setMenuOpen(true)}
-        />
+        <>
+          {!isWide ? (
+            <MobileHomeTopBar
+              onMenuPress={() => setMenuOpen(true)}
+              onPostAdPress={onPostAdPress}
+            />
+          ) : null}
+          <HomeFeed
+            data={data}
+            categoryRoots={categoryRoots}
+            urgent={urgent}
+            trending={trending}
+            specialOffers={specialOffers}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            onProductPress={onProductPress}
+            onBannerPress={onBannerPress}
+            onCategorySelect={onCategorySelect}
+            onPostAdPress={onPostAdPress}
+            onToggleFavorite={toggleFavorite}
+          />
+        </>
       )}
 
       {!isWide ? (
