@@ -79,3 +79,26 @@ export function pickListingRootCategories(
   return tree;
 }
 
+/** Mobil chip — uzun kategori adlarını kısa premium etiketlere çevirir. */
+const ROOT_SHORT_LABELS: Record<string, string> = {
+  'satilik-atlar': 'Satılık',
+  'at-hizmetleri': 'Hizmet',
+  'asim-hizmetleri': 'Aşım',
+  'ekipman-malzemeler': 'Ekipman',
+  'ahir-tesisler': 'Tesis',
+};
+
+export function getCategoryShortLabel(
+  slug?: string | null,
+  fallbackName?: string | null
+): string {
+  if (slug && ROOT_SHORT_LABELS[slug]) return ROOT_SHORT_LABELS[slug];
+  const name = (fallbackName ?? '').trim();
+  if (!name) return 'Kategori';
+  if (name.length <= 10) return name;
+  // "Satılık Atlar" → ilk kelime; aksi halde 9 + …
+  const first = name.split(/\s+/)[0] ?? name;
+  if (first.length <= 10) return first;
+  return `${name.slice(0, 9)}…`;
+}
+

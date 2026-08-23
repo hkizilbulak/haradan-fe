@@ -24,9 +24,21 @@ import {
 } from '@/components/listings/ListingsFilterSidebar';
 import { ListingsGrid } from '@/components/listings/ListingsGrid';
 import { ListingsSearchBanner } from '@/components/listings/ListingsSearchBanner';
+import { MobileListingsFilterSheet } from '@/components/listings/mobile/MobileListingsFilterSheet';
+import { MobileListingsQuickFilters } from '@/components/listings/mobile/MobileListingsQuickFilters';
+import {
+  countActiveListingsFilters,
+  emptyListingsFilters,
+} from '@/components/listings/mobile/listingsFilterCount';
+import { MobileListingsTopBar } from '@/components/listings/mobile/MobileListingsTopBar';
+import { MobileMenuSheet } from '@/components/home/mobile/MobileMenuSheet';
 import { HomeSearchBar, SiteFooter } from '@/components/home';
 import { HomeContentContainer } from '@/components/layout';
-import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
+import {
+  HOME_DESKTOP_BREAKPOINT,
+  MOBILE_HOME_DOCK_INSET,
+  mobileListingsTopInset,
+} from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useCatalogFacets } from '@/hooks/useCatalogFacets';
@@ -34,7 +46,15 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { usePublishedAdvertsSearch } from '@/hooks/usePublishedAdvertsSearch';
 import { usePlacementBanners } from '@/hooks/usePlacementBanners';
+import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { prepareListingWizardEntry } from '@/services/listing';
+import {
+  navigateHome,
+  navigateToListings,
+  type HeaderNavKey,
+} from '@/services/navigation';
+import { pickListingRootCategories } from '@/services/catalog/categoryDisplay';
 import {
   matchesDatePeriod,
   matchesPrice,
@@ -352,7 +372,8 @@ export const ListingsView = memo(function ListingsView({
   const router = useRouter();
   const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
-  const { session } = useAuthSession();
+  const safeInsets = useSafeInsets();
+  const { session, isLoggedIn } = useAuthSession();
   const { banners: searchBanners } = usePlacementBanners('SEARCH');
 
   const text = useThemeColor('text');
@@ -360,6 +381,9 @@ export const ListingsView = memo(function ListingsView({
   const bg = useThemeColor('background');
   const { facets, categoryTree } = useCatalogFacets();
   const { apply, remember, toggle } = useFavorites();
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const [filters, setFilters] = useState<ListingsFiltersState>({
     categorySlug: query.category ?? null,
@@ -578,6 +602,49 @@ export const ListingsView = memo(function ListingsView({
     filters.breed ||
     (q ? `"${q}"` : null);
 
+  const filterCount = countActiveListingsFilters(filters);
+
+  const clearAllFilters = useCallback(() => {
+    const next = emptyListingsFilters();
+    setFilters(next);
+    setPage(0);
+    syncUrl(next, liveQuery);
+  }, [liveQuery, syncUrl]);
+
+  const categoryRoots = useMemo(
+    () => pickListingRootCategories(categoryTree ?? []),
+    [categoryTree]
+  );
+
+  const onMenuNav = useCallback(
+    (key: HeaderNavKey) => {
+      if (key === 'home') navigateHome(router);
+      else if (key === 'listings') navigateToListings(router, {});
+      else if (key === 'my-listings') {
+        router.push(
+          isLoggedIn ? '/my-listings' : '/auth/login?next=/my-listings'
+        );
+      }
+    },
+    [router, isLoggedIn]
+  );
+
+  const onCategoryChip = useCallback(
+    (slug: string | null) => {
+      const next = {
+        ...filters,
+        categorySlug: filters.categorySlug === slug ? null : slug,
+      };
+      onFilterChange(next);
+    },
+    [filters, onFilterChange]
+  );
+
+  const onPostAd = useCallback(() => {
+    prepareListingWizardEntry();
+    router.push('/post');
+  }, [router]);
+
   const consumePress = useCallback(() => {}, []);
 
   const searchBar = (
@@ -592,7 +659,143 @@ export const ListingsView = memo(function ListingsView({
     </Pressable>
   );
 
+  const mobileSearchBar = (
+    <Pressable onPress={consumePress}>
+      <HomeSearchBar
+        initialQuery={liveQuery}
+        onQueryChange={onLiveQueryChange}
+        live
+        fullWidth
+        compact
+        variant="glass"
+        placeholder="İsim, cins, konum ara…"
+      />
+    </Pressable>
+  );
+
   const gridKey = `loc-${locationTick}`;
+
+  const resultsBlock = search.loading ? (
+    <View style={styles.loader}>
+      <ActivityIndicator size="large" color={textMuted} />
+    </View>
+  ) : search.error ? (
+    <View style={styles.errorBox}>
+      <Text style={[styles.errorTitle, { color: text }]}>
+        İlanlar yüklenemedi
+      </Text>
+      <Text style={[styles.errorSub, { color: textMuted }]}>
+        {search.error}
+      </Text>
+      <Pressable
+        onPress={() => void search.refetch()}
+        accessibilityRole="button"
+        accessibilityLabel="Yeniden dene"
+        style={({ pressed }) => [
+          styles.retryBtn,
+          { opacity: pressed ? 0.7 : 1 },
+        ]}
+      >
+        <Text style={[styles.retryText, { color: text }]}>Yeniden dene</Text>
+      </Pressable>
+    </View>
+  ) : (
+    <ListingsGrid
+      key={gridKey}
+      items={items}
+      page={page}
+      onPageChange={setPage}
+      onProductPress={onProductPress}
+      onToggleFavorite={toggle}
+      compact={!isWide}
+    />
+  );
+
+  if (!isWide) {
+    const topPad = mobileListingsTopInset(safeInsets.top);
+
+    return (
+      <View style={[styles.root, { backgroundColor: bg }]}>
+        <MobileListingsTopBar
+          onMenuPress={() => setMenuOpen(true)}
+          onFilterPress={() => setFilterOpen(true)}
+          filterCount={filterCount}
+        />
+
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={[
+            styles.mobileContent,
+            {
+              paddingTop: topPad,
+              paddingBottom: MOBILE_HOME_DOCK_INSET + Spacing.lg,
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          <HomeContentContainer>
+            {mobileSearchBar}
+
+            <MobileListingsQuickFilters
+              categories={categoryRoots}
+              categorySlug={filters.categorySlug}
+              urgentOnly={filters.urgentOnly}
+              hasActiveFilters={filterCount > 0}
+              onToggleUrgent={() =>
+                onFilterChange({
+                  ...filters,
+                  urgentOnly: !filters.urgentOnly,
+                })
+              }
+              onSelectCategory={onCategoryChip}
+              onClear={clearAllFilters}
+            />
+
+            <View style={styles.mobileMeta}>
+              <Text style={[styles.mobileMetaTitle, { color: text }]}>
+                {contextLabel ?? 'Tüm ilanlar'}
+              </Text>
+              <Text style={[styles.mobileMetaCount, { color: textMuted }]}>
+                {items.length} sonuç
+              </Text>
+            </View>
+
+            {searchBanners[0] ? (
+              <ListingsSearchBanner banner={searchBanners[0]} />
+            ) : null}
+
+            {resultsBlock}
+          </HomeContentContainer>
+        </ScrollView>
+
+        <MobileListingsFilterSheet
+          visible={filterOpen}
+          onClose={() => setFilterOpen(false)}
+          facets={facets}
+          value={filters}
+          onChange={onFilterChange}
+          resultCount={items.length}
+          onClear={clearAllFilters}
+        />
+
+        <MobileMenuSheet
+          visible={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          categories={categoryRoots}
+          onNav={onMenuNav}
+          onCategory={(cat) => {
+            onCategoryChip(cat.slug);
+            setMenuOpen(false);
+          }}
+          isLoggedIn={isLoggedIn}
+          onLogin={() => router.push('/auth/login')}
+          onPostAd={onPostAd}
+        />
+      </View>
+    );
+  }
 
   return (
     <View
@@ -614,13 +817,8 @@ export const ListingsView = memo(function ListingsView({
           style={styles.contentPress}
         >
           <HomeContentContainer style={styles.containerFlex}>
-            <View style={[styles.body, !isWide && styles.bodyStack]}>
-              {!isWide ? searchBar : null}
-
-              <Pressable
-                onPress={consumePress}
-                style={[styles.sidebar, !isWide && styles.sidebarStack]}
-              >
+            <View style={styles.body}>
+              <Pressable onPress={consumePress} style={styles.sidebar}>
                 <ListingsFilterSidebar
                   facets={facets}
                   value={filters}
@@ -630,7 +828,7 @@ export const ListingsView = memo(function ListingsView({
               </Pressable>
 
               <View style={styles.main}>
-                {isWide ? searchBar : null}
+                {searchBar}
 
                 <View style={styles.pageHead}>
                   <Text style={[styles.pageTitle, { color: text }]}>
@@ -647,42 +845,7 @@ export const ListingsView = memo(function ListingsView({
                   <ListingsSearchBanner banner={searchBanners[0]} />
                 ) : null}
 
-                {search.loading ? (
-                  <View style={styles.loader}>
-                    <ActivityIndicator size="large" color={textMuted} />
-                  </View>
-                ) : search.error ? (
-                  <View style={styles.errorBox}>
-                    <Text style={[styles.errorTitle, { color: text }]}>
-                      İlanlar yüklenemedi
-                    </Text>
-                    <Text style={[styles.errorSub, { color: textMuted }]}>
-                      {search.error}
-                    </Text>
-                    <Pressable
-                      onPress={() => void search.refetch()}
-                      accessibilityRole="button"
-                      accessibilityLabel="Yeniden dene"
-                      style={({ pressed }) => [
-                        styles.retryBtn,
-                        { opacity: pressed ? 0.7 : 1 },
-                      ]}
-                    >
-                      <Text style={[styles.retryText, { color: text }]}>
-                        Yeniden dene
-                      </Text>
-                    </Pressable>
-                  </View>
-                ) : (
-                  <ListingsGrid
-                    key={gridKey}
-                    items={items}
-                    page={page}
-                    onPageChange={setPage}
-                    onProductPress={onProductPress}
-                    onToggleFavorite={toggle}
-                  />
-                )}
+                {resultsBlock}
               </View>
             </View>
           </HomeContentContainer>
@@ -699,6 +862,27 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1 },
   contentPress: { flex: 1 },
   containerFlex: { flex: 1 },
+  mobileContent: {
+    flexGrow: 1,
+  },
+  mobileMeta: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.sm,
+    gap: 12,
+  },
+  mobileMetaTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    flex: 1,
+  },
+  mobileMetaCount: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
   body: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -706,16 +890,9 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     paddingBottom: Spacing.xl,
   },
-  bodyStack: {
-    flexDirection: 'column',
-    gap: Spacing.md,
-  },
   sidebar: {
     width: 256,
     flexShrink: 0,
-  },
-  sidebarStack: {
-    width: '100%',
   },
   main: {
     flex: 1,
@@ -749,17 +926,17 @@ const styles = StyleSheet.create({
   },
   errorSub: {
     fontSize: 13,
+    textAlign: 'center',
+    paddingHorizontal: 24,
   },
   retryBtn: {
     marginTop: 8,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ccc',
+    paddingVertical: 10,
   },
   retryText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

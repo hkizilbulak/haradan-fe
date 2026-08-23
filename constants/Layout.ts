@@ -41,3 +41,8 @@ export function shouldShowMobileDock(pathname: string): boolean {
 export function homeContentPadding(isWide: boolean): number {
   return isWide ? Spacing.xl : Spacing.md;
 }
+
+/** Ara sayfası — floating top bar + safe area scroll üst boşluğu. */
+export function mobileListingsTopInset(topInset: number): number {
+  return topInset + Spacing.sm + 52 + Spacing.md;
+}

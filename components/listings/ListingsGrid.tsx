@@ -26,6 +26,8 @@ type ListingsGridProps = {
   onPageChange: (page: number) => void;
   onProductPress?: (id: string) => void;
   onToggleFavorite?: (product: CatalogProductCard) => void;
+  /** Mobil Ara — 2 kolon kompakt kartlar. */
+  compact?: boolean;
 };
 
 /** Sağ panel — 3 kolon kart grid + sayfalama. */
@@ -35,11 +37,12 @@ export const ListingsGrid = memo(function ListingsGrid({
   onPageChange,
   onProductPress,
   onToggleFavorite,
+  compact = false,
 }: ListingsGridProps) {
   const { width } = useWindowDimensions();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
-  const cols = isWide ? 3 : width >= 640 ? 2 : 1;
-  const gap = isWide ? Spacing.lg : Spacing.md;
+  const cols = compact ? 2 : isWide ? 3 : width >= 640 ? 2 : 1;
+  const gap = compact ? Spacing.sm : isWide ? Spacing.lg : Spacing.md;
   const pad = homeContentPadding(isWide);
 
   // Sidebar ~280 + gap; grid uses remaining of content width when parent is flex
@@ -91,6 +94,7 @@ export const ListingsGrid = memo(function ListingsGrid({
             key={p.id}
             product={p}
             width={colWidth}
+            compact={compact}
             badge={p.isUrgent ? 'urgent' : 'auto'}
             onPress={onProductPress}
             onToggleFavorite={onToggleFavorite}

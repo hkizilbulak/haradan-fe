@@ -75,6 +75,8 @@ type ListingsFilterSidebarProps = {
   value: ListingsFiltersState;
   onChange: (next: ListingsFiltersState) => void;
   resultCount: number;
+  /** Mobil sheet — üst başlık sheet'te; sidebar başlığını gizle. */
+  hideHeader?: boolean;
 };
 
 export const FACILITY_OPTIONS = PANSIYON_FACILITY_OPTIONS;
@@ -339,6 +341,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
   value,
   onChange,
   resultCount,
+  hideHeader = false,
 }: ListingsFilterSidebarProps) {
   const groups = useMemo(() => facets?.groups ?? [], [facets?.groups]);
   const { items: provinces } = useProvinces();
@@ -692,23 +695,25 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         ? ({ dataSet: { keepSearch: 'true' } } as object)
         : null)}
     >
-      <View style={styles.head}>
-        <Text style={[styles.title, { color: text }]}>Filtrele</Text>
-        <View style={styles.headMeta}>
-          <Text style={[styles.count, { color: textMuted }]}>{resultCount}</Text>
-          <Pressable
-            onPress={() => onChange(EMPTY_LISTINGS_FILTERS)}
-            hitSlop={8}
-            disabled={!hasActive}
-            accessibilityLabel="Filtreleri sıfırla"
-            style={({ pressed }) => ({
-              opacity: !hasActive ? 0 : pressed ? 0.5 : 1,
-            })}
-          >
-            <Text style={[styles.clear, { color: textMuted }]}>Temizle</Text>
-          </Pressable>
+      {hideHeader ? null : (
+        <View style={styles.head}>
+          <Text style={[styles.title, { color: text }]}>Filtrele</Text>
+          <View style={styles.headMeta}>
+            <Text style={[styles.count, { color: textMuted }]}>{resultCount}</Text>
+            <Pressable
+              onPress={() => onChange(EMPTY_LISTINGS_FILTERS)}
+              hitSlop={8}
+              disabled={!hasActive}
+              accessibilityLabel="Filtreleri sıfırla"
+              style={({ pressed }) => ({
+                opacity: !hasActive ? 0 : pressed ? 0.5 : 1,
+              })}
+            >
+              <Text style={[styles.clear, { color: textMuted }]}>Temizle</Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      )}
 
       {/* 1. Kategori Seçimi (Her Zaman Görünür) */}
       {categoryGroup ? (

@@ -1,10 +1,11 @@
 import React, { useCallback, useMemo } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/layout';
 import { ListingsView } from '@/components/listings/ListingsView';
+import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useIsHydrated } from '@/hooks/useIsHydrated';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -17,6 +18,8 @@ function first(v: string | string[] | undefined): string | null {
 
 export default function ListingsScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const params = useLocalSearchParams<{
     q?: string | string[];
     category?: string | string[];
@@ -110,19 +113,24 @@ export default function ListingsScreen() {
         </Head>
       ) : null}
 
-      <AppHeader
-        brandName="Haradan.com"
-        isLoggedIn={isLoggedIn}
-        onLoginPress={onLogin}
-        onSignupPress={onSignup}
-        onProfilePress={onProfile}
-        onPostAdPress={() => {
-          prepareListingWizardEntry();
-          router.push('/post');
-        }}
-      />
+      {isWide ? (
+        <AppHeader
+          brandName="Haradan.com"
+          isLoggedIn={isLoggedIn}
+          onLoginPress={onLogin}
+          onSignupPress={onSignup}
+          onProfilePress={onProfile}
+          onPostAdPress={() => {
+            prepareListingWizardEntry();
+            router.push('/post');
+          }}
+        />
+      ) : null}
 
-      <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.flex}>
+      <SafeAreaView
+        edges={isWide ? ['left', 'right', 'bottom'] : ['left', 'right']}
+        style={styles.flex}
+      >
         <ListingsView query={query} />
       </SafeAreaView>
     </View>
