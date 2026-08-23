@@ -7,7 +7,6 @@ import {
 } from 'react-native';
 import { PostField } from './PostField';
 import {
-  isFarrierListing,
   isPansiyonListing,
   isStudServiceListing,
   isTransportListing,
@@ -105,22 +104,39 @@ export function PostCategoryProperties({
       return;
     }
     let cancelled = false;
-    catalogRepository
-      .getCategoryFormDefinition(catId)
-      .then((def) => {
-        if (cancelled) return;
-        if (def && Array.isArray(def.properties)) {
-          setCategoryProperties(def.properties);
-        } else {
-          setCategoryProperties([]);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setCategoryProperties([]);
-      });
+
+    const loadProps = () => {
+      catalogRepository
+        .getCategoryFormDefinition(catId, {
+          fresh: true,
+          categorySlug: type?.categorySlug,
+        } as any)
+        .then((def) => {
+          if (cancelled) return;
+          if (def && Array.isArray(def.properties)) {
+            setCategoryProperties(def.properties);
+          } else {
+            setCategoryProperties([]);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setCategoryProperties([]);
+        });
+    };
+
+    loadProps();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('haradan_category_properties_changed', loadProps);
+      window.addEventListener('storage', loadProps);
+    }
 
     return () => {
       cancelled = true;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('haradan_category_properties_changed', loadProps);
+        window.removeEventListener('storage', loadProps);
+      }
     };
   }, [type?.categoryId, type?.categorySlug]);
 

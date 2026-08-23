@@ -72,7 +72,7 @@ const PANSIYON_PROPERTIES: CategoryPropertyPublic[] = PANSIYON_FACILITY_OPTIONS.
 const STUD_PROPERTIES: CategoryPropertyPublic[] = [
   {
     code: 'STALLION_BREED',
-    title: 'Aygır Irkı',
+    title: 'At Irkı',
     dataType: 'SINGLE_SELECT',
     isRequired: true,
     isFilterable: true,
@@ -81,7 +81,7 @@ const STUD_PROPERTIES: CategoryPropertyPublic[] = [
   },
   {
     code: 'STALLION_AGE',
-    title: 'Aşım Yaşı',
+    title: 'Yaş',
     dataType: 'SINGLE_SELECT',
     isRequired: true,
     isFilterable: true,
@@ -110,55 +110,98 @@ export class MockCatalogRepository implements ICatalogRepository {
 
   invalidate(): void {}
 
-  async getFacets(_options?: CatalogQueryOptions): Promise<CatalogFacets> {
-    return mapCategoryTreeToFacets(MOCK_CATEGORIES);
+  async getCategoryTree(): Promise<CategoryTreeNode[]> {
+    return MOCK_CATEGORIES;
   }
 
-  async getCategoryTree(_options?: CatalogQueryOptions): Promise<CategoryTreeNode[]> {
-    return MOCK_CATEGORIES;
+  async getFacets(): Promise<CatalogFacets> {
+    const tree = await this.getCategoryTree();
+    return mapCategoryTreeToFacets(tree);
   }
 
   async getCategoryFormDefinition(
     categoryId: string,
-    _options?: CatalogQueryOptions
+    options?: CatalogQueryOptions & { categorySlug?: string }
   ): Promise<CategoryFormDefinitionResponse | null> {
-    if (!categoryId) return null;
+    if (!categoryId && !options?.categorySlug) return null;
 
-    // Check browser localStorage for real-time changes from BO
+    const targetId = categoryId || options?.categorySlug || '';
+    const targetSlug = options?.categorySlug || categoryId || '';
+
+    // 1. Check browser localStorage for real-time changes from BO
     if (typeof window !== 'undefined') {
       try {
-        const stored =
-          localStorage.getItem(`haradan_category_properties_${categoryId}`) ||
-          localStorage.getItem(`haradan_category_properties_cat-${categoryId}`) ||
-          localStorage.getItem(`haradan_category_properties_${categoryId.replace(/^cat-/, '')}`);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            const activeProps: CategoryPropertyPublic[] = parsed
-              .filter(
-                (p: any) =>
-                  p.isActive !== false &&
-                  p.is_active !== false &&
-                  p.active !== false &&
-                  p.isFilterable !== false &&
-                  p.is_filterable !== false
-              )
-              .map((p: any) => ({
-                code: p.code || p.id,
-                title: p.title,
-                helpText: p.helpText,
-                dataType: p.dataType,
-                isRequired: Boolean(p.isRequired),
-                isFilterable: p.isFilterable !== false,
-                sortOrder: p.sortOrder || 1,
-                options: p.options || [],
-              }));
-            return {
-              categoryId,
-              slug: categoryId,
-              name: categoryId,
-              properties: activeProps,
-            };
+        const candidateKeys = [
+          targetId,
+          targetSlug,
+          `cat-${targetId}`,
+          `cat-${targetSlug}`,
+          targetId.replace(/^cat-/, ''),
+          targetSlug.replace(/^cat-/, ''),
+        ];
+
+        // Include parent category keys if this is a child category (e.g. Satılık Yarış Atı -> Satılık Atlar)
+        const tSlug = targetSlug.toLowerCase();
+        if (
+          tSlug.includes('yaris') ||
+          tSlug.includes('kisrak') ||
+          tSlug.includes('aygir') ||
+          tSlug.includes('binek') ||
+          tSlug.includes('pony') ||
+          tSlug.includes('satilik')
+        ) {
+          candidateKeys.push('satilik-atlar', 'cat-satilik-atlar');
+        } else if (tSlug.includes('pansiyon') || tSlug.includes('nakliye') || tSlug.includes('nalbant')) {
+          candidateKeys.push('at-hizmetleri', 'cat-at-hizmetleri');
+        } else if (tSlug.includes('asim') || tSlug.includes('arap') || tSlug.includes('ingiliz')) {
+          candidateKeys.push('asim-hizmetleri', 'cat-asim-hizmetleri');
+        }
+
+        for (const k of candidateKeys) {
+          if (!k) continue;
+          const stored = localStorage.getItem(`haradan_category_properties_${k}`);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+              const activeProps: CategoryPropertyPublic[] = parsed
+                .filter(
+                  (p: any) =>
+                    p.isActive !== false &&
+                    p.is_active !== false &&
+                    p.active !== false &&
+                    p.isFilterable !== false &&
+                    p.is_filterable !== false
+                )
+                .map((p: any) => ({
+                  code: p.code || p.id,
+                  title: p.title,
+                  helpText: p.helpText,
+                  dataType: p.dataType,
+                  isRequired: Boolean(p.isRequired),
+                  isFilterable: p.isFilterable !== false,
+                  sortOrder: p.sortOrder || 1,
+                  options: p.options || [],
+                }));
+              let baseList = HORSE_PROPERTIES;
+              if (tSlug.includes('pansiyon')) baseList = PANSIYON_PROPERTIES;
+              else if (tSlug.includes('asim') || tSlug.includes('aygir') || tSlug.includes('stud')) baseList = STUD_PROPERTIES;
+
+              const existingCodes = new Set(activeProps.map((p) => (p.code || p.title).toLowerCase()));
+              for (const defProp of baseList) {
+                const defKey = (defProp.code || defProp.title).toLowerCase();
+                if (!existingCodes.has(defKey)) {
+                  activeProps.push(defProp);
+                }
+              }
+              activeProps.sort((a, b) => (a.sortOrder || 1) - (b.sortOrder || 1));
+
+              return {
+                categoryId: targetId,
+                slug: targetSlug,
+                name: targetSlug,
+                properties: activeProps,
+              };
+            }
           }
         }
       } catch {}
