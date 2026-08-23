@@ -9,6 +9,7 @@ export class MockCommentRepository implements ICommentRepository {
       userId: 'u-1',
       authorName: 'Ahmet K.',
       content: 'Atın soyu ve orijini harika görünüyor. Tayın idman videoları var mı?',
+      rating: 5,
       createdAt: '2026-08-15T14:30:00Z',
     },
     {
@@ -17,6 +18,7 @@ export class MockCommentRepository implements ICommentRepository {
       userId: 'u-2',
       authorName: 'Mehmet Y.',
       content: 'Fiyat performans açısından oldukça makul bir ilan, alıcısına hayırlı olsun.',
+      rating: 4,
       createdAt: '2026-08-16T09:15:00Z',
     },
   ];
@@ -47,9 +49,19 @@ export class MockCommentRepository implements ICommentRepository {
       userId: 'u-me',
       authorName: 'Ben (Siz)',
       content: payload.content,
+      rating: payload.rating ?? null,
       createdAt: new Date().toISOString(),
     };
     this.comments.unshift(newComment);
     return newComment;
   }
+
+  async deleteComment(
+    _advertId: string,
+    commentId: string,
+    _accessToken: string
+  ): Promise<void> {
+    this.comments = this.comments.filter((c) => c.id !== commentId);
+  }
 }
+

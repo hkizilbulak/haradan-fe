@@ -35,7 +35,11 @@ export function useAdvertComments(advertId: string | null) {
   }, [fetchComments]);
 
   const postComment = useCallback(
-    async (content: string, accessToken: string): Promise<AdvertComment> => {
+    async (
+      content: string,
+      accessToken: string,
+      rating?: number | null
+    ): Promise<AdvertComment> => {
       if (!advertId) {
         throw new Error('Geçersiz ilan ID');
       }
@@ -43,7 +47,11 @@ export function useAdvertComments(advertId: string | null) {
       setError(null);
       try {
         const repo = createCommentRepository();
-        const created = await repo.createComment(advertId, { content }, accessToken);
+        const created = await repo.createComment(
+          advertId,
+          { content, rating: rating ?? undefined },
+          accessToken
+        );
         setComments((prev) => [created, ...prev]);
         setTotalCount((prev) => prev + 1);
         return created;
@@ -59,6 +67,27 @@ export function useAdvertComments(advertId: string | null) {
     [advertId]
   );
 
+  const deleteComment = useCallback(
+    async (commentId: string, accessToken: string): Promise<void> => {
+      if (!advertId) {
+        throw new Error('Geçersiz ilan ID');
+      }
+      setError(null);
+      try {
+        const repo = createCommentRepository();
+        await repo.deleteComment(advertId, commentId, accessToken);
+        setComments((prev) => prev.filter((c) => c.id !== commentId));
+        setTotalCount((prev) => Math.max(0, prev - 1));
+      } catch (err) {
+        const message =
+          err instanceof ApiError ? err.message : 'Yorum silinemedi.';
+        setError(message);
+        throw err;
+      }
+    },
+    [advertId]
+  );
+
   return {
     comments,
     totalCount,
@@ -67,5 +96,6 @@ export function useAdvertComments(advertId: string | null) {
     error,
     refetch: fetchComments,
     postComment,
+    deleteComment,
   };
 }

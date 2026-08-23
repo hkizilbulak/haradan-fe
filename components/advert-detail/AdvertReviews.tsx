@@ -16,9 +16,11 @@ import { RatingStars } from '@/components/product/RatingStars';
 import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
 import { useAdvertComments } from '@/hooks/useAdvertComments';
+import { useAuthSession } from '@/hooks/useAuthSession';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { AdvertComment, AdvertDetail, AdvertReview } from '@/types';
 import { CommentModal } from './CommentModal';
+import { DeleteCommentModal } from './DeleteCommentModal';
 
 if (
   Platform.OS === 'android' &&
@@ -48,18 +50,25 @@ function formatDate(iso: string) {
 export const AdvertReviews = memo(function AdvertReviews({
   detail,
   accessToken,
-  previewCount = 3,
+  previewCount = 10,
 }: AdvertReviewsProps) {
   const router = useRouter();
+  const { session } = useAuthSession();
+  const currentUserId = session?.user.id ?? null;
   const [showAll, setShowAll] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [targetDeleteId, setTargetDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
+  const textSecondary = useThemeColor('textSecondary');
   const border = useThemeColor('border');
   const background = useThemeColor('background');
+  const surface = useThemeColor('surface');
   const warning = useThemeColor('warning');
-  const header = useThemeColor('header');
+  const primary = useThemeColor('primary');
+  const errorColor = useThemeColor('error');
 
   const {
     comments,
@@ -67,6 +76,7 @@ export const AdvertReviews = memo(function AdvertReviews({
     isLoading,
     isSubmitting,
     postComment,
+    deleteComment,
   } = useAdvertComments(detail.id);
 
   const handleOpenCommentModal = useCallback(() => {
@@ -91,16 +101,78 @@ export const AdvertReviews = memo(function AdvertReviews({
   }, [accessToken, router]);
 
   const handleSubmitComment = useCallback(
-    async (content: string) => {
+    async (content: string, rating?: number | null) => {
       if (!accessToken) return;
-      await postComment(content, accessToken);
+      await postComment(content, accessToken, rating);
     },
     [accessToken, postComment]
   );
 
+  const handleConfirmDelete = useCallback(async () => {
+    if (!accessToken || !targetDeleteId) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteComment(targetDeleteId, accessToken);
+      setTargetDeleteId(null);
+    } catch (err: any) {
+      const msg = err?.message || 'Yorum silinemedi.';
+      if (Platform.OS === 'web') {
+        window.alert(msg);
+      } else {
+        Alert.alert('Hata', msg);
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [accessToken, targetDeleteId, deleteComment]);
+
+  // Calculate rating stats from live comments if advert detail doesn't have rating
+  const { effectiveRating, effectiveReviewCount, ratingBreakdown } = useMemo(() => {
+    const ratedComments = comments.filter(
+      (c) => typeof c.rating === 'number' && c.rating >= 1 && c.rating <= 5
+    );
+
+    if (detail.rating && detail.rating > 0) {
+      return {
+        effectiveRating: detail.rating,
+        effectiveReviewCount: detail.reviewCount || (detail.ratingBreakdown || []).reduce((s, r) => s + r.count, 0),
+        ratingBreakdown: detail.ratingBreakdown || [],
+      };
+    }
+
+    if (ratedComments.length > 0) {
+      const sum = ratedComments.reduce((acc, c) => acc + (c.rating ?? 0), 0);
+      const avg = sum / ratedComments.length;
+      const breakdown: { stars: 1 | 2 | 3 | 4 | 5; count: number }[] = [
+        { stars: 5, count: 0 },
+        { stars: 4, count: 0 },
+        { stars: 3, count: 0 },
+        { stars: 2, count: 0 },
+        { stars: 1, count: 0 },
+      ];
+      for (const c of ratedComments) {
+        const s = Math.min(5, Math.max(1, Math.round(c.rating || 0))) as 1 | 2 | 3 | 4 | 5;
+        const found = breakdown.find((b) => b.stars === s);
+        if (found) found.count++;
+      }
+      return {
+        effectiveRating: avg,
+        effectiveReviewCount: ratedComments.length,
+        ratingBreakdown: breakdown,
+      };
+    }
+
+    return {
+      effectiveRating: 0,
+      effectiveReviewCount: 0,
+      ratingBreakdown: [],
+    };
+  }, [comments, detail.rating, detail.reviewCount, detail.ratingBreakdown]);
+
   const totalReviews = useMemo(
-    () => (detail.ratingBreakdown || []).reduce((s, r) => s + r.count, 0) || 1,
-    [detail.ratingBreakdown]
+    () => ratingBreakdown.reduce((s, r) => s + r.count, 0) || effectiveReviewCount || 1,
+    [ratingBreakdown, effectiveReviewCount]
   );
 
   const visibleComments = showAll ? comments : comments.slice(0, previewCount);
@@ -121,29 +193,29 @@ export const AdvertReviews = memo(function AdvertReviews({
           onPress={handleOpenCommentModal}
           style={[styles.leaveBtn, { borderColor: border, backgroundColor: background }]}
           accessibilityRole="button"
-          accessibilityLabel="Yorum yaz"
+          accessibilityLabel="Yorum ve puan yaz"
         >
           <Ionicons name="create-outline" size={15} color={text} />
-          <Text style={[styles.leaveText, { color: text }]}>Yorum yaz</Text>
+          <Text style={[styles.leaveText, { color: text }]}>Yorum ve Puan Yaz</Text>
         </Pressable>
       </View>
 
       {/* Değerlendirme Puan Özeti (Var ise) */}
-      {detail.rating ? (
+      {effectiveRating > 0 ? (
         <View style={styles.summaryRow}>
           <View style={[styles.scoreBox, { backgroundColor: background }]}>
             <Text style={[styles.score, { color: text }]}>
-              {detail.rating.toFixed(1)}
+              {effectiveRating.toFixed(1)}
             </Text>
-            <RatingStars value={detail.rating} size={14} />
+            <RatingStars value={effectiveRating} size={14} />
             <Text style={[styles.scoreMeta, { color: textMuted }]}>
-              {detail.reviewCount || totalReviews} değerlendirme
+              {effectiveReviewCount} değerlendirme
             </Text>
           </View>
 
-          {detail.ratingBreakdown && detail.ratingBreakdown.length > 0 ? (
+          {ratingBreakdown && ratingBreakdown.length > 0 ? (
             <View style={styles.bars}>
-              {detail.ratingBreakdown.map((row) => (
+              {ratingBreakdown.map((row) => (
                 <View key={row.stars} style={styles.barRow}>
                   <Text style={[styles.barLabel, { color: textMuted }]}>
                     {row.stars}
@@ -177,7 +249,7 @@ export const AdvertReviews = memo(function AdvertReviews({
 
       {isLoading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator color={header} />
+          <ActivityIndicator color={primary} />
           <Text style={[styles.loadingText, { color: textMuted }]}>
             Yorumlar yükleniyor...
           </Text>
@@ -187,13 +259,13 @@ export const AdvertReviews = memo(function AdvertReviews({
           <Ionicons name="chatbubbles-outline" size={32} color={textMuted} />
           <Text style={[styles.emptyTitle, { color: text }]}>Henüz yorum yapılmamış</Text>
           <Text style={[styles.emptyDesc, { color: textMuted }]}>
-            Bu ilan hakkında soru sormak veya düşüncənizi paylaşmak için ilk yorumu yazabilirsiniz.
+            Bu ilan hakkında soru sormak veya puan/düşüncenizi paylaşmak için ilk yorumu yazabilirsiniz.
           </Text>
           <Pressable
             onPress={handleOpenCommentModal}
-            style={[styles.emptyBtn, { backgroundColor: header }]}
+            style={[styles.emptyBtn, { backgroundColor: primary }]}
           >
-            <Text style={styles.emptyBtnText}>İlk Yorumu Yaz</Text>
+            <Text style={styles.emptyBtnText}>İlk Yorum ve Puanı Yaz</Text>
           </Pressable>
         </View>
       ) : (
@@ -202,9 +274,12 @@ export const AdvertReviews = memo(function AdvertReviews({
             <CommentCard
               key={cmt.id}
               comment={cmt}
+              currentUserId={currentUserId}
+              onDelete={() => setTargetDeleteId(cmt.id)}
               text={text}
               textMuted={textMuted}
               border={border}
+              errorColor={errorColor}
             />
           ))}
 
@@ -229,21 +304,21 @@ export const AdvertReviews = memo(function AdvertReviews({
             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setShowAll((v) => !v);
           }}
-          style={styles.seeAll}
+          style={[styles.seeAllBtn, { borderColor: border, backgroundColor: surface }]}
           accessibilityRole="button"
           accessibilityLabel={
             showAll ? 'Daha az göster' : 'Tüm yorumları gör'
           }
         >
-          <Text style={[styles.seeAllText, { color: header }]}>
+          <Text style={[styles.seeAllText, { color: text }]}>
             {showAll
-              ? 'Daha az göster'
+              ? 'Daha az yorum göster'
               : `Tüm yorumları gör (${comments.length})`}
           </Text>
           <Ionicons
-            name={showAll ? 'chevron-up' : 'chevron-forward'}
-            size={14}
-            color={header}
+            name={showAll ? 'chevron-up' : 'chevron-down'}
+            size={16}
+            color={primary}
           />
         </Pressable>
       ) : null}
@@ -254,21 +329,36 @@ export const AdvertReviews = memo(function AdvertReviews({
         onSubmit={handleSubmitComment}
         isSubmitting={isSubmitting}
       />
+
+      <DeleteCommentModal
+        visible={Boolean(targetDeleteId)}
+        onClose={() => !isDeleting && setTargetDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+        isDeleting={isDeleting}
+      />
     </View>
   );
 });
 
 function CommentCard({
   comment,
+  currentUserId,
+  onDelete,
   text,
   textMuted,
   border,
+  errorColor,
 }: {
   comment: AdvertComment;
+  currentUserId?: string | null;
+  onDelete?: () => void;
   text: string;
   textMuted: string;
   border: string;
+  errorColor: string;
 }) {
+  const isMine = Boolean(currentUserId && comment.userId === currentUserId);
+
   return (
     <View style={[styles.review, { borderBottomColor: border }]}>
       <View style={styles.reviewHead}>
@@ -278,16 +368,41 @@ function CommentCard({
               {comment.authorName ? comment.authorName.charAt(0).toUpperCase() : 'K'}
             </Text>
           </View>
-          <Text style={[styles.author, { color: text }]}>{comment.authorName}</Text>
+          <Text style={[styles.author, { color: text }]}>
+            {comment.authorName} {isMine ? '(Siz)' : ''}
+          </Text>
         </View>
-        <Text style={[styles.date, { color: textMuted }]}>
-          {formatDate(comment.createdAt)}
-        </Text>
+        <View style={styles.headRightRow}>
+          <Text style={[styles.date, { color: textMuted }]}>
+            {formatDate(comment.createdAt)}
+          </Text>
+          {isMine && onDelete ? (
+            <Pressable
+              onPress={onDelete}
+              style={({ pressed }) => [
+                styles.deleteBtn,
+                pressed && styles.deleteBtnActive,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Yorumumu sil"
+            >
+              <Ionicons name="trash-outline" size={13} color={errorColor} />
+              <Text style={[styles.deleteBtnText, { color: errorColor }]}>Sil</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
-      <Text style={[styles.body, { color: text }]}>{comment.content}</Text>
+      {comment.rating ? (
+        <RatingStars value={comment.rating} size={13} />
+      ) : null}
+      {comment.content && comment.content.trim() ? (
+        <Text style={[styles.body, { color: text }]}>{comment.content}</Text>
+      ) : null}
     </View>
   );
 }
+
+
 
 function ReviewCard({
   review,
@@ -317,7 +432,7 @@ function ReviewCard({
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: Spacing.lg, marginTop: Spacing.xl },
+  wrap: { gap: Spacing.lg, marginTop: Spacing.xl, paddingBottom: Spacing.xl },
   head: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -444,6 +559,38 @@ const styles = StyleSheet.create({
   author: { fontWeight: '700', fontSize: 14 },
   date: { fontSize: 12 },
   body: { fontSize: 14, lineHeight: 21 },
-  seeAll: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingTop: Spacing.xs },
+  seeAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: Spacing.sm,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: Radius.input,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+  },
   seeAllText: { fontSize: 13, fontWeight: '600' },
+  headRightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: Radius.pill,
+    backgroundColor: 'rgba(243, 71, 112, 0.08)',
+  },
+  deleteBtnActive: {
+    backgroundColor: 'rgba(243, 71, 112, 0.18)',
+  },
+  deleteBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
 });

@@ -12,4 +12,10 @@ export interface ICommentRepository {
     payload: CreateCommentPayload,
     accessToken: string
   ): Promise<AdvertComment>;
+
+  deleteComment(
+    advertId: string,
+    commentId: string,
+    accessToken: string
+  ): Promise<void>;
 }

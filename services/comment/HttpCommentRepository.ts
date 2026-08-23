@@ -8,6 +8,7 @@ type BeCommentItem = {
   userId: string;
   authorName: string;
   content: string;
+  rating?: number | null;
   createdAt: string;
 };
 
@@ -68,6 +69,20 @@ export class HttpCommentRepository implements ICommentRepository {
     return this.mapComment(data);
   }
 
+  async deleteComment(
+    advertId: string,
+    commentId: string,
+    accessToken: string
+  ): Promise<void> {
+    await this.http.request<void>(
+      `/v1/adverts/${encodeURIComponent(advertId)}/comments/${encodeURIComponent(commentId)}`,
+      {
+        method: 'DELETE',
+        accessToken,
+      }
+    );
+  }
+
   private mapComment(item: BeCommentItem): AdvertComment {
     return {
       id: item.id,
@@ -75,7 +90,9 @@ export class HttpCommentRepository implements ICommentRepository {
       userId: item.userId,
       authorName: item.authorName || 'Kullanıcı',
       content: item.content,
+      rating: item.rating ?? null,
       createdAt: item.createdAt,
     };
   }
 }
+

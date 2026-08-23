@@ -16,8 +16,16 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 type CommentModalProps = {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (content: string) => Promise<void>;
+  onSubmit: (content: string, rating?: number | null) => Promise<void>;
   isSubmitting: boolean;
+};
+
+const RATING_LABELS: Record<number, string> = {
+  1: 'Çok Kötü (1/5)',
+  2: 'Kötü (2/5)',
+  3: 'Orta (3/5)',
+  4: 'İyi (4/5)',
+  5: 'Mükemmel (5/5)',
 };
 
 export const CommentModal = memo(function CommentModal({
@@ -27,7 +35,8 @@ export const CommentModal = memo(function CommentModal({
   isSubmitting,
 }: CommentModalProps) {
   const [content, setContent] = useState('');
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const [rating, setRating] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const background = useThemeColor('background');
   const text = useThemeColor('text');
@@ -35,32 +44,47 @@ export const CommentModal = memo(function CommentModal({
   const border = useThemeColor('border');
   const primary = useThemeColor('header');
   const errorColor = useThemeColor('error');
+  const warning = useThemeColor('warning');
 
   const handleClose = () => {
     setContent('');
-    setValidationError(null);
+    setRating(null);
+    setErrorMessage(null);
     onClose();
   };
 
   const handlePublish = async () => {
     const trimmed = content.trim();
-    if (!trimmed) {
-      setValidationError('Lütfen bir yorum metni giriniz.');
+    if (!trimmed && rating === null) {
+      setErrorMessage('Lütfen bir yorum yazınız veya puan veriniz.');
       return;
     }
     if (trimmed.length > 1000) {
-      setValidationError('Yorum en fazla 1000 karakter olabilir.');
+      setErrorMessage('Yorum en fazla 1000 karakter olabilir.');
       return;
     }
 
-    setValidationError(null);
+    setErrorMessage(null);
     try {
-      await onSubmit(trimmed);
+      await onSubmit(trimmed, rating);
       handleClose();
-    } catch {
-      // Error handled by parent hook
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Yorum gönderilirken bir hata oluştu.';
+      setErrorMessage(msg);
     }
   };
+
+  const handleStarPress = (starIndex: number) => {
+    // If clicking same star again, toggle off
+    if (rating === starIndex) {
+      setRating(null);
+    } else {
+      setRating(starIndex);
+    }
+    if (errorMessage) setErrorMessage(null);
+  };
+
+  const canSubmit = Boolean(content.trim() || rating !== null);
 
   return (
     <Modal
@@ -72,20 +96,58 @@ export const CommentModal = memo(function CommentModal({
       <View style={styles.overlay}>
         <View style={[styles.modalCard, { backgroundColor: background, borderColor: border }]}>
           <View style={styles.header}>
-            <Text style={[styles.title, { color: text }]}>İlana Yorum Yaz</Text>
+            <Text style={[styles.title, { color: text }]}>İlana Yorum ve Puan Yaz</Text>
             <Pressable onPress={handleClose} hitSlop={8} style={styles.closeBtn}>
               <Ionicons name="close" size={22} color={text} />
             </Pressable>
           </View>
 
           <Text style={[styles.hint, { color: textMuted }]}>
-            Yorumunuz doğrudan yayınlanacaktır. Lütfen nezaket kurallarına dikkat ediniz.
+            Yorumunuz ve puanınız doğrudan yayınlanacaktır. Lütfen nezaket kurallarına dikkat ediniz.
           </Text>
 
-          {validationError ? (
-            <Text style={[styles.errorText, { color: errorColor }]}>
-              {validationError}
-            </Text>
+          {/* Yıldız Puanlama Bölümü */}
+          <View style={[styles.ratingBox, { borderColor: border, backgroundColor: background }]}>
+            <Text style={[styles.ratingLabel, { color: text }]}>Puanınız (İsteğe Bağlı):</Text>
+            <View style={styles.starsRow}>
+              {[1, 2, 3, 4, 5].map((star) => {
+                const filled = (rating ?? 0) >= star;
+                return (
+                  <Pressable
+                    key={star}
+                    onPress={() => handleStarPress(star)}
+                    hitSlop={6}
+                    style={styles.starTouch}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${star} Yıldız`}
+                  >
+                    <Ionicons
+                      name={filled ? 'star' : 'star-outline'}
+                      size={28}
+                      color={filled ? warning : textMuted}
+                    />
+                  </Pressable>
+                );
+              })}
+              {rating !== null ? (
+                <Text style={[styles.ratingText, { color: warning }]}>
+                  {RATING_LABELS[rating]}
+                </Text>
+              ) : (
+                <Text style={[styles.ratingHint, { color: textMuted }]}>
+                  Seçmek için dokunun
+                </Text>
+              )}
+            </View>
+          </View>
+
+          {errorMessage ? (
+            <View style={[styles.errorBox, { borderColor: errorColor }]}>
+              <Ionicons name="alert-circle" size={16} color={errorColor} style={{ marginRight: 6 }} />
+              <Text style={[styles.errorText, { color: errorColor }]}>
+                {errorMessage}
+              </Text>
+            </View>
           ) : null}
 
           <TextInput
@@ -93,7 +155,7 @@ export const CommentModal = memo(function CommentModal({
               styles.input,
               { color: text, borderColor: border, backgroundColor: background },
             ]}
-            placeholder="Yorumunuzu buraya yazabilirsiniz..."
+            placeholder="İlan hakkındaki düşüncelerinizi buraya yazabilirsiniz (isteğe bağlı)..."
             placeholderTextColor={textMuted}
             multiline
             numberOfLines={4}
@@ -101,7 +163,7 @@ export const CommentModal = memo(function CommentModal({
             value={content}
             onChangeText={(txt) => {
               setContent(txt);
-              if (validationError) setValidationError(null);
+              if (errorMessage) setErrorMessage(null);
             }}
           />
 
@@ -121,10 +183,10 @@ export const CommentModal = memo(function CommentModal({
 
               <Pressable
                 onPress={handlePublish}
-                disabled={isSubmitting || !content.trim()}
+                disabled={isSubmitting || !canSubmit}
                 style={[
                   styles.submitBtn,
-                  { backgroundColor: primary, opacity: isSubmitting || !content.trim() ? 0.6 : 1 },
+                  { backgroundColor: primary, opacity: isSubmitting || !canSubmit ? 0.6 : 1 },
                 ]}
               >
                 {isSubmitting ? (
@@ -142,6 +204,7 @@ export const CommentModal = memo(function CommentModal({
       </View>
     </Modal>
   );
+
 });
 
 const styles = StyleSheet.create({
@@ -182,9 +245,45 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
+  ratingBox: {
+    padding: Spacing.sm,
+    borderRadius: Radius.input,
+    borderWidth: 1,
+    gap: 6,
+  },
+  ratingLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  starsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  starTouch: {
+    padding: 2,
+  },
+  ratingText: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+  ratingHint: {
+    fontSize: 12,
+    marginLeft: 8,
+  },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    borderWidth: 1,
+    borderRadius: Radius.input,
+  },
   errorText: {
     fontSize: 13,
     fontWeight: '600',
+    flex: 1,
   },
   input: {
     borderWidth: 1,
@@ -231,3 +330,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+
