@@ -6,12 +6,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/layout';
 import { MyListingsView } from '@/components/my-listings';
 import { useAuthSession } from '@/hooks/useAuthSession';
+import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { prepareListingWizardEntry } from '@/services/listing';
 
 export default function MyListingsScreen() {
   const router = useRouter();
   const bg = useThemeColor('background');
+  const isWide = useIsWideLayout();
   const { isLoggedIn, session } = useAuthSession();
 
   useEffect(() => {
@@ -36,19 +38,24 @@ export default function MyListingsScreen() {
         </Head>
       ) : null}
 
-      <AppHeader
-        brandName="Haradan.com"
-        isLoggedIn={isLoggedIn}
-        onLoginPress={onLogin}
-        onSignupPress={onSignup}
-        onProfilePress={onProfile}
-        onPostAdPress={() => {
-          prepareListingWizardEntry();
-          router.push('/post');
-        }}
-      />
+      {isWide ? (
+        <AppHeader
+          brandName="Haradan.com"
+          isLoggedIn={isLoggedIn}
+          onLoginPress={onLogin}
+          onSignupPress={onSignup}
+          onProfilePress={onProfile}
+          onPostAdPress={() => {
+            prepareListingWizardEntry();
+            router.push('/post');
+          }}
+        />
+      ) : null}
 
-      <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.flex}>
+      <SafeAreaView
+        edges={isWide ? ['left', 'right', 'bottom'] : ['left', 'right']}
+        style={styles.flex}
+      >
         {session ? <MyListingsView accessToken={session.accessToken} /> : null}
       </SafeAreaView>
     </View>

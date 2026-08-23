@@ -104,6 +104,13 @@ assert(
   'profile redirect only on wide'
 );
 
+const myListingsScreen = read('app/my-listings/index.tsx');
+const myListingsView = read('components/my-listings/MyListingsView.tsx');
+assert(myListingsScreen.includes('isWide ?'), 'my-listings conditional AppHeader');
+assert(myListingsView.includes('MobileMyListingsTabs'), 'my-listings pill tabs');
+assert(myListingsView.includes('mobileDockScrollInset'), 'my-listings dock inset');
+assert(myListingsView.includes('MobileScreenHeader'), 'my-listings mobile header');
+
 const listingsScreen = read('app/listings/index.tsx');
 const advertScreen = read('app/advert/[id].tsx');
 for (const [name, src] of [
@@ -119,6 +126,7 @@ const suites = [
   'scripts/selftest-home-mobile.ts',
   'scripts/selftest-listings-mobile.ts',
   'scripts/selftest-advert-detail-mobile.ts',
+  'scripts/selftest-my-listings-mobile.ts',
 ];
 for (const suite of suites) {
   try {

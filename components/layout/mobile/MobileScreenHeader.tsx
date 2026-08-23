@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
@@ -8,6 +9,7 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 type MobileScreenHeaderProps = {
   title: string;
   subtitle?: string;
+  onBack?: () => void;
   right?: React.ReactNode;
 };
 
@@ -15,6 +17,7 @@ type MobileScreenHeaderProps = {
 export function MobileScreenHeader({
   title,
   subtitle,
+  onBack,
   right,
 }: MobileScreenHeaderProps) {
   const insets = useSafeInsets();
@@ -35,7 +38,18 @@ export function MobileScreenHeader({
       ]}
     >
       <View style={styles.row}>
-        <View style={styles.copy}>
+        {onBack ? (
+          <Pressable
+            onPress={onBack}
+            accessibilityRole="button"
+            accessibilityLabel="Geri"
+            hitSlop={8}
+            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.7 }]}
+          >
+            <Ionicons name="chevron-back" size={24} color={text} />
+          </Pressable>
+        ) : null}
+        <View style={[styles.copy, onBack ? styles.copyIndented : null]}>
           <Text style={[styles.title, { color: text }]}>{title}</Text>
           {subtitle ? (
             <Text style={[styles.sub, { color: textMuted }]}>{subtitle}</Text>
@@ -57,9 +71,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 8,
   },
-  copy: { flex: 1, gap: 2 },
+  backBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: -4,
+  },
+  copy: { flex: 1, gap: 2, minWidth: 0 },
+  copyIndented: { marginLeft: -4 },
   title: {
     fontSize: 22,
     fontWeight: '700',

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,22 +11,27 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { FeaturedListingCard } from '@/components/product/FeaturedListingCard';
+import { MobileScreenHeader } from '@/components/layout/mobile/MobileScreenHeader';
 import { DraftDeleteConfirm } from './DraftDeleteConfirm';
 import { MyListingsTabs } from './MyListingsTabs';
+import { MobileMyListingsTabs } from './mobile/MobileMyListingsTabs';
 import { HomeContentContainer } from '@/components/layout';
 import { Button } from '@/components/ui/Button';
 import {
   HOME_CONTENT_MAX_WIDTH,
-  HOME_DESKTOP_BREAKPOINT,
   homeContentPadding,
+  mobileDockScrollInset,
 } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { useMyListings } from '@/hooks/useMyListings';
+import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { prepareListingWizardEntry } from '@/services/listing';
 import { locationLookup } from '@/services/location';
+import { MY_LISTING_TABS } from '@/services/my-listings';
 import { ApiError } from '@/services/http';
 import type { MyListingCard, MyListingStatus } from '@/types';
 
@@ -59,7 +65,10 @@ type MyListingsViewProps = {
 export function MyListingsView({ accessToken }: MyListingsViewProps) {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const isWide = width >= HOME_DESKTOP_BREAKPOINT;
+  const isWide = useIsWideLayout();
+  const safeInsets = useSafeInsets();
+  const dockPad = mobileDockScrollInset(safeInsets.bottom);
+  const primary = useThemeColor('primary');
   const [status, setStatus] = useState<MyListingStatus>('published');
   const published = useMyListings('published', accessToken);
   const pending = useMyListings('pending', accessToken);
@@ -127,11 +136,14 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
     ]
   );
 
-  const cols = isWide ? 3 : width >= 640 ? 2 : 1;
-  const gap = isWide ? Spacing.lg : Spacing.md;
-  const pad = homeContentPadding(isWide);
+  const cols = isWide ? 3 : 2;
+  const gap = isWide ? Spacing.lg : Spacing.sm;
+  const pad = isWide ? homeContentPadding(isWide) : Spacing.md;
+  const contentWidth = isWide
+    ? Math.min(width, HOME_CONTENT_MAX_WIDTH)
+    : width;
   const colWidth = Math.floor(
-    (Math.min(width, HOME_CONTENT_MAX_WIDTH) - pad * 2 - gap * (cols - 1)) / cols
+    (contentWidth - pad * 2 - gap * (cols - 1)) / cols
   );
 
   const [locationTick, setLocationTick] = useState(0);
@@ -248,6 +260,143 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
 
   const showPostCta = status === 'published' || status === 'draft';
 
+  const activeTabLabel =
+    MY_LISTING_TABS.find((tab) => tab.key === status)?.label ?? 'İlanlar';
+
+  const mobileSubtitle = active.loading
+    ? 'Yükleniyor…'
+    : active.error
+      ? 'Yüklenemedi'
+      : activeItems.length > 0
+        ? `${activeItems.length} ilan · ${activeTabLabel}`
+        : activeTabLabel;
+
+  const listingCards = activeItems.map((item) => (
+    <FeaturedListingCard
+      key={`${item.id}-${locationTick}`}
+      product={item}
+      width={colWidth}
+      compact={!isWide}
+      badge={item.isUrgent && item.status !== 'sold' ? 'urgent' : 'auto'}
+      onPress={(id) => router.push(`/advert/${id}`)}
+      onToggleFavorite={toggle}
+      onRemove={status === 'draft' ? requestRemoveItem : undefined}
+      removing={deleting && pendingDelete?.id === item.id}
+      onMarkSold={status === 'published' ? requestMarkSold : undefined}
+      markingSold={markingSoldId === item.id}
+      accessToken={accessToken}
+    />
+  ));
+
+  const statusErrors = (
+    <>
+      {deleteError ? (
+        <Text style={[styles.deleteError, { color: errorColor }]}>
+          {deleteError}
+        </Text>
+      ) : null}
+      {soldError ? (
+        <Text style={[styles.deleteError, { color: errorColor }]}>
+          {soldError}
+        </Text>
+      ) : null}
+    </>
+  );
+
+  const listBody = active.loading ? (
+    <View style={styles.center}>
+      <ActivityIndicator color={primary} />
+    </View>
+  ) : active.error ? (
+    <View style={styles.mobileError}>
+      <Text style={[styles.error, { color: text }]}>{active.error}</Text>
+      <Pressable
+        onPress={() => void active.refetch()}
+        accessibilityRole="button"
+        accessibilityLabel="Yeniden dene"
+        style={({ pressed }) => [styles.retryBtn, pressed && { opacity: 0.7 }]}
+      >
+        <Text style={[styles.retryText, { color: primary }]}>Yeniden dene</Text>
+      </Pressable>
+    </View>
+  ) : activeItems.length === 0 ? (
+    <View style={styles.mobileEmpty}>
+      <View style={[styles.emptyIcon, { backgroundColor: surface }]}>
+        <Ionicons name="layers-outline" size={24} color={muted} />
+      </View>
+      <Text style={[styles.emptyTitle, { color: text }]}>
+        {EMPTY[status].title}
+      </Text>
+      <Text style={[styles.emptyHint, { color: muted }]}>
+        {EMPTY[status].hint}
+      </Text>
+      {showPostCta ? (
+        <Button onPress={postAd} variant="primary" size="md">
+          İlan Ver
+        </Button>
+      ) : null}
+    </View>
+  ) : (
+    <View style={[styles.grid, { gap }]}>{listingCards}</View>
+  );
+
+  if (!isWide) {
+    return (
+      <>
+        <View style={styles.flex}>
+          <MobileScreenHeader
+            title="İlanlarım"
+            subtitle={mobileSubtitle}
+            onBack={() => router.back()}
+            right={
+              <Pressable
+                onPress={postAd}
+                accessibilityRole="button"
+                accessibilityLabel="Yeni ilan ver"
+                style={({ pressed }) => [
+                  styles.postFab,
+                  { backgroundColor: primary },
+                  pressed && { opacity: 0.88, transform: [{ scale: 0.96 }] },
+                ]}
+              >
+                <Ionicons name="add" size={22} color="#fff" />
+              </Pressable>
+            }
+          />
+          <ScrollView
+            style={styles.flex}
+            contentContainerStyle={[
+              styles.mobileScroll,
+              { paddingBottom: dockPad },
+            ]}
+            showsVerticalScrollIndicator={false}
+          >
+            <MobileMyListingsTabs
+              active={status}
+              counts={counts}
+              onChange={(next) => {
+                setDeleteError(null);
+                setSoldError(null);
+                setStatus(next);
+              }}
+            />
+            {statusErrors}
+            {listBody}
+          </ScrollView>
+        </View>
+        <DraftDeleteConfirm
+          visible={pendingDelete != null}
+          title={pendingDelete?.title ?? ''}
+          loading={deleting}
+          onCancel={cancelRemoveDraft}
+          onConfirm={() => {
+            void confirmRemoveItem();
+          }}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <ScrollView
@@ -288,16 +437,7 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
 
           <View style={{ height: Spacing.lg }} />
 
-          {deleteError ? (
-            <Text style={[styles.deleteError, { color: errorColor }]}>
-              {deleteError}
-            </Text>
-          ) : null}
-          {soldError ? (
-            <Text style={[styles.deleteError, { color: errorColor }]}>
-              {soldError}
-            </Text>
-          ) : null}
+          {statusErrors}
 
           {active.loading ? (
             <View style={styles.center}>
@@ -322,25 +462,7 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
               {showPostCta ? <Button onPress={postAd}>İlan Ver</Button> : null}
             </View>
           ) : (
-            <View style={[styles.grid, { gap }]}>
-              {activeItems.map((item) => (
-                <FeaturedListingCard
-                  key={`${item.id}-${locationTick}`}
-                  product={item}
-                  width={colWidth}
-                  badge={
-                    item.isUrgent && item.status !== 'sold' ? 'urgent' : 'auto'
-                  }
-                  onPress={(id) => router.push(`/advert/${id}`)}
-                  onToggleFavorite={toggle}
-                  onRemove={status === 'draft' ? requestRemoveItem : undefined}
-                  removing={deleting && pendingDelete?.id === item.id}
-                  onMarkSold={status === 'published' ? requestMarkSold : undefined}
-                  markingSold={markingSoldId === item.id}
-                  accessToken={accessToken}
-                />
-              ))}
-            </View>
+            <View style={[styles.grid, { gap }]}>{listingCards}</View>
           )}
         </HomeContentContainer>
       </ScrollView>
@@ -360,6 +482,43 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: { paddingTop: Spacing.lg, paddingBottom: Spacing['3xl'] },
+  mobileScroll: {
+    paddingHorizontal: Spacing.md,
+  },
+  postFab: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mobileEmpty: {
+    alignItems: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: Spacing.lg,
+    gap: 10,
+  },
+  emptyIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  mobileError: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
+    gap: Spacing.sm,
+  },
+  retryBtn: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
   headerRow: {
     marginBottom: Spacing.md,
     gap: Spacing.md,
