@@ -120,8 +120,8 @@ export function AdvertDetailView({
   const tabs = useMemo(
     () =>
       [
-        { key: 'general' as const, label: 'Genel bilgi' },
-        { key: 'details' as const, label: 'İlan detayları' },
+        { key: 'general' as const, label: 'İlan' },
+        { key: 'details' as const, label: 'Genel bilgiler' },
         {
           key: 'reviews' as const,
           label: `Değerlendirmeler (${detail.reviewCount || detail.reviews.length})`,
@@ -215,6 +215,13 @@ export function AdvertDetailView({
       } else if (key === 'details') {
         scrollToAnchor(specsAnchorRef, 'advert-specs');
       } else {
+        if (Platform.OS === 'web' && typeof document !== 'undefined') {
+          const topEl = document.getElementById('advert-top');
+          if (topEl) {
+            topEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+          }
+        }
         scrollRef.current?.scrollTo({ y: 0, animated: true });
       }
     },
@@ -254,6 +261,10 @@ export function AdvertDetailView({
             ref={specsAnchorRef}
             collapsable={false}
             nativeID="advert-specs"
+            style={Platform.select({
+              web: { scrollMarginTop: isWide ? 24 : 16 } as any,
+              default: {},
+            })}
           >
             <AdvertSpecs
               groups={detail.specs}
@@ -265,6 +276,10 @@ export function AdvertDetailView({
             ref={reviewsAnchorRef}
             collapsable={false}
             nativeID="advert-reviews"
+            style={Platform.select({
+              web: { scrollMarginTop: isWide ? 24 : 16 } as any,
+              default: {},
+            })}
           >
             <AdvertReviews detail={detail} accessToken={accessToken} />
           </View>
@@ -327,7 +342,7 @@ export function AdvertDetailView({
             });
           }}
         >
-          <View style={styles.mobileGalleryWrap}>
+          <View nativeID="advert-top" style={styles.mobileGalleryWrap}>
             <AdvertGallery
               items={detail.gallery}
               height={galleryHeight}
@@ -464,7 +479,7 @@ export function AdvertDetailView({
           });
         }}
       >
-        <HomeContentContainer>
+        <HomeContentContainer nativeID="advert-top">
           <View style={styles.crumbs}>
             {detail.breadcrumbs.map((crumb, i) => (
               <React.Fragment key={`${crumb.label}-${i}`}>
