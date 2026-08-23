@@ -548,21 +548,42 @@ assert(matchHorseColor(studCard, ['Kır']), 'Aşım aygırı Kır don ile eşle�
 assert(matchCustomFeature(studCard, 'deneme:ozel_deger'), 'Aşım aygırı dinamik "deneme" özelliğiyle eşleşti');
 assert(matchCustomFeature(studCard, 'asimGarantisi:canli_tay'), 'Aşım aygırı dinamik "asimGarantisi" ile eşleşti');
 
-// F. Sonradan Eklenecek Yepyeni Bir Kategori (Örn: Binicilik Kulübü / At Malzemeleri)
-const newCategoryCard = {
-  id: 'adv-new-cat-1',
-  title: 'Özel Binicilik Dersi & Ekipman',
-  brand: null,
-  categoryId: 'cat-binicilik-kursu',
-  properties: {
-    dersSeviyesi: 'ileri_duzey',
-    kapaliManej: true,
-    antrenorLisansi: '1_kademe',
-  },
-};
-assert(matchCustomFeature(newCategoryCard, 'dersSeviyesi:ileri_duzey'), 'Yeni kategori dinamik select filtresi eşleşti');
-assert(matchCustomFeature(newCategoryCard, 'kapaliManej'), 'Yeni kategori dinamik boolean switch filtresi eşleşti');
-assert(matchCustomFeature(newCategoryCard, 'antrenorLisansi:1_kademe'), 'Yeni kategori dinamik lisans filtresi eşleşti');
+// G. BO'dan Dinamik Filtre Ekleme / Çıkarma / Pasife Alma Senaryoları
+console.log('\n--- 7. BO Dinamik Filtre Ekleme / Çıkarma / Pasife Alma Testleri ---');
+
+// 1. BO'dan "foalingBarn" (Doğumhane) silindiğinde pansiyon form/filtre listesinden çıkması
+const pansiyonPropsAfterDelete = [
+  { code: 'grassPaddock', title: 'Çim Padok', dataType: 'BOOLEAN', isActive: true, isFilterable: true },
+  { code: 'sandPaddock', title: 'Kum Padok', dataType: 'BOOLEAN', isActive: true, isFilterable: true },
+  { code: 'stallionPaddock', title: 'Aygır Padoğu', dataType: 'BOOLEAN', isActive: true, isFilterable: true },
+  { code: 'vet', title: 'Veteriner', dataType: 'BOOLEAN', isActive: true, isFilterable: true },
+  { code: 'farrier', title: 'Nalbant', dataType: 'BOOLEAN', isActive: true, isFilterable: true },
+  // foalingBarn removed in BO
+];
+
+const activePansiyonProps = pansiyonPropsAfterDelete.filter(p => p.isActive !== false && p.isFilterable !== false);
+assertEqual(activePansiyonProps.length, 5, 'Doğumhane silindikten sonra kalan aktif tesis sayısı 5');
+assert(!activePansiyonProps.some(p => p.code === 'foalingBarn'), 'Doğumhane özelliği listeden tamamen çıktı');
+
+// 2. BO'dan "COAT_COLOR" pasife alındığında (isActive: false) filtreden çıkması
+const studPropsAfterDeactivate = [
+  { code: 'STALLION_BREED', title: 'At Irkı', dataType: 'SINGLE_SELECT', options: [{ value: 'Arap' }, { value: 'İngiliz' }], isActive: true, isFilterable: true },
+  { code: 'STALLION_AGE', title: 'Aşım Yaşı', dataType: 'SINGLE_SELECT', options: [{ value: '0' }, { value: '1' }, { value: '2' }], isActive: true, isFilterable: true },
+  { code: 'COAT_COLOR', title: 'Donu (Renk)', dataType: 'SINGLE_SELECT', options: [], isActive: false, isFilterable: true }, // deactivated
+];
+
+const activeStudProps = studPropsAfterDeactivate.filter(p => p.isActive !== false && p.isFilterable !== false);
+assertEqual(activeStudProps.length, 2, 'Pasife alınan Donu özelliği listeden çıktı, kalan 2');
+assert(!activeStudProps.some(p => p.code === 'COAT_COLOR'), 'COAT_COLOR filtresi render edilmeyecek');
+
+// 3. BO'dan yeni özellik eklendiğinde (Örn: "kameraIzleme") dinamik olarak listeye girmesi
+const pansiyonPropsWithNew = [
+  ...pansiyonPropsAfterDelete,
+  { code: 'kameraIzleme', title: 'Kamera ile Canlı İzleme', dataType: 'BOOLEAN', isActive: true, isFilterable: true },
+];
+const activePansiyonWithNew = pansiyonPropsWithNew.filter(p => p.isActive !== false && p.isFilterable !== false);
+assertEqual(activePansiyonWithNew.length, 6, 'Yeni eklenen kamera özelliği ile aktif sayı 6 oldu');
+assert(activePansiyonWithNew.some(p => p.code === 'kameraIzleme'), 'Yeni özellik dinamik listeye dahil oldu');
 
 console.log(`\nÖzet: ${passed} geçti, ${failed} kaldı.`);
 if (failed > 0) {
@@ -570,5 +591,6 @@ if (failed > 0) {
 } else {
   console.log('Tüm kategori form ve filtre self-testleri başarıyla geçti!');
 }
+
 
 

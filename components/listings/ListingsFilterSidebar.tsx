@@ -17,18 +17,7 @@ import {
   priceHint,
   PERIOD_OPTIONS,
   periodLabel,
-  isHorseCategory,
   isPansiyonCategory,
-  isTransportCategory,
-  isFarrierCategory,
-  isStudCategory,
-  PANSIYON_FACILITY_OPTIONS,
-  STUD_BREED_OPTIONS,
-  STUD_AGE_OPTIONS,
-  COAT_COLOR_OPTIONS,
-  HORSE_BREED_OPTIONS,
-  HORSE_AGE_OPTIONS,
-  HORSE_GENDER_OPTIONS,
   type ListingPeriodFilter,
   type PansiyonFacilityKey,
 } from '@/components/listings/filterConfig';
@@ -77,16 +66,15 @@ type ListingsFilterSidebarProps = {
   resultCount: number;
 };
 
-export const FACILITY_OPTIONS = PANSIYON_FACILITY_OPTIONS;
-
 export {
+  PANSIYON_FACILITY_OPTIONS as FACILITY_OPTIONS,
   HORSE_BREED_OPTIONS,
   HORSE_AGE_OPTIONS,
   HORSE_GENDER_OPTIONS,
   STUD_BREED_OPTIONS,
   STUD_AGE_OPTIONS,
   COAT_COLOR_OPTIONS,
-};
+} from './filterConfig';
 
 function toggleAnim() {
   if (Platform.OS === 'web') return;
@@ -318,21 +306,6 @@ function isGenderProperty(p: CategoryPropertyPublic): boolean {
   );
 }
 
-function isFacilityProperty(p: CategoryPropertyPublic): boolean {
-  const c = (p.code || p.title || '').toLocaleLowerCase('tr');
-  return (
-    c.includes('padok') ||
-    c.includes('paddock') ||
-    c.includes('veteriner') ||
-    c.includes('vet') ||
-    c.includes('nalbant') ||
-    c.includes('farrier') ||
-    c.includes('dogum') ||
-    c.includes('doğum') ||
-    c.includes('foaling')
-  );
-}
-
 /** Sol filtre — kapalı akordeon; detay basınca açılır. */
 export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
   facets,
@@ -346,19 +319,13 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     value.provinceIds.length === 1 ? value.provinceIds[0] : null;
   const { items: districts } = useDistricts(selectedProvinceId);
 
-  const isHorseActive = isHorseCategory(value.categorySlug);
   const isPansiyonActive = isPansiyonCategory(value.categorySlug);
-  const isTransportActive = isTransportCategory(value.categorySlug);
-  const isFarrierActive = isFarrierCategory(value.categorySlug);
-  const isStudActive = isStudCategory(value.categorySlug);
 
   const [categoryProperties, setCategoryProperties] = useState<CategoryPropertyPublic[]>([]);
-  const [propsLoaded, setPropsLoaded] = useState(false);
 
   useEffect(() => {
     if (!value.categorySlug) {
       setCategoryProperties([]);
-      setPropsLoaded(true);
       return;
     }
     let cancelled = false;
@@ -376,7 +343,10 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
 
     const loadProps = () => {
       catalogRepository
-        .getCategoryFormDefinition(categoryId || value.categorySlug!, { fresh: true })
+        .getCategoryFormDefinition(categoryId || value.categorySlug!, {
+          fresh: true,
+          categorySlug: value.categorySlug!,
+        } as any)
         .then((def) => {
           if (cancelled) return;
           if (def && Array.isArray(def.properties)) {
@@ -384,12 +354,10 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
           } else {
             setCategoryProperties([]);
           }
-          setPropsLoaded(true);
         })
         .catch(() => {
           if (!cancelled) {
             setCategoryProperties([]);
-            setPropsLoaded(true);
           }
         });
     };
@@ -502,52 +470,10 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     return map;
   }, [groups]);
 
-  const breedProp = propsLoaded
-    ? categoryProperties.find(isBreedProperty)
-    : isHorseActive || isStudActive
-    ? {
-        code: isStudActive ? 'STALLION_BREED' : 'HORSE_BREED',
-        title: 'At Irkı',
-        options: (isStudActive ? STUD_BREED_OPTIONS : HORSE_BREED_OPTIONS).map(
-          (o) => ({ value: o, label: o })
-        ),
-      }
-    : null;
-
-  const colorProp = propsLoaded
-    ? categoryProperties.find(isColorProperty)
-    : isHorseActive || isStudActive
-    ? {
-        code: 'COAT_COLOR',
-        title: 'Donu (Renk)',
-        options: COAT_COLOR_OPTIONS.map((o) => ({ value: o, label: o })),
-      }
-    : null;
-
-  const ageProp = propsLoaded
-    ? categoryProperties.find(isAgeProperty)
-    : isHorseActive || isStudActive
-    ? {
-        code: isStudActive ? 'STALLION_AGE' : 'HORSE_AGE',
-        title: isStudActive ? 'Aşım Yaşı' : 'Yaş',
-        options: (isStudActive ? STUD_AGE_OPTIONS : HORSE_AGE_OPTIONS).map(
-          (o) => ({ value: o, label: o })
-        ),
-      }
-    : null;
-
-  const genderProp = propsLoaded
-    ? categoryProperties.find(isGenderProperty)
-    : isHorseActive
-    ? {
-        code: 'HORSE_GENDER',
-        title: 'Cinsiyet',
-        options: HORSE_GENDER_OPTIONS.map((o) => ({ value: o, label: o })),
-      }
-    : null;
-
-  const dynamicProps = value.categorySlug
-    ? categoryProperties.filter((p: any) => {
+  const activeCategoryProperties = useMemo(() => {
+    if (!value.categorySlug) return [];
+    return categoryProperties
+      .filter((p: any) => {
         if (
           p.isActive === false ||
           p.is_active === false ||
@@ -557,15 +483,29 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         ) {
           return false;
         }
-        return (
-          !isBreedProperty(p) &&
-          !isColorProperty(p) &&
-          !isAgeProperty(p) &&
-          !isGenderProperty(p) &&
-          !(isPansiyonActive && isFacilityProperty(p))
-        );
+        return true;
       })
-    : [];
+      .sort((a, b) => (a.sortOrder || 1) - (b.sortOrder || 1));
+  }, [value.categorySlug, categoryProperties]);
+
+  const booleanProps = useMemo(() => {
+    return activeCategoryProperties.filter((p) => p.dataType === 'BOOLEAN');
+  }, [activeCategoryProperties]);
+
+  const selectProps = useMemo(() => {
+    return activeCategoryProperties.filter(
+      (p) => p.dataType === 'SINGLE_SELECT' || (p.options && p.options.length > 0)
+    );
+  }, [activeCategoryProperties]);
+
+  const otherProps = useMemo(() => {
+    return activeCategoryProperties.filter(
+      (p) =>
+        p.dataType !== 'BOOLEAN' &&
+        p.dataType !== 'SINGLE_SELECT' &&
+        (!p.options || p.options.length === 0)
+    );
+  }, [activeCategoryProperties]);
 
   const hasActive =
     value.categorySlug != null ||
@@ -1008,251 +948,52 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         </Pressable>
       </Accordion>
 
-      {/* 3. SATILIK ATLAR: Irk, Don, Yaş, Cinsiyet (YALNIZCA Satılık Atlar Seçiliyken) */}
-      {isHorseActive ? (
-        <>
-          <Accordion
-            title="At Irkı"
-            open={!!openGroups['horse-breeds']}
-            onToggle={() => toggleGroup('horse-breeds')}
-            hint={value.breeds?.length ? value.breeds.join(', ') : null}
-            text={text}
-            textMuted={textMuted}
-            border={border}
-          >
-            {HORSE_BREED_OPTIONS.map((breed) => {
-              const selected = (value.breeds ?? []).includes(breed);
-              return (
-                <FilterRow
-                  key={breed}
-                  label={breed}
-                  multi
-                  selected={selected}
-                  onSelect={() => {
-                    const curr = value.breeds ?? [];
-                    const next = selected
-                      ? curr.filter((b) => b !== breed)
-                      : [...curr, breed];
-                    onChange({ ...value, breeds: next });
-                  }}
-                  {...rowTheme}
-                />
-              );
-            })}
-          </Accordion>
-
-          <Accordion
-            title="Donu (Renk)"
-            open={!!openGroups['horse-colors']}
-            onToggle={() => toggleGroup('horse-colors')}
-            hint={value.colors?.length ? value.colors.join(', ') : null}
-            text={text}
-            textMuted={textMuted}
-            border={border}
-          >
-            {COAT_COLOR_OPTIONS.map((color) => {
-              const selected = (value.colors ?? []).includes(color);
-              return (
-                <FilterRow
-                  key={color}
-                  label={color}
-                  multi
-                  selected={selected}
-                  onSelect={() => {
-                    const curr = value.colors ?? [];
-                    const next = selected
-                      ? curr.filter((c) => c !== color)
-                      : [...curr, color];
-                    onChange({ ...value, colors: next });
-                  }}
-                  {...rowTheme}
-                />
-              );
-            })}
-          </Accordion>
-
-          <Accordion
-            title="Yaş"
-            open={!!openGroups['horse-ages']}
-            onToggle={() => toggleGroup('horse-ages')}
-            hint={value.ages?.length ? `${value.ages.length} seçili` : null}
-            text={text}
-            textMuted={textMuted}
-            border={border}
-          >
-            {HORSE_AGE_OPTIONS.map((age) => {
-              const selected = (value.ages ?? []).includes(age);
-              return (
-                <FilterRow
-                  key={age}
-                  label={age}
-                  multi
-                  selected={selected}
-                  onSelect={() => {
-                    const curr = value.ages ?? [];
-                    const next = selected
-                      ? curr.filter((a) => a !== age)
-                      : [...curr, age];
-                    onChange({ ...value, ages: next });
-                  }}
-                  {...rowTheme}
-                />
-              );
-            })}
-          </Accordion>
-
-          <Accordion
-            title="Cinsiyet"
-            open={!!openGroups['horse-genders']}
-            onToggle={() => toggleGroup('horse-genders')}
-            hint={value.genders?.length ? value.genders.join(', ') : null}
-            text={text}
-            textMuted={textMuted}
-            border={border}
-          >
-            {HORSE_GENDER_OPTIONS.map((gender) => {
-              const selected = (value.genders ?? []).includes(gender);
-              return (
-                <FilterRow
-                  key={gender}
-                  label={gender}
-                  multi
-                  selected={selected}
-                  onSelect={() => {
-                    const curr = value.genders ?? [];
-                    const next = selected
-                      ? curr.filter((g) => g !== gender)
-                      : [...curr, gender];
-                    onChange({ ...value, genders: next });
-                  }}
-                  {...rowTheme}
-                />
-              );
-            })}
-          </Accordion>
-        </>
-      ) : null}
-
-      {/* 4. AŞIM HİZMETLERİ: At Irkı, Aşım Yaşı, Don (Renk) */}
-      {isStudActive ? (
-        <>
-          <Accordion
-            title="At Irkı"
-            open={!!openGroups['stud-breeds']}
-            onToggle={() => toggleGroup('stud-breeds')}
-            hint={value.breeds?.length ? value.breeds.join(', ') : null}
-            text={text}
-            textMuted={textMuted}
-            border={border}
-          >
-            {STUD_BREED_OPTIONS.map((breed) => {
-              const selected = (value.breeds ?? []).includes(breed);
-              return (
-                <FilterRow
-                  key={breed}
-                  label={breed}
-                  multi
-                  selected={selected}
-                  onSelect={() => {
-                    const curr = value.breeds ?? [];
-                    const next = selected
-                      ? curr.filter((b) => b !== breed)
-                      : [...curr, breed];
-                    onChange({ ...value, breeds: next });
-                  }}
-                  {...rowTheme}
-                />
-              );
-            })}
-          </Accordion>
-
-          <Accordion
-            title="Aşım Yaşı"
-            open={!!openGroups['stud-ages']}
-            onToggle={() => toggleGroup('stud-ages')}
-            hint={value.ages?.length ? `${value.ages.length} seçili` : null}
-            text={text}
-            textMuted={textMuted}
-            border={border}
-          >
-            {STUD_AGE_OPTIONS.map((age) => {
-              const selected = (value.ages ?? []).includes(age);
-              return (
-                <FilterRow
-                  key={age}
-                  label={age}
-                  multi
-                  selected={selected}
-                  onSelect={() => {
-                    const curr = value.ages ?? [];
-                    const next = selected
-                      ? curr.filter((a) => a !== age)
-                      : [...curr, age];
-                    onChange({ ...value, ages: next });
-                  }}
-                  {...rowTheme}
-                />
-              );
-            })}
-          </Accordion>
-
-          <Accordion
-            title="Donu (Renk)"
-            open={!!openGroups['stud-colors']}
-            onToggle={() => toggleGroup('stud-colors')}
-            hint={value.colors?.length ? value.colors.join(', ') : null}
-            text={text}
-            textMuted={textMuted}
-            border={border}
-          >
-            {COAT_COLOR_OPTIONS.map((color) => {
-              const selected = (value.colors ?? []).includes(color);
-              return (
-                <FilterRow
-                  key={color}
-                  label={color}
-                  multi
-                  selected={selected}
-                  onSelect={() => {
-                    const curr = value.colors ?? [];
-                    const next = selected
-                      ? curr.filter((c) => c !== color)
-                      : [...curr, color];
-                    onChange({ ...value, colors: next });
-                  }}
-                  {...rowTheme}
-                />
-              );
-            })}
-          </Accordion>
-        </>
-      ) : null}
-
-      {/* 5. PANSİYON HARALAR: Tesis & Hizmet Özellikleri */}
-      {isPansiyonActive ? (
+      {/* 3. DİNAMİK KATEGORİ FİLTRELERİ (BO'DAN YÖNETİLEN TÜM ÖZELLİKLER) */}
+      {booleanProps.length > 0 ? (
         <Accordion
-          title="Tesis / Hizmet Özellikleri"
-          open={!!openGroups.facilities}
+          title={isPansiyonActive ? 'Tesis / Hizmet Özellikleri' : 'Özellikler & Hizmetler'}
+          open={openGroups.facilities ?? true}
           onToggle={() => toggleGroup('facilities')}
           hint={facilityHint}
           text={text}
           textMuted={textMuted}
           border={border}
         >
-          {FACILITY_OPTIONS.map((fac) => {
-            const on = Boolean(value.facilities?.[fac.key]);
+          {booleanProps.map((fac) => {
+            const propKey = fac.code || fac.title;
+            const on = Boolean(
+              value.facilities?.[fac.code as PansiyonFacilityKey] ??
+              value.facilities?.[propKey as PansiyonFacilityKey] ??
+              (value.features ?? []).includes(propKey) ??
+              (value.features ?? []).includes(fac.code) ??
+              (value.features ?? []).includes(`${propKey}:true`) ??
+              (value.features ?? []).includes(`${fac.code}:true`)
+            );
+
             return (
               <Pressable
-                key={fac.key}
-                onPress={() =>
+                key={propKey}
+                onPress={() => {
+                  const nextFacilities = {
+                    ...value.facilities,
+                    [fac.code as PansiyonFacilityKey]: !on,
+                  };
+                  const currFeatures = value.features ?? [];
+                  const nextFeatures = on
+                    ? currFeatures.filter(
+                        (f) =>
+                          f !== propKey &&
+                          f !== fac.code &&
+                          f !== `${propKey}:true` &&
+                          f !== `${fac.code}:true`
+                      )
+                    : [...currFeatures, propKey];
                   onChange({
                     ...value,
-                    facilities: {
-                      ...value.facilities,
-                      [fac.key]: !on,
-                    },
-                  })
-                }
+                    facilities: nextFacilities,
+                    features: nextFeatures,
+                  });
+                }}
                 accessibilityRole="switch"
                 accessibilityState={{ checked: on }}
                 style={({ pressed }) => [
@@ -1270,7 +1011,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
                     },
                   ]}
                 >
-                  {fac.label}
+                  {fac.title}
                 </Text>
                 <View
                   style={[
@@ -1289,193 +1030,172 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         </Accordion>
       ) : null}
 
-      {/* 6. BO'DAN GELEN DİNAMİK / ÖZEL KATEGORİ ÖZELLİKLERİ */}
-      {dynamicProps.length > 0 ? (
-        <>
-          {dynamicProps.map((prop) => {
-            const propKey = prop.code || prop.title;
-            if (prop.dataType === 'BOOLEAN') {
-              const on = Boolean(value.facilities?.[prop.code as PansiyonFacilityKey] ?? value.features?.includes(propKey));
-              return (
-                <Pressable
-                  key={propKey}
-                  onPress={() => {
-                    if (prop.code in (value.facilities || {})) {
-                      onChange({
-                        ...value,
-                        facilities: {
-                          ...value.facilities,
-                          [prop.code as PansiyonFacilityKey]: !on,
-                        },
-                      });
-                    } else {
-                      const curr = value.features ?? [];
-                      const next = on
-                        ? curr.filter((f) => f !== propKey)
-                        : [...curr, propKey];
-                      onChange({ ...value, features: next });
-                    }
-                  }}
-                  accessibilityRole="switch"
-                  accessibilityState={{ checked: on }}
-                  style={({ pressed }) => [
-                    styles.toggleRow,
-                    { opacity: pressed ? 0.7 : 1 },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.rowText,
-                      {
-                        color: on ? text : textSecondary,
-                        fontWeight: on ? '600' : '400',
-                        flex: 1,
-                      },
-                    ]}
-                  >
-                    {prop.title}
-                  </Text>
-                  <View
-                    style={[
-                      styles.switch,
-                      {
-                        backgroundColor: on ? header : border,
-                        justifyContent: on ? 'flex-end' : 'flex-start',
-                      },
-                    ]}
-                  >
-                    <View style={styles.switchKnob} />
-                  </View>
-                </Pressable>
-              );
-            }
+      {/* Seçenekli Alanlar (SINGLE_SELECT / Çoklu Seçim Checkbox Filtreleri) */}
+      {selectProps.map((prop) => {
+        const propKey = prop.code || prop.title;
+        const isBreed = isBreedProperty(prop);
+        const isColor = isColorProperty(prop);
+        const isAge = isAgeProperty(prop);
+        const isGender = isGenderProperty(prop);
 
-            if (prop.options && prop.options.length > 0) {
-              return (
-                <Accordion
-                  key={propKey}
-                  title={prop.title}
-                  open={openGroups[propKey] ?? true}
-                  onToggle={() => toggleGroup(propKey)}
-                  hint={
-                    value.features
-                      ?.filter((f) =>
-                        prop.options.some(
-                          (o) =>
-                            f === o.value ||
-                            f === o.label ||
-                            f === `${prop.code}:${o.value}` ||
-                            f === `${propKey}:${o.value}` ||
-                            f === `${prop.code}:${o.label}`
-                        )
-                      )
-                      .map((f) => {
-                        const valPart = f.includes(':') ? f.split(':')[1] : f;
-                        const foundOpt = prop.options.find((o) => o.value === valPart || o.label === valPart);
-                        return foundOpt ? foundOpt.label || foundOpt.value : valPart;
-                      })
-                      .join(', ') || null
-                  }
-                  text={text}
-                  textMuted={textMuted}
-                  border={border}
-                >
-                  {prop.options.map((opt) => {
-                    const optVal = opt.value || opt.label;
-                    const featKey = `${prop.code || propKey}:${opt.value || optVal}`;
-                    const selected = (value.features ?? []).some(
-                      (f) =>
-                        f === featKey ||
-                        f === optVal ||
-                        f === opt.value ||
-                        f === opt.label ||
-                        f === `${propKey}:${opt.value}`
-                    );
-                    return (
-                      <FilterRow
-                        key={optVal}
-                        label={opt.label || opt.value}
-                        multi
-                        selected={selected}
-                        onSelect={() => {
-                          const curr = value.features ?? [];
-                          const isCurrentlySelected = curr.some(
-                            (f) =>
-                              f === featKey ||
-                              f === optVal ||
-                              f === opt.value ||
-                              f === opt.label ||
-                              f === `${propKey}:${opt.value}`
-                          );
-                          const next = isCurrentlySelected
-                            ? curr.filter(
-                                (f) =>
-                                  f !== featKey &&
-                                  f !== optVal &&
-                                  f !== opt.value &&
-                                  f !== opt.label &&
-                                  f !== `${propKey}:${opt.value}` &&
-                                  f !== `${prop.code}:${opt.value}`
-                              )
-                            : [...curr, featKey];
-                          onChange({ ...value, features: next });
-                        }}
-                        {...rowTheme}
-                      />
-                    );
-                  })}
-                </Accordion>
-              );
-            }
+        const isSelected = (optVal: string, optLabel?: string): boolean => {
+          if (isBreed) {
+            return (value.breeds ?? []).some((b) => b === optVal || (optLabel && b === optLabel));
+          }
+          if (isColor) {
+            return (value.colors ?? []).some((c) => c === optVal || (optLabel && c === optLabel));
+          }
+          if (isAge) {
+            return (value.ages ?? []).some((a) => a === optVal || (optLabel && a === optLabel));
+          }
+          if (isGender) {
+            return (value.genders ?? []).some((g) => g === optVal || (optLabel && g === optLabel));
+          }
 
-            return (
-              <Accordion
-                key={propKey}
-                title={prop.title}
-                open={openGroups[propKey] ?? true}
-                onToggle={() => toggleGroup(propKey)}
-                hint={
-                  value.features
-                    ?.find((f) => f.startsWith(`${prop.code}:`) || f.startsWith(`${propKey}:`))
-                    ?.split(':')[1] || null
-                }
-                text={text}
-                textMuted={textMuted}
-                border={border}
-              >
-                <View style={{ paddingVertical: 6, paddingHorizontal: 2 }}>
-                  <TextInput
-                    value={
-                      value.features
-                        ?.find((f) => f.startsWith(`${prop.code}:`) || f.startsWith(`${propKey}:`))
-                        ?.split(':')[1] ?? ''
-                    }
-                    onChangeText={(t) => {
-                      const others = (value.features ?? []).filter(
-                        (f) => !f.startsWith(`${prop.code}:`) && !f.startsWith(`${propKey}:`)
-                      );
-                      const next = t.trim() ? [...others, `${prop.code || propKey}:${t}`] : others;
-                      onChange({ ...value, features: next });
-                    }}
-                    placeholder={`${prop.title} ile filtrele...`}
-                    placeholderTextColor={textMuted}
-                    style={{
-                      color: text,
-                      borderColor: border,
-                      backgroundColor: surface,
-                      paddingHorizontal: 12,
-                      height: 38,
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      fontSize: 13,
-                    }}
-                  />
-                </View>
-              </Accordion>
-            );
-          })}
-        </>
-      ) : null}
+          return (value.features ?? []).some(
+            (f) =>
+              f === optVal ||
+              (optLabel && f === optLabel) ||
+              f === `${prop.code}:${optVal}` ||
+              f === `${propKey}:${optVal}` ||
+              (optLabel && f === `${prop.code}:${optLabel}`)
+          );
+        };
+
+        const handleOptionToggle = (optVal: string, optLabel?: string) => {
+          const currentlyOn = isSelected(optVal, optLabel);
+          const featKey = `${prop.code || propKey}:${optVal}`;
+
+          let nextBreeds = value.breeds ?? [];
+          let nextColors = value.colors ?? [];
+          let nextAges = value.ages ?? [];
+          let nextGenders = value.genders ?? [];
+          let nextFeatures = value.features ?? [];
+
+          if (isBreed) {
+            nextBreeds = currentlyOn
+              ? nextBreeds.filter((b) => b !== optVal && (!optLabel || b !== optLabel))
+              : [...nextBreeds, optVal];
+          } else if (isColor) {
+            nextColors = currentlyOn
+              ? nextColors.filter((c) => c !== optVal && (!optLabel || c !== optLabel))
+              : [...nextColors, optVal];
+          } else if (isAge) {
+            nextAges = currentlyOn
+              ? nextAges.filter((a) => a !== optVal && (!optLabel || a !== optLabel))
+              : [...nextAges, optVal];
+          } else if (isGender) {
+            nextGenders = currentlyOn
+              ? nextGenders.filter((g) => g !== optVal && (!optLabel || g !== optLabel))
+              : [...nextGenders, optVal];
+          } else {
+            if (currentlyOn) {
+              nextFeatures = nextFeatures.filter(
+                (f) =>
+                  f !== featKey &&
+                  f !== optVal &&
+                  (!optLabel || f !== optLabel) &&
+                  f !== `${propKey}:${optVal}` &&
+                  f !== `${prop.code}:${optVal}` &&
+                  (!optLabel || f !== `${prop.code}:${optLabel}`)
+              );
+            } else {
+              nextFeatures = [...nextFeatures, featKey];
+            }
+          }
+
+          onChange({
+            ...value,
+            breeds: nextBreeds,
+            colors: nextColors,
+            ages: nextAges,
+            genders: nextGenders,
+            features: nextFeatures,
+          });
+        };
+
+        const selectedCount = (prop.options || []).filter((o) =>
+          isSelected(o.value, o.label)
+        ).length;
+        const selectHint = selectedCount > 0 ? `${selectedCount} seçili` : null;
+
+        return (
+          <Accordion
+            key={propKey}
+            title={prop.title}
+            open={openGroups[propKey] ?? true}
+            onToggle={() => toggleGroup(propKey)}
+            hint={selectHint}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            {(prop.options || []).map((opt) => {
+              const optVal = opt.value || opt.label;
+              const optLabel = opt.label || opt.value;
+              const active = isSelected(optVal, optLabel);
+
+              return (
+                <FilterRow
+                  key={optVal}
+                  label={optLabel}
+                  multi
+                  selected={active}
+                  onSelect={() => handleOptionToggle(optVal, optLabel)}
+                  {...rowTheme}
+                />
+              );
+            })}
+          </Accordion>
+        );
+      })}
+
+      {/* Metin ve Sayısal Filtrelenebilir Alanlar */}
+      {otherProps.map((prop) => {
+        const propKey = prop.code || prop.title;
+        const currentVal =
+          value.features
+            ?.find((f) => f.startsWith(`${prop.code}:`) || f.startsWith(`${propKey}:`))
+            ?.split(':')[1] ?? '';
+
+        return (
+          <Accordion
+            key={propKey}
+            title={prop.title}
+            open={openGroups[propKey] ?? true}
+            onToggle={() => toggleGroup(propKey)}
+            hint={currentVal || null}
+            text={text}
+            textMuted={textMuted}
+            border={border}
+          >
+            <View style={{ paddingVertical: 6, paddingHorizontal: 2 }}>
+              <TextInput
+                value={currentVal}
+                onChangeText={(t) => {
+                  const others = (value.features ?? []).filter(
+                    (f) => !f.startsWith(`${prop.code}:`) && !f.startsWith(`${propKey}:`)
+                  );
+                  const next = t.trim() ? [...others, `${prop.code || propKey}:${t}`] : others;
+                  onChange({ ...value, features: next });
+                }}
+                placeholder={`${prop.title} ile filtrele...`}
+                placeholderTextColor={textMuted}
+                style={{
+                  color: text,
+                  borderColor: border,
+                  backgroundColor: surface,
+                  paddingHorizontal: 12,
+                  height: 38,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  fontSize: 13,
+                }}
+              />
+            </View>
+          </Accordion>
+        );
+      })}
 
 
 

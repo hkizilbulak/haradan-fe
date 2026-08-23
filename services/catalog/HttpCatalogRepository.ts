@@ -56,84 +56,148 @@ export class HttpCatalogRepository implements ICatalogRepository {
 
   async getCategoryFormDefinition(
     categoryId: string,
-    options?: CatalogQueryOptions
+    options?: CatalogQueryOptions & { categorySlug?: string }
   ): Promise<CategoryFormDefinitionResponse | null> {
-    if (!categoryId) return null;
+    if (!categoryId && !options?.categorySlug) return null;
 
-    if (this.formCache.has(categoryId) && !options?.fresh) {
-      return this.formCache.get(categoryId) ?? null;
+    const targetId = categoryId || options?.categorySlug || '';
+    const targetSlug = options?.categorySlug || categoryId || '';
+
+    if (this.formCache.has(targetId) && !options?.fresh) {
+      return this.formCache.get(targetId) ?? null;
     }
 
-    // 1. If fresh or cache miss, try live backend API request first
-    try {
-      const res = await this.http.request<CategoryFormDefinitionResponse>(
-        `/v1/categories/${categoryId}/form`,
-        { method: 'GET' }
-      );
-      if (res && Array.isArray(res.properties)) {
-        const activeProps = res.properties.filter(
-          (p: any) =>
-            p.isActive !== false &&
-            p.is_active !== false &&
-            p.active !== false &&
-            p.isFilterable !== false &&
-            p.is_filterable !== false
-        );
-        const filteredRes: CategoryFormDefinitionResponse = {
-          ...res,
-          properties: activeProps,
-        };
-        this.formCache.set(categoryId, filteredRes);
-        return filteredRes;
-      }
-    } catch {
-      // API fallback
-    }
-
-    // 2. Check browser localStorage for real-time changes from BO
+    // 1. Check browser localStorage first for real-time changes from BO
     if (typeof window !== 'undefined') {
       try {
-        const stored =
-          localStorage.getItem(`haradan_category_properties_${categoryId}`) ||
-          localStorage.getItem(`haradan_category_properties_cat-${categoryId}`) ||
-          localStorage.getItem(`haradan_category_properties_${categoryId.replace(/^cat-/, '')}`);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            const activeProps: CategoryPropertyPublic[] = parsed
-              .filter(
-                (p: any) =>
-                  p.isActive !== false &&
-                  p.is_active !== false &&
-                  p.active !== false &&
-                  p.isFilterable !== false &&
-                  p.is_filterable !== false
-              )
-              .map((p: any) => ({
-                code: p.code || p.id,
-                title: p.title,
-                helpText: p.helpText,
-                dataType: p.dataType,
-                isRequired: Boolean(p.isRequired),
-                isFilterable: p.isFilterable !== false,
-                sortOrder: p.sortOrder || 1,
-                options: p.options || [],
-              }));
-            const res: CategoryFormDefinitionResponse = {
-              categoryId,
-              slug: categoryId,
-              name: categoryId,
-              properties: activeProps,
-            };
-            this.formCache.set(categoryId, res);
-            return res;
+        const candidateKeys = [
+          targetId,
+          targetSlug,
+          `cat-${targetId}`,
+          `cat-${targetSlug}`,
+          targetId.replace(/^cat-/, ''),
+          targetSlug.replace(/^cat-/, ''),
+        ];
+
+        // Include parent category keys if this is a child category (e.g. Satılık Yarış Atı -> Satılık Atlar)
+        const tSlug = targetSlug.toLowerCase();
+        if (
+          tSlug.includes('yaris') ||
+          tSlug.includes('kisrak') ||
+          tSlug.includes('aygir') ||
+          tSlug.includes('binek') ||
+          tSlug.includes('pony') ||
+          tSlug.includes('satilik')
+        ) {
+          candidateKeys.push('satilik-atlar', 'cat-satilik-atlar');
+        } else if (tSlug.includes('pansiyon') || tSlug.includes('nakliye') || tSlug.includes('nalbant')) {
+          candidateKeys.push('at-hizmetleri', 'cat-at-hizmetleri');
+        } else if (tSlug.includes('asim') || tSlug.includes('arap') || tSlug.includes('ingiliz')) {
+          candidateKeys.push('asim-hizmetleri', 'cat-asim-hizmetleri');
+        }
+
+        for (const k of candidateKeys) {
+          if (!k) continue;
+          const stored = localStorage.getItem(`haradan_category_properties_${k}`);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+              const activeProps: CategoryPropertyPublic[] = parsed
+                .filter(
+                  (p: any) =>
+                    p.isActive !== false &&
+                    p.is_active !== false &&
+                    p.active !== false &&
+                    p.isFilterable !== false &&
+                    p.is_filterable !== false
+                )
+                .map((p: any) => ({
+                  code: p.code || p.id,
+                  title: p.title,
+                  helpText: p.helpText,
+                  dataType: p.dataType,
+                  isRequired: Boolean(p.isRequired),
+                  isFilterable: p.isFilterable !== false,
+                  sortOrder: p.sortOrder || 1,
+                  options: p.options || [],
+                }));
+
+              // If stored properties only contain custom fields, merge core default properties
+              const defaultDef = new MockCatalogRepository().getCategoryFormDefinition(targetSlug || targetId);
+              const defaultProps = defaultDef?.properties || [];
+              const existingCodes = new Set(activeProps.map((p) => (p.code || p.title).toLowerCase()));
+              for (const defProp of defaultProps) {
+                const defKey = (defProp.code || defProp.title).toLowerCase();
+                if (!existingCodes.has(defKey)) {
+                  activeProps.push(defProp);
+                }
+              }
+              activeProps.sort((a, b) => (a.sortOrder || 1) - (b.sortOrder || 1));
+
+              const res: CategoryFormDefinitionResponse = {
+                categoryId: targetId,
+                slug: targetSlug,
+                name: targetSlug,
+                properties: activeProps,
+              };
+              this.formCache.set(targetId, res);
+              return res;
+            }
           }
         }
       } catch {}
     }
 
-    // 3. Fallback to mock catalog
-    return new MockCatalogRepository().getCategoryFormDefinition(categoryId, options);
+    // 2. Try live backend API request
+    try {
+      let resolvedUUID = targetId;
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
+      if (!isUUID) {
+        const tree = await this.getCategoryTree();
+        const findUUID = (nodes: CategoryTreeNode[]): string | null => {
+          for (const node of nodes) {
+            if (node.slug === targetSlug || node.slug === targetId || node.id === targetId) {
+              return node.id;
+            }
+            if (node.children && node.children.length > 0) {
+              const res = findUUID(node.children);
+              if (res) return res;
+            }
+          }
+          return null;
+        };
+        const found = findUUID(tree);
+        if (found) resolvedUUID = found;
+      }
+
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resolvedUUID)) {
+        const res = await this.http.request<CategoryFormDefinitionResponse>(
+          `/v1/categories/${resolvedUUID}/form`,
+          { method: 'GET' }
+        );
+        if (res && Array.isArray(res.properties)) {
+          const activeProps = res.properties.filter(
+            (p: any) =>
+              p.isActive !== false &&
+              p.is_active !== false &&
+              p.active !== false &&
+              p.isFilterable !== false &&
+              p.is_filterable !== false
+          );
+          const filteredRes: CategoryFormDefinitionResponse = {
+            ...res,
+            properties: activeProps,
+          };
+          this.formCache.set(targetId, filteredRes);
+          return filteredRes;
+        }
+      }
+    } catch {
+      // API fallback
+    }
+
+    // 3. Fallback to mock catalog using slug or id
+    return new MockCatalogRepository().getCategoryFormDefinition(targetSlug || targetId, options);
   }
 
 

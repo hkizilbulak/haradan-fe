@@ -528,6 +528,10 @@ export const ListingsView = memo(function ListingsView({
       if (agesStr) params.set('ages', agesStr);
       const colorsStr = serializeArrayParam(filters.colors);
       if (colorsStr) params.set('colors', colorsStr);
+      const gendersStr = serializeArrayParam(filters.genders ?? []);
+      if (gendersStr) params.set('genders', gendersStr);
+      const featuresStr = serializeArrayParam(filters.features ?? []);
+      if (featuresStr) params.set('features', featuresStr);
 
       skipHydrate.current = true;
       syncListingsQuery(params.toString(), router);
