@@ -1,14 +1,8 @@
 import { composeInternationalPhone } from '@/services/phone';
-import type { ListingDraft } from '@/types/listing';
+import type { CreateAdvertDraftRequest, ListingDraft } from '@/types/listing';
 import type { Money } from '@/types/money';
-import type { CreateAdvertDraftRequest } from '@/types/listing';
 
-import {
-  isFarrierListing,
-  isPansiyonListing,
-  isStudServiceListing,
-  isTransportListing,
-} from './validateListingDraft';
+
 
 function parseTlInput(raw: string): number | null {
   const digits = raw.replace(/\D/g, '');
@@ -49,31 +43,6 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
     props.sellerPhone = fullPhone;
     props.phone = fullPhone;
   }
-  if (isPansiyonListing(draft.type)) {
-    if (d.facilityGrassPaddock) props.facilityGrassPaddock = true;
-    if (d.facilitySandPaddock) props.facilitySandPaddock = true;
-    if (d.facilityStallionPaddock) props.facilityStallionPaddock = true;
-    if (d.facilityTrainingTrack?.trim()) props.facilityTrainingTrack = d.facilityTrainingTrack.trim();
-    if (d.facilityVeterinarian) props.facilityVeterinarian = true;
-    if (d.facilityFarrier) props.facilityFarrier = true;
-    if (d.facilityFoalingBarn) props.facilityFoalingBarn = true;
-  }
-
-  if (isTransportListing(draft.type) || isFarrierListing(draft.type)) {
-    if (d.companyName?.trim()) props.companyName = d.companyName.trim();
-    if (d.websiteUrl?.trim()) props.websiteUrl = d.websiteUrl.trim();
-  }
-
-  if (isStudServiceListing(draft.type)) {
-    if (d.studBreed?.trim()) props.studBreed = d.studBreed.trim();
-    if (d.studAge?.trim()) props.studAge = d.studAge.trim();
-    if (d.studCoatColor?.trim()) props.studCoatColor = d.studCoatColor.trim();
-    if (d.studHorseName?.trim()) props.studHorseName = d.studHorseName.trim();
-    if (d.studSire?.trim()) props.studSire = d.studSire.trim();
-    if (d.studDam?.trim()) props.studDam = d.studDam.trim();
-    if (d.studDamsire?.trim()) props.studDamsire = d.studDamsire.trim();
-  }
-
   return props;
 }
 

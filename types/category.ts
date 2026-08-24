@@ -59,6 +59,9 @@ export type CategoryPropertyPublic = {
   dataType: PropertyDataType;
   isRequired: boolean;
   isFilterable: boolean;
+  isFormVisible?: boolean;
+  isPublicVisible?: boolean;
+  isActive?: boolean;
   sortOrder: number;
   options: CategoryPropertyOption[];
   defaultValue?: unknown;

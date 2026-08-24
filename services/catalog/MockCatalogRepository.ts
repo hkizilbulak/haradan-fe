@@ -140,23 +140,6 @@ export class MockCatalogRepository implements ICatalogRepository {
           targetSlug.replace(/^cat-/, ''),
         ];
 
-        // Include parent category keys if this is a child category (e.g. Satılık Yarış Atı -> Satılık Atlar)
-        const tSlug = targetSlug.toLowerCase();
-        if (
-          tSlug.includes('yaris') ||
-          tSlug.includes('kisrak') ||
-          tSlug.includes('aygir') ||
-          tSlug.includes('binek') ||
-          tSlug.includes('pony') ||
-          tSlug.includes('satilik')
-        ) {
-          candidateKeys.push('satilik-atlar', 'cat-satilik-atlar');
-        } else if (tSlug.includes('pansiyon') || tSlug.includes('nakliye') || tSlug.includes('nalbant')) {
-          candidateKeys.push('at-hizmetleri', 'cat-at-hizmetleri');
-        } else if (tSlug.includes('asim') || tSlug.includes('arap') || tSlug.includes('ingiliz')) {
-          candidateKeys.push('asim-hizmetleri', 'cat-asim-hizmetleri');
-        }
-
         for (const k of candidateKeys) {
           if (!k) continue;
           const stored = localStorage.getItem(`haradan_category_properties_${k}`);
@@ -169,8 +152,8 @@ export class MockCatalogRepository implements ICatalogRepository {
                     p.isActive !== false &&
                     p.is_active !== false &&
                     p.active !== false &&
-                    p.isFilterable !== false &&
-                    p.is_filterable !== false
+                    p.isFormVisible !== false &&
+                    p.is_form_visible !== false
                 )
                 .map((p: any) => ({
                   code: p.code || p.id,
@@ -178,13 +161,19 @@ export class MockCatalogRepository implements ICatalogRepository {
                   helpText: p.helpText,
                   dataType: p.dataType,
                   isRequired: Boolean(p.isRequired),
-                  isFilterable: p.isFilterable !== false,
+                  isFilterable: p.isFilterable !== false && p.is_filterable !== false,
+                  isFormVisible: p.isFormVisible !== false && p.is_form_visible !== false,
+                  isPublicVisible: p.isPublicVisible !== false && p.is_public_visible !== false,
+                  isActive: true,
                   sortOrder: p.sortOrder || 1,
                   options: p.options || [],
                 }));
+              const tSlug = (targetSlug || targetId).toLowerCase();
               let baseList = HORSE_PROPERTIES;
               if (tSlug.includes('pansiyon')) baseList = PANSIYON_PROPERTIES;
               else if (tSlug.includes('asim') || tSlug.includes('aygir') || tSlug.includes('stud')) baseList = STUD_PROPERTIES;
+              else if (tSlug.includes('nakliye') || tSlug.includes('transport')) baseList = [];
+              else if (tSlug.includes('nalbant') || tSlug.includes('farrier')) baseList = [];
 
               const existingCodes = new Set(activeProps.map((p) => (p.code || p.title).toLowerCase()));
               for (const defProp of baseList) {

@@ -141,9 +141,11 @@ console.log('\n--- 2. İlan Form Alanları ve Doğrulama Testleri ---');
 // A. Pansiyon Haralar Formu (Fotoğraf, Başlık*, Fiyat*, Açıklama, Adres*, Tesis Özellikleri, İdman Pisti)
 const draftPansiyon = createBaseValidDraft();
 draftPansiyon.type = pansiyonType;
-draftPansiyon.details.facilityGrassPaddock = true;
-draftPansiyon.details.facilityVeterinarian = true;
-draftPansiyon.details.facilityTrainingTrack = '1200m Kum Pist';
+draftPansiyon.details.properties = {
+  facilityGrassPaddock: true,
+  facilityVeterinarian: true,
+  facilityTrainingTrack: '1200m Kum Pist',
+};
 
 assert(detailsStepComplete(draftPansiyon), 'Pansiyon Haralar formu geçerli');
 const reqPansiyon = mapDraftToCreateAdvert(draftPansiyon);
@@ -156,8 +158,10 @@ assertEqual(propsPansiyon.facilityTrainingTrack, '1200m Kum Pist', 'İdman pisti
 // B. At Nakliyesi Formu (Fotoğraf, Başlık*, Firma Adı*, Web Sitesi, Fiyat*, Açıklama, Adres*)
 const draftTransport = createBaseValidDraft();
 draftTransport.type = transportType;
-draftTransport.details.companyName = 'Lider At Taşımacılık';
-draftTransport.details.websiteUrl = 'https://www.lidernakliyat.com';
+draftTransport.details.properties = {
+  companyName: 'Lider At Taşımacılık',
+  websiteUrl: 'https://www.lidernakliyat.com',
+};
 
 assert(detailsStepComplete(draftTransport), 'At Nakliyesi formu geçerli');
 const reqTransport = mapDraftToCreateAdvert(draftTransport);
@@ -174,13 +178,15 @@ assert(detailsStepComplete(draftFarrier), 'Nalbantlar standart formu geçerli');
 // D. Aşım Hizmetleri Formu (Fotoğraf, Başlık*, Soy Kütüğü: At*, Baba*, Anne*, Annesinin Babası*, At Bilgileri: Irk*, Yaş*, Don*, Fiyat*, Açıklama, Adres*)
 const draftStud = createBaseValidDraft();
 draftStud.type = studType;
-draftStud.details.studHorseName = 'Rüzgarın Oğlu';
-draftStud.details.studBreed = 'Arap';
-draftStud.details.studAge = '7';
-draftStud.details.studCoatColor = 'Al';
-draftStud.details.studSire = 'Özgünhan';
-draftStud.details.studDam = 'Kemiyetülırak.55';
-draftStud.details.studDamsire = 'Havuçerol';
+draftStud.details.properties = {
+  studHorseName: 'Rüzgarın Oğlu',
+  studBreed: 'Arap',
+  studAge: '7',
+  studCoatColor: 'Al',
+  studSire: 'Özgünhan',
+  studDam: 'Kemiyetülırak.55',
+  studDamsire: 'Havuçerol',
+};
 
 assert(detailsStepComplete(draftStud), 'Aşım Hizmetleri formu geçerli');
 const reqStud = mapDraftToCreateAdvert(draftStud);
@@ -193,21 +199,30 @@ assertEqual(propsStud.studSire, 'Özgünhan', 'Baba adı aktarıldı');
 assertEqual(propsStud.studDam, 'Kemiyetülırak.55', 'Anne adı aktarıldı');
 assertEqual(propsStud.studDamsire, 'Havuçerol', 'Annesinin babası aktarıldı');
 
-// Zorunlu alan testleri
-// 1. Pansiyon tesis seçilmezse hata vermeli
-const emptyPansiyon = createBaseValidDraft();
-emptyPansiyon.type = pansiyonType;
-assert(Boolean(detailsErrors(emptyPansiyon).facility), 'Pansiyonda en az 1 tesis seçilmelidir');
-
-// 2. Nakliyede firma adı boşsa hata vermeli
+// Dinamik Zorunlu Alan Doğrulama Testleri
+// 1. Nakliyede firma adı zorunlu ise boş bırakıldığında hata vermeli
+const transportFormProps = [
+  { code: 'companyName', title: 'Firma Adı', dataType: 'STRING' as const, isRequired: true, isFilterable: false, sortOrder: 1, options: [] },
+  { code: 'websiteUrl', title: 'Web Sitesi', dataType: 'STRING' as const, isRequired: false, isFilterable: false, sortOrder: 2, options: [] },
+];
 const emptyTransport = createBaseValidDraft();
 emptyTransport.type = transportType;
-assert(Boolean(detailsErrors(emptyTransport).companyName), 'Nakliyede firma adı zorunludur');
+const transportErrs = detailsErrors(emptyTransport, transportFormProps);
+assert(Boolean(transportErrs.companyName), 'Nakliyede firma adı zorunludur');
 
-// 3. Aşım Hizmetlerinde eksik alanlar hata vermeli
+// 2. Aşım Hizmetlerinde zorunlu alanlar tanımlandığında boşsa hata vermeli
+const studFormProps = [
+  { code: 'studHorseName', title: 'Aygır Adı', dataType: 'STRING' as const, isRequired: true, isFilterable: false, sortOrder: 1, options: [] },
+  { code: 'studBreed', title: 'At Irkı', dataType: 'SINGLE_SELECT' as const, isRequired: true, isFilterable: true, sortOrder: 2, options: [] },
+  { code: 'studAge', title: 'Yaş', dataType: 'SINGLE_SELECT' as const, isRequired: true, isFilterable: true, sortOrder: 3, options: [] },
+  { code: 'studCoatColor', title: 'Donu (Renk)', dataType: 'SINGLE_SELECT' as const, isRequired: true, isFilterable: true, sortOrder: 4, options: [] },
+  { code: 'studSire', title: 'Baba', dataType: 'STRING' as const, isRequired: true, isFilterable: false, sortOrder: 5, options: [] },
+  { code: 'studDam', title: 'Anne', dataType: 'STRING' as const, isRequired: true, isFilterable: false, sortOrder: 6, options: [] },
+  { code: 'studDamsire', title: 'Annesinin Babası', dataType: 'STRING' as const, isRequired: true, isFilterable: false, sortOrder: 7, options: [] },
+];
 const invalidStud = createBaseValidDraft();
 invalidStud.type = studType;
-const studErrs = detailsErrors(invalidStud);
+const studErrs = detailsErrors(invalidStud, studFormProps);
 assert(Boolean(studErrs.studHorseName), 'Aşımda aygır adı zorunludur');
 assert(Boolean(studErrs.studBreed), 'Aşımda at ırkı zorunludur');
 assert(Boolean(studErrs.studAge), 'Aşımda yaş zorunludur');
@@ -215,6 +230,7 @@ assert(Boolean(studErrs.studCoatColor), 'Aşımda don seçimi zorunludur');
 assert(Boolean(studErrs.studSire), 'Aşımda baba (Sire) zorunludur');
 assert(Boolean(studErrs.studDam), 'Aşımda anne (Dam) zorunludur');
 assert(Boolean(studErrs.studDamsire), 'Aşımda annesinin babası zorunludur');
+
 
 // -------------------------------------------------------------
 // 3. Kategori Filtre Gereksinimleri ve Seçenekleri Testleri
@@ -363,8 +379,8 @@ console.log('\n--- 5. Dinamik BO Özellikleri ve Filtre Eşleştirme Testleri --
 
 const draftWithCustomProp = createBaseValidDraft();
 draftWithCustomProp.type = transportType;
-draftWithCustomProp.details.companyName = 'Lider Taşımacılık';
 draftWithCustomProp.details.properties = {
+  companyName: 'Lider Taşımacılık',
   deneme: 'deneme1',
   'seçim deneme': 'seçenek_a',
   kameraSistemi: true,

@@ -416,8 +416,8 @@ async function main(): Promise<void> {
 
   const pansiyonDraft = mapOwnerToListingDraft(dtoPansiyon, mockTree, apiBase);
   assertEqual(pansiyonDraft.details.sellerPhone, '555 123 45 67', 'pansiyon draft sellerPhone parsed');
-  assertEqual(pansiyonDraft.details.facilityGrassPaddock, true, 'facilityGrassPaddock mapped');
-  assertEqual(pansiyonDraft.details.facilityVeterinarian, true, 'facilityVeterinarian mapped');
+  assertEqual(pansiyonDraft.details.properties?.facilityGrassPaddock, true, 'facilityGrassPaddock mapped');
+  assertEqual(pansiyonDraft.details.properties?.facilityVeterinarian, true, 'facilityVeterinarian mapped');
   assertEqual(detailsStepComplete(pansiyonDraft), true, 'pansiyon draft passes detailsStepComplete');
 
   console.log(`\n${passed} passed, ${failed} failed`);

@@ -1,4 +1,6 @@
-import { useCallback, useMemo, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { catalogRepository } from '@/services/catalog';
+import type { CategoryPropertyPublic } from '@/types';
 import {
   canEnterStep,
   detailsErrors,
@@ -100,9 +102,40 @@ export function useListingWizard(deps: Deps = {}) {
     paytrMerchantOid,
     paytrIframeUrl,
   } = state;
+
+  const [categoryProperties, setCategoryProperties] = useState<CategoryPropertyPublic[]>([]);
+
+  useEffect(() => {
+    const catId = draft.type?.categoryId || draft.type?.categorySlug;
+    if (!catId) {
+      setCategoryProperties([]);
+      return;
+    }
+    let cancelled = false;
+    catalogRepository
+      .getCategoryFormDefinition(catId, {
+        fresh: true,
+        categorySlug: draft.type?.categorySlug,
+      } as any)
+      .then((def) => {
+        if (cancelled) return;
+        if (def && Array.isArray(def.properties)) {
+          setCategoryProperties(def.properties);
+        } else {
+          setCategoryProperties([]);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setCategoryProperties([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [draft.type?.categoryId, draft.type?.categorySlug]);
+
   const fieldErrors = useMemo(
-    () => (detailsAttempted ? detailsErrors(draft) : {}),
-    [draft, detailsAttempted]
+    () => (detailsAttempted ? detailsErrors(draft, categoryProperties) : {}),
+    [draft, detailsAttempted, categoryProperties]
   );
 
   const canNext = useMemo(() => {
@@ -384,6 +417,7 @@ export function useListingWizard(deps: Deps = {}) {
     paytrMerchantOid,
     paytrIframeUrl,
     fieldErrors,
+    categoryProperties,
     canNext,
     setStep,
     setTypePhase,

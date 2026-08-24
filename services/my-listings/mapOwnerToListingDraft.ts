@@ -70,62 +70,6 @@ export function mapOwnerToListingDraft(
       phoneCountryIso: parsedPhone.iso || 'TR',
       sellerPhone: parsedPhone.national || '',
 
-      // Kategori: Pansiyon Haralar
-      facilityGrassPaddock: Boolean(props.facilityGrassPaddock),
-      facilitySandPaddock: Boolean(props.facilitySandPaddock),
-      facilityStallionPaddock: Boolean(props.facilityStallionPaddock),
-      facilityTrainingTrack:
-        typeof props.facilityTrainingTrack === 'string'
-          ? props.facilityTrainingTrack
-          : '',
-      facilityVeterinarian: Boolean(props.facilityVeterinarian),
-      facilityFarrier: Boolean(props.facilityFarrier),
-      facilityFoalingBarn: Boolean(props.facilityFoalingBarn),
-
-      // Kategori: At Nakliyesi
-      companyName:
-        typeof props.companyName === 'string' ? props.companyName : '',
-      websiteUrl: typeof props.websiteUrl === 'string' ? props.websiteUrl : '',
-
-      // Kategori: Aşım Hizmetleri
-      studBreed: typeof props.studBreed === 'string' ? props.studBreed : '',
-      studAge:
-        typeof props.studAge === 'string'
-          ? props.studAge
-          : props.age != null
-            ? String(props.age)
-            : '',
-      studCoatColor:
-        typeof props.studCoatColor === 'string'
-          ? props.studCoatColor
-          : typeof props.coatColor === 'string'
-            ? props.coatColor
-            : '',
-      studHorseName:
-        typeof props.studHorseName === 'string'
-          ? props.studHorseName
-          : typeof props.registeredName === 'string'
-            ? props.registeredName
-            : '',
-      studSire:
-        typeof props.studSire === 'string'
-          ? props.studSire
-          : typeof props.sire === 'string'
-            ? props.sire
-            : '',
-      studDam:
-        typeof props.studDam === 'string'
-          ? props.studDam
-          : typeof props.dam === 'string'
-            ? props.dam
-            : '',
-      studDamsire:
-        typeof props.studDamsire === 'string'
-          ? props.studDamsire
-          : typeof props.damsire === 'string'
-            ? props.damsire
-            : '',
-
       // TJK dışı / ek at özellikleri
       gender: parsedGender,
       birthDate:
