@@ -46,6 +46,9 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
   return props;
 }
 
+const isUUID = (str?: string | null): boolean =>
+  Boolean(str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str));
+
 export function mapDraftToCreateAdvert(
   draft: ListingDraft
 ): CreateAdvertDraftRequest {
@@ -60,9 +63,12 @@ export function mapDraftToCreateAdvert(
     title: draft.details.title.trim(),
     description: draft.details.description.trim(),
   };
-  if (draft.details.districtId) body.districtId = draft.details.districtId;
-  if (draft.details.address.trim()) body.address = draft.details.address.trim();
-  if (draft.details.horseId) body.horseId = draft.details.horseId;
+  if (draft.details.districtId && isUUID(draft.details.districtId)) {
+    body.districtId = draft.details.districtId;
+  }
+  if (draft.details.horseId && isUUID(draft.details.horseId)) {
+    body.horseId = draft.details.horseId;
+  }
   if (price) body.price = price;
   return body;
 }

@@ -113,7 +113,6 @@ export type ListingDraft = {
 export type CreateAdvertDraftRequest = {
   categoryId?: string | null;
   districtId?: string | null;
-  address?: string | null;
   horseId?: string | null;
   title?: string | null;
   description?: string | null;
