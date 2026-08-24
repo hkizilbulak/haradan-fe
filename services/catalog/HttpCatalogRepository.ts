@@ -11,6 +11,28 @@ import type { CatalogQueryOptions, ICatalogRepository } from './CatalogRepositor
 import { mapCategoryTreeToFacets } from './mapCategoryTreeToFacets';
 import { MockCatalogRepository } from './MockCatalogRepository';
 
+function purgeLegacyCategoryLocalStorage(): void {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (
+        k &&
+        (k.startsWith('haradan_category_properties_') ||
+          k.startsWith('haradan_deleted_props_'))
+      ) {
+        keysToRemove.push(k);
+      }
+    }
+    for (const k of keysToRemove) {
+      localStorage.removeItem(k);
+    }
+  } catch {}
+}
+
+purgeLegacyCategoryLocalStorage();
+
 /** CATALOG-01 — GET /v1/categories, CATALOG-02 — GET /v1/categories/{categoryId}/form */
 export class HttpCatalogRepository implements ICatalogRepository {
   private readonly http: HttpClient;
@@ -20,6 +42,7 @@ export class HttpCatalogRepository implements ICatalogRepository {
 
   constructor(baseUrl: string) {
     this.http = new HttpClient(baseUrl);
+    purgeLegacyCategoryLocalStorage();
   }
 
   getCachedFacets(): CatalogFacets | null {

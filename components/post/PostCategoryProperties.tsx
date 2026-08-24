@@ -120,14 +120,12 @@ export function PostCategoryProperties({
 
     if (typeof window !== 'undefined') {
       window.addEventListener('haradan_category_properties_changed', loadProps);
-      window.addEventListener('storage', loadProps);
     }
 
     return () => {
       cancelled = true;
       if (typeof window !== 'undefined') {
         window.removeEventListener('haradan_category_properties_changed', loadProps);
-        window.removeEventListener('storage', loadProps);
       }
     };
   }, [type?.categoryId, type?.categorySlug]);

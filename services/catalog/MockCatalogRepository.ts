@@ -128,73 +128,7 @@ export class MockCatalogRepository implements ICatalogRepository {
     const targetId = categoryId || options?.categorySlug || '';
     const targetSlug = options?.categorySlug || categoryId || '';
 
-    // 1. Check browser localStorage for real-time changes from BO
-    if (typeof window !== 'undefined') {
-      try {
-        const candidateKeys = [
-          targetId,
-          targetSlug,
-          `cat-${targetId}`,
-          `cat-${targetSlug}`,
-          targetId.replace(/^cat-/, ''),
-          targetSlug.replace(/^cat-/, ''),
-        ];
 
-        for (const k of candidateKeys) {
-          if (!k) continue;
-          const stored = localStorage.getItem(`haradan_category_properties_${k}`);
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed)) {
-              const activeProps: CategoryPropertyPublic[] = parsed
-                .filter(
-                  (p: any) =>
-                    p.isActive !== false &&
-                    p.is_active !== false &&
-                    p.active !== false &&
-                    p.isFormVisible !== false &&
-                    p.is_form_visible !== false
-                )
-                .map((p: any) => ({
-                  code: p.code || p.id,
-                  title: p.title,
-                  helpText: p.helpText,
-                  dataType: p.dataType,
-                  isRequired: Boolean(p.isRequired),
-                  isFilterable: p.isFilterable !== false && p.is_filterable !== false,
-                  isFormVisible: p.isFormVisible !== false && p.is_form_visible !== false,
-                  isPublicVisible: p.isPublicVisible !== false && p.is_public_visible !== false,
-                  isActive: true,
-                  sortOrder: p.sortOrder || 1,
-                  options: p.options || [],
-                }));
-              const tSlug = (targetSlug || targetId).toLowerCase();
-              let baseList = HORSE_PROPERTIES;
-              if (tSlug.includes('pansiyon')) baseList = PANSIYON_PROPERTIES;
-              else if (tSlug.includes('asim') || tSlug.includes('aygir') || tSlug.includes('stud')) baseList = STUD_PROPERTIES;
-              else if (tSlug.includes('nakliye') || tSlug.includes('transport')) baseList = [];
-              else if (tSlug.includes('nalbant') || tSlug.includes('farrier')) baseList = [];
-
-              const existingCodes = new Set(activeProps.map((p) => (p.code || p.title).toLowerCase()));
-              for (const defProp of baseList) {
-                const defKey = (defProp.code || defProp.title).toLowerCase();
-                if (!existingCodes.has(defKey)) {
-                  activeProps.push(defProp);
-                }
-              }
-              activeProps.sort((a, b) => (a.sortOrder || 1) - (b.sortOrder || 1));
-
-              return {
-                categoryId: targetId,
-                slug: targetSlug,
-                name: targetSlug,
-                properties: activeProps,
-              };
-            }
-          }
-        }
-      } catch {}
-    }
 
     const cid = (categoryId || '').toLowerCase();
     let props = HORSE_PROPERTIES;
