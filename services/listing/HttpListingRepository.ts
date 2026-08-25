@@ -114,8 +114,8 @@ export class HttpListingRepository implements IListingRepository {
 
     let currentVersion = created.version;
 
-    const address = draft.details.address?.trim();
-    if (address && created.address !== address) {
+    const address = draft.details.address?.trim() || 'Merkez';
+    if (created.address !== address) {
       try {
         const patchRes = await this.http.request<OwnerAdvertResponse>(
           `/v1/me/adverts/${created.id}`,

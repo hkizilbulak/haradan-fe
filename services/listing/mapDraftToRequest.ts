@@ -159,10 +159,8 @@ export function mapDraftToCreateAdvert(
     body.description = description;
   }
 
-  const address = draft.details.address?.trim();
-  if (address) {
-    body.address = address;
-  }
+  const address = draft.details.address?.trim() || 'Merkez';
+  body.address = address;
 
   if (draft.details.districtId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(draft.details.districtId)) {
     body.districtId = draft.details.districtId;
