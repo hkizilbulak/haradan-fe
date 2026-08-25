@@ -67,55 +67,7 @@ export class HttpCatalogRepository implements ICatalogRepository {
       return this.formCache.get(targetId) ?? null;
     }
 
-    // 1. Try live backend API request first
-    try {
-      let resolvedUUID = targetId;
-      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
-      if (!isUUID) {
-        const tree = await this.getCategoryTree();
-        const findUUID = (nodes: CategoryTreeNode[]): string | null => {
-          for (const node of nodes) {
-            if (node.slug === targetSlug || node.slug === targetId || node.id === targetId) {
-              return node.id;
-            }
-            if (node.children && node.children.length > 0) {
-              const res = findUUID(node.children);
-              if (res) return res;
-            }
-          }
-          return null;
-        };
-        const found = findUUID(tree);
-        if (found) resolvedUUID = found;
-      }
-
-      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resolvedUUID)) {
-        const res = await this.http.request<CategoryFormDefinitionResponse>(
-          `/v1/categories/${resolvedUUID}/form`,
-          { method: 'GET' }
-        );
-        if (res && Array.isArray(res.properties)) {
-          const activeProps = res.properties.filter(
-            (p: any) =>
-              p.isActive !== false &&
-              p.is_active !== false &&
-              p.active !== false &&
-              p.isFilterable !== false &&
-              p.is_filterable !== false
-          );
-          const filteredRes: CategoryFormDefinitionResponse = {
-            ...res,
-            properties: activeProps,
-          };
-          this.formCache.set(targetId, filteredRes);
-          return filteredRes;
-        }
-      }
-    } catch {
-      // API fallback
-    }
-
-    // 2. Check browser localStorage only if backend failed or offline
+    // 1. Check browser localStorage first for real-time changes from BO
     if (typeof window !== 'undefined') {
       try {
         const candidateKeys = [
@@ -196,6 +148,54 @@ export class HttpCatalogRepository implements ICatalogRepository {
           }
         }
       } catch {}
+    }
+
+    // 2. Try live backend API request
+    try {
+      let resolvedUUID = targetId;
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
+      if (!isUUID) {
+        const tree = await this.getCategoryTree();
+        const findUUID = (nodes: CategoryTreeNode[]): string | null => {
+          for (const node of nodes) {
+            if (node.slug === targetSlug || node.slug === targetId || node.id === targetId) {
+              return node.id;
+            }
+            if (node.children && node.children.length > 0) {
+              const res = findUUID(node.children);
+              if (res) return res;
+            }
+          }
+          return null;
+        };
+        const found = findUUID(tree);
+        if (found) resolvedUUID = found;
+      }
+
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resolvedUUID)) {
+        const res = await this.http.request<CategoryFormDefinitionResponse>(
+          `/v1/categories/${resolvedUUID}/form`,
+          { method: 'GET' }
+        );
+        if (res && Array.isArray(res.properties)) {
+          const activeProps = res.properties.filter(
+            (p: any) =>
+              p.isActive !== false &&
+              p.is_active !== false &&
+              p.active !== false &&
+              p.isFilterable !== false &&
+              p.is_filterable !== false
+          );
+          const filteredRes: CategoryFormDefinitionResponse = {
+            ...res,
+            properties: activeProps,
+          };
+          this.formCache.set(targetId, filteredRes);
+          return filteredRes;
+        }
+      }
+    } catch {
+      // API fallback
     }
 
     // 3. Fallback to mock catalog using slug or id

@@ -10,21 +10,18 @@ import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 type HomeContentContainerProps = {
   children: React.ReactNode;
   style?: ViewStyle;
-  nativeID?: string;
 };
 
 /** Header / footer / scroll içeriği — aynı max genişlik ve yatay padding. */
 export function HomeContentContainer({
   children,
   style,
-  nativeID,
 }: HomeContentContainerProps) {
   const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
 
   return (
     <View
-      nativeID={nativeID}
       style={[
         styles.container,
         {

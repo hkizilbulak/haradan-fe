@@ -201,39 +201,30 @@ function applyClientFilters(
     list = list.filter((p) => matchHorseGender(p, filters.genders));
   }
 
-  // 12. Pansiyon Tesis & Hizmet Özellikleri
-  const validPansiyonKeys: Record<keyof PansiyonFacilityFilters, { propKeys: string[]; keywords: string[] }> = {
-    grassPaddock: {
-      propKeys: ['facilitygrasspaddock', 'grasspaddock', 'grass_paddock', 'cimpadok', 'cimpaddock', 'çimpadok'],
-      keywords: ['cim', 'grass', 'padok', 'çim'],
-    },
-    sandPaddock: {
-      propKeys: ['facilitysandpaddock', 'sandpaddock', 'sand_paddock', 'kumpadok', 'kumpaddock'],
-      keywords: ['kum', 'sand'],
-    },
-    stallionPaddock: {
-      propKeys: ['facilitystallionpaddock', 'stallionpaddock', 'stallion_paddock', 'aygirpadogu', 'aygirpadoğu'],
-      keywords: ['aygir', 'stallion', 'aygır'],
-    },
-    vet: {
-      propKeys: ['facilityveterinarian', 'vet', 'vet_service', 'veteriner'],
-      keywords: ['veteriner', 'hekim', 'saglik', 'sağlık'],
-    },
-    farrier: {
-      propKeys: ['facilityfarrier', 'farrier', 'farrier_service', 'nalbant'],
-      keywords: ['nalbant', 'nal'],
-    },
-    foalingBarn: {
-      propKeys: ['facilityfoalingbarn', 'foalingbarn', 'foaling_barn', 'dogumhane', 'doğumhane'],
-      keywords: ['dogum', 'kısrak', 'kisrak', 'doğum'],
-    },
-  };
-
-  const activePansiyonKeys = (
+  // 12. Tesis & Hizmet Özellikleri (Pansiyon Haralar)
+  const activeFacilityKeys = (
     Object.keys(filters.facilities ?? {}) as (keyof PansiyonFacilityFilters)[]
-  ).filter((k) => Boolean(filters.facilities[k]) && Boolean(validPansiyonKeys[k]));
+  ).filter((k) => Boolean(filters.facilities[k]));
 
-  if (activePansiyonKeys.length > 0) {
+  if (activeFacilityKeys.length > 0) {
+    const facilityPropKeys: Record<keyof PansiyonFacilityFilters, string[]> = {
+      grassPaddock: ['facilitygrasspaddock', 'grasspaddock', 'grass_paddock', 'cimpadok', 'cimpaddock', 'çimpadok'],
+      sandPaddock: ['facilitysandpaddock', 'sandpaddock', 'sand_paddock', 'kumpadok', 'kumpaddock'],
+      stallionPaddock: ['facilitystallionpaddock', 'stallionpaddock', 'stallion_paddock', 'aygirpadogu', 'aygirpadoğu'],
+      vet: ['facilityveterinarian', 'vet', 'vet_service', 'veteriner'],
+      farrier: ['facilityfarrier', 'farrier', 'farrier_service', 'nalbant'],
+      foalingBarn: ['facilityfoalingbarn', 'foalingbarn', 'foaling_barn', 'dogumhane', 'doğumhane'],
+    };
+
+    const facilityKeywords: Record<keyof PansiyonFacilityFilters, string[]> = {
+      grassPaddock: ['cim', 'grass', 'padok', 'çim'],
+      sandPaddock: ['kum', 'sand'],
+      stallionPaddock: ['aygir', 'stallion', 'aygır'],
+      vet: ['veteriner', 'hekim', 'saglik', 'sağlık'],
+      farrier: ['nalbant', 'nal'],
+      foalingBarn: ['dogum', 'kısrak', 'kisrak', 'doğum'],
+    };
+
     list = list.filter((p) => {
       const hay = normalizeSearchText(`${p.title} ${p.brand ?? ''}`);
       const props = p.properties || {};
@@ -241,19 +232,22 @@ function applyClientFilters(
         (k) => props[k] === true || props[k] === 'true' || props[k] === 1 || props[k] === '1'
       ).map((k) => normalizeSearchText(k).replace(/[^a-z0-9]+/g, ''));
 
-      return activePansiyonKeys.every((fKey) => {
-        const entry = validPansiyonKeys[fKey];
-        if (!entry) return true;
-        const hasProp = entry.propKeys.some((target) =>
+      return activeFacilityKeys.every((fKey) => {
+        // 1. Check properties boolean
+        const matchingPropKeys = facilityPropKeys[fKey] ?? [];
+        const hasProp = matchingPropKeys.some((target) =>
           normPropKeys.includes(target) || normPropKeys.some((npk) => npk.includes(target) || target.includes(npk))
         );
         if (hasProp) return true;
-        return entry.keywords.some((kw) => hay.includes(kw));
+
+        // 2. Check title keywords
+        const keywords = facilityKeywords[fKey] ?? [];
+        return keywords.some((kw) => hay.includes(kw));
       });
     });
   }
 
-  // 13. DİNAMİK KATEGORİ ÖZELLİKLERİ VE EK FİLTRELER (BO'DAN YÖNETİLEN TÜM ALANLAR)
+  // 13. Donanım / Özel Kategori Özellikleri (BO ve Form Alanları ile Tam Uyumlu)
   if (filters.features && filters.features.length > 0) {
     const featureKeywords: Record<string, string[]> = {
       camera: ['kamera', 'izleme'],
@@ -271,49 +265,10 @@ function applyClientFilters(
 
     const normalizeKey = (k: string) =>
       normalizeSearchText(k).replace(/[^a-z0-9]+/g, '');
-    const normalizeVal = (v: unknown): string => {
+    const normalizeVal = (v: unknown) => {
       if (v == null) return '';
-      if (Array.isArray(v)) return v.map(normalizeVal).join(' ');
       return normalizeSearchText(String(v)).replace(/[^a-z0-9]+/g, '');
     };
-    const isTruthy = (v: unknown): boolean => {
-      if (typeof v === 'boolean') return v;
-      if (typeof v === 'number') return v > 0;
-      if (typeof v === 'string') {
-        const s = normalizeSearchText(v);
-        return s === 'true' || s === '1' || s === 'evet' || s === 'var' || s === 'yes' || s === 'on';
-      }
-      return false;
-    };
-    const isFalsy = (v: unknown): boolean => {
-      if (v == null) return true;
-      if (typeof v === 'boolean') return !v;
-      if (typeof v === 'number') return v === 0;
-      if (typeof v === 'string') {
-        const s = normalizeSearchText(v);
-        return s === 'false' || s === '0' || s === 'hayir' || s === 'yok' || s === 'no' || s === 'off' || s === '';
-      }
-      return false;
-    };
-
-    // Group features by property key: e.g. "DENEME" -> [{ rawVal: "opt1", isKeyed: true }], standalone -> [{ rawVal: "camera", isKeyed: false }]
-    const featureGroups = new Map<string, { rawVal: string; isKeyed: boolean }[]>();
-    for (const f of filters.features) {
-      if (!f || !f.trim()) continue;
-      if (f.includes(':')) {
-        const colonIdx = f.indexOf(':');
-        const pKey = normalizeKey(f.slice(0, colonIdx));
-        const pVal = f.slice(colonIdx + 1);
-        const group = featureGroups.get(pKey) ?? [];
-        group.push({ rawVal: pVal, isKeyed: true });
-        featureGroups.set(pKey, group);
-      } else {
-        const pKey = normalizeKey(f);
-        const group = featureGroups.get(pKey) ?? [];
-        group.push({ rawVal: f, isKeyed: false });
-        featureGroups.set(pKey, group);
-      }
-    }
 
     list = list.filter((p) => {
       const hay = normalizeSearchText(`${p.title} ${p.brand ?? ''}`);
@@ -324,84 +279,79 @@ function applyClientFilters(
         normKey: normalizeKey(k),
         rawVal: v,
         normVal: normalizeVal(v),
-        rawValStr: normalizeSearchText(String(v ?? '')),
+        boolVal: typeof v === 'boolean' ? v : v === 'true' || v === '1' || v === 1,
       }));
 
-      // Each property group must match at least ONE of its selected values (OR within group, AND across groups)
-      for (const [groupKey, targetItems] of featureGroups.entries()) {
-        const groupMatched = targetItems.some(({ rawVal: targetRawVal, isKeyed }) => {
-          const targetValNorm = normalizeKey(targetRawVal);
-          const targetValSearch = normalizeSearchText(targetRawVal);
+      return (filters.features ?? []).every((fKey) => {
+        if (!fKey || !fKey.trim()) return true;
 
-          // Find matching properties by key
-          const matchingProps = propEntries.filter(
-            (pe) =>
-              pe.normKey === groupKey ||
-              pe.normKey.includes(groupKey) ||
-              groupKey.includes(pe.normKey)
+        // 1. "propKey:propVal" format (e.g. "SECIM_DENEME:DENEME2", "renk:doru")
+        if (fKey.includes(':')) {
+          const colonIdx = fKey.indexOf(':');
+          const rawPropKey = fKey.slice(0, colonIdx);
+          const rawPropVal = fKey.slice(colonIdx + 1);
+          const targetKey = normalizeKey(rawPropKey);
+          const targetVal = normalizeVal(rawPropVal);
+
+          // Find the specific property with this key
+          const matchingProp = propEntries.find(
+            (pe) => pe.normKey === targetKey || pe.normKey.includes(targetKey) || targetKey.includes(pe.normKey)
           );
-
-          if (isKeyed) {
-            if (matchingProps.length === 0) return false;
-
-            if (targetValNorm === 'true' || targetValNorm === '1' || targetValNorm === 'evet' || targetValNorm === 'var') {
-              return matchingProps.some((pe) => isTruthy(pe.rawVal));
-            }
-            if (targetValNorm === 'false' || targetValNorm === '0' || targetValNorm === 'hayir' || targetValNorm === 'yok') {
-              return matchingProps.some((pe) => isFalsy(pe.rawVal));
-            }
-
-            return matchingProps.some((pe) => {
-              if (pe.normVal === targetValNorm) return true;
-              if (pe.rawValStr && (pe.rawValStr.includes(targetValSearch) || targetValSearch.includes(pe.rawValStr))) return true;
-              if (Array.isArray(pe.rawVal)) {
-                return pe.rawVal.some((item) => {
-                  const itemStr = normalizeSearchText(String(item));
-                  return normalizeKey(itemStr) === targetValNorm || itemStr.includes(targetValSearch);
-                });
-              }
-              return false;
-            });
-          }
-
-          // Unkeyed standalone token matching (e.g. "kamera", "deneme1")
-          if (matchingProps.length > 0) {
-            if (matchingProps.some((pe) => isTruthy(pe.rawVal))) return true;
-          }
-
-          const anyValMatch = propEntries.some((pe) => {
-            if (pe.normVal === targetValNorm) return true;
-            if (pe.rawValStr && (pe.rawValStr.includes(targetValSearch) || targetValSearch.includes(pe.rawValStr))) return true;
-            if (Array.isArray(pe.rawVal)) {
-              return pe.rawVal.some((item) => {
-                const itemStr = normalizeSearchText(String(item));
-                return normalizeKey(itemStr) === targetValNorm || itemStr.includes(targetValSearch);
-              });
-            }
+          if (!matchingProp) {
             return false;
-          });
-          if (anyValMatch) return true;
-
-          if (featureKeywords[targetRawVal] || featureKeywords[groupKey]) {
-            const kws = featureKeywords[targetRawVal] || featureKeywords[groupKey];
-            if (kws.some((kw) => hay.includes(normalizeSearchText(kw)))) return true;
           }
 
-          if (hay.includes(targetValSearch)) return true;
+          // If targetVal is boolean
+          if (targetVal === 'true' || targetVal === '1' || targetVal === 'evet') {
+            return matchingProp.boolVal === true;
+          }
+          if (targetVal === 'false' || targetVal === '0' || targetVal === 'hayir') {
+            return matchingProp.boolVal === false;
+          }
 
-          return false;
-        });
-
-        if (!groupMatched) {
-          return false;
+          // Strict value match for this specific property
+          return (
+            matchingProp.normVal === targetVal ||
+            (matchingProp.rawVal != null &&
+              normalizeSearchText(String(matchingProp.rawVal)) === normalizeSearchText(rawPropVal))
+          );
         }
-      }
 
-      return true;
+        const normFilterKey = normalizeKey(fKey);
+        const normFilterVal = normalizeVal(fKey);
+
+        // 2. Direct property key match for boolean toggle (e.g. user toggled "deneme_evet_hayir" or "saç bakımı")
+        const boolProp = propEntries.find((pe) => pe.normKey === normFilterKey);
+        if (boolProp) {
+          return boolProp.boolVal === true;
+        }
+
+        // 3. Direct option value exact match across properties (e.g. "deneme2" option token)
+        const exactValMatch = propEntries.some(
+          (pe) =>
+            pe.normVal === normFilterVal ||
+            (pe.rawVal != null &&
+              normalizeSearchText(String(pe.rawVal)) === normalizeSearchText(fKey))
+        );
+        if (exactValMatch) {
+          return true;
+        }
+
+        // 4. Predefined keywords dictionary
+        if (featureKeywords[fKey]) {
+          const keywords = featureKeywords[fKey];
+          return keywords.some((kw) => hay.includes(normalizeSearchText(kw)));
+        }
+
+        // 5. Fallback in title or brand (exact token match, not substring)
+        const hayTokens = hay.split(/[\s,._-]+/);
+        return hayTokens.includes(normalizeSearchText(fKey));
+      });
     });
   }
 
-  // 14. Canlı Arama Metni
+
+  // 13. Canlı Arama Metni
   if (q) {
     const needle = normalizeSearchText(q);
     if (needle) {
