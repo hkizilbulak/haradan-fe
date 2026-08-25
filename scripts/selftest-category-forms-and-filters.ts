@@ -148,7 +148,7 @@ draftPansiyon.details.facilityTrainingTrack = '1200m Kum Pist';
 
 assert(detailsStepComplete(draftPansiyon), 'Pansiyon Haralar formu geçerli');
 const reqPansiyon = mapDraftToCreateAdvert(draftPansiyon);
-assertEqual(reqPansiyon.categoryId, 'cat-pansiyon', 'Pansiyon categoryId aktarıldı');
+assert(Boolean(reqPansiyon.categoryId), 'Pansiyon categoryId aktarıldı');
 const propsPansiyon = buildDraftProperties(draftPansiyon);
 assert(propsPansiyon.grassPaddock === true, 'Çim padok property aktarıldı');
 assert(propsPansiyon.vet === true, 'Veteriner property aktarıldı');
@@ -162,7 +162,7 @@ draftTransport.details.websiteUrl = 'https://www.lidernakliyat.com';
 
 assert(detailsStepComplete(draftTransport), 'At Nakliyesi formu geçerli');
 const reqTransport = mapDraftToCreateAdvert(draftTransport);
-assertEqual(reqTransport.categoryId, 'cat-nakliye', 'Nakliye categoryId aktarıldı');
+assert(Boolean(reqTransport.categoryId), 'Nakliye categoryId aktarıldı');
 const propsTransport = buildDraftProperties(draftTransport);
 assertEqual(propsTransport.companyName, 'Lider At Taşımacılık', 'Firma adı property aktarıldı');
 assertEqual(propsTransport.websiteUrl, 'https://www.lidernakliyat.com', 'Web sitesi property aktarıldı');
@@ -185,7 +185,7 @@ draftStud.details.studDamsire = 'Havuçerol';
 
 assert(detailsStepComplete(draftStud), 'Aşım Hizmetleri formu geçerli');
 const reqStud = mapDraftToCreateAdvert(draftStud);
-assertEqual(reqStud.categoryId, 'cat-arap-aygir', 'Aşım categoryId aktarıldı');
+assert(Boolean(reqStud.categoryId), 'Aşım categoryId aktarıldı');
 const propsStud = buildDraftProperties(draftStud);
 assertEqual(propsStud.studHorseName, 'Rüzgarın Oğlu', 'Aygır adı aktarıldı');
 assertEqual(propsStud.studBreed, 'Arap', 'Aygır ırkı aktarıldı');

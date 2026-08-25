@@ -2,6 +2,7 @@ import { composeInternationalPhone } from '@/services/phone';
 import type { ListingDraft } from '@/types/listing';
 import type { Money } from '@/types/money';
 import type { CreateAdvertDraftRequest } from '@/types/listing';
+import CATALOG_DATA from '@/data/catalog.json';
 
 import {
   isFarrierListing,
@@ -103,18 +104,49 @@ export function mapDraftToCreateAdvert(
   draft: ListingDraft
 ): CreateAdvertDraftRequest {
   if (!draft.type) throw new Error('Kategori seçilmedi.');
+
+  let categoryId = draft.type.categoryId;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryId)) {
+    const found = (CATALOG_DATA as any)?.categories?.find(
+      (c: any) =>
+        c.slug === categoryId ||
+        c.id === categoryId ||
+        c.slug === draft.type?.categorySlug ||
+        c.id === draft.type?.categorySlug
+    );
+    if (found?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(found.id)) {
+      categoryId = found.id;
+    }
+  }
+
   const priceTl = parseTlInput(draft.details.priceTl);
   const price: Money | null =
     priceTl != null
       ? { amountMinor: tlToMinor(priceTl), currency: 'TRY' }
       : null;
+
   const body: CreateAdvertDraftRequest = {
-    categoryId: draft.type.categoryId,
-    title: draft.details.title.trim(),
-    description: draft.details.description.trim(),
+    categoryId,
   };
-  if (draft.details.districtId) body.districtId = draft.details.districtId;
-  if (draft.details.horseId) body.horseId = draft.details.horseId;
-  if (price) body.price = price;
+
+  const title = draft.details.title?.trim();
+  if (title) {
+    body.title = title;
+  }
+
+  const description = draft.details.description?.trim();
+  if (description) {
+    body.description = description;
+  }
+
+  if (draft.details.districtId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(draft.details.districtId)) {
+    body.districtId = draft.details.districtId;
+  }
+  if (draft.details.horseId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(draft.details.horseId)) {
+    body.horseId = draft.details.horseId;
+  }
+  if (price) {
+    body.price = price;
+  }
   return body;
 }
