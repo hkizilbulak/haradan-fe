@@ -199,12 +199,22 @@ export function mapPublishedDetailToAdvert(
   const horse: HorseProfile = buildHorseFromTjkOrDto(dto.horse, tjkHorse);
 
   const propRows = (dto.properties ?? [])
-    .map((p) => ({
-      label: p.title,
-      value:
-        p.displayValue?.trim() ||
-        (p.value == null ? '' : String(p.value)),
-    }))
+    .map((p) => {
+      let display = p.displayValue?.trim();
+      if (!display) {
+        if (typeof p.value === 'boolean') {
+          display = p.value ? 'Evet' : 'Hayır';
+        } else if (p.value != null && p.value !== '' && p.value !== 'null' && p.value !== 'undefined') {
+          display = String(p.value);
+        } else {
+          display = '';
+        }
+      }
+      return {
+        label: p.title || p.code,
+        value: display,
+      };
+    })
     .filter((r) => r.value);
 
   const districtId = dto.location?.districtId ?? '';

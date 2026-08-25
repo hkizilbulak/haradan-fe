@@ -145,38 +145,45 @@ export function parsePansiyonInfo(detail: AdvertDetail): ParsedPansiyonInfo {
   return {
     hasGrassPaddock:
       isSpecTrue('çim padok') ||
+      isSpecTrue('grasspaddock') ||
       isSpecTrue('facilitygrasspaddock') ||
       text.includes('çim padok') ||
       text.includes('cim padok') ||
       text.includes('çim'),
     hasSandPaddock:
       isSpecTrue('kum padok') ||
+      isSpecTrue('sandpaddock') ||
       isSpecTrue('facilitysandpaddock') ||
       text.includes('kum padok') ||
       text.includes('kum'),
     hasStallionPaddock:
       isSpecTrue('aygır padoğu') ||
+      isSpecTrue('stallionpaddock') ||
       isSpecTrue('facilitystallionpaddock') ||
       text.includes('aygır padoğu') ||
       text.includes('aygir padogu'),
     hasVeterinarian:
       isSpecTrue('veteriner') ||
+      isSpecTrue('vet') ||
       isSpecTrue('facilityveterinarian') ||
       text.includes('veteriner') ||
       text.includes('hekim'),
     hasFarrier:
       isSpecTrue('nalbant') ||
+      isSpecTrue('farrier') ||
       isSpecTrue('facilityfarrier') ||
       text.includes('nalbant') ||
       text.includes('nal'),
     hasFoalingBarn:
       isSpecTrue('doğumhane') ||
+      isSpecTrue('foalingbarn') ||
       isSpecTrue('facilityfoalingbarn') ||
       text.includes('doğumhane') ||
       text.includes('dogumhane') ||
       text.includes('doğum'),
     trainingTrack:
       specMap['idman pisti'] ||
+      specMap['trainingtrack'] ||
       specMap['facilitytrainingtrack'] ||
       (text.includes('1200m')
         ? '1200m Kum İdman Pisti'

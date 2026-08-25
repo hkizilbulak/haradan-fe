@@ -131,49 +131,18 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
 
     if (payload.draft) {
       const props = buildDraftProperties(payload.draft);
-      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-        try {
-          localStorage.setItem(`haradan_advert_properties_${id}`, JSON.stringify(props));
-        } catch {
-          /* ignore */
-        }
-      }
       if (Object.keys(props).length > 0) {
-        try {
-          dto = await this.http.request<OwnerAdvertDto>(
-            `/v1/me/adverts/${encodeURIComponent(id)}/properties`,
-            {
-              method: 'PUT',
-              accessToken,
-              body: JSON.stringify({
-                expectedVersion: dto.version,
-                properties: props,
-              }),
-            }
-          );
-        } catch {
-          // If unseeded custom category properties fail, retry with core sellerPhone/phone
-          if (props.sellerPhone || props.phone) {
-            try {
-              const phoneOnly: Record<string, unknown> = {};
-              if (props.sellerPhone) phoneOnly.sellerPhone = props.sellerPhone;
-              if (props.phone) phoneOnly.phone = props.phone;
-              dto = await this.http.request<OwnerAdvertDto>(
-                `/v1/me/adverts/${encodeURIComponent(id)}/properties`,
-                {
-                  method: 'PUT',
-                  accessToken,
-                  body: JSON.stringify({
-                    expectedVersion: dto.version,
-                    properties: phoneOnly,
-                  }),
-                }
-              );
-            } catch {
-              // ignore
-            }
+        dto = await this.http.request<OwnerAdvertDto>(
+          `/v1/me/adverts/${encodeURIComponent(id)}/properties`,
+          {
+            method: 'PUT',
+            accessToken,
+            body: JSON.stringify({
+              expectedVersion: dto.version,
+              properties: props,
+            }),
           }
-        }
+        );
       }
     }
 

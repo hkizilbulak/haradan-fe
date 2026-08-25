@@ -149,9 +149,9 @@ assert(detailsStepComplete(draftPansiyon), 'Pansiyon Haralar formu geçerli');
 const reqPansiyon = mapDraftToCreateAdvert(draftPansiyon);
 assertEqual(reqPansiyon.categoryId, 'cat-pansiyon', 'Pansiyon categoryId aktarıldı');
 const propsPansiyon = buildDraftProperties(draftPansiyon);
-assert(propsPansiyon.facilityGrassPaddock === true, 'Çim padok property aktarıldı');
-assert(propsPansiyon.facilityVeterinarian === true, 'Veteriner property aktarıldı');
-assertEqual(propsPansiyon.facilityTrainingTrack, '1200m Kum Pist', 'İdman pisti property aktarıldı');
+assert(propsPansiyon.grassPaddock === true, 'Çim padok property aktarıldı');
+assert(propsPansiyon.vet === true, 'Veteriner property aktarıldı');
+assertEqual(propsPansiyon.trainingTrack, '1200m Kum Pist', 'İdman pisti property aktarıldı');
 
 // B. At Nakliyesi Formu (Fotoğraf, Başlık*, Firma Adı*, Web Sitesi, Fiyat*, Açıklama, Adres*)
 const draftTransport = createBaseValidDraft();
@@ -584,6 +584,120 @@ const pansiyonPropsWithNew = [
 const activePansiyonWithNew = pansiyonPropsWithNew.filter(p => p.isActive !== false && p.isFilterable !== false);
 assertEqual(activePansiyonWithNew.length, 6, 'Yeni eklenen kamera özelliği ile aktif sayı 6 oldu');
 assert(activePansiyonWithNew.some(p => p.code === 'kameraIzleme'), 'Yeni özellik dinamik listeye dahil oldu');
+
+// -------------------------------------------------------------
+// 8. Dinamik Property Filtreleme Matrisi ve Canonical Code Testleri
+// -------------------------------------------------------------
+console.log('\n--- 8. Dinamik Property Filtreleme Matrisi ve Canonical Code Testleri ---');
+
+const advertPool = [
+  {
+    id: 'adv-1',
+    title: 'Silivri Çiftliği',
+    properties: {
+      grassPaddock: true,
+      studBreed: 'thoroughbred',
+      studAge: 4,
+      studCoatColor: 'Doru',
+      hasIndoorArena: true,
+    },
+  },
+  {
+    id: 'adv-2',
+    title: 'Ege Harası',
+    properties: {
+      grassPaddock: false,
+      studBreed: 'arabian',
+      studAge: 2,
+      studCoatColor: 'Al',
+      hasIndoorArena: false,
+    },
+  },
+  {
+    id: 'adv-3',
+    title: 'Marmara Pansiyon',
+    properties: {
+      grassPaddock: true,
+      studBreed: 'arabian',
+      studAge: 5,
+      studCoatColor: 'Kır',
+    },
+  },
+  {
+    id: 'adv-4',
+    title: 'Özelliksiz İlan',
+    properties: null, // null safety test
+  },
+];
+
+function filterAdvertPool(pool: typeof advertPool, features: string[]): typeof advertPool {
+  const codeToValues: Record<string, string[]> = {};
+  for (const item of features) {
+    if (!item) continue;
+    if (item.includes(':')) {
+      const idx = item.indexOf(':');
+      const c = item.slice(0, idx);
+      const v = item.slice(idx + 1);
+      if (!codeToValues[c]) codeToValues[c] = [];
+      codeToValues[c].push(v);
+    } else {
+      if (!codeToValues[item]) codeToValues[item] = [];
+      codeToValues[item].push('true');
+    }
+  }
+
+  return pool.filter((card) => {
+    const props = card.properties || {};
+    return Object.entries(codeToValues).every(([targetCode, targetValues]) => {
+      const actualVal = (props as any)[targetCode];
+      return targetValues.some((targetVal) => {
+        if (targetVal === 'true') {
+          return actualVal === true || actualVal === 'true' || actualVal === 1;
+        }
+        if (targetVal === 'false') {
+          return actualVal === false || actualVal === 'false' || actualVal === 0;
+        }
+        if (actualVal != null) {
+          return String(actualVal).toLocaleLowerCase('tr') === targetVal.toLocaleLowerCase('tr');
+        }
+        return false;
+      });
+    });
+  });
+}
+
+// 8.1 Boolean Filtering (grassPaddock === true)
+const grassResults = filterAdvertPool(advertPool, ['grassPaddock:true']);
+assertEqual(grassResults.length, 2, 'grassPaddock=true olan 2 ilan bulundu');
+assert(grassResults.some(a => a.id === 'adv-1') && grassResults.some(a => a.id === 'adv-3'), 'adv-1 ve adv-3 grassPaddock=true ile eşleşti');
+
+// 8.2 Single Select Option Value (studBreed === thoroughbred)
+const thoroughbredResults = filterAdvertPool(advertPool, ['studBreed:thoroughbred']);
+assertEqual(thoroughbredResults.length, 1, 'studBreed=thoroughbred olan 1 ilan bulundu');
+assertEqual(thoroughbredResults[0].id, 'adv-1', 'adv-1 thoroughbred ile eşleşti');
+
+// 8.3 Single Select Option Value OR logic (studBreed === thoroughbred OR arabian)
+const multiBreedResults = filterAdvertPool(advertPool, ['studBreed:thoroughbred', 'studBreed:arabian']);
+assertEqual(multiBreedResults.length, 3, 'studBreed thoroughbred veya arabian olan 3 ilan bulundu');
+
+// 8.4 Integer / Numeric Filtering (studAge === 4)
+const age4Results = filterAdvertPool(advertPool, ['studAge:4']);
+assertEqual(age4Results.length, 1, 'studAge=4 olan 1 ilan bulundu');
+assertEqual(age4Results[0].id, 'adv-1', 'adv-1 studAge=4 ile eşleşti');
+
+// 8.5 String / Coat Filtering (studCoatColor === Doru)
+const doruResults = filterAdvertPool(advertPool, ['studCoatColor:Doru']);
+assertEqual(doruResults.length, 1, 'studCoatColor=Doru olan 1 ilan bulundu');
+assertEqual(doruResults[0].id, 'adv-1', 'adv-1 Doru ile eşleşti');
+
+// 8.6 New BO Dynamic Property without FE changes (hasIndoorArena === true)
+const indoorResults = filterAdvertPool(advertPool, ['hasIndoorArena:true']);
+assertEqual(indoorResults.length, 1, 'Yeni BO özelliği hasIndoorArena=true ile 1 ilan filtrelendi');
+assertEqual(indoorResults[0].id, 'adv-1', 'Yeni BO özelliğiyle adv-1 eşleşti');
+
+// 8.7 Null Safety (advert.properties null iken crash olmaması)
+const nullSafeResults = filterAdvertPool(advertPool, ['grassPaddock:true']);
+assert(!nullSafeResults.some(a => a.id === 'adv-4'), 'properties=null olan ilan crash etmeden filtrelendi');
 
 console.log(`\nÖzet: ${passed} geçti, ${failed} kaldı.`);
 if (failed > 0) {

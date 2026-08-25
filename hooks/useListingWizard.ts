@@ -150,16 +150,45 @@ export function useListingWizard(deps: Deps = {}) {
   }, []);
 
   const selectType = useCallback((type: ListingTypeSelection) => {
-    setListingWizardState((prev) => ({
-      ...prev,
-      step: 'details',
-      typePhase: 'category',
-      tjkPromptSeen: false,
-      detailsAttempted: false,
-      submittedDraftId: null,
-      submittedStatus: null,
-      draft: { ...prev.draft, type, breed: null },
-    }));
+    setListingWizardState((prev) => {
+      const isDifferentCategory = prev.draft.type?.categoryId !== type.categoryId;
+      return {
+        ...prev,
+        step: 'details',
+        typePhase: 'category',
+        tjkPromptSeen: false,
+        detailsAttempted: false,
+        submittedDraftId: null,
+        submittedStatus: null,
+        draft: {
+          ...prev.draft,
+          type,
+          breed: null,
+          details: isDifferentCategory
+            ? {
+                ...prev.draft.details,
+                properties: {},
+                facilityGrassPaddock: false,
+                facilitySandPaddock: false,
+                facilityStallionPaddock: false,
+                facilityTrainingTrack: '',
+                facilityVeterinarian: false,
+                facilityFarrier: false,
+                facilityFoalingBarn: false,
+                companyName: '',
+                websiteUrl: '',
+                studBreed: '',
+                studAge: '',
+                studCoatColor: '',
+                studHorseName: '',
+                studSire: '',
+                studDam: '',
+                studDamsire: '',
+              }
+            : prev.draft.details,
+        },
+      };
+    });
   }, []);
 
   const updateDetails = useCallback(

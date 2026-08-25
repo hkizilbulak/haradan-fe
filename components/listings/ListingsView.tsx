@@ -201,74 +201,65 @@ function applyClientFilters(
     list = list.filter((p) => matchHorseGender(p, filters.genders));
   }
 
-  // 12. Tesis & Hizmet Özellikleri (Pansiyon Haralar)
+  // 12. Dinamik Kategori Boolean Özellikleri (Tesis / Hizmet / Özel Boolean Filtreleri)
   const activeFacilityKeys = (
     Object.keys(filters.facilities ?? {}) as (keyof PansiyonFacilityFilters)[]
   ).filter((k) => Boolean(filters.facilities[k]));
 
   if (activeFacilityKeys.length > 0) {
-    const facilityPropKeys: Record<keyof PansiyonFacilityFilters, string[]> = {
-      grassPaddock: ['facilitygrasspaddock', 'grasspaddock', 'grass_paddock', 'cimpadok', 'cimpaddock', 'çimpadok'],
-      sandPaddock: ['facilitysandpaddock', 'sandpaddock', 'sand_paddock', 'kumpadok', 'kumpaddock'],
-      stallionPaddock: ['facilitystallionpaddock', 'stallionpaddock', 'stallion_paddock', 'aygirpadogu', 'aygirpadoğu'],
-      vet: ['facilityveterinarian', 'vet', 'vet_service', 'veteriner'],
-      farrier: ['facilityfarrier', 'farrier', 'farrier_service', 'nalbant'],
-      foalingBarn: ['facilityfoalingbarn', 'foalingbarn', 'foaling_barn', 'dogumhane', 'doğumhane'],
-    };
-
-    const facilityKeywords: Record<keyof PansiyonFacilityFilters, string[]> = {
-      grassPaddock: ['cim', 'grass', 'padok', 'çim'],
-      sandPaddock: ['kum', 'sand'],
-      stallionPaddock: ['aygir', 'stallion', 'aygır'],
-      vet: ['veteriner', 'hekim', 'saglik', 'sağlık'],
-      farrier: ['nalbant', 'nal'],
-      foalingBarn: ['dogum', 'kısrak', 'kisrak', 'doğum'],
-    };
-
     list = list.filter((p) => {
-      const hay = normalizeSearchText(`${p.title} ${p.brand ?? ''}`);
       const props = p.properties || {};
-      const normPropKeys = Object.keys(props).filter(
-        (k) => props[k] === true || props[k] === 'true' || props[k] === 1 || props[k] === '1'
-      ).map((k) => normalizeSearchText(k).replace(/[^a-z0-9]+/g, ''));
+      const hay = normalizeSearchText(`${p.title} ${p.brand ?? ''}`);
 
       return activeFacilityKeys.every((fKey) => {
-        // 1. Check properties boolean
-        const matchingPropKeys = facilityPropKeys[fKey] ?? [];
-        const hasProp = matchingPropKeys.some((target) =>
-          normPropKeys.includes(target) || normPropKeys.some((npk) => npk.includes(target) || target.includes(npk))
-        );
-        if (hasProp) return true;
+        // 1. Direct property match
+        const val = props[fKey];
+        if (val === true || val === 'true' || val === 1 || val === '1') {
+          return true;
+        }
 
-        // 2. Check title keywords
-        const keywords = facilityKeywords[fKey] ?? [];
-        return keywords.some((kw) => hay.includes(kw));
+        // 2. Normalized key match (case/underscore insensitive)
+        const normTargetKey = normalizeSearchText(fKey).replace(/[^a-z0-9]+/g, '');
+        for (const [k, v] of Object.entries(props)) {
+          const normK = normalizeSearchText(k).replace(/[^a-z0-9]+/g, '');
+          if (
+            (normK === normTargetKey || normK.includes(normTargetKey) || normTargetKey.includes(normK)) &&
+            (v === true || v === 'true' || v === 1 || v === '1')
+          ) {
+            return true;
+          }
+        }
+
+        // 3. Fallback: title/brand keyword match for legacy cards
+        return hay.includes(normTargetKey);
       });
     });
   }
 
-  // 13. Donanım / Özel Kategori Özellikleri (BO ve Form Alanları ile Tam Uyumlu)
+  // 13. Dinamik Kategori Özellikleri (SINGLE_SELECT, Sayısal, Metin, BO Özellikleri)
   if (filters.features && filters.features.length > 0) {
-    const featureKeywords: Record<string, string[]> = {
-      camera: ['kamera', 'izleme'],
-      ac: ['klima', 'iklimlendirme', 'havalandirma'],
-      airSuspension: ['havali', 'suspansiyon'],
-      insurance: ['sigorta', 'sigortali', 'kasko'],
-      hotShoeing: ['sicak', 'ocak', 'dovme'],
-      orthopedic: ['ortopedik', 'aci', 'duzeltme'],
-      mobileService: ['mobil', 'yerinde', 'adrese'],
-      crackTreatment: ['catlak', 'tedavi', 'tirnak'],
-      liveFoal: ['canli tay', 'tay garantisi', 'garanti'],
-      marePension: ['pansiyon', 'kisrak'],
-      ultrasound: ['ultrason', 'muayene', 'veteriner'],
-    };
-
     const normalizeKey = (k: string) =>
       normalizeSearchText(k).replace(/[^a-z0-9]+/g, '');
     const normalizeVal = (v: unknown) => {
       if (v == null) return '';
       return normalizeSearchText(String(v)).replace(/[^a-z0-9]+/g, '');
     };
+
+    // Group feature filters by property code (OR within same code, AND across codes)
+    const codeToValues: Record<string, string[]> = {};
+    for (const fItem of filters.features) {
+      if (!fItem || !fItem.trim()) continue;
+      if (fItem.includes(':')) {
+        const colonIdx = fItem.indexOf(':');
+        const code = fItem.slice(0, colonIdx);
+        const val = fItem.slice(colonIdx + 1);
+        if (!codeToValues[code]) codeToValues[code] = [];
+        codeToValues[code].push(val);
+      } else {
+        if (!codeToValues[fItem]) codeToValues[fItem] = [];
+        codeToValues[fItem].push('true');
+      }
+    }
 
     list = list.filter((p) => {
       const hay = normalizeSearchText(`${p.title} ${p.brand ?? ''}`);
@@ -282,70 +273,49 @@ function applyClientFilters(
         boolVal: typeof v === 'boolean' ? v : v === 'true' || v === '1' || v === 1,
       }));
 
-      return (filters.features ?? []).every((fKey) => {
-        if (!fKey || !fKey.trim()) return true;
+      return Object.entries(codeToValues).every(([targetCode, targetValues]) => {
+        const normTargetCode = normalizeKey(targetCode);
 
-        // 1. "propKey:propVal" format (e.g. "SECIM_DENEME:DENEME2", "renk:doru")
-        if (fKey.includes(':')) {
-          const colonIdx = fKey.indexOf(':');
-          const rawPropKey = fKey.slice(0, colonIdx);
-          const rawPropVal = fKey.slice(colonIdx + 1);
-          const targetKey = normalizeKey(rawPropKey);
-          const targetVal = normalizeVal(rawPropVal);
-
-          // Find the specific property with this key
-          const matchingProp = propEntries.find(
-            (pe) => pe.normKey === targetKey || pe.normKey.includes(targetKey) || targetKey.includes(pe.normKey)
-          );
-          if (!matchingProp) {
-            return false;
-          }
-
-          // If targetVal is boolean
-          if (targetVal === 'true' || targetVal === '1' || targetVal === 'evet') {
-            return matchingProp.boolVal === true;
-          }
-          if (targetVal === 'false' || targetVal === '0' || targetVal === 'hayir') {
-            return matchingProp.boolVal === false;
-          }
-
-          // Strict value match for this specific property
-          return (
-            matchingProp.normVal === targetVal ||
-            (matchingProp.rawVal != null &&
-              normalizeSearchText(String(matchingProp.rawVal)) === normalizeSearchText(rawPropVal))
-          );
-        }
-
-        const normFilterKey = normalizeKey(fKey);
-        const normFilterVal = normalizeVal(fKey);
-
-        // 2. Direct property key match for boolean toggle (e.g. user toggled "deneme_evet_hayir" or "saç bakımı")
-        const boolProp = propEntries.find((pe) => pe.normKey === normFilterKey);
-        if (boolProp) {
-          return boolProp.boolVal === true;
-        }
-
-        // 3. Direct option value exact match across properties (e.g. "deneme2" option token)
-        const exactValMatch = propEntries.some(
-          (pe) =>
-            pe.normVal === normFilterVal ||
-            (pe.rawVal != null &&
-              normalizeSearchText(String(pe.rawVal)) === normalizeSearchText(fKey))
+        // Find matching property in advert
+        const matchingProp = propEntries.find(
+          (pe) => pe.normKey === normTargetCode || pe.normKey.includes(normTargetCode) || normTargetCode.includes(pe.normKey)
         );
-        if (exactValMatch) {
-          return true;
-        }
 
-        // 4. Predefined keywords dictionary
-        if (featureKeywords[fKey]) {
-          const keywords = featureKeywords[fKey];
-          return keywords.some((kw) => hay.includes(normalizeSearchText(kw)));
-        }
+        return targetValues.some((targetVal) => {
+          const normTargetVal = normalizeVal(targetVal);
 
-        // 5. Fallback in title or brand (exact token match, not substring)
-        const hayTokens = hay.split(/[\s,._-]+/);
-        return hayTokens.includes(normalizeSearchText(fKey));
+          // If target is boolean
+          if (normTargetVal === 'true' || normTargetVal === '1' || normTargetVal === 'evet') {
+            if (matchingProp && matchingProp.boolVal === true) return true;
+          }
+          if (normTargetVal === 'false' || normTargetVal === '0' || normTargetVal === 'hayir') {
+            if (matchingProp && matchingProp.boolVal === false) return true;
+          }
+
+          // Exact or substring value match for this property
+          if (matchingProp) {
+            if (
+              matchingProp.normVal === normTargetVal ||
+              matchingProp.normVal.includes(normTargetVal) ||
+              normTargetVal.includes(matchingProp.normVal)
+            ) {
+              return true;
+            }
+          }
+
+          // Check if any other property value matches this token
+          const exactValMatch = propEntries.some(
+            (pe) =>
+              pe.normVal === normTargetVal ||
+              (pe.rawVal != null &&
+                normalizeSearchText(String(pe.rawVal)) === normalizeSearchText(targetVal))
+          );
+          if (exactValMatch) return true;
+
+          // Fallback: title or brand token match
+          const hayTokens = hay.split(/[\s,._-]+/);
+          return hayTokens.includes(normTargetVal) || hay.includes(normTargetVal);
+        });
       });
     });
   }

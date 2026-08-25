@@ -115,33 +115,21 @@ export class HttpListingRepository implements IListingRepository {
     let currentVersion = created.version;
     const props = buildDraftProperties(draft);
     if (Object.keys(props).length > 0) {
-      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-        try {
-          localStorage.setItem(`haradan_advert_properties_${created.id}`, JSON.stringify(props));
-        } catch {
-          /* ignore */
+      const propRes = await this.http.request<OwnerAdvertResponse>(
+        `/v1/me/adverts/${created.id}/properties`,
+        {
+          method: 'PUT',
+          accessToken,
+          body: JSON.stringify({
+            expectedVersion: currentVersion,
+            properties: props,
+          }),
         }
-      }
-      try {
-        const propRes = await this.http.request<OwnerAdvertResponse>(
-          `/v1/me/adverts/${created.id}/properties`,
-          {
-            method: 'PUT',
-            accessToken,
-            body: JSON.stringify({
-              expectedVersion: currentVersion,
-              properties: props,
-            }),
-          }
-        );
-        if (propRes?.version) {
-          currentVersion = propRes.version;
-        }
-      } catch (err) {
-        console.warn('[HttpListingRepository] Failed to save dynamic properties:', err);
+      );
+      if (propRes?.version) {
+        currentVersion = propRes.version;
       }
     }
-
 
     return {
       advertId: created.id,

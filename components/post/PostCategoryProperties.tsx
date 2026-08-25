@@ -173,9 +173,9 @@ export function PostCategoryProperties({
   }, [categoryProperties]);
 
   const renderPropertyItem = (prop: CategoryPropertyPublic) => {
-    const propKey = prop.code || prop.title;
+    const propKey = prop.code;
     const currentProps = d.properties || {};
-    const val = currentProps[prop.code] ?? currentProps[propKey] ?? currentProps[prop.title];
+    const val = currentProps[prop.code];
 
     if (prop.dataType === 'BOOLEAN') {
       return (

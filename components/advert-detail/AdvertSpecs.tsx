@@ -13,12 +13,6 @@ import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { AdvertDetail, AdvertSpecGroup, HorseProfile } from '@/types';
 import { useAdvertLocation } from '@/services/location';
-import {
-  getAdvertCategoryKind,
-  parsePansiyonInfo,
-  parseStudInfo,
-  parseTransportInfo,
-} from './advertCategoryHelper';
 
 type AdvertSpecsProps = {
   groups: AdvertSpecGroup[];
@@ -42,7 +36,33 @@ type SoftSection = {
   rows: SoftRow[];
 };
 
-/** Genel bilgiler — her zaman açık, 3 kolon. */
+function getSpecIcon(label: string): keyof typeof Ionicons.glyphMap {
+  const l = (label || '').toLowerCase();
+  if (l.includes('padok') || l.includes('paddock') || l.includes('çim') || l.includes('kum')) return 'leaf-outline';
+  if (l.includes('vet') || l.includes('sağlık') || l.includes('hekim')) return 'medkit-outline';
+  if (l.includes('nalbant') || l.includes('farrier') || l.includes('bakım')) return 'hammer-outline';
+  if (l.includes('doğum') || l.includes('barn') || l.includes('ahır') || l.includes('haras')) return 'home-outline';
+  if (l.includes('pist') || l.includes('track') || l.includes('idman') || l.includes('antren')) return 'fitness-outline';
+  if (l.includes('firma') || l.includes('şirket') || l.includes('company')) return 'business-outline';
+  if (l.includes('web') || l.includes('site') || l.includes('url')) return 'globe-outline';
+  if (l.includes('telefon') || l.includes('phone') || l.includes('iletişim')) return 'call-outline';
+  if (l.includes('konum') || l.includes('şehir') || l.includes('ilçe') || l.includes('adres')) return 'location-outline';
+  if (l.includes('aygır') || l.includes('at adı') || l.includes('isim') || l.includes('ad')) return 'ribbon-outline';
+  if (l.includes('ırk') || l.includes('breed') || l.includes('cins')) return 'leaf-outline';
+  if (l.includes('yaş') || l.includes('age') || l.includes('tarih') || l.includes('doğum') || l.includes('yıl')) return 'calendar-outline';
+  if (l.includes('don') || l.includes('renk') || l.includes('coat') || l.includes('color')) return 'color-palette-outline';
+  if (l.includes('cinsiyet') || l.includes('gender')) return 'male-female-outline';
+  if (l.includes('baba') || l.includes('sire') || l.includes('anne') || l.includes('dam') || l.includes('pedigree') || l.includes('soyağac') || l.includes('orijin')) return 'git-branch-outline';
+  if (l.includes('kısrak babası') || l.includes('damsire')) return 'git-network-outline';
+  if (l.includes('sahip') || l.includes('kişi') || l.includes('person') || l.includes('yetiştirici')) return 'person-outline';
+  if (l.includes('kamera') || l.includes('video') || l.includes('güvenlik')) return 'videocam-outline';
+  if (l.includes('garanti') || l.includes('belge') || l.includes('aşım')) return 'shield-checkmark-outline';
+  if (l.includes('cidago') || l.includes('boy') || l.includes('ölçü')) return 'resize-outline';
+  if (l.includes('fiyat') || l.includes('ücret') || l.includes('ödeme')) return 'pricetag-outline';
+  return 'information-circle-outline';
+}
+
+/** Genel bilgiler — dinamik resolved properties, TJK soy kütüğü ve konum detayları. */
 export const AdvertSpecs = memo(function AdvertSpecs({
   groups,
   horse: propHorse,
@@ -56,297 +76,137 @@ export const AdvertSpecs = memo(function AdvertSpecs({
   const textSecondary = useThemeColor('textSecondary');
   const header = useThemeColor('header');
 
-  const categoryKind = detail ? getAdvertCategoryKind(detail) : 'horse';
   const horse = detail?.horse ?? propHorse;
-  const studInfo = useMemo(() => (detail ? parseStudInfo(detail) : null), [detail]);
-  const pansiyonInfo = useMemo(() => (detail ? parsePansiyonInfo(detail) : null), [detail]);
-  const transportInfo = useMemo(() => (detail ? parseTransportInfo(detail) : null), [detail]);
-
   const rawLocation = useAdvertLocation(detail);
   const locationCity = rawLocation || 'Belirtilmedi';
 
   const { title, row1, row2, hasRaces } = useMemo(() => {
-    if (categoryKind === 'pansiyon') {
-      const s1: SoftSection = {
-        id: 'pansiyon-facilities',
-        title: 'Tesis ve Padoklar',
-        rows: [
-          {
-            icon: 'leaf-outline',
-            label: 'Çim Padok',
-            value: pansiyonInfo?.hasGrassPaddock ? 'Mevcut' : 'Yok',
-          },
-          {
-            icon: 'grid-outline',
-            label: 'Kum Padok',
-            value: pansiyonInfo?.hasSandPaddock ? 'Mevcut' : 'Yok',
-          },
-          {
-            icon: 'shield-outline',
-            label: 'Aygır Padoğu',
-            value: pansiyonInfo?.hasStallionPaddock ? 'Mevcut' : 'Yok',
-          },
-          {
-            icon: 'fitness-outline',
-            label: 'İdman Pisti',
-            value: pansiyonInfo?.trainingTrack || 'Mevcut Değil',
-          },
-        ],
-      };
-      const s2: SoftSection = {
-        id: 'pansiyon-health',
-        title: 'Sağlık ve Bakım Olanakları',
-        rows: [
-          {
-            icon: 'medkit-outline',
-            label: 'Veteriner Hekim',
-            value: pansiyonInfo?.hasVeterinarian ? 'Mevcut' : 'Yok',
-          },
-          {
-            icon: 'hammer-outline',
-            label: 'Nalbant Hizmeti',
-            value: pansiyonInfo?.hasFarrier ? 'Mevcut' : 'Yok',
-          },
-          {
-            icon: 'home-outline',
-            label: 'Doğumhane',
-            value: pansiyonInfo?.hasFoalingBarn ? 'Mevcut' : 'Yok',
-          },
-        ],
-      };
-      const s3: SoftSection = {
-        id: 'pansiyon-location',
-        title: 'Konum ve Adres',
-        rows: [
-          { icon: 'location-outline', label: 'Şehir / İlçe', value: locationCity },
-          ...(detail?.address
-            ? [{ icon: 'navigate-outline' as const, label: 'Açık Adres', value: detail.address }]
-            : []),
-        ],
-      };
-      return { title: 'Tesis ve Hizmet Detayları', row1: [s1, s2, s3], row2: [], hasRaces: false };
+    const sections: SoftSection[] = [];
+
+    // 1. TJK Horse Identity & Pedigree (if meaningful horse info is present)
+    const hasHorseData = Boolean(
+      horse && (
+        (horse.registeredName && horse.registeredName !== 'Başlıksız ilan' && horse.registeredName.trim() !== '') ||
+        horse.sire ||
+        horse.dam ||
+        horse.damsire ||
+        (horse.age != null && horse.age > 0) ||
+        horse.gender ||
+        horse.coatColor ||
+        horse.breed ||
+        (horse.career && horse.career.starts > 0) ||
+        (horse.races && horse.races.length > 0)
+      )
+    );
+
+    if (hasHorseData && horse) {
+      const identity: SoftRow[] = [];
+      const horseName = horse.registeredName || detail?.title || '';
+      if (horseName) identity.push({ icon: 'ribbon-outline', label: 'İsim', value: horseName });
+      if (horse.age != null && horse.age > 0) {
+        identity.push({
+          icon: 'calendar-outline',
+          label: 'Yaş / Doğum',
+          value: `${horse.age} yaş`,
+          hint: horse.birthDate || undefined,
+        });
+      } else if (horse.birthDate) {
+        identity.push({
+          icon: 'calendar-outline',
+          label: 'Doğum Tarihi',
+          value: horse.birthDate,
+        });
+      }
+      if (horse.gender) identity.push({ icon: 'male-female-outline', label: 'Cinsiyet', value: horse.gender });
+      if (horse.coatColor) identity.push({ icon: 'color-palette-outline', label: 'Don', value: horse.coatColor });
+      if (horse.breed) identity.push({ icon: 'leaf-outline', label: 'Cins / Irk', value: horse.breed });
+      if (horse.heightCm) identity.push({ icon: 'resize-outline', label: 'Cidago', value: `${horse.heightCm} cm` });
+
+      if (identity.length > 0) {
+        sections.push({ id: 'horse-identity', title: 'Kimlik ve Fiziksel', rows: identity });
+      }
+
+      const pedigree: SoftRow[] = [];
+      if (horse.sire) pedigree.push({ icon: 'git-branch-outline', label: 'Baba', value: horse.sire });
+      if (horse.dam) pedigree.push({ icon: 'git-branch-outline', label: 'Anne', value: horse.dam });
+      if (horse.damsire) pedigree.push({ icon: 'git-network-outline', label: 'Kısrak Babası', value: horse.damsire });
+
+      if (pedigree.length > 0) {
+        sections.push({ id: 'horse-pedigree', title: 'Orijin (Soy Ağacı)', rows: pedigree });
+      }
+
+      const people: SoftRow[] = [];
+      if (horse.owners && horse.owners.length > 0) people.push({ icon: 'person-outline', label: 'Sahip', value: horse.owners.join(', ') });
+      if (horse.breeder) people.push({ icon: 'home-outline', label: 'Yetiştirici', value: horse.breeder });
+      if (horse.trainer) people.push({ icon: 'fitness-outline', label: 'Antrenör', value: horse.trainer });
+
+      if (people.length > 0) {
+        sections.push({ id: 'horse-people', title: 'İlgili Kişiler', rows: people });
+      }
     }
 
-    if (categoryKind === 'transport') {
-      const s1: SoftSection = {
-        id: 'transport-info',
-        title: 'Firma ve Hizmet Bilgileri',
-        rows: [
-          {
-            icon: 'business-outline',
-            label: 'Firma Adı',
-            value: transportInfo?.companyName || detail?.title || 'Belirtilmedi',
-          },
-          ...(transportInfo?.websiteUrl
-            ? [{ icon: 'globe-outline' as const, label: 'Web Sitesi', value: transportInfo.websiteUrl }]
-            : []),
-          {
-            icon: 'car-outline',
-            label: 'Hizmet Alanı',
-            value: 'At Nakliyesi ve Taşımacılık',
-          },
-        ],
-      };
-      const s2: SoftSection = {
-        id: 'transport-location',
-        title: 'Konum ve Bölge',
-        rows: [
-          { icon: 'location-outline', label: 'Şehir / İlçe', value: locationCity },
-          ...(detail?.address
-            ? [{ icon: 'navigate-outline' as const, label: 'Açık Adres', value: detail.address }]
-            : []),
-        ],
-      };
-      return { title: 'Nakliye ve Firma Detayları', row1: [s1, s2], row2: [], hasRaces: false };
-    }
-
-    if (categoryKind === 'farrier') {
-      const s1: SoftSection = {
-        id: 'farrier-info',
-        title: 'Hizmet Bilgileri',
-        rows: [
-          {
-            icon: 'hammer-outline',
-            label: 'Hizmet Türü',
-            value: 'Nalbantlık ve Tırnak Bakımı',
-          },
-          {
-            icon: 'checkmark-circle-outline',
-            label: 'Hizmet Şekli',
-            value: 'Randevulu / Harada Servis',
-          },
-        ],
-      };
-      const s2: SoftSection = {
-        id: 'farrier-location',
-        title: 'Konum ve Bölge',
-        rows: [
-          { icon: 'location-outline', label: 'Şehir / İlçe', value: locationCity },
-          ...(detail?.address
-            ? [{ icon: 'navigate-outline' as const, label: 'Açık Adres', value: detail.address }]
-            : []),
-        ],
-      };
-      return { title: 'Nalbantlık Hizmet Detayları', row1: [s1, s2], row2: [], hasRaces: false };
-    }
-
-    if (categoryKind === 'stud') {
-      const s1: SoftSection = {
-        id: 'stud-identity',
-        title: 'At / Aygır Bilgileri',
-        rows: [
-          {
-            icon: 'ribbon-outline',
-            label: 'Aygır Adı',
-            value: studInfo?.name || detail?.title || 'Aygır',
-          },
-          {
-            icon: 'leaf-outline',
-            label: 'At Irkı',
-            value: studInfo?.breed || 'Belirtilmedi',
-          },
-          {
-            icon: 'calendar-outline',
-            label: 'Yaş',
-            value: studInfo?.age
-              ? studInfo.age.includes('ya') || studInfo.age.includes('Ya')
-                ? studInfo.age
-                : `${studInfo.age} Yaş`
-              : 'Belirtilmedi',
-          },
-          {
-            icon: 'color-palette-outline',
-            label: 'Donu (Renk)',
-            value: studInfo?.coatColor || 'Belirtilmedi',
-          },
-        ],
-      };
-      const s2: SoftSection = {
-        id: 'stud-pedigree',
-        title: 'Soy Kütüğü (Pedigree)',
-        rows: [
-          { icon: 'git-branch-outline', label: 'Baba (Sire)', value: studInfo?.sire || 'Belirtilmedi' },
-          { icon: 'git-branch-outline', label: 'Anne (Dam)', value: studInfo?.dam || 'Belirtilmedi' },
-          { icon: 'git-network-outline', label: 'Annesinin Babası (Damsire)', value: studInfo?.damsire || 'Belirtilmedi' },
-        ],
-      };
-      const s3: SoftSection = {
-        id: 'stud-location',
-        title: 'Konum ve Adres',
-        rows: [
-          { icon: 'location-outline', label: 'Şehir / İlçe', value: locationCity },
-          ...(detail?.address
-            ? [{ icon: 'navigate-outline' as const, label: 'Açık Adres', value: detail.address }]
-            : []),
-        ],
-      };
-      return { title: 'Aygır ve Aşım Detayları', row1: [s1, s2, s3], row2: [], hasRaces: false };
-    }
-
-    // Default Horse Listing
-    const specMap: Record<string, string> = {};
-    (groups ?? detail?.specs ?? []).forEach((g) => {
-      g.rows.forEach((r) => {
-        specMap[r.label.toLowerCase()] = r.value;
-      });
-    });
-
-    const horseName =
-      horse?.registeredName ||
-      specMap['at adı'] ||
-      specMap['at / aygır adı'] ||
-      specMap['isim'] ||
-      detail?.title ||
-      '';
-    const horseGender = horse?.gender || specMap['cinsiyet'] || '';
-    const horseBreed =
-      horse?.breed || specMap['at ırkı'] || specMap['ırk'] || specMap['cins'] || '';
-    const horseCoat =
-      horse?.coatColor ||
-      specMap['don'] ||
-      specMap['donu'] ||
-      specMap['donu (renk)'] ||
-      '';
-    const horseAge =
-      horse && horse.age > 0
-        ? `${horse.age} yaş`
-        : specMap['yaş'] || (horse?.birthDate ? horse.birthDate : '');
-    const horseSire =
-      horse?.sire || specMap['baba'] || specMap['baba (sire)'] || '';
-    const horseDam =
-      horse?.dam || specMap['anne'] || specMap['anne (dam)'] || '';
-    const horseDamsire =
-      horse?.damsire ||
-      specMap['kısrak babası'] ||
-      specMap['annesinin babası'] ||
-      '';
-
-    const identity: SoftRow[] = [];
-    if (horseName) identity.push({ icon: 'ribbon-outline', label: 'İsim', value: horseName });
-    if (horseAge) {
-      identity.push({
-        icon: 'calendar-outline',
-        label: 'Yaş / doğum',
-        value: horseAge.includes('ya') || horseAge.includes('Ya') ? horseAge : `${horseAge} yaş`,
-        hint: horse?.birthDate,
-      });
-    }
-    if (horseGender) identity.push({ icon: 'male-female-outline', label: 'Cinsiyet', value: horseGender });
-    if (horseCoat) identity.push({ icon: 'color-palette-outline', label: 'Don', value: horseCoat });
-    if (horseBreed) identity.push({ icon: 'leaf-outline', label: 'Cins', value: horseBreed });
-    if (horse?.heightCm) identity.push({ icon: 'resize-outline' as const, label: 'Cidago', value: `${horse.heightCm} cm` });
-
-    const pedigree: SoftRow[] = [];
-    if (horseSire) pedigree.push({ icon: 'git-branch-outline', label: 'Baba', value: horseSire });
-    if (horseDam) pedigree.push({ icon: 'git-branch-outline', label: 'Anne', value: horseDam });
-    if (horseDamsire) pedigree.push({ icon: 'git-network-outline', label: 'Kısrak babası', value: horseDamsire });
-
-    const people: SoftRow[] = [];
-    if (horse && horse.owners.length > 0) people.push({ icon: 'person-outline', label: 'Sahip', value: horse.owners.join(', ') });
-    if (horse?.breeder) people.push({ icon: 'home-outline', label: 'Yetiştirici', value: horse.breeder });
-    if (horse?.trainer) people.push({ icon: 'fitness-outline', label: 'Antrenör', value: horse.trainer });
-    if (locationCity && locationCity !== 'Belirtilmedi') people.push({ icon: 'location-outline', label: 'Konum', value: locationCity });
-
-    const r1: SoftSection[] = [];
-    if (identity.length > 0) r1.push({ id: 'identity', title: 'Kimlik ve fiziksel', rows: identity });
-    if (pedigree.length > 0) r1.push({ id: 'pedigree', title: 'Orijin (soy ağacı)', rows: pedigree });
-    if (people.length > 0) r1.push({ id: 'people', title: 'İlgili kişiler ve konum', rows: people });
-
-    const r2: SoftSection[] = [];
-    if (horse && horse.career.starts > 0) {
-      r2.push({
-        id: 'performance',
-        title: 'Performans ve kazanç',
-        rows: [
-          { icon: 'trophy-outline', label: 'Kariyer', value: `${horse.career.starts} start · ${horse.career.first}-${horse.career.second}-${horse.career.third}` },
-          { icon: 'speedometer-outline', label: 'Handikap', value: String(horse.handicap) },
-        ],
-      });
-    }
-
-    if (groups && groups.length > 0) {
-      for (const g of groups) {
-        if (g.rows && g.rows.length > 0) {
-          r2.push({
-            id: g.id || 'extra-specs',
-            title: g.title || 'Özellikler',
-            rows: g.rows.map((r) => ({
-              icon: 'information-circle-outline',
-              label: r.label,
-              value: r.value,
-            })),
-          });
+    // 2. Dynamic Resolved Category Properties (from groups or detail.specs)
+    const allGroups = groups && groups.length > 0 ? groups : (detail?.specs ?? []);
+    for (const g of allGroups) {
+      if (g && g.rows && g.rows.length > 0) {
+        const validRows: SoftRow[] = g.rows
+          .filter((r) => r.label && r.value != null && String(r.value).trim() !== '' && String(r.value) !== 'null' && String(r.value) !== 'undefined')
+          .map((r) => ({
+            icon: getSpecIcon(r.label),
+            label: r.label,
+            value: String(r.value),
+            hint: r.hint,
+          }));
+        if (validRows.length > 0) {
+          if (validRows.length > 5) {
+            const chunk1 = validRows.slice(0, Math.ceil(validRows.length / 2));
+            const chunk2 = validRows.slice(Math.ceil(validRows.length / 2));
+            sections.push({ id: `${g.id || 'props'}-1`, title: g.title || 'Özellikler', rows: chunk1 });
+            sections.push({ id: `${g.id || 'props'}-2`, title: 'Ek Özellikler', rows: chunk2 });
+          } else {
+            sections.push({ id: g.id || 'category-specs', title: g.title || 'Özellikler', rows: validRows });
+          }
         }
       }
     }
 
+    // 3. Location and Address (Core Advert Data)
+    const locationRows: SoftRow[] = [];
+    if (locationCity && locationCity !== 'Belirtilmedi') {
+      locationRows.push({ icon: 'location-outline', label: 'Şehir / İlçe', value: locationCity });
+    }
+    if (detail?.address?.trim()) {
+      locationRows.push({ icon: 'navigate-outline', label: 'Açık Adres', value: detail.address.trim() });
+    }
+    if (locationRows.length > 0) {
+      sections.push({ id: 'location-section', title: 'Konum ve Adres', rows: locationRows });
+    }
+
+    // 4. Career Performance (for race horses)
+    if (hasHorseData && horse && horse.career && horse.career.starts > 0) {
+      sections.push({
+        id: 'horse-performance',
+        title: 'Performans ve Kazanç',
+        rows: [
+          { icon: 'trophy-outline', label: 'Kariyer', value: `${horse.career.starts} start · ${horse.career.first}-${horse.career.second}-${horse.career.third}` },
+          ...(horse.handicap ? [{ icon: 'speedometer-outline' as const, label: 'Handikap', value: String(horse.handicap) }] : []),
+        ],
+      });
+    }
+
+    // Distribute sections across row1 (up to 3 sections) and row2 (remaining)
+    const r1 = sections.slice(0, 3);
+    const r2 = sections.slice(3);
+
+    const titleText = hasHorseData ? 'Genel Bilgiler' : 'İlan Özellikleri ve Detaylar';
+
     return {
-      title: 'Genel bilgiler',
+      title: titleText,
       row1: r1,
       row2: r2,
-      hasRaces: Boolean(horse && horse.races.length > 0),
+      hasRaces: Boolean(hasHorseData && horse && horse.races && horse.races.length > 0),
     };
-  }, [categoryKind, detail, groups, horse, locationCity, pansiyonInfo, studInfo, transportInfo]);
+  }, [detail, groups, horse, locationCity]);
 
   return (
     <View style={styles.wrap}>
@@ -386,7 +246,7 @@ export const AdvertSpecs = memo(function AdvertSpecs({
         <View style={[styles.columns, !isWide && styles.columnsStack]}>
           <View style={[styles.column, !isWide && styles.columnStack]}>
             <Text style={[styles.sectionTitle, { color: text }]}>
-              Yarış geçmişi
+              Yarış Geçmişi
             </Text>
             <View style={styles.raceList}>
               {horse.races.slice(0, 5).map((race) => (

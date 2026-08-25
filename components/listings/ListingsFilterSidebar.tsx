@@ -594,9 +594,16 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
       onChange({ ...value, urgentOnly: !value.urgentOnly });
       return;
     }
+    const nextCategorySlug = value.categorySlug === option.slug ? null : option.slug;
     onChange({
       ...value,
-      categorySlug: value.categorySlug === option.slug ? null : option.slug,
+      categorySlug: nextCategorySlug,
+      facilities: {},
+      breeds: [],
+      ages: [],
+      colors: [],
+      genders: [],
+      features: [],
     });
   };
 
