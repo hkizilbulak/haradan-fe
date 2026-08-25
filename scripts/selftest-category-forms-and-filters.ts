@@ -2,6 +2,7 @@
  * Kategori bazlı form alanları ve filtreleme gereksinimleri self-test paketi.
  * Çalıştır: node --experimental-strip-types scripts/selftest-category-forms-and-filters.ts
  */
+import INITIAL_CATALOG from '../data/catalog.json';
 import {
   isFarrierListing,
   isHorseListing,
@@ -699,12 +700,49 @@ assertEqual(indoorResults[0].id, 'adv-1', 'Yeni BO özelliğiyle adv-1 eşleşti
 const nullSafeResults = filterAdvertPool(advertPool, ['grassPaddock:true']);
 assert(!nullSafeResults.some(a => a.id === 'adv-4'), 'properties=null olan ilan crash etmeden filtrelendi');
 
+// --- 9. Ortak İlan Alanları (Global Fields) ve Açık Adres Dinamik Yönetim Testleri ---
+console.log('\n--- 9. Ortak İlan Alanları (Global Fields) ve Açık Adres Dinamik Yönetim Testleri ---');
+
+const catalogWithGlobal = JSON.parse(JSON.stringify(INITIAL_CATALOG));
+const globalCat = catalogWithGlobal.categories.find((c: any) => c.slug === 'ortak-alanlar' || c.id === 'c1000000-0000-4000-8000-000000000000');
+assert(Boolean(globalCat), 'Ortak Alanlar (Tüm İlanlar) genel kategorisi mevcut');
+assertEqual(globalCat.name, 'Ortak Alanlar (Tüm İlanlar)', 'Ortak kategori adı doğru');
+
+const addressProp = catalogWithGlobal.categoryProperties.find((p: any) => p.code === 'ADDRESS' && p.categoryId === globalCat.id);
+assert(Boolean(addressProp), 'Açık Adres özelliği ortak alanlarda tanımlı');
+assertEqual(addressProp.dataType, 'TEXT', 'Açık Adres veri tipi TEXT');
+
+// Test 9.1: Açık Adres aktifken ve zorunluyken validasyon
+const draftWithAddress = {
+  details: {
+    title: 'Test İlanı',
+    priceTl: '50000',
+    provinceId: '34000000-0000-4000-8000-000000000000',
+    districtId: '34010000-0000-4000-8000-000000000000',
+    address: 'Bağdat Caddesi No:10 Kadıköy İstanbul',
+    sellerPhone: '5321234567',
+    phoneCountryIso: 'TR',
+  },
+  media: [{ uri: 'https://example.com/1.jpg' }],
+};
+const errs1 = detailsErrors(draftWithAddress as any);
+assert(!errs1.address, 'Dolu açık adres geçerli (hata yok)');
+
+// Test 9.2: Açık Adres boş iken hata fırlatması (varsayılan zorunlu mod)
+const draftEmptyAddress = {
+  ...draftWithAddress,
+  details: { ...draftWithAddress.details, address: '' },
+};
+const errs2 = detailsErrors(draftEmptyAddress as any);
+assertEqual(errs2.address, 'Açık adres zorunludur (en az 5 karakter).', 'Boş adres zorunlu iken hata verdi');
+
 console.log(`\nÖzet: ${passed} geçti, ${failed} kaldı.`);
 if (failed > 0) {
   process.exit(1);
 } else {
   console.log('Tüm kategori form ve filtre self-testleri başarıyla geçti!');
 }
+
 
 
 

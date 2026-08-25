@@ -103,7 +103,7 @@ draft.details.address = 'Merkez Mah. No: 1';
   const body = mapDraftToCreateAdvert(draft);
 assertEqual(
   Object.keys(body).sort().join(','),
-  'address,categoryId,description,districtId,horseId,price,title',
+  'categoryId,description,districtId,horseId,price,title',
   'create body OpenAPI fields only'
 );
 assertEqual(body.price?.currency, 'TRY', 'price currency TRY');

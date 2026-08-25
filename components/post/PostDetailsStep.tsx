@@ -15,6 +15,7 @@ import {
   isStudServiceListing,
   isTransportListing,
 } from '@/services/listing';
+import { getAddressFieldConfig } from '@/services/catalog/addressConfig';
 import {
   COAT_COLOR_OPTIONS,
   HORSE_AGE_OPTIONS,
@@ -89,6 +90,32 @@ export function PostDetailsStep({
   const [tjkMode, setTjkMode] = useState<'ask' | 'search'>('ask');
   const [provinceOpen, setProvinceOpen] = useState(false);
   const [districtOpen, setDistrictOpen] = useState(false);
+  const [addressConfig, setAddressConfig] = useState(getAddressFieldConfig());
+
+  useEffect(() => {
+    const refresh = () => setAddressConfig(getAddressFieldConfig());
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', refresh);
+      window.addEventListener('haradan_catalog_data_changed', refresh);
+      window.addEventListener('haradan_category_properties_changed', refresh);
+      try {
+        const bc = new BroadcastChannel('haradan_catalog_channel');
+        bc.onmessage = refresh;
+        return () => {
+          window.removeEventListener('storage', refresh);
+          window.removeEventListener('haradan_catalog_data_changed', refresh);
+          window.removeEventListener('haradan_category_properties_changed', refresh);
+          bc.close();
+        };
+      } catch {
+        return () => {
+          window.removeEventListener('storage', refresh);
+          window.removeEventListener('haradan_catalog_data_changed', refresh);
+          window.removeEventListener('haradan_category_properties_changed', refresh);
+        };
+      }
+    }
+  }, []);
   const { items: provinces, loading: provincesLoading, error: provincesError, retry: retryProvinces } =
     useProvinces();
   const { items: districts, loading: districtsLoading, error: districtsError, retry: retryDistricts } =
@@ -339,21 +366,23 @@ export function PostDetailsStep({
             </Pressable>
           ) : null}
         </View>
-        <View
-          style={styles.fieldBlock}
-          onLayout={(e) => updateFieldY('address', e.nativeEvent.layout.y)}
-        >
-          <PostField
-            label="Açık adres"
-            required
-            value={d.address}
-            onChangeText={(address) => onUpdate({ address })}
-            placeholder="Mahalle, cadde, sokak, no, tesis veya çiftlik/hara adı…"
-            hint="İlanınızın tam konumunu belirtmek için açık adres girin."
-            error={errors.address}
-            multiline
-          />
-        </View>
+        {addressConfig.isActive ? (
+          <View
+            style={styles.fieldBlock}
+            onLayout={(e) => updateFieldY('address', e.nativeEvent.layout.y)}
+          >
+            <PostField
+              label="Açık adres"
+              required={addressConfig.isRequired}
+              value={d.address}
+              onChangeText={(address) => onUpdate({ address })}
+              placeholder="Mahalle, cadde, sokak, no, tesis veya çiftlik/hara adı…"
+              hint="İlanınızın tam konumunu belirtmek için açık adres girin."
+              error={errors.address}
+              multiline
+            />
+          </View>
+        ) : null}
       </View>
 
       <View

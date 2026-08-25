@@ -40,14 +40,80 @@ type RawProperty = {
 };
 
 export class MockCatalogRepository implements ICatalogRepository {
-  private categories: RawCategory[];
-  private properties: RawProperty[];
+  private categories: RawCategory[] = [];
+  private properties: RawProperty[] = [];
   private cachedTree: CategoryTreeNode[] | null = null;
   private cachedFacets: CatalogFacets | null = null;
 
   constructor() {
-    this.categories = (CATALOG_DATA.categories || []) as RawCategory[];
-    this.properties = (CATALOG_DATA.categoryProperties || []) as RawProperty[];
+    this.refreshData();
+
+    if (typeof window !== 'undefined') {
+      try {
+        const bc = new BroadcastChannel('haradan_catalog_channel');
+        bc.onmessage = (event) => {
+          if (event.data?.data) {
+            const d = event.data.data;
+            if (Array.isArray(d.categories) && Array.isArray(d.categoryProperties)) {
+              this.categories = d.categories;
+              this.properties = d.categoryProperties;
+              this.invalidate();
+              window.dispatchEvent(new Event('haradan_category_properties_changed'));
+              return;
+            }
+          }
+          this.invalidate();
+          this.refreshData();
+          window.dispatchEvent(new Event('haradan_category_properties_changed'));
+        };
+      } catch {}
+
+      window.addEventListener('storage', () => {
+        this.invalidate();
+        this.refreshData();
+        window.dispatchEvent(new Event('haradan_category_properties_changed'));
+      });
+
+      window.addEventListener('haradan_catalog_data_changed', () => {
+        this.invalidate();
+        this.refreshData();
+        window.dispatchEvent(new Event('haradan_category_properties_changed'));
+      });
+    }
+  }
+
+  private refreshData(): void {
+    const initialCats = (CATALOG_DATA.categories || []) as RawCategory[];
+    const initialProps = (CATALOG_DATA.categoryProperties || []) as RawProperty[];
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('haradan_catalog_data');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (
+            parsed &&
+            Array.isArray(parsed.categories) &&
+            Array.isArray(parsed.categoryProperties)
+          ) {
+            const globalCat = initialCats.find(c => c.id === 'c1000000-0000-4000-8000-000000000000');
+            if (globalCat && !parsed.categories.some((c: any) => c.id === globalCat.id)) {
+              parsed.categories.unshift(globalCat);
+            }
+            const globalProps = initialProps.filter(p => p.categoryId === 'c1000000-0000-4000-8000-000000000000');
+            for (const gp of globalProps) {
+              if (!parsed.categoryProperties.some((p: any) => p.code === gp.code && (p.categoryId === gp.categoryId || p.id === gp.id))) {
+                parsed.categoryProperties.unshift(gp);
+              }
+            }
+            this.categories = parsed.categories;
+            this.properties = parsed.categoryProperties;
+            return;
+          }
+        }
+      } catch {}
+    }
+    this.categories = initialCats;
+    this.properties = initialProps;
   }
 
   getCachedFacets(): CatalogFacets | null {
@@ -76,6 +142,7 @@ export class MockCatalogRepository implements ICatalogRepository {
   }
 
   async getCategoryTree(options?: CatalogQueryOptions): Promise<CategoryTreeNode[]> {
+    this.refreshData();
     if (this.cachedTree && !options?.fresh) {
       return this.cachedTree;
     }
@@ -124,6 +191,7 @@ export class MockCatalogRepository implements ICatalogRepository {
   }
 
   async getFacets(options?: CatalogQueryOptions): Promise<CatalogFacets> {
+    this.refreshData();
     if (this.cachedFacets && !options?.fresh) {
       return this.cachedFacets;
     }
@@ -136,33 +204,59 @@ export class MockCatalogRepository implements ICatalogRepository {
     categoryId: string,
     options?: CatalogQueryOptions & { categorySlug?: string }
   ): Promise<CategoryFormDefinitionResponse | null> {
+    this.refreshData();
     const targetKey = categoryId || options?.categorySlug;
     if (!targetKey) return null;
 
     const cat = this.resolveCategory(targetKey);
     if (!cat) return null;
 
-    // Get direct properties
-    let props = this.properties.filter(
+    // Collect parent properties if exists
+    let parentProps: RawProperty[] = [];
+    if (cat.parentId) {
+      const parentDef = await this.getCategoryFormDefinition(cat.parentId, { fresh: true });
+      if (parentDef && Array.isArray(parentDef.properties)) {
+        parentProps = parentDef.properties.map((p) => ({
+          id: p.id,
+          categoryId: cat.parentId!,
+          code: p.code,
+          title: p.title,
+          helpText: p.helpText || null,
+          dataType: p.dataType,
+          isRequired: p.isRequired,
+          isPublicVisible: true,
+          isFormVisible: true,
+          isFilterable: p.isFilterable,
+          sortOrder: p.sortOrder,
+          isActive: true,
+          version: 1,
+          options: p.options || [],
+          defaultValue: p.defaultValue,
+          uiMetadata: p.uiMetadata,
+        }));
+      }
+    }
+
+    // Direct properties for this category
+    const directProps = this.properties.filter(
       (p) =>
         p.isActive &&
         (p.categoryId === cat.id || p.categoryId === cat.slug)
     );
 
-    // If no direct properties, inherit from parent
-    if (props.length === 0 && cat.parentId) {
-      const parent = this.resolveCategory(cat.parentId);
-      if (parent) {
-        props = this.properties.filter(
-          (p) =>
-            p.isActive &&
-            (p.categoryId === parent.id || p.categoryId === parent.slug)
-        );
-      }
+    // Merge parent properties with direct properties (direct overrides parent with same code)
+    const merged = new Map<string, RawProperty>();
+    for (const p of parentProps) {
+      merged.set(p.code, p);
+    }
+    for (const p of directProps) {
+      merged.set(p.code, p);
     }
 
+    const props = Array.from(merged.values());
+
     const mappedProperties: CategoryPropertyPublic[] = props
-      .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title, 'tr'))
+      .sort((a, b) => (a.sortOrder || 1) - (b.sortOrder || 1) || a.title.localeCompare(b.title, 'tr'))
       .map((p) => ({
         id: p.id,
         code: p.code,

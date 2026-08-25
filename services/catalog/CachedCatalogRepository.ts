@@ -16,7 +16,7 @@ export function createCachedCatalogRepository(
   const formInflight = new Map<string, Promise<CategoryFormDefinitionResponse | null>>();
   const formCache = new Map<string, CategoryFormDefinitionResponse | null>();
 
-  return {
+  const repo: ICatalogRepository = {
     getCachedFacets: () => facets,
     getCachedCategoryTree: () => tree,
     invalidate: () => {
@@ -75,6 +75,24 @@ export function createCachedCatalogRepository(
       return promise;
     },
   };
+
+  if (typeof window !== 'undefined') {
+    try {
+      const bc = new BroadcastChannel('haradan_catalog_channel');
+      bc.onmessage = () => {
+        repo.invalidate?.();
+      };
+    } catch {}
+
+    window.addEventListener('storage', () => {
+      repo.invalidate?.();
+    });
+    window.addEventListener('haradan_catalog_data_changed', () => {
+      repo.invalidate?.();
+    });
+  }
+
+  return repo;
 }
 
 

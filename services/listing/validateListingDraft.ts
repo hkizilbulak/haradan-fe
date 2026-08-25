@@ -6,6 +6,7 @@ import {
   isListingPackageStepEnabled,
   isPaytrCheckoutEnabled,
 } from '@/constants/Paytr';
+import { getAddressFieldConfig } from '@/services/catalog/addressConfig';
 import { isValidNationalPhone } from '@/services/phone';
 import type {
   ListingDraft,
@@ -126,9 +127,14 @@ export function detailsErrors(draft: ListingDraft): ListingFieldErrors {
   if (price == null || price <= 0) e.priceTl = 'Geçerli bir fiyat girin.';
   if (!d.provinceId) e.provinceId = 'İl seçin.';
   if (!d.districtId) e.districtId = 'İlçe seçin.';
-  if (!d.address.trim() || d.address.trim().length < 5) {
-    e.address = 'Açık adres zorunludur (en az 5 karakter).';
+
+  const addressConfig = getAddressFieldConfig();
+  if (addressConfig.isActive && addressConfig.isRequired) {
+    if (!d.address.trim() || d.address.trim().length < 5) {
+      e.address = 'Açık adres zorunludur (en az 5 karakter).';
+    }
   }
+
   if (!isValidNationalPhone(d.phoneCountryIso || 'TR', d.sellerPhone)) {
     e.sellerPhone = 'Geçerli bir telefon girin.';
   }
