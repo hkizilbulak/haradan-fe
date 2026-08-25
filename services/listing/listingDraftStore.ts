@@ -1,3 +1,4 @@
+import type { CategoryPropertyPublic } from '@/types';
 import type {
   ListingDraft,
   ListingDraftDetails,
@@ -15,6 +16,7 @@ export type ListingWizardState = {
   typePhase: ListingTypePhase;
   selectedRootSlug: string | null;
   draft: ListingDraft;
+  categoryProperties: CategoryPropertyPublic[] | null;
   tjkPromptSeen: boolean;
   detailsAttempted: boolean;
   submittedDraftId: string | null;
@@ -86,6 +88,7 @@ function createInitialState(): ListingWizardState {
     typePhase: 'root',
     selectedRootSlug: null,
     draft: createEmptyDraft(),
+    categoryProperties: null,
     tjkPromptSeen: false,
     detailsAttempted: false,
     submittedDraftId: null,
@@ -144,6 +147,7 @@ function hydrate(): ListingWizardState {
       ...parsed,
       step: normalizeStep(parsed.step),
       selectedRootSlug,
+      categoryProperties: parsed.categoryProperties ?? null,
       typePhase:
         typePhase === 'category' && !selectedRootSlug && !parsed.draft.type
           ? 'root'

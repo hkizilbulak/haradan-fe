@@ -9,6 +9,7 @@ import {
 } from '@/constants/Paytr';
 import { getAddressFieldConfig } from '@/services/catalog/addressConfig';
 import { isValidNationalPhone } from '@/services/phone';
+import type { CategoryPropertyPublic } from '@/types';
 import type {
   ListingDraft,
   ListingTypeSelection,
@@ -121,7 +122,10 @@ export function typeStepComplete(draft: ListingDraft): boolean {
   return draft.type != null;
 }
 
-export function detailsErrors(draft: ListingDraft): ListingFieldErrors {
+export function detailsErrors(
+  draft: ListingDraft,
+  categoryProperties?: CategoryPropertyPublic[]
+): ListingFieldErrors {
   const e: ListingFieldErrors = {};
   const d = draft.details;
   if (!d.title.trim()) e.title = 'Başlık gerekli.';
@@ -146,35 +150,51 @@ export function detailsErrors(draft: ListingDraft): ListingFieldErrors {
 
   // Dinamik Kategori Özellikleri Zorunluluk Kontrolü (Tamamen haradan_bo tanımlarına göre)
   if (draft.type?.categoryId || draft.type?.categorySlug) {
-    const catIdOrSlug = draft.type.categoryId || draft.type.categorySlug;
-    let allProps: any[] = [];
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('haradan_catalog_data');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed && Array.isArray(parsed.categoryProperties)) {
-            allProps = parsed.categoryProperties;
+    let requiredProps: any[] = [];
+
+    if (categoryProperties !== undefined && Array.isArray(categoryProperties)) {
+      requiredProps = categoryProperties.filter(
+        (p) =>
+          p &&
+          (p as any).isActive !== false &&
+          (p as any).is_active !== false &&
+          (p as any).isFormVisible !== false &&
+          (p as any).is_form_visible !== false &&
+          p.isRequired
+      );
+    } else {
+      const catIdOrSlug = draft.type.categoryId || draft.type.categorySlug;
+      let allProps: any[] = [];
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('haradan_catalog_data');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed && Array.isArray(parsed.categoryProperties)) {
+              allProps = parsed.categoryProperties;
+            }
           }
-        }
-      } catch {}
+        } catch {}
+      }
+      if (allProps.length === 0) {
+        allProps = ((INITIAL_CATALOG as any)?.categoryProperties || []) as any[];
+      }
+      const clean = catIdOrSlug.replace(/^cat-/, '');
+      requiredProps = allProps.filter(
+        (p) =>
+          p &&
+          p.isActive !== false &&
+          (p as any).is_active !== false &&
+          p.isFormVisible !== false &&
+          (p as any).is_form_visible !== false &&
+          p.isRequired &&
+          (p.categoryId === catIdOrSlug ||
+            p.categoryId === clean ||
+            p.categoryId === `cat-${clean}` ||
+            p.categoryId === draft.type?.categorySlug ||
+            p.categoryId === draft.type?.categoryId)
+      );
     }
-    if (allProps.length === 0) {
-      allProps = ((INITIAL_CATALOG as any)?.categoryProperties || []) as any[];
-    }
-    const clean = catIdOrSlug.replace(/^cat-/, '');
-    const requiredProps = allProps.filter(
-      (p) =>
-        p &&
-        p.isActive !== false &&
-        p.isFormVisible !== false &&
-        p.isRequired &&
-        (p.categoryId === catIdOrSlug ||
-          p.categoryId === clean ||
-          p.categoryId === `cat-${clean}` ||
-          p.categoryId === draft.type?.categorySlug ||
-          p.categoryId === draft.type?.categoryId)
-    );
 
     const CORE_CODES = new Set([
       'TITLE',
@@ -197,13 +217,23 @@ export function detailsErrors(draft: ListingDraft): ListingFieldErrors {
 
     function findPropertyValue(properties: Record<string, unknown> | undefined, propCode: string): unknown {
       if (!properties) return undefined;
-      if (properties[propCode] !== undefined && properties[propCode] !== '') {
+      if (properties[propCode] !== undefined && properties[propCode] !== null && String(properties[propCode]).trim() !== '') {
         return properties[propCode];
+      }
+      const propCodeUpper = propCode.toUpperCase();
+      if (properties[propCodeUpper] !== undefined && properties[propCodeUpper] !== null && String(properties[propCodeUpper]).trim() !== '') {
+        return properties[propCodeUpper];
+      }
+      const propCodeLower = propCode.toLowerCase();
+      if (properties[propCodeLower] !== undefined && properties[propCodeLower] !== null && String(properties[propCodeLower]).trim() !== '') {
+        return properties[propCodeLower];
       }
       const normTarget = propCode.replace(/[-_]/g, '').toLowerCase();
       for (const [k, v] of Object.entries(properties)) {
-        if (k.replace(/[-_]/g, '').toLowerCase() === normTarget && v !== undefined && v !== '') {
-          return v;
+        if (v !== undefined && v !== null && String(v).trim() !== '') {
+          if (k.replace(/[-_]/g, '').toLowerCase() === normTarget) {
+            return v;
+          }
         }
       }
       return undefined;
@@ -234,7 +264,7 @@ export function detailsErrors(draft: ListingDraft): ListingFieldErrors {
         else if (norm === 'studsire') val = d.studSire;
         else if (norm === 'studdam') val = d.studDam;
         else if (norm === 'studdamsire') val = d.studDamsire;
-        else if (norm === 'servicetype') val = (d as any).serviceType;
+        else if (norm === 'servicetype' || norm === 'service_type') val = (d as any).serviceType;
       }
       if (val === undefined || val === null || val === '' || String(val).trim() === '') {
         if (!e[code]) {
@@ -247,8 +277,11 @@ export function detailsErrors(draft: ListingDraft): ListingFieldErrors {
   return e;
 }
 
-export function detailsStepComplete(draft: ListingDraft): boolean {
-  return Object.keys(detailsErrors(draft)).length === 0;
+export function detailsStepComplete(
+  draft: ListingDraft,
+  categoryProperties?: CategoryPropertyPublic[]
+): boolean {
+  return Object.keys(detailsErrors(draft, categoryProperties)).length === 0;
 }
 
 export function packageStepComplete(draft: ListingDraft): boolean {
@@ -258,26 +291,27 @@ export function packageStepComplete(draft: ListingDraft): boolean {
 
 export function canEnterStep(
   draft: ListingDraft,
-  target: ListingWizardStep
+  target: ListingWizardStep,
+  categoryProperties?: CategoryPropertyPublic[]
 ): boolean {
   if (target === 'type') return true;
   if (target === 'details') return typeStepComplete(draft);
   if (target === 'package') {
     if (!isListingPackageStepEnabled()) return false;
-    return typeStepComplete(draft) && detailsStepComplete(draft);
+    return typeStepComplete(draft) && detailsStepComplete(draft, categoryProperties);
   }
   if (target === 'payment') {
     if (!isPaytrCheckoutEnabled()) return false;
     return (
       typeStepComplete(draft) &&
-      detailsStepComplete(draft) &&
+      detailsStepComplete(draft, categoryProperties) &&
       packageStepComplete(draft)
     );
   }
   if (target === 'review') {
     return (
       typeStepComplete(draft) &&
-      detailsStepComplete(draft) &&
+      detailsStepComplete(draft, categoryProperties) &&
       packageStepComplete(draft)
     );
   }

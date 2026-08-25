@@ -107,7 +107,7 @@ export class HttpCatalogRepository implements ICatalogRepository {
           { method: 'GET' }
         );
 
-        if (res && Array.isArray(res.properties) && res.properties.length > 0) {
+        if (res && Array.isArray(res.properties)) {
           const response: CategoryFormDefinitionResponse = {
             categoryId: res.categoryId || resolvedUUID,
             slug: res.slug || targetSlug,

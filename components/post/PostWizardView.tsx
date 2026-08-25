@@ -15,7 +15,6 @@ import { useAuthSession } from '@/hooks/useAuthSession';
 import { getValidAccessToken } from '@/services/auth';
 import {
   detailsErrors,
-  detailsStepComplete,
   isListingPackageStepEnabled,
   isPaytrCheckoutEnabled,
 } from '@/services/listing';
@@ -23,12 +22,14 @@ import { parseInternationalPhone } from '@/services/phone';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import type { CategoryPropertyPublic } from '@/types';
 import type { ListingWizardStep } from '@/types/listing';
 
 export function PostWizardView() {
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
   const [scrollTrigger, setScrollTrigger] = useState(0);
+  const [loadedCategoryProperties, setLoadedCategoryProperties] = useState<CategoryPropertyPublic[]>([]);
   const { session, isLoggedIn } = useAuthSession();
   const { categoryTree, error: catalogError, loading: catalogLoading } = useCatalogFacets();
   const { packages, error: packageError } = useListingPackages();
@@ -100,7 +101,11 @@ export function PostWizardView() {
   const onNext = useCallback(async () => {
     setSubmitError(null);
     if (wizard.step === 'details') {
-      const errs = detailsErrors(wizard.draft);
+      const activeProps = wizard.categoryProperties ?? (loadedCategoryProperties.length > 0 ? loadedCategoryProperties : undefined);
+      const errs = detailsErrors(
+        wizard.draft,
+        activeProps
+      );
       if (Object.keys(errs).length > 0) {
         const firstError = Object.values(errs)[0];
         setSubmitError(`Lütfen zorunlu alanları doldurunuz: ${firstError}`);
@@ -125,7 +130,7 @@ export function PostWizardView() {
       return;
     }
     wizard.goNext();
-  }, [wizard, packageStepEnabled, submitListing]);
+  }, [wizard, packageStepEnabled, submitListing, loadedCategoryProperties]);
 
   const nextLabel =
     wizard.step === 'details' && !packageStepEnabled
@@ -183,6 +188,7 @@ export function PostWizardView() {
             onApplyTjk={wizard.applyTjk}
             onSkipTjk={wizard.skipTjk}
             onMarkTjkSeen={wizard.markTjkPromptSeen}
+            onCategoryPropertiesLoaded={setLoadedCategoryProperties}
           />
         </View>
       ) : null}

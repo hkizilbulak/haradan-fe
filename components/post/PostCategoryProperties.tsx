@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -12,13 +12,14 @@ import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { CategoryPropertyPublic } from '@/types';
 import type { ListingDraft, ListingDraftDetails } from '@/types/listing';
-import type { ListingFieldErrors } from '@/services/listing';
+import { setListingWizardState, type ListingFieldErrors } from '@/services/listing';
 
 type PostCategoryPropertiesProps = {
   draft: ListingDraft;
   onUpdate: (partial: Partial<ListingDraftDetails>) => void;
   errors?: ListingFieldErrors;
   onLayoutSection?: (key: string, y: number) => void;
+  onPropertiesLoaded?: (props: CategoryPropertyPublic[]) => void;
 };
 
 type ToggleItemProps = {
@@ -74,6 +75,7 @@ export function PostCategoryProperties({
   onUpdate,
   errors = {},
   onLayoutSection,
+  onPropertiesLoaded,
 }: PostCategoryPropertiesProps) {
   const text = useThemeColor('text');
   const secondary = useThemeColor('textSecondary');
@@ -86,11 +88,14 @@ export function PostCategoryProperties({
   const type = draft.type;
 
   const [categoryProperties, setCategoryProperties] = useState<CategoryPropertyPublic[]>([]);
+  const onPropertiesLoadedRef = useRef(onPropertiesLoaded);
+  onPropertiesLoadedRef.current = onPropertiesLoaded;
 
   useEffect(() => {
     const catId = type?.categoryId || type?.categorySlug;
     if (!catId) {
       setCategoryProperties([]);
+      onPropertiesLoadedRef.current?.([]);
       return;
     }
     let cancelled = false;
@@ -104,13 +109,22 @@ export function PostCategoryProperties({
         .then((def) => {
           if (cancelled) return;
           if (def && Array.isArray(def.properties)) {
-            setCategoryProperties(def.properties.filter((p: any) => p.isActive !== false));
+            const filtered = def.properties.filter((p: any) => p.isActive !== false);
+            setCategoryProperties(filtered);
+            setListingWizardState({ categoryProperties: filtered });
+            onPropertiesLoadedRef.current?.(filtered);
           } else {
             setCategoryProperties([]);
+            setListingWizardState({ categoryProperties: [] });
+            onPropertiesLoadedRef.current?.([]);
           }
         })
         .catch(() => {
-          if (!cancelled) setCategoryProperties([]);
+          if (!cancelled) {
+            setCategoryProperties([]);
+            setListingWizardState({ categoryProperties: [] });
+            onPropertiesLoadedRef.current?.([]);
+          }
         });
     };
 
@@ -132,11 +146,16 @@ export function PostCategoryProperties({
 
   const handlePropertyChange = (code: string, value: unknown) => {
     const currentProps = { ...(d.properties || {}) };
-    currentProps[code] = value;
+    if (value === undefined || value === null || value === '') {
+      delete currentProps[code];
+    } else {
+      currentProps[code] = value;
+    }
+    // Clean up any potential duplicate casing keys
     const codeUpper = code.toUpperCase();
     const codeLower = code.toLowerCase();
-    currentProps[codeUpper] = value;
-    currentProps[codeLower] = value;
+    if (codeUpper !== code) delete currentProps[codeUpper];
+    if (codeLower !== code) delete currentProps[codeLower];
 
     const partialUpdate: Partial<ListingDraftDetails> = {
       properties: currentProps,
@@ -179,6 +198,8 @@ export function PostCategoryProperties({
       partialUpdate.studDam = String(value ?? '');
     } else if (code === 'studDamsire') {
       partialUpdate.studDamsire = String(value ?? '');
+    } else if (code === 'serviceType' || code === 'service_type' || codeUpper === 'SERVICE_TYPE') {
+      (partialUpdate as any).serviceType = String(value ?? '');
     }
 
     onUpdate(partialUpdate);
@@ -283,12 +304,15 @@ export function PostCategoryProperties({
                   return (
                     <Pressable
                       key={optVal}
-                      onPress={() =>
+                      onPress={() => {
+                        if (on && prop.isRequired) {
+                          return;
+                        }
                         handlePropertyChange(
                           prop.code,
                           on ? undefined : opt.value || optVal
-                        )
-                      }
+                        );
+                      }}
                       style={[
                         styles.chip,
                         {

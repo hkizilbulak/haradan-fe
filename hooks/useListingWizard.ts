@@ -91,6 +91,7 @@ export function useListingWizard(deps: Deps = {}) {
 
   const {
     draft,
+    categoryProperties,
     step,
     typePhase,
     selectedRootSlug,
@@ -102,8 +103,8 @@ export function useListingWizard(deps: Deps = {}) {
     paytrIframeUrl,
   } = state;
   const fieldErrors = useMemo(
-    () => (detailsAttempted ? detailsErrors(draft) : {}),
-    [draft, detailsAttempted]
+    () => (detailsAttempted ? detailsErrors(draft, categoryProperties || undefined) : {}),
+    [draft, detailsAttempted, categoryProperties]
   );
 
   const canNext = useMemo(() => {
@@ -130,7 +131,7 @@ export function useListingWizard(deps: Deps = {}) {
 
   const setStep = useCallback((next: ListingWizardStep) => {
     setListingWizardState((prev) => {
-      if (!canEnterStep(prev.draft, next)) return prev;
+      if (!canEnterStep(prev.draft, next, prev.categoryProperties || undefined)) return prev;
       return { ...prev, step: next };
     });
   }, []);
@@ -293,7 +294,7 @@ export function useListingWizard(deps: Deps = {}) {
         return { ...prev, step: 'details', detailsAttempted: false, tjkPromptSeen: false };
       }
       if (prev.step === 'details') {
-        if (!detailsStepComplete(prev.draft)) {
+        if (!detailsStepComplete(prev.draft, prev.categoryProperties || undefined)) {
           return { ...prev, detailsAttempted: true };
         }
         if (!isListingPackageStepEnabled()) {
@@ -304,7 +305,7 @@ export function useListingWizard(deps: Deps = {}) {
       const steps = wizardSteps();
       const idx = steps.indexOf(prev.step);
       const next = steps[idx + 1];
-      if (!next || !canEnterStep(prev.draft, next)) return prev;
+      if (!next || !canEnterStep(prev.draft, next, prev.categoryProperties || undefined)) return prev;
       return { ...prev, step: next };
     });
   }, []);
@@ -425,6 +426,7 @@ export function useListingWizard(deps: Deps = {}) {
 
   return {
     draft,
+    categoryProperties,
     step,
     typePhase,
     selectedRootSlug,

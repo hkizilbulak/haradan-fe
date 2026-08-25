@@ -16,20 +16,13 @@ import {
   isTransportListing,
 } from '@/services/listing';
 import { getAddressFieldConfig } from '@/services/catalog/addressConfig';
-import {
-  COAT_COLOR_OPTIONS,
-  HORSE_AGE_OPTIONS,
-  HORSE_BREED_OPTIONS,
-} from '@/components/listings/filterConfig';
 import { PostCategoryProperties } from './PostCategoryProperties';
 import type { ListingFieldErrors } from '@/services/listing';
-import type { HorseGender } from '@/types';
+import type { CategoryPropertyPublic } from '@/types';
 import type { ListingDraft, ListingMediaSlot } from '@/types/listing';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
-
-const GENDERS: HorseGender[] = ['Erkek', 'Dişi', 'İğdiş'];
 
 const FIELD_ORDER: (keyof ListingFieldErrors)[] = [
   'title',
@@ -59,6 +52,7 @@ type PostDetailsStepProps = {
   onApplyTjk: (horseId: string) => void;
   onSkipTjk: () => void;
   onMarkTjkSeen: () => void;
+  onCategoryPropertiesLoaded?: (props: CategoryPropertyPublic[]) => void;
 };
 
 export function PostDetailsStep({
@@ -76,6 +70,7 @@ export function PostDetailsStep({
   onApplyTjk,
   onSkipTjk,
   onMarkTjkSeen,
+  onCategoryPropertiesLoaded,
 }: PostDetailsStepProps) {
   const text = useThemeColor('text');
   const secondary = useThemeColor('textSecondary');
@@ -498,6 +493,7 @@ export function PostDetailsStep({
         draft={draft}
         onUpdate={onUpdate}
         errors={errors}
+        onPropertiesLoaded={onCategoryPropertiesLoaded}
         onLayoutSection={(_section, y) => {
           fieldYMap.current.categoryProperties = y;
         }}
