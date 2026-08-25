@@ -18,6 +18,15 @@ import {
   PERIOD_OPTIONS,
   periodLabel,
   isPansiyonCategory,
+  isHorseCategory,
+  isStudCategory,
+  PANSIYON_FACILITY_OPTIONS,
+  HORSE_BREED_OPTIONS,
+  HORSE_AGE_OPTIONS,
+  HORSE_GENDER_OPTIONS,
+  STUD_BREED_OPTIONS,
+  STUD_AGE_OPTIONS,
+  COAT_COLOR_OPTIONS,
   type ListingPeriodFilter,
   type PansiyonFacilityKey,
 } from '@/components/listings/filterConfig';
@@ -266,46 +275,23 @@ export const EMPTY_LISTINGS_FILTERS: ListingsFiltersState = {
 };
 
 function isBreedProperty(p: CategoryPropertyPublic): boolean {
-  const c = (p.code || p.title || '').toLocaleLowerCase('tr');
-  return (
-    c.includes('irk') ||
-    c.includes('ırk') ||
-    c.includes('breed') ||
-    c === 'horse_breed' ||
-    c === 'stallion_breed'
-  );
+  const c = (p.code || p.title || '').toUpperCase();
+  return c === 'HORSE_BREED' || c === 'STALLION_BREED' || c === 'BREED' || c === 'IRK' || c === 'AT IRKI';
 }
 
 function isColorProperty(p: CategoryPropertyPublic): boolean {
-  const c = (p.code || p.title || '').toLocaleLowerCase('tr');
-  return (
-    c.includes('don') ||
-    c.includes('renk') ||
-    c.includes('color') ||
-    c === 'coat_color' ||
-    c === 'coat'
-  );
+  const c = (p.code || p.title || '').toUpperCase();
+  return c === 'COAT_COLOR' || c === 'COAT' || c === 'COLOR' || c === 'DON' || c === 'RENK' || c === 'DON (RENK)' || c === 'DONU (RENK)';
 }
 
 function isAgeProperty(p: CategoryPropertyPublic): boolean {
-  const c = (p.code || p.title || '').toLocaleLowerCase('tr');
-  return (
-    c.includes('yaş') ||
-    c.includes('yas') ||
-    c.includes('age') ||
-    c === 'horse_age' ||
-    c === 'stallion_age'
-  );
+  const c = (p.code || p.title || '').toUpperCase();
+  return c === 'HORSE_AGE' || c === 'STALLION_AGE' || c === 'AGE' || c === 'YAS' || c === 'YAŞ' || c === 'AT YASI' || c === 'AT YAŞI';
 }
 
 function isGenderProperty(p: CategoryPropertyPublic): boolean {
-  const c = (p.code || p.title || '').toLocaleLowerCase('tr');
-  return (
-    c.includes('cinsiyet') ||
-    c.includes('gender') ||
-    c.includes('sex') ||
-    c === 'horse_gender'
-  );
+  const c = (p.code || p.title || '').toUpperCase();
+  return c === 'HORSE_GENDER' || c === 'GENDER' || c === 'SEX' || c === 'CINSIYET' || c === 'CİNSİYET' || c === 'CINSIYETI' || c === 'CİNSİYETİ';
 }
 
 /** Sol filtre — kapalı akordeon; detay basınca açılır. */
@@ -509,6 +495,14 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         (!p.options || p.options.length === 0)
     );
   }, [activeCategoryProperties]);
+
+  const isHorseActive = isHorseCategory(value.categorySlug);
+  const isStudActive = isStudCategory(value.categorySlug);
+
+  const hasBreedProp = selectProps.some(isBreedProperty);
+  const hasColorProp = selectProps.some(isColorProperty);
+  const hasAgeProp = selectProps.some(isAgeProperty);
+  const hasGenderProp = selectProps.some(isGenderProperty);
 
   const hasActive =
     value.categorySlug != null ||
@@ -966,12 +960,12 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         >
           {booleanProps.map((fac) => {
             const propKey = fac.code || fac.title;
+            const featKey = `${fac.code || propKey}:true`;
             const on = Boolean(
-              value.facilities?.[fac.code as PansiyonFacilityKey] ??
-              value.facilities?.[propKey as PansiyonFacilityKey] ??
-              (value.features ?? []).includes(propKey) ??
-              (value.features ?? []).includes(fac.code) ??
-              (value.features ?? []).includes(`${propKey}:true`) ??
+              (value.features ?? []).includes(featKey) ||
+              (value.features ?? []).includes(propKey) ||
+              (value.features ?? []).includes(fac.code) ||
+              (value.features ?? []).includes(`${propKey}:true`) ||
               (value.features ?? []).includes(`${fac.code}:true`)
             );
 
@@ -979,23 +973,19 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
               <Pressable
                 key={propKey}
                 onPress={() => {
-                  const nextFacilities = {
-                    ...value.facilities,
-                    [fac.code as PansiyonFacilityKey]: !on,
-                  };
                   const currFeatures = value.features ?? [];
                   const nextFeatures = on
                     ? currFeatures.filter(
                         (f) =>
+                          f !== featKey &&
                           f !== propKey &&
                           f !== fac.code &&
                           f !== `${propKey}:true` &&
                           f !== `${fac.code}:true`
                       )
-                    : [...currFeatures, propKey];
+                    : [...currFeatures, featKey];
                   onChange({
                     ...value,
-                    facilities: nextFacilities,
                     features: nextFeatures,
                   });
                 }}
@@ -1035,6 +1025,195 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         </Accordion>
       ) : null}
 
+      {/* Pansiyon Standart Fallback */}
+      {isPansiyonActive && booleanProps.length === 0 ? (
+        <Accordion
+          title="Tesis ve Hizmetler"
+          open={openGroups.facilities ?? true}
+          onToggle={() => toggleGroup('facilities')}
+          hint={facilityHint}
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        >
+          {PANSIYON_FACILITY_OPTIONS.map((fac) => {
+            const on = Boolean(value.facilities?.[fac.key]);
+            return (
+              <Pressable
+                key={fac.key}
+                onPress={() => {
+                  onChange({
+                    ...value,
+                    facilities: {
+                      ...value.facilities,
+                      [fac.key]: !on,
+                    },
+                  });
+                }}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: on }}
+                style={({ pressed }) => [
+                  styles.toggleRow,
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.rowText,
+                    {
+                      color: on ? text : textSecondary,
+                      fontWeight: on ? '600' : '400',
+                      flex: 1,
+                    },
+                  ]}
+                >
+                  {fac.label}
+                </Text>
+                <View
+                  style={[
+                    styles.switch,
+                    {
+                      backgroundColor: on ? header : border,
+                      justifyContent: on ? 'flex-end' : 'flex-start',
+                    },
+                  ]}
+                >
+                  <View style={styles.switchKnob} />
+                </View>
+              </Pressable>
+            );
+          })}
+        </Accordion>
+      ) : null}
+
+      {/* Standart At Irkı Fallback (BO'da tanımlı değilse) */}
+      {(isHorseActive || isStudActive) && !hasBreedProp ? (
+        <Accordion
+          title="Irk"
+          open={!!openGroups['horse-breeds']}
+          onToggle={() => toggleGroup('horse-breeds')}
+          hint={value.breeds && value.breeds.length > 0 ? `${value.breeds.length} seçili` : null}
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        >
+          {(isStudActive ? STUD_BREED_OPTIONS : HORSE_BREED_OPTIONS).map((b) => {
+            const active = (value.breeds ?? []).includes(b);
+            return (
+              <FilterRow
+                key={b}
+                label={b}
+                multi
+                selected={active}
+                onSelect={() => {
+                  const next = active
+                    ? (value.breeds ?? []).filter((item) => item !== b)
+                    : [...(value.breeds ?? []), b];
+                  onChange({ ...value, breeds: next });
+                }}
+                {...rowTheme}
+              />
+            );
+          })}
+        </Accordion>
+      ) : null}
+
+      {/* Standart At Yaşı Fallback (BO'da tanımlı değilse) */}
+      {(isHorseActive || isStudActive) && !hasAgeProp ? (
+        <Accordion
+          title="Yaş"
+          open={!!openGroups['horse-ages']}
+          onToggle={() => toggleGroup('horse-ages')}
+          hint={value.ages && value.ages.length > 0 ? `${value.ages.length} seçili` : null}
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        >
+          {(isStudActive ? STUD_AGE_OPTIONS : HORSE_AGE_OPTIONS).map((a) => {
+            const active = (value.ages ?? []).includes(a);
+            return (
+              <FilterRow
+                key={a}
+                label={a}
+                multi
+                selected={active}
+                onSelect={() => {
+                  const next = active
+                    ? (value.ages ?? []).filter((item) => item !== a)
+                    : [...(value.ages ?? []), a];
+                  onChange({ ...value, ages: next });
+                }}
+                {...rowTheme}
+              />
+            );
+          })}
+        </Accordion>
+      ) : null}
+
+      {/* Standart Don / Renk Fallback (BO'da tanımlı değilse) */}
+      {(isHorseActive || isStudActive) && !hasColorProp ? (
+        <Accordion
+          title="Don (Renk)"
+          open={!!openGroups['horse-colors']}
+          onToggle={() => toggleGroup('horse-colors')}
+          hint={value.colors && value.colors.length > 0 ? `${value.colors.length} seçili` : null}
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        >
+          {COAT_COLOR_OPTIONS.map((c) => {
+            const active = (value.colors ?? []).includes(c);
+            return (
+              <FilterRow
+                key={c}
+                label={c}
+                multi
+                selected={active}
+                onSelect={() => {
+                  const next = active
+                    ? (value.colors ?? []).filter((item) => item !== c)
+                    : [...(value.colors ?? []), c];
+                  onChange({ ...value, colors: next });
+                }}
+                {...rowTheme}
+              />
+            );
+          })}
+        </Accordion>
+      ) : null}
+
+      {/* Standart Cinsiyet Fallback (BO'da tanımlı değilse) */}
+      {isHorseActive && !isStudActive && !hasGenderProp ? (
+        <Accordion
+          title="Cinsiyet"
+          open={!!openGroups['horse-genders']}
+          onToggle={() => toggleGroup('horse-genders')}
+          hint={value.genders && value.genders.length > 0 ? `${value.genders.length} seçili` : null}
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        >
+          {HORSE_GENDER_OPTIONS.map((g) => {
+            const active = (value.genders ?? []).includes(g);
+            return (
+              <FilterRow
+                key={g}
+                label={g}
+                multi
+                selected={active}
+                onSelect={() => {
+                  const next = active
+                    ? (value.genders ?? []).filter((item) => item !== g)
+                    : [...(value.genders ?? []), g];
+                  onChange({ ...value, genders: next });
+                }}
+                {...rowTheme}
+              />
+            );
+          })}
+        </Accordion>
+      ) : null}
+
       {/* Seçenekli Alanlar (SINGLE_SELECT / Çoklu Seçim Checkbox Filtreleri) */}
       {selectProps.map((prop) => {
         const propKey = prop.code || prop.title;
@@ -1057,14 +1236,13 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
             return (value.genders ?? []).some((g) => g === optVal || (optLabel && g === optLabel));
           }
 
-          return (value.features ?? []).some(
-            (f) =>
-              f === optVal ||
-              (optLabel && f === optLabel) ||
-              f === `${prop.code}:${optVal}` ||
-              f === `${propKey}:${optVal}` ||
-              (optLabel && f === `${prop.code}:${optLabel}`)
-          );
+          const vFeatures = value.features ?? [];
+          return vFeatures.some((f) => {
+            if (f === optVal || (optLabel && f === optLabel)) return true;
+            if (f === `${prop.code}:${optVal}` || f === `${propKey}:${optVal}`) return true;
+            if (optLabel && (f === `${prop.code}:${optLabel}` || f === `${propKey}:${optLabel}`)) return true;
+            return false;
+          });
         };
 
         const handleOptionToggle = (optVal: string, optLabel?: string) => {
@@ -1102,7 +1280,8 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
                   (!optLabel || f !== optLabel) &&
                   f !== `${propKey}:${optVal}` &&
                   f !== `${prop.code}:${optVal}` &&
-                  (!optLabel || f !== `${prop.code}:${optLabel}`)
+                  (!optLabel || f !== `${prop.code}:${optLabel}`) &&
+                  (!optLabel || f !== `${propKey}:${optLabel}`)
               );
             } else {
               nextFeatures = [...nextFeatures, featKey];
