@@ -15,6 +15,11 @@ import {
   isStudServiceListing,
   isTransportListing,
 } from '@/services/listing';
+import {
+  COAT_COLOR_OPTIONS,
+  HORSE_AGE_OPTIONS,
+  HORSE_BREED_OPTIONS,
+} from '@/components/listings/filterConfig';
 import { PostCategoryProperties } from './PostCategoryProperties';
 import type { ListingFieldErrors } from '@/services/listing';
 import type { HorseGender } from '@/types';
@@ -378,7 +383,7 @@ export function PostDetailsStep({
             ['registeredName', 'gender'].forEach((k) => updateFieldY(k));
           }}
         >
-          <Text style={[styles.section, { color: text }]}>At</Text>
+          <Text style={[styles.section, { color: text }]}>At Kimlik ve Soy Ağacı</Text>
           <View onLayout={(e) => updateFieldY('registeredName', e.nativeEvent.layout.y)}>
             <PostField
               label="Kayıtlı adı"
@@ -390,45 +395,7 @@ export function PostDetailsStep({
               error={errors.registeredName}
             />
           </View>
-          <View
-            style={styles.fieldBlock}
-            onLayout={(e) => updateFieldY('gender', e.nativeEvent.layout.y)}
-          >
-            <Text style={[styles.fieldLabel, { color: secondary }]}>
-              Cinsiyet
-              <Text style={{ color: errorColor }}> *</Text>
-            </Text>
-            <View style={styles.chips}>
-              {GENDERS.map((g) => {
-                const on = d.gender === g;
-                return (
-                  <Pressable
-                    key={g}
-                    // When user selects an At (horse), other horse-derived fields
-                    // are locked. Gender is allowed to be changed from the form
-                    // because our edit flow expects users to correct/override it.
-                    disabled={false}
-                    onPress={() => onUpdate({ gender: g })}
-                    style={[
-                      styles.chip,
-                      {
-                        borderColor: on ? header : border,
-                        backgroundColor: on ? header : 'transparent',
-                        opacity: 1,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.chipLabel, { color: on ? '#fff' : text }]}>
-                      {g}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            {errors.gender ? (
-              <Text style={[styles.err, { color: errorColor }]}>{errors.gender}</Text>
-            ) : null}
-          </View>
+
           <View style={styles.row}>
             <View style={styles.flex}>
               <PostField
@@ -436,26 +403,6 @@ export function PostDetailsStep({
                 value={d.birthDate}
                 onChangeText={(birthDate) => onUpdate({ birthDate })}
                 placeholder="YYYY-AA-GG"
-                locked={locked}
-              />
-            </View>
-            <View style={styles.flex}>
-              <PostField
-                label="Yaş"
-                value={d.age}
-                onChangeText={(age) => onUpdate({ age })}
-                keyboardType="number-pad"
-                locked={locked}
-              />
-            </View>
-          </View>
-          <View style={styles.row}>
-            <View style={styles.flex}>
-              <PostField
-                label="Don"
-                value={d.coatColor}
-                onChangeText={(coatColor) => onUpdate({ coatColor })}
-                placeholder="Doru, al, gri…"
                 locked={locked}
               />
             </View>
@@ -470,23 +417,27 @@ export function PostDetailsStep({
               />
             </View>
           </View>
+
           <PostField
-            label="Baba"
+            label="Baba (Sire)"
             value={d.sire}
             onChangeText={(sire) => onUpdate({ sire })}
             locked={locked}
+            placeholder="Örn: SEA THE STARS"
           />
           <PostField
-            label="Anne"
+            label="Anne (Dam)"
             value={d.dam}
             onChangeText={(dam) => onUpdate({ dam })}
             locked={locked}
+            placeholder="Örn: GALIPOLI QUEEN"
           />
           <PostField
-            label="Annenin babası"
+            label="Annenin babası (Damsire)"
             value={d.damsire}
             onChangeText={(damsire) => onUpdate({ damsire })}
             locked={locked}
+            placeholder="Örn: GALILEO"
           />
           <PostField
             label="Sahip"

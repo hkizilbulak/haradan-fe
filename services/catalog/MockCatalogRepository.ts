@@ -4,257 +4,184 @@ import type {
   CategoryPropertyPublic,
   CategoryTreeNode,
 } from '@/types';
-import { MOCK_CATEGORIES } from '@/mocks/homepage';
 import type { CatalogQueryOptions, ICatalogRepository } from './CatalogRepository';
 import { mapCategoryTreeToFacets } from './mapCategoryTreeToFacets';
-import {
-  HORSE_BREED_OPTIONS,
-  HORSE_AGE_OPTIONS,
-  HORSE_GENDER_OPTIONS,
-  COAT_COLOR_OPTIONS,
-  STUD_BREED_OPTIONS,
-  STUD_AGE_OPTIONS,
-  PANSIYON_FACILITY_OPTIONS,
-} from '@/components/listings/filterConfig';
+import CATALOG_DATA from '@/data/catalog.json';
 
-const HORSE_PROPERTIES: CategoryPropertyPublic[] = [
-  {
-    code: 'HORSE_BREED',
-    title: 'At Irkı',
-    dataType: 'SINGLE_SELECT',
-    isRequired: true,
-    isFilterable: true,
-    sortOrder: 1,
-    options: HORSE_BREED_OPTIONS.map((b) => ({ value: b, label: b })),
-  },
-  {
-    code: 'COAT_COLOR',
-    title: 'Donu (Renk)',
-    dataType: 'SINGLE_SELECT',
-    isRequired: true,
-    isFilterable: true,
-    sortOrder: 2,
-    options: COAT_COLOR_OPTIONS.map((c) => ({ value: c, label: c })),
-  },
-  {
-    code: 'HORSE_AGE',
-    title: 'Yaş',
-    dataType: 'SINGLE_SELECT',
-    isRequired: true,
-    isFilterable: true,
-    sortOrder: 3,
-    options: HORSE_AGE_OPTIONS.map((a) => ({ value: a, label: a })),
-  },
-  {
-    code: 'HORSE_GENDER',
-    title: 'Cinsiyet',
-    dataType: 'SINGLE_SELECT',
-    isRequired: true,
-    isFilterable: true,
-    sortOrder: 4,
-    options: HORSE_GENDER_OPTIONS.map((g) => ({ value: g, label: g })),
-  },
-];
+type RawCategory = {
+  id: string;
+  parentId?: string | null;
+  slug: string;
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  version: number;
+};
 
-
-const PANSIYON_PROPERTIES: CategoryPropertyPublic[] = PANSIYON_FACILITY_OPTIONS.map(
-  (fac, idx) => ({
-    code: fac.key,
-    title: fac.label,
-    dataType: 'BOOLEAN' as const,
-    isRequired: false,
-    isFilterable: true,
-    sortOrder: idx + 1,
-    options: [],
-  })
-);
-
-const STUD_PROPERTIES: CategoryPropertyPublic[] = [
-  {
-    code: 'STALLION_BREED',
-    title: 'At Irkı',
-    dataType: 'SINGLE_SELECT',
-    isRequired: true,
-    isFilterable: true,
-    sortOrder: 1,
-    options: STUD_BREED_OPTIONS.map((b) => ({ value: b, label: b })),
-  },
-  {
-    code: 'STALLION_AGE',
-    title: 'Yaş',
-    dataType: 'SINGLE_SELECT',
-    isRequired: true,
-    isFilterable: true,
-    sortOrder: 2,
-    options: STUD_AGE_OPTIONS.map((a) => ({ value: a, label: a })),
-  },
-  {
-    code: 'COAT_COLOR',
-    title: 'Donu (Renk)',
-    dataType: 'SINGLE_SELECT',
-    isRequired: true,
-    isFilterable: true,
-    sortOrder: 3,
-    options: COAT_COLOR_OPTIONS.map((c) => ({ value: c, label: c })),
-  },
-];
+type RawProperty = {
+  id: string;
+  categoryId: string;
+  code: string;
+  title: string;
+  helpText?: string | null;
+  dataType: string;
+  isRequired: boolean;
+  isPublicVisible: boolean;
+  isFormVisible: boolean;
+  isFilterable: boolean;
+  sortOrder: number;
+  isActive: boolean;
+  version: number;
+  options: Array<{ value: string; label: string }>;
+  validation?: Record<string, unknown>;
+  defaultValue?: unknown;
+  uiMetadata?: Record<string, unknown>;
+};
 
 export class MockCatalogRepository implements ICatalogRepository {
+  private categories: RawCategory[];
+  private properties: RawProperty[];
+  private cachedTree: CategoryTreeNode[] | null = null;
+  private cachedFacets: CatalogFacets | null = null;
+
+  constructor() {
+    this.categories = (CATALOG_DATA.categories || []) as RawCategory[];
+    this.properties = (CATALOG_DATA.categoryProperties || []) as RawProperty[];
+  }
+
   getCachedFacets(): CatalogFacets | null {
-    return null;
+    return this.cachedFacets;
   }
 
   getCachedCategoryTree(): CategoryTreeNode[] | null {
-    return null;
+    return this.cachedTree;
   }
 
-  invalidate(): void {}
-
-  async getCategoryTree(): Promise<CategoryTreeNode[]> {
-    return MOCK_CATEGORIES;
+  invalidate(): void {
+    this.cachedTree = null;
+    this.cachedFacets = null;
   }
 
-  async getFacets(): Promise<CatalogFacets> {
-    const tree = await this.getCategoryTree();
-    return mapCategoryTreeToFacets(tree);
+  private resolveCategory(idOrSlug: string): RawCategory | undefined {
+    if (!idOrSlug) return undefined;
+    const clean = idOrSlug.replace(/^cat-/, '');
+    return this.categories.find(
+      (c) =>
+        c.id === idOrSlug ||
+        c.slug === idOrSlug ||
+        c.slug === clean ||
+        c.id === `cat-${clean}`
+    );
+  }
+
+  async getCategoryTree(options?: CatalogQueryOptions): Promise<CategoryTreeNode[]> {
+    if (this.cachedTree && !options?.fresh) {
+      return this.cachedTree;
+    }
+
+    const activeCategories = this.categories.filter((c) => c.isActive);
+    const nodeMap = new Map<string, CategoryTreeNode>();
+    const roots: CategoryTreeNode[] = [];
+
+    activeCategories.forEach((cat) => {
+      nodeMap.set(cat.id, {
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        children: [],
+      });
+    });
+
+    activeCategories.forEach((cat) => {
+      const node = nodeMap.get(cat.id);
+      if (!node) return;
+
+      if (cat.parentId) {
+        const parent = nodeMap.get(cat.parentId);
+        if (parent) {
+          parent.children.push(node);
+          return;
+        }
+      }
+      roots.push(node);
+    });
+
+    const sortNodes = (nodes: CategoryTreeNode[]) => {
+      nodes.sort((a, b) => {
+        const catA = this.categories.find((c) => c.id === a.id);
+        const catB = this.categories.find((c) => c.id === b.id);
+        const orderA = catA?.sortOrder ?? 0;
+        const orderB = catB?.sortOrder ?? 0;
+        return orderA - orderB || a.name.localeCompare(b.name, 'tr');
+      });
+      nodes.forEach((n) => sortNodes(n.children));
+    };
+
+    sortNodes(roots);
+    this.cachedTree = roots;
+    return roots;
+  }
+
+  async getFacets(options?: CatalogQueryOptions): Promise<CatalogFacets> {
+    if (this.cachedFacets && !options?.fresh) {
+      return this.cachedFacets;
+    }
+    const tree = await this.getCategoryTree(options);
+    this.cachedFacets = mapCategoryTreeToFacets(tree);
+    return this.cachedFacets;
   }
 
   async getCategoryFormDefinition(
     categoryId: string,
     options?: CatalogQueryOptions & { categorySlug?: string }
   ): Promise<CategoryFormDefinitionResponse | null> {
-    if (!categoryId && !options?.categorySlug) return null;
+    const targetKey = categoryId || options?.categorySlug;
+    if (!targetKey) return null;
 
-    const targetId = categoryId || options?.categorySlug || '';
-    const targetSlug = options?.categorySlug || categoryId || '';
+    const cat = this.resolveCategory(targetKey);
+    if (!cat) return null;
 
-    // 1. Check browser localStorage for real-time changes from BO
-    if (typeof window !== 'undefined') {
-      try {
-        const candidateKeys = [
-          targetId,
-          targetSlug,
-          `cat-${targetId}`,
-          `cat-${targetSlug}`,
-          targetId.replace(/^cat-/, ''),
-          targetSlug.replace(/^cat-/, ''),
-        ];
+    // Get direct properties
+    let props = this.properties.filter(
+      (p) =>
+        p.isActive &&
+        (p.categoryId === cat.id || p.categoryId === cat.slug)
+    );
 
-        // Include parent category keys if this is a child category (e.g. Satılık Yarış Atı -> Satılık Atlar)
-        const tSlug = targetSlug.toLowerCase();
-        if (
-          tSlug.includes('yaris') ||
-          tSlug.includes('kisrak') ||
-          tSlug.includes('aygir') ||
-          tSlug.includes('binek') ||
-          tSlug.includes('pony') ||
-          tSlug.includes('satilik')
-        ) {
-          candidateKeys.push('satilik-atlar', 'cat-satilik-atlar');
-        } else if (tSlug.includes('pansiyon') || tSlug.includes('nakliye') || tSlug.includes('nalbant')) {
-          candidateKeys.push('at-hizmetleri', 'cat-at-hizmetleri');
-        } else if (tSlug.includes('asim') || tSlug.includes('arap') || tSlug.includes('ingiliz')) {
-          candidateKeys.push('asim-hizmetleri', 'cat-asim-hizmetleri');
-        }
-
-        for (const k of candidateKeys) {
-          if (!k) continue;
-          const stored = localStorage.getItem(`haradan_category_properties_${k}`);
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed)) {
-              const activeProps: CategoryPropertyPublic[] = parsed
-                .filter(
-                  (p: any) =>
-                    p.isActive !== false &&
-                    p.is_active !== false &&
-                    p.active !== false &&
-                    p.isFilterable !== false &&
-                    p.is_filterable !== false
-                )
-                .map((p: any) => ({
-                  code: p.code || p.id,
-                  title: p.title,
-                  helpText: p.helpText,
-                  dataType: p.dataType,
-                  isRequired: Boolean(p.isRequired),
-                  isFilterable: p.isFilterable !== false,
-                  sortOrder: p.sortOrder || 1,
-                  options: p.options || [],
-                }));
-              let baseList = HORSE_PROPERTIES;
-              if (tSlug.includes('pansiyon')) baseList = PANSIYON_PROPERTIES;
-              else if (tSlug.includes('asim') || tSlug.includes('aygir') || tSlug.includes('stud')) baseList = STUD_PROPERTIES;
-
-              const existingCodes = new Set(activeProps.map((p) => (p.code || p.title).toLowerCase()));
-              for (const defProp of baseList) {
-                const defKey = (defProp.code || defProp.title).toLowerCase();
-                if (!existingCodes.has(defKey)) {
-                  activeProps.push(defProp);
-                }
-              }
-              activeProps.sort((a, b) => (a.sortOrder || 1) - (b.sortOrder || 1));
-
-              return {
-                categoryId: targetId,
-                slug: targetSlug,
-                name: targetSlug,
-                properties: activeProps,
-              };
-            }
-          }
-        }
-      } catch {}
+    // If no direct properties, inherit from parent
+    if (props.length === 0 && cat.parentId) {
+      const parent = this.resolveCategory(cat.parentId);
+      if (parent) {
+        props = this.properties.filter(
+          (p) =>
+            p.isActive &&
+            (p.categoryId === parent.id || p.categoryId === parent.slug)
+        );
+      }
     }
 
-    const cid = (categoryId || '').toLowerCase();
-    let props = HORSE_PROPERTIES;
-    let slug = 'satilik-yaris-ati';
-    let name = 'Satılık Yarış Atı';
-
-    if (cid.includes('pansiyon')) {
-      props = PANSIYON_PROPERTIES;
-      slug = 'pansiyon-haralar';
-      name = 'Pansiyon Haralar';
-    } else if (cid.includes('asim') || cid.includes('aygir') || cid.includes('stud')) {
-      props = STUD_PROPERTIES;
-      slug = cid.includes('arap') ? 'arap-aygir' : 'ingiliz-aygir';
-      name = cid.includes('arap') ? 'Arap Aygır' : 'İngiliz Aygır';
-    } else if (cid.includes('nakliye') || cid.includes('transport')) {
-      props = [
-        {
-          code: 'COMPANY_NAME',
-          title: 'Firma Adı',
-          dataType: 'STRING',
-          isRequired: true,
-          isFilterable: false,
-          sortOrder: 1,
-          options: [],
-        },
-        {
-          code: 'WEBSITE_URL',
-          title: 'Web Sitesi',
-          dataType: 'STRING',
-          isRequired: false,
-          isFilterable: false,
-          sortOrder: 2,
-          options: [],
-        },
-      ];
-      slug = 'at-nakliyesi';
-      name = 'At Nakliyesi';
-    } else if (cid.includes('nalbant') || cid.includes('farrier')) {
-      props = [];
-      slug = 'nalbantlar';
-      name = 'Nalbantlar';
-    }
+    const mappedProperties: CategoryPropertyPublic[] = props
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title, 'tr'))
+      .map((p) => ({
+        id: p.id,
+        code: p.code,
+        title: p.title,
+        helpText: p.helpText || null,
+        dataType: p.dataType as CategoryPropertyPublic['dataType'],
+        isRequired: Boolean(p.isRequired),
+        isFilterable: p.isFilterable !== false,
+        sortOrder: p.sortOrder || 1,
+        options: p.options || [],
+        defaultValue: p.defaultValue,
+        uiMetadata: p.uiMetadata,
+      }));
 
     return {
-      categoryId: categoryId || 'cat-satilik-yaris-ati',
-      slug,
-      name,
-      properties: props,
+      categoryId: cat.id,
+      slug: cat.slug,
+      name: cat.name,
+      properties: mappedProperties,
     };
   }
 }
-

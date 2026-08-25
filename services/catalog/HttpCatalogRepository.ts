@@ -8,16 +8,19 @@ import type {
 import { HttpClient } from '@/services/http';
 import type { CatalogQueryOptions, ICatalogRepository } from './CatalogRepository';
 import { mapCategoryTreeToFacets } from './mapCategoryTreeToFacets';
+import { MockCatalogRepository } from './MockCatalogRepository';
 
 /** CATALOG-01 — GET /v1/categories, CATALOG-02 — GET /v1/categories/{categoryId}/form */
 export class HttpCatalogRepository implements ICatalogRepository {
   private readonly http: HttpClient;
+  private readonly fallback: MockCatalogRepository;
   private facets: CatalogFacets | null = null;
   private tree: CategoryTreeNode[] | null = null;
   private formCache = new Map<string, CategoryFormDefinitionResponse>();
 
   constructor(baseUrl: string) {
     this.http = new HttpClient(baseUrl);
+    this.fallback = new MockCatalogRepository();
   }
 
   getCachedFacets(): CatalogFacets | null {
@@ -32,20 +35,28 @@ export class HttpCatalogRepository implements ICatalogRepository {
     this.facets = null;
     this.tree = null;
     this.formCache.clear();
+    this.fallback.invalidate();
   }
 
   async getCategoryTree(options?: CatalogQueryOptions): Promise<CategoryTreeNode[]> {
     if (this.tree && !options?.fresh) {
       return this.tree;
     }
-    const res = await this.http.request<CategoryTreeResponse>('/v1/categories', {
-      method: 'GET',
-    });
-    if (res && Array.isArray(res.items)) {
-      this.tree = res.items;
-      return this.tree;
+    try {
+      const res = await this.http.request<CategoryTreeResponse>('/v1/categories', {
+        method: 'GET',
+      });
+      if (res && Array.isArray(res.items) && res.items.length > 0) {
+        this.tree = res.items;
+        return this.tree;
+      }
+    } catch {
+      // Fallback to local JSON catalog
     }
-    return [];
+
+    const fallbackTree = await this.fallback.getCategoryTree(options);
+    this.tree = fallbackTree;
+    return fallbackTree;
   }
 
   async getCategoryFormDefinition(
@@ -86,28 +97,40 @@ export class HttpCatalogRepository implements ICatalogRepository {
       resolvedUUID = findUUID(tree);
     }
 
-    if (!resolvedUUID) {
-      return null;
+    if (resolvedUUID) {
+      try {
+        const res = await this.http.request<CategoryFormDefinitionResponse>(
+          `/v1/categories/${resolvedUUID}/form`,
+          { method: 'GET' }
+        );
+
+        if (res && Array.isArray(res.properties) && res.properties.length > 0) {
+          const response: CategoryFormDefinitionResponse = {
+            categoryId: res.categoryId || resolvedUUID,
+            slug: res.slug || targetSlug,
+            name: res.name,
+            properties: res.properties,
+          };
+          this.formCache.set(targetId, response);
+          if (targetSlug && targetSlug !== targetId) {
+            this.formCache.set(targetSlug, response);
+          }
+          this.formCache.set(resolvedUUID, response);
+          return response;
+        }
+      } catch {
+        // Fallback to local JSON catalog
+      }
     }
 
-    const res = await this.http.request<CategoryFormDefinitionResponse>(
-      `/v1/categories/${resolvedUUID}/form`,
-      { method: 'GET' }
-    );
-
-    if (res && Array.isArray(res.properties)) {
-      const response: CategoryFormDefinitionResponse = {
-        categoryId: res.categoryId || resolvedUUID,
-        slug: res.slug || targetSlug,
-        name: res.name,
-        properties: res.properties,
-      };
-      this.formCache.set(targetId, response);
+    // Use fallback
+    const fallbackDef = await this.fallback.getCategoryFormDefinition(categoryId, options);
+    if (fallbackDef) {
+      this.formCache.set(targetId, fallbackDef);
       if (targetSlug && targetSlug !== targetId) {
-        this.formCache.set(targetSlug, response);
+        this.formCache.set(targetSlug, fallbackDef);
       }
-      this.formCache.set(resolvedUUID, response);
-      return response;
+      return fallbackDef;
     }
 
     return null;
@@ -122,5 +145,3 @@ export class HttpCatalogRepository implements ICatalogRepository {
     return this.facets;
   }
 }
-
-

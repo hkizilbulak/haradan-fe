@@ -553,7 +553,33 @@ function buildDetailFromStored(id: string): AdvertDetail | null {
         { label: title },
       ],
       horse,
-      specs: buildSpecs(horse),
+      specs: (() => {
+        const baseSpecs = buildSpecs(horse);
+        const storedProps = draft?.details?.properties || card?.properties || {};
+        const customRows = Object.entries(storedProps)
+          .filter(
+            ([k, v]) =>
+              v != null &&
+              v !== '' &&
+              v !== 'null' &&
+              v !== 'undefined' &&
+              k !== 'sellerPhone' &&
+              k !== 'phone' &&
+              !k.startsWith('facility')
+          )
+          .map(([k, v]) => ({
+            label: k,
+            value: typeof v === 'boolean' ? (v ? 'Evet' : 'Hayır') : String(v),
+          }));
+        if (customRows.length > 0) {
+          baseSpecs.push({
+            id: 'custom-props',
+            title: 'Kategori ve Ek Özellikler',
+            rows: customRows,
+          });
+        }
+        return baseSpecs;
+      })(),
       shipping: [
         {
           id: 's1',

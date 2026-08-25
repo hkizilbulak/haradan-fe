@@ -345,7 +345,27 @@ export function mapOwnerToAdvertDetail(
       { label: title },
     ],
     horse,
-    specs: [],
+    specs: (() => {
+      const propRows = Object.entries(dto.properties ?? {})
+        .filter(
+          ([k, v]) =>
+            v != null &&
+            v !== '' &&
+            v !== 'null' &&
+            v !== 'undefined' &&
+            k !== 'sellerPhone' &&
+            k !== 'phone' &&
+            !k.startsWith('facility')
+        )
+        .map(([k, v]) => ({
+          label: k,
+          value: typeof v === 'boolean' ? (v ? 'Evet' : 'Hayır') : String(v),
+        }));
+      return propRows.length
+        ? [{ id: 'props', title: 'Özellikler', rows: propRows }]
+        : [];
+    })(),
   });
 }
+
 

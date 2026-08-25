@@ -73,7 +73,13 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
   if (d.studDam?.trim()) props.studDam = d.studDam.trim();
   if (d.studDamsire?.trim()) props.studDamsire = d.studDamsire.trim();
 
-  // 5. Clean up any invalid keys, nulls, or empty strings
+  // 5. Canonical mapping for Sale Horses if present on details
+  if (d.breed?.trim() && !props.HORSE_BREED) props.HORSE_BREED = d.breed.trim();
+  if (d.coatColor?.trim() && !props.COAT_COLOR) props.COAT_COLOR = d.coatColor.trim();
+  if (d.age?.trim() && !props.HORSE_AGE) props.HORSE_AGE = d.age.trim();
+  if (d.gender?.trim() && !props.HORSE_GENDER) props.HORSE_GENDER = d.gender.trim();
+
+  // 6. Clean up any invalid keys, nulls, or empty strings
   const cleaned: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(props)) {
     if (v === undefined || v === null || v === '' || v === 'undefined' || v === 'null') {

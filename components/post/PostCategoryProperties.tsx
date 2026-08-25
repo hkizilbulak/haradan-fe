@@ -6,23 +6,13 @@ import {
   View,
 } from 'react-native';
 import { PostField } from './PostField';
-import {
-  isPansiyonListing,
-  isStudServiceListing,
-  isTransportListing,
-  type ListingFieldErrors,
-} from '@/services/listing';
-import {
-  COAT_COLOR_OPTIONS,
-  STUD_AGE_OPTIONS,
-  STUD_BREED_OPTIONS,
-} from '@/components/listings/filterConfig';
 import { catalogRepository } from '@/services/catalog';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { CategoryPropertyPublic } from '@/types';
 import type { ListingDraft, ListingDraftDetails } from '@/types/listing';
+import type { ListingFieldErrors } from '@/services/listing';
 
 type PostCategoryPropertiesProps = {
   draft: ListingDraft;
@@ -114,7 +104,7 @@ export function PostCategoryProperties({
         .then((def) => {
           if (cancelled) return;
           if (def && Array.isArray(def.properties)) {
-            setCategoryProperties(def.properties);
+            setCategoryProperties(def.properties.filter((p) => p.isActive !== false));
           } else {
             setCategoryProperties([]);
           }
@@ -140,526 +130,304 @@ export function PostCategoryProperties({
     };
   }, [type?.categoryId, type?.categorySlug]);
 
-  const customProperties = useMemo(() => {
-    if (!categoryProperties || categoryProperties.length === 0) return [];
-    return categoryProperties.filter((prop) => {
-      const codeUpper = (prop.code || '').toUpperCase();
-      if (
-        codeUpper === 'HORSE_BREED' ||
-        codeUpper === 'STALLION_BREED' ||
-        codeUpper === 'COAT_COLOR' ||
-        codeUpper === 'HORSE_AGE' ||
-        codeUpper === 'STALLION_AGE' ||
-        codeUpper === 'HORSE_GENDER' ||
-        codeUpper === 'GRASS_PADDOCK' ||
-        codeUpper === 'GRASSPADDOCK' ||
-        codeUpper === 'SAND_PADDOCK' ||
-        codeUpper === 'SANDPADDOCK' ||
-        codeUpper === 'STALLION_PADDOCK' ||
-        codeUpper === 'STALLIONPADDOCK' ||
-        codeUpper === 'VET' ||
-        codeUpper === 'VET_SERVICE' ||
-        codeUpper === 'FARRIER' ||
-        codeUpper === 'FARRIER_SERVICE' ||
-        codeUpper === 'FOALING_BARN' ||
-        codeUpper === 'FOALINGBARN' ||
-        codeUpper === 'COMPANY_NAME' ||
-        codeUpper === 'WEBSITE_URL'
-      ) {
-        return false;
-      }
-      return true;
-    });
-  }, [categoryProperties]);
+  const handlePropertyChange = (code: string, value: unknown) => {
+    const currentProps = { ...(d.properties || {}) };
+    currentProps[code] = value;
 
-  const renderPropertyItem = (prop: CategoryPropertyPublic) => {
-    const propKey = prop.code;
-    const currentProps = d.properties || {};
-    const val = currentProps[prop.code];
+    const partialUpdate: Partial<ListingDraftDetails> = {
+      properties: currentProps,
+    };
 
-    if (prop.dataType === 'BOOLEAN') {
-      return (
-        <ToggleItem
-          key={propKey}
-          label={prop.title}
-          value={Boolean(val)}
-          onToggle={() =>
-            onUpdate({
-              properties: {
-                ...currentProps,
-                [propKey]: !val,
-              },
-            })
-          }
-        />
-      );
+    // Keep legacy / top-level details fields in sync if applicable
+    const codeUpper = code.toUpperCase();
+    if (codeUpper === 'HORSE_BREED' || codeUpper === 'BREED') {
+      partialUpdate.breed = String(value ?? '');
+    } else if (codeUpper === 'COAT_COLOR' || codeUpper === 'COATCOLOR') {
+      partialUpdate.coatColor = String(value ?? '');
+    } else if (codeUpper === 'HORSE_AGE' || codeUpper === 'AGE') {
+      partialUpdate.age = String(value ?? '');
+    } else if (codeUpper === 'HORSE_GENDER' || codeUpper === 'GENDER') {
+      partialUpdate.gender = value as any;
+    } else if (code === 'grassPaddock') {
+      partialUpdate.facilityGrassPaddock = Boolean(value);
+    } else if (code === 'sandPaddock') {
+      partialUpdate.facilitySandPaddock = Boolean(value);
+    } else if (code === 'stallionPaddock') {
+      partialUpdate.facilityStallionPaddock = Boolean(value);
+    } else if (code === 'vet') {
+      partialUpdate.facilityVeterinarian = Boolean(value);
+    } else if (code === 'farrier') {
+      partialUpdate.facilityFarrier = Boolean(value);
+    } else if (code === 'foalingBarn') {
+      partialUpdate.facilityFoalingBarn = Boolean(value);
+    } else if (code === 'COMPANY_NAME' || code === 'companyName') {
+      partialUpdate.companyName = String(value ?? '');
+    } else if (code === 'WEBSITE_URL' || code === 'websiteUrl') {
+      partialUpdate.websiteUrl = String(value ?? '');
+    } else if (code === 'STALLION_BREED' || code === 'studBreed') {
+      partialUpdate.studBreed = String(value ?? '');
+    } else if (code === 'STALLION_AGE' || code === 'studAge') {
+      partialUpdate.studAge = String(value ?? '');
+    } else if (code === 'studHorseName') {
+      partialUpdate.studHorseName = String(value ?? '');
+    } else if (code === 'studSire') {
+      partialUpdate.studSire = String(value ?? '');
+    } else if (code === 'studDam') {
+      partialUpdate.studDam = String(value ?? '');
+    } else if (code === 'studDamsire') {
+      partialUpdate.studDamsire = String(value ?? '');
     }
 
-    if (prop.options && prop.options.length > 0) {
-      return (
-        <View key={propKey} style={styles.fieldBlock}>
-          <Text style={[styles.fieldLabel, { color: secondary }]}>
-            {prop.title}
-            {prop.isRequired ? (
-              <Text style={{ color: errorColor }}> *</Text>
-            ) : null}
+    onUpdate(partialUpdate);
+  };
+
+  const getPropertyValue = (code: string): unknown => {
+    if (d.properties && d.properties[code] !== undefined) {
+      return d.properties[code];
+    }
+    const codeUpper = code.toUpperCase();
+    if (codeUpper === 'HORSE_BREED' && d.breed) return d.breed;
+    if (codeUpper === 'COAT_COLOR' && d.coatColor) return d.coatColor;
+    if (codeUpper === 'HORSE_AGE' && d.age) return d.age;
+    if (codeUpper === 'HORSE_GENDER' && d.gender) return d.gender;
+    if (code === 'grassPaddock' && d.facilityGrassPaddock !== undefined) return d.facilityGrassPaddock;
+    if (code === 'sandPaddock' && d.facilitySandPaddock !== undefined) return d.facilitySandPaddock;
+    if (code === 'stallionPaddock' && d.facilityStallionPaddock !== undefined) return d.facilityStallionPaddock;
+    if (code === 'vet' && d.facilityVeterinarian !== undefined) return d.facilityVeterinarian;
+    if (code === 'farrier' && d.facilityFarrier !== undefined) return d.facilityFarrier;
+    if (code === 'foalingBarn' && d.facilityFoalingBarn !== undefined) return d.facilityFoalingBarn;
+    if ((code === 'COMPANY_NAME' || code === 'companyName') && d.companyName) return d.companyName;
+    if ((code === 'WEBSITE_URL' || code === 'websiteUrl') && d.websiteUrl) return d.websiteUrl;
+    if ((code === 'STALLION_BREED' || code === 'studBreed') && d.studBreed) return d.studBreed;
+    if ((code === 'STALLION_AGE' || code === 'studAge') && d.studAge) return d.studAge;
+    if (code === 'studHorseName' && d.studHorseName) return d.studHorseName;
+    if (code === 'studSire' && d.studSire) return d.studSire;
+    if (code === 'studDam' && d.studDam) return d.studDam;
+    if (code === 'studDamsire' && d.studDamsire) return d.studDamsire;
+    return undefined;
+  };
+
+  // Group properties into toggles vs chips/inputs
+  const { toggleProps, otherProps } = useMemo(() => {
+    const toggles: CategoryPropertyPublic[] = [];
+    const others: CategoryPropertyPublic[] = [];
+
+    for (const prop of categoryProperties) {
+      if (prop.dataType === 'BOOLEAN') {
+        toggles.push(prop);
+      } else {
+        others.push(prop);
+      }
+    }
+
+    return { toggleProps: toggles, otherProps: others };
+  }, [categoryProperties]);
+
+  if (categoryProperties.length === 0) {
+    return null;
+  }
+
+  const categoryTitle = type?.categoryName
+    ? `${type.categoryName} Özellikleri ve Bilgileri`
+    : 'Kategori Özellikleri';
+
+  return (
+    <View
+      style={[styles.card, { backgroundColor: surface, borderColor: border }]}
+      onLayout={(e) =>
+        onLayoutSection?.('categoryProperties', e.nativeEvent.layout.y)
+      }
+    >
+      <Text style={[styles.section, { color: text }]}>{categoryTitle}</Text>
+      <Text style={[styles.desc, { color: secondary }]}>
+        Seçtiğiniz kategoriye özel alanları ve özellikleri eksiksiz doldurunuz.
+      </Text>
+
+      {/* 1. Chips and Input Fields */}
+      {otherProps.map((prop) => {
+        const propKey = prop.code;
+        const val = getPropertyValue(prop.code);
+        const err = errors[prop.code as keyof ListingFieldErrors];
+
+        if (prop.options && prop.options.length > 0) {
+          return (
+            <View key={propKey} style={styles.fieldBlock}>
+              <Text style={[styles.fieldLabel, { color: secondary }]}>
+                {prop.title}
+                {prop.isRequired ? (
+                  <Text style={{ color: errorColor }}> *</Text>
+                ) : null}
+              </Text>
+              <View style={styles.chips}>
+                {prop.options.map((opt) => {
+                  const optVal = opt.value || opt.label;
+                  const on =
+                    String(val ?? '').toLocaleLowerCase('tr') ===
+                      optVal.toLocaleLowerCase('tr') ||
+                    String(val ?? '').toLocaleLowerCase('tr') ===
+                      (opt.value || '').toLocaleLowerCase('tr') ||
+                    String(val ?? '').toLocaleLowerCase('tr') ===
+                      (opt.label || '').toLocaleLowerCase('tr');
+
+                  return (
+                    <Pressable
+                      key={optVal}
+                      onPress={() =>
+                        handlePropertyChange(prop.code, opt.value || optVal)
+                      }
+                      style={[
+                        styles.chip,
+                        {
+                          borderColor: on ? header : border,
+                          backgroundColor: on ? header : 'transparent',
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.chipLabel,
+                          { color: on ? '#fff' : text },
+                        ]}
+                      >
+                        {opt.label || opt.value}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              {err ? (
+                <Text style={[styles.err, { color: errorColor }]}>{err}</Text>
+              ) : null}
+            </View>
+          );
+        }
+
+        const isNumeric =
+          prop.dataType === 'INTEGER' ||
+          prop.dataType === 'DECIMAL' ||
+          prop.dataType === 'YEAR';
+
+        return (
+          <PostField
+            key={propKey}
+            label={prop.title}
+            required={prop.isRequired}
+            value={val != null ? String(val) : ''}
+            onChangeText={(textVal) => {
+              let finalVal: unknown = textVal;
+              if (isNumeric) {
+                const cleaned = textVal.trim().replace(',', '.');
+                if (cleaned !== '' && !isNaN(Number(cleaned))) {
+                  finalVal =
+                    prop.dataType === 'INTEGER' || prop.dataType === 'YEAR'
+                      ? parseInt(cleaned, 10)
+                      : parseFloat(cleaned);
+                }
+              }
+              handlePropertyChange(prop.code, finalVal);
+            }}
+            placeholder={prop.helpText || `${prop.title} girin`}
+            keyboardType={isNumeric ? 'numeric' : 'default'}
+            error={err}
+          />
+        );
+      })}
+
+      {/* 2. Boolean Toggle Grid */}
+      {toggleProps.length > 0 ? (
+        <View style={styles.toggleSection}>
+          <Text style={[styles.fieldLabel, { color: secondary, marginBottom: 4 }]}>
+            Olanaklar & Hizmet Özellikleri
           </Text>
-          <View style={styles.chips}>
-            {prop.options.map((opt) => {
-              const optVal = opt.value || opt.label;
-              const on =
-                String(val ?? '') === optVal ||
-                String(val ?? '') === opt.value ||
-                String(val ?? '') === opt.label;
+          <View style={styles.toggleGrid}>
+            {toggleProps.map((prop) => {
+              const val = Boolean(getPropertyValue(prop.code));
               return (
-                <Pressable
-                  key={optVal}
-                  onPress={() =>
-                    onUpdate({
-                      properties: {
-                        ...currentProps,
-                        [propKey]: opt.value || optVal,
-                      },
-                    })
-                  }
-                  style={[
-                    styles.chip,
-                    {
-                      borderColor: on ? header : border,
-                      backgroundColor: on ? header : 'transparent',
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.chipLabel,
-                      { color: on ? '#fff' : text },
-                    ]}
-                  >
-                    {opt.label || opt.value}
-                  </Text>
-                </Pressable>
+                <ToggleItem
+                  key={prop.code}
+                  label={prop.title}
+                  value={val}
+                  onToggle={() => handlePropertyChange(prop.code, !val)}
+                />
               );
             })}
           </View>
         </View>
-      );
-    }
-
-    const isNumeric =
-      prop.dataType === 'INTEGER' ||
-      prop.dataType === 'DECIMAL' ||
-      prop.dataType === 'YEAR';
-
-    return (
-      <PostField
-        key={propKey}
-        label={prop.title}
-        required={prop.isRequired}
-        value={val != null ? String(val) : ''}
-        onChangeText={(textVal) => {
-          let finalVal: unknown = textVal;
-          if (isNumeric) {
-            const cleaned = textVal.trim().replace(',', '.');
-            if (cleaned !== '' && !isNaN(Number(cleaned))) {
-              finalVal =
-                prop.dataType === 'INTEGER' || prop.dataType === 'YEAR'
-                  ? parseInt(cleaned, 10)
-                  : parseFloat(cleaned);
-            }
-          }
-          onUpdate({
-            properties: {
-              ...currentProps,
-              [propKey]: finalVal,
-            },
-          });
-        }}
-        placeholder={prop.helpText || `${prop.title} girin`}
-        keyboardType={isNumeric ? 'numeric' : 'default'}
-      />
-    );
-  };
-
-  const renderCustomPropertiesCard = () => {
-    if (customProperties.length === 0) return null;
-
-    const categoryTitle = type?.categoryName ? `${type.categoryName} Özellikleri` : 'Kategori Özellikleri';
-    return (
-      <View
-        style={[styles.card, { backgroundColor: surface, borderColor: border }]}
-        onLayout={(e) =>
-          onLayoutSection?.('customProperties', e.nativeEvent.layout.y)
-        }
-      >
-        <Text style={[styles.section, { color: text }]}>{categoryTitle}</Text>
-        <Text style={[styles.desc, { color: secondary }]}>
-          Bu kategori için tanımlanmış ek özellikleri girin.
-        </Text>
-
-        {customProperties.map((prop) => renderPropertyItem(prop))}
-      </View>
-    );
-  };
-
-  // 1. Pansiyon Haralar
-  if (isPansiyonListing(type)) {
-    const booleanCustomProps = customProperties.filter((p) => p.dataType === 'BOOLEAN');
-    const nonBooleanCustomProps = customProperties.filter((p) => p.dataType !== 'BOOLEAN');
-
-    return (
-      <View
-        style={[styles.card, { backgroundColor: surface, borderColor: border }]}
-        onLayout={(e) => onLayoutSection?.('facilities', e.nativeEvent.layout.y)}
-      >
-        <Text style={[styles.section, { color: text }]}>
-          Tesis & Hizmet Bilgileri
-          <Text style={{ color: errorColor }}> *</Text>
-        </Text>
-        <Text style={[styles.desc, { color: secondary }]}>
-          Tesisinizde sağladığınız padok, bakım ve hizmet olanaklarını belirtin (en az 1 özellik seçilmelidir).
-        </Text>
-
-        <View style={styles.toggleGrid}>
-          <ToggleItem
-            label="Çim Padok"
-            value={Boolean(d.facilityGrassPaddock)}
-            onToggle={() =>
-              onUpdate({ facilityGrassPaddock: !d.facilityGrassPaddock })
-            }
-          />
-          <ToggleItem
-            label="Kum Padok"
-            value={Boolean(d.facilitySandPaddock)}
-            onToggle={() =>
-              onUpdate({ facilitySandPaddock: !d.facilitySandPaddock })
-            }
-          />
-          <ToggleItem
-            label="Aygır Padoğu"
-            value={Boolean(d.facilityStallionPaddock)}
-            onToggle={() =>
-              onUpdate({ facilityStallionPaddock: !d.facilityStallionPaddock })
-            }
-          />
-          <ToggleItem
-            label="Veteriner"
-            value={Boolean(d.facilityVeterinarian)}
-            onToggle={() =>
-              onUpdate({ facilityVeterinarian: !d.facilityVeterinarian })
-            }
-          />
-          <ToggleItem
-            label="Nalbant"
-            value={Boolean(d.facilityFarrier)}
-            onToggle={() =>
-              onUpdate({ facilityFarrier: !d.facilityFarrier })
-            }
-          />
-          <ToggleItem
-            label="Doğumhane"
-            value={Boolean(d.facilityFoalingBarn)}
-            onToggle={() =>
-              onUpdate({ facilityFoalingBarn: !d.facilityFoalingBarn })
-            }
-          />
-          {booleanCustomProps.map((prop) => renderPropertyItem(prop))}
-        </View>
-
-        {errors.facility ? (
-          <Text style={[styles.err, { color: errorColor }]}>{errors.facility}</Text>
-        ) : null}
-
-        <PostField
-          label="İdman Pisti"
-          value={d.facilityTrainingTrack ?? ''}
-          onChangeText={(facilityTrainingTrack) =>
-            onUpdate({ facilityTrainingTrack })
-          }
-          placeholder="Örn: 1200m Kum Pist, Sentetik Pist..."
-          hint="Mevcut idman pisti özelliklerini ve uzunluğunu yazabilirsiniz."
-        />
-
-        {nonBooleanCustomProps.map((prop) => renderPropertyItem(prop))}
-      </View>
-    );
-  }
-
-  // 2. At Nakliyesi
-  if (isTransportListing(type)) {
-    return (
-      <View
-        style={[styles.card, { backgroundColor: surface, borderColor: border }]}
-        onLayout={(e) => onLayoutSection?.('transport', e.nativeEvent.layout.y)}
-      >
-        <Text style={[styles.section, { color: text }]}>
-          Firma ve Hizmet Bilgileri
-        </Text>
-        <Text style={[styles.desc, { color: secondary }]}>
-          Nakliye firmanız ve hizmet detaylarınızı eksiksiz tamamlayın.
-        </Text>
-
-        <PostField
-          label="Firma Adı"
-          required
-          value={d.companyName ?? ''}
-          onChangeText={(companyName) => onUpdate({ companyName })}
-          placeholder="Örn: Anadolu At Taşımacılığı Ltd."
-          error={errors.companyName}
-        />
-
-        <PostField
-          label="Web Sitesi"
-          value={d.websiteUrl ?? ''}
-          onChangeText={(websiteUrl) => onUpdate({ websiteUrl })}
-          placeholder="https://www.firmaadi.com"
-          keyboardType="url"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-
-        {customProperties.map((prop) => renderPropertyItem(prop))}
-      </View>
-    );
-  }
-
-  // 3. Aşım Hizmetleri (Arap / İngiliz)
-  if (isStudServiceListing(type)) {
-    return (
-      <>
-        {/* At Bilgileri */}
-        <View
-          style={[styles.card, { backgroundColor: surface, borderColor: border }]}
-          onLayout={(e) => onLayoutSection?.('studInfo', e.nativeEvent.layout.y)}
-        >
-          <Text style={[styles.section, { color: text }]}>At Bilgileri</Text>
-          <Text style={[styles.desc, { color: secondary }]}>
-            Aşım hizmeti sunulan aygırın ırk, yaş ve don bilgilerini eksiksiz girin.
-          </Text>
-
-          <View style={styles.fieldBlock}>
-            <Text style={[styles.fieldLabel, { color: secondary }]}>
-              At Irkı
-              <Text style={{ color: errorColor }}> *</Text>
-            </Text>
-            <View style={styles.chips}>
-              {STUD_BREED_OPTIONS.map((breed) => {
-                const on =
-                  (d.studBreed ?? '').toLocaleLowerCase('tr') ===
-                  breed.toLocaleLowerCase('tr');
-                return (
-                  <Pressable
-                    key={breed}
-                    onPress={() => onUpdate({ studBreed: breed })}
-                    style={[
-                      styles.chip,
-                      {
-                        borderColor: on ? header : border,
-                        backgroundColor: on ? header : 'transparent',
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.chipLabel,
-                        { color: on ? '#fff' : text },
-                      ]}
-                    >
-                      {breed}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            {errors.studBreed ? (
-              <Text style={[styles.err, { color: errorColor }]}>{errors.studBreed}</Text>
-            ) : null}
-          </View>
-
-          <View style={styles.fieldBlock}>
-            <Text style={[styles.fieldLabel, { color: secondary }]}>
-              Yaş
-              <Text style={{ color: errorColor }}> *</Text>
-            </Text>
-            <View style={styles.chips}>
-              {STUD_AGE_OPTIONS.map((ageVal) => {
-                const on =
-                  (d.studAge || d.age || '') === ageVal;
-                return (
-                  <Pressable
-                    key={ageVal}
-                    onPress={() =>
-                      onUpdate({ studAge: ageVal, age: ageVal })
-                    }
-                    style={[
-                      styles.chip,
-                      {
-                        borderColor: on ? header : border,
-                        backgroundColor: on ? header : 'transparent',
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.chipLabel,
-                        { color: on ? '#fff' : text },
-                      ]}
-                    >
-                      {ageVal}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-
-          <PostField
-            label="Yaş (Doğrudan Giriş)"
-            required
-            value={d.studAge || d.age || ''}
-            onChangeText={(studAge) => onUpdate({ studAge, age: studAge })}
-            placeholder="Örn: 5"
-            keyboardType="numeric"
-            error={errors.studAge}
-          />
-
-          <View style={styles.fieldBlock}>
-            <Text style={[styles.fieldLabel, { color: secondary }]}>
-              Donu (Renk)
-              <Text style={{ color: errorColor }}> *</Text>
-            </Text>
-            <View style={styles.chips}>
-              {COAT_COLOR_OPTIONS.map((color) => {
-                const on =
-                  (d.studCoatColor || d.coatColor || '').toLocaleLowerCase('tr') ===
-                  color.toLocaleLowerCase('tr');
-                return (
-                  <Pressable
-                    key={color}
-                    onPress={() =>
-                      onUpdate({ studCoatColor: color, coatColor: color })
-                    }
-                    style={[
-                      styles.chip,
-                      {
-                        borderColor: on ? header : border,
-                        backgroundColor: on ? header : 'transparent',
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.chipLabel,
-                        { color: on ? '#fff' : text },
-                      ]}
-                    >
-                      {color}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            {errors.studCoatColor ? (
-              <Text style={[styles.err, { color: errorColor }]}>{errors.studCoatColor}</Text>
-            ) : null}
-          </View>
-
-          {customProperties.map((prop) => renderPropertyItem(prop))}
-        </View>
-
-        {/* Soy Kütüğü (Pedigree) */}
-        <View
-          style={[styles.card, { backgroundColor: surface, borderColor: border }]}
-          onLayout={(e) =>
-            onLayoutSection?.('studPedigree', e.nativeEvent.layout.y)
-          }
-        >
-          <Text style={[styles.section, { color: text }]}>
-            Soy Kütüğü (Pedigree)
-          </Text>
-          <Text style={[styles.desc, { color: secondary }]}>
-            Aygırın soy kütüğü / at, baba, anne ve annesinin babası bilgileri zorunludur.
-          </Text>
-
-          <PostField
-            label="At / Aygır Adı"
-            required
-            value={d.registeredName || (d.studHorseName ?? '')}
-            onChangeText={(val) =>
-              onUpdate({ registeredName: val, studHorseName: val })
-            }
-            placeholder="Atın adı"
-            error={errors.studHorseName || errors.registeredName}
-          />
-
-          <PostField
-            label="Baba"
-            required
-            value={d.studSire || d.sire || ''}
-            onChangeText={(studSire) => onUpdate({ studSire, sire: studSire })}
-            placeholder="Baba adı"
-            error={errors.studSire}
-          />
-
-          <PostField
-            label="Anne"
-            required
-            value={d.studDam || d.dam || ''}
-            onChangeText={(studDam) => onUpdate({ studDam, dam: studDam })}
-            placeholder="Anne adı"
-            error={errors.studDam}
-          />
-
-          <PostField
-            label="Annesinin Babası"
-            required
-            value={d.studDamsire || d.damsire || ''}
-            onChangeText={(studDamsire) =>
-              onUpdate({ studDamsire, damsire: studDamsire })
-            }
-            placeholder="Annesinin babası"
-            error={errors.studDamsire}
-          />
-        </View>
-      </>
-    );
-  }
-
-  // 4. Diğer / Standart Satılık Atlar & Nalbantlar & Yeni Kategoriler
-  return renderCustomPropertiesCard();
+      ) : null}
+    </View>
+  );
 }
-
 
 const styles = StyleSheet.create({
   card: {
-    borderWidth: 1,
+    padding: Spacing.md,
     borderRadius: 16,
-    padding: Spacing.lg,
+    borderWidth: 1,
     gap: Spacing.md,
   },
-  section: { ...Typography.h5, fontWeight: '700' },
-  desc: { ...Typography.caption },
-  toggleGrid: {
+  section: {
+    ...Typography.subtitle,
+    fontWeight: '700',
+  },
+  desc: {
+    ...Typography.caption,
+    marginTop: -4,
+    marginBottom: 4,
+  },
+  fieldBlock: {
+    gap: 6,
+  },
+  fieldLabel: {
+    ...Typography.caption,
+    fontWeight: '600',
+  },
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  chipLabel: {
+    ...Typography.caption,
+    fontWeight: '600',
+  },
+  toggleSection: {
+    gap: 6,
+    marginTop: 4,
+  },
+  toggleGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
   },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 44,
-    paddingVertical: 6,
-  },
-  toggleLabel: {
-    ...Typography.body,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(150, 150, 150, 0.2)',
+    minWidth: '47%',
     flex: 1,
   },
+  toggleLabel: {
+    ...Typography.caption,
+    flex: 1,
+    marginRight: 8,
+  },
   switch: {
-    width: 44,
+    width: 40,
     height: 24,
     borderRadius: 12,
     padding: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'center',
   },
   switchKnob: {
     width: 20,
@@ -667,24 +435,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#fff',
   },
-  fieldBlock: { gap: 6 },
-  fieldLabel: {
-    ...Typography.caption,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-  },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  chip: {
-    minHeight: 38,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipLabel: { ...Typography.small, fontWeight: '600' },
   err: {
     ...Typography.caption,
-    marginTop: -2,
+    marginTop: 2,
   },
 });
