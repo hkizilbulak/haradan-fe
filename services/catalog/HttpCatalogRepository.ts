@@ -11,28 +11,6 @@ import type { CatalogQueryOptions, ICatalogRepository } from './CatalogRepositor
 import { mapCategoryTreeToFacets } from './mapCategoryTreeToFacets';
 import { MockCatalogRepository } from './MockCatalogRepository';
 
-function purgeLegacyCategoryLocalStorage(): void {
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
-  try {
-    const keysToRemove: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (
-        k &&
-        (k.startsWith('haradan_category_properties_') ||
-          k.startsWith('haradan_deleted_props_'))
-      ) {
-        keysToRemove.push(k);
-      }
-    }
-    for (const k of keysToRemove) {
-      localStorage.removeItem(k);
-    }
-  } catch {}
-}
-
-purgeLegacyCategoryLocalStorage();
-
 /** CATALOG-01 — GET /v1/categories, CATALOG-02 — GET /v1/categories/{categoryId}/form */
 export class HttpCatalogRepository implements ICatalogRepository {
   private readonly http: HttpClient;
@@ -42,7 +20,6 @@ export class HttpCatalogRepository implements ICatalogRepository {
 
   constructor(baseUrl: string) {
     this.http = new HttpClient(baseUrl);
-    purgeLegacyCategoryLocalStorage();
   }
 
   getCachedFacets(): CatalogFacets | null {
@@ -86,11 +63,36 @@ export class HttpCatalogRepository implements ICatalogRepository {
     const targetId = categoryId || options?.categorySlug || '';
     const targetSlug = options?.categorySlug || categoryId || '';
 
+    const getDeletedKeys = (cat: string): Set<string> => {
+      const set = new Set<string>();
+      if (typeof window === 'undefined') return set;
+      try {
+        const keys = [
+          cat,
+          `cat-${cat}`,
+          cat.replace(/^cat-/, ''),
+          targetSlug,
+          `cat-${targetSlug}`,
+          targetSlug.replace(/^cat-/, ''),
+        ];
+        for (const k of keys) {
+          const raw = localStorage.getItem(`haradan_deleted_props_${k}`);
+          if (raw) {
+            const arr = JSON.parse(raw);
+            if (Array.isArray(arr)) {
+              arr.forEach((item) => set.add(String(item).toLowerCase()));
+            }
+          }
+        }
+      } catch {}
+      return set;
+    };
+
     if (this.formCache.has(targetId) && !options?.fresh) {
       return this.formCache.get(targetId) ?? null;
     }
 
-    // 1. Try live backend API request first
+    // 1. Try live backend API request first (Direct from Database)
     try {
       let resolvedUUID = targetId;
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
@@ -118,13 +120,16 @@ export class HttpCatalogRepository implements ICatalogRepository {
           { method: 'GET' }
         );
         if (res && Array.isArray(res.properties)) {
+          const deletedKeys = getDeletedKeys(targetId);
           const activeProps = res.properties.filter(
             (p: any) =>
               p.isActive !== false &&
               p.is_active !== false &&
               p.active !== false &&
-              p.isFormVisible !== false &&
-              p.is_form_visible !== false
+              p.isFilterable !== false &&
+              p.is_filterable !== false &&
+              !deletedKeys.has((p.code || p.id || '').toLowerCase()) &&
+              !deletedKeys.has((p.title || '').toLowerCase())
           );
           const filteredRes: CategoryFormDefinitionResponse = {
             ...res,
@@ -138,7 +143,59 @@ export class HttpCatalogRepository implements ICatalogRepository {
       // API fallback
     }
 
-    // 2. Fallback to mock catalog using slug or id
+    // 2. Check browser localStorage fallback for offline / mock testing
+    if (typeof window !== 'undefined') {
+      try {
+        const candidateKeys = [
+          targetId,
+          targetSlug,
+          `cat-${targetId}`,
+          `cat-${targetSlug}`,
+          targetId.replace(/^cat-/, ''),
+          targetSlug.replace(/^cat-/, ''),
+        ];
+
+        for (const k of candidateKeys) {
+          if (!k) continue;
+          const stored = localStorage.getItem(`haradan_category_properties_${k}`);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+              const activeProps: CategoryPropertyPublic[] = parsed
+                .filter(
+                  (p: any) =>
+                    p.isActive !== false &&
+                    p.is_active !== false &&
+                    p.active !== false &&
+                    p.isFilterable !== false &&
+                    p.is_filterable !== false
+                )
+                .map((p: any) => ({
+                  code: p.code || p.id,
+                  title: p.title,
+                  helpText: p.helpText,
+                  dataType: p.dataType,
+                  isRequired: Boolean(p.isRequired),
+                  isFilterable: p.isFilterable !== false,
+                  sortOrder: p.sortOrder || 1,
+                  options: p.options || [],
+                }));
+
+              const res: CategoryFormDefinitionResponse = {
+                categoryId: targetId,
+                slug: targetSlug,
+                name: targetSlug,
+                properties: activeProps,
+              };
+              this.formCache.set(targetId, res);
+              return res;
+            }
+          }
+        }
+      } catch {}
+    }
+
+    // 3. Fallback to mock catalog using slug or id
     return new MockCatalogRepository().getCategoryFormDefinition(targetSlug || targetId, options);
   }
 

@@ -125,12 +125,72 @@ export class MockCatalogRepository implements ICatalogRepository {
   ): Promise<CategoryFormDefinitionResponse | null> {
     if (!categoryId && !options?.categorySlug) return null;
 
-    const targetId = categoryId || options?.categorySlug || '';
-    const targetSlug = options?.categorySlug || categoryId || '';
+    // 1. Check browser localStorage for real-time changes from BO
+    if (typeof window !== 'undefined') {
+      try {
+        const candidateKeys = [
+          targetId,
+          targetSlug,
+          `cat-${targetId}`,
+          `cat-${targetSlug}`,
+          targetId.replace(/^cat-/, ''),
+          targetSlug.replace(/^cat-/, ''),
+        ];
 
+        // Include parent category keys if this is a child category (e.g. Satılık Yarış Atı -> Satılık Atlar)
+        const tSlug = targetSlug.toLowerCase();
+        if (
+          tSlug.includes('yaris') ||
+          tSlug.includes('kisrak') ||
+          tSlug.includes('aygir') ||
+          tSlug.includes('binek') ||
+          tSlug.includes('pony') ||
+          tSlug.includes('satilik')
+        ) {
+          candidateKeys.push('satilik-atlar', 'cat-satilik-atlar');
+        } else if (tSlug.includes('pansiyon') || tSlug.includes('nakliye') || tSlug.includes('nalbant')) {
+          candidateKeys.push('at-hizmetleri', 'cat-at-hizmetleri');
+        } else if (tSlug.includes('asim') || tSlug.includes('arap') || tSlug.includes('ingiliz')) {
+          candidateKeys.push('asim-hizmetleri', 'cat-asim-hizmetleri');
+        }
 
+        for (const k of candidateKeys) {
+          if (!k) continue;
+          const stored = localStorage.getItem(`haradan_category_properties_${k}`);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+              const activeProps: CategoryPropertyPublic[] = parsed
+                .filter(
+                  (p: any) =>
+                    p.isActive !== false &&
+                    p.is_active !== false &&
+                    p.active !== false &&
+                    p.isFilterable !== false &&
+                    p.is_filterable !== false
+                )
+                .map((p: any) => ({
+                  code: p.code || p.id,
+                  title: p.title,
+                  helpText: p.helpText,
+                  dataType: p.dataType,
+                  isRequired: Boolean(p.isRequired),
+                  isFilterable: p.isFilterable !== false,
+                  sortOrder: p.sortOrder || 1,
+                  options: p.options || [],
+                }));
 
-    const cid = (categoryId || '').toLowerCase();
+              return {
+                categoryId: targetId,
+                slug: targetSlug,
+                name: targetSlug,
+                properties: activeProps,
+              };
+            }
+          }
+        }
+      } catch {}
+    }
     let props = HORSE_PROPERTIES;
     let slug = 'satilik-yaris-ati';
     let name = 'Satılık Yarış Atı';
@@ -170,6 +230,40 @@ export class MockCatalogRepository implements ICatalogRepository {
       props = [];
       slug = 'nalbantlar';
       name = 'Nalbantlar';
+    }
+
+    const getDeletedKeys = (cat: string): Set<string> => {
+      const set = new Set<string>();
+      if (typeof window === 'undefined') return set;
+      try {
+        const keys = [
+          cat,
+          `cat-${cat}`,
+          cat.replace(/^cat-/, ''),
+          targetSlug,
+          `cat-${targetSlug}`,
+          targetSlug.replace(/^cat-/, ''),
+        ];
+        for (const k of keys) {
+          const raw = localStorage.getItem(`haradan_deleted_props_${k}`);
+          if (raw) {
+            const arr = JSON.parse(raw);
+            if (Array.isArray(arr)) {
+              arr.forEach((item) => set.add(String(item).toLowerCase()));
+            }
+          }
+        }
+      } catch {}
+      return set;
+    };
+
+    const deletedKeys = getDeletedKeys(targetId);
+    if (deletedKeys.size > 0) {
+      props = props.filter(
+        (p) =>
+          !deletedKeys.has((p.code || '').toLowerCase()) &&
+          !deletedKeys.has((p.title || '').toLowerCase())
+      );
     }
 
     return {

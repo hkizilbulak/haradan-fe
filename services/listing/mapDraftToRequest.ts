@@ -66,6 +66,9 @@ export function mapDraftToCreateAdvert(
   if (draft.details.districtId && isUUID(draft.details.districtId)) {
     body.districtId = draft.details.districtId;
   }
+  if (draft.details.address?.trim()) {
+    body.address = draft.details.address.trim();
+  }
   if (draft.details.horseId && isUUID(draft.details.horseId)) {
     body.horseId = draft.details.horseId;
   }
