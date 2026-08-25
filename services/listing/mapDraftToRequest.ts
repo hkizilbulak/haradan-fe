@@ -2,13 +2,6 @@ import type { CreateAdvertDraftRequest, ListingDraft } from '@/types/listing';
 import type { Money } from '@/types/money';
 import CATALOG_DATA from '@/data/catalog.json';
 
-import {
-  isFarrierListing,
-  isPansiyonListing,
-  isSaleHorseListing,
-  isStudServiceListing,
-  isTransportListing,
-} from './validateListingDraft';
 
 function parseTlInput(raw: string): number | null {
   const digits = raw.replace(/\D/g, '');
@@ -48,43 +41,7 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
     }
   }
 
-  // 2. Scoped category legacy mappings if not already set from dynamic form
-  if (isPansiyonListing(draft.type)) {
-    if (d.facilityGrassPaddock != null && d.facilityGrassPaddock !== false && props.grassPaddock === undefined) props.grassPaddock = Boolean(d.facilityGrassPaddock);
-    if (d.facilitySandPaddock != null && d.facilitySandPaddock !== false && props.sandPaddock === undefined) props.sandPaddock = Boolean(d.facilitySandPaddock);
-    if (d.facilityStallionPaddock != null && d.facilityStallionPaddock !== false && props.stallionPaddock === undefined) props.stallionPaddock = Boolean(d.facilityStallionPaddock);
-    if (d.facilityTrainingTrack?.trim() && props.trainingTrack === undefined) props.trainingTrack = d.facilityTrainingTrack.trim();
-    if (d.facilityVeterinarian != null && d.facilityVeterinarian !== false && props.vet === undefined) props.vet = Boolean(d.facilityVeterinarian);
-    if (d.facilityFarrier != null && d.facilityFarrier !== false && props.farrier === undefined) props.farrier = Boolean(d.facilityFarrier);
-    if (d.facilityFoalingBarn != null && d.facilityFoalingBarn !== false && props.foalingBarn === undefined) props.foalingBarn = Boolean(d.facilityFoalingBarn);
-  }
-
-  if (isTransportListing(draft.type) || isFarrierListing(draft.type)) {
-    if (d.companyName?.trim() && props.companyName === undefined) props.companyName = d.companyName.trim();
-    if (d.websiteUrl?.trim() && props.websiteUrl === undefined) props.websiteUrl = d.websiteUrl.trim();
-  }
-
-  if (isStudServiceListing(draft.type)) {
-    if (d.studBreed?.trim() && props.studBreed === undefined) props.studBreed = d.studBreed.trim();
-    if (d.studAge?.trim() && props.studAge === undefined) {
-      const parsedAge = parseInt(d.studAge.trim(), 10);
-      props.studAge = isNaN(parsedAge) ? d.studAge.trim() : parsedAge;
-    }
-    if (d.studCoatColor?.trim() && props.studCoatColor === undefined) props.studCoatColor = d.studCoatColor.trim();
-    if (d.studHorseName?.trim() && props.studHorseName === undefined) props.studHorseName = d.studHorseName.trim();
-    if (d.studSire?.trim() && props.studSire === undefined) props.studSire = d.studSire.trim();
-    if (d.studDam?.trim() && props.studDam === undefined) props.studDam = d.studDam.trim();
-    if (d.studDamsire?.trim() && props.studDamsire === undefined) props.studDamsire = d.studDamsire.trim();
-  }
-
-  if (isSaleHorseListing(draft.type)) {
-    if (d.breed?.trim() && props.HORSE_BREED === undefined && props.breed === undefined && props.horseBreed === undefined) props.HORSE_BREED = d.breed.trim();
-    if (d.coatColor?.trim() && props.COAT_COLOR === undefined && props.coatColor === undefined) props.COAT_COLOR = d.coatColor.trim();
-    if (d.age?.trim() && props.HORSE_AGE === undefined && props.age === undefined && props.horseAge === undefined) props.HORSE_AGE = d.age.trim();
-    if (d.gender?.trim() && props.HORSE_GENDER === undefined && props.gender === undefined && props.horseGender === undefined) props.HORSE_GENDER = d.gender.trim();
-  }
-
-  // 3. Clean up any invalid keys, core columns, nulls, or empty strings
+  // 2. Clean up any invalid keys, core columns, nulls, or empty strings
   const CORE_EXCLUDED_KEYS = new Set([
     'address',
     'ADDRESS',
