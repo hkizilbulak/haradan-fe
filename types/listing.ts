@@ -60,6 +60,7 @@ export type ListingDraftDetails = {
   districtId: string | null;
   address: string;
   gender: HorseGender | null;
+  breed?: string;
   birthDate: string;
   age: string;
   coatColor: string;

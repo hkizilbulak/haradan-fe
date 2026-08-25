@@ -14,6 +14,7 @@ import { useListingWizardBack } from '@/hooks/useListingWizardBack';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { getValidAccessToken } from '@/services/auth';
 import {
+  detailsErrors,
   detailsStepComplete,
   isListingPackageStepEnabled,
   isPaytrCheckoutEnabled,
@@ -99,7 +100,10 @@ export function PostWizardView() {
   const onNext = useCallback(async () => {
     setSubmitError(null);
     if (wizard.step === 'details') {
-      if (!detailsStepComplete(wizard.draft)) {
+      const errs = detailsErrors(wizard.draft);
+      if (Object.keys(errs).length > 0) {
+        const firstError = Object.values(errs)[0];
+        setSubmitError(`Lütfen zorunlu alanları doldurunuz: ${firstError}`);
         wizard.goNext();
         setScrollTrigger((v) => v + 1);
         return;
@@ -164,7 +168,7 @@ export function PostWizardView() {
       ) : null}
       {wizard.step === 'details' ? (
         <View style={styles.detailsBlock}>
-          {submitError && !packageStepEnabled ? (
+          {submitError ? (
             <Text style={[styles.submitErr, { color: errorColor }]}>{submitError}</Text>
           ) : null}
           <PostDetailsStep

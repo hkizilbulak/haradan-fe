@@ -2,7 +2,7 @@
  * Kategori bazlı form alanları ve filtreleme gereksinimleri self-test paketi.
  * Çalıştır: node --experimental-strip-types scripts/selftest-category-forms-and-filters.ts
  */
-import INITIAL_CATALOG from '../data/catalog.json';
+import INITIAL_CATALOG from '../data/catalog.json' with { type: 'json' };
 import {
   isFarrierListing,
   isHorseListing,

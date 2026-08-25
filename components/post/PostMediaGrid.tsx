@@ -53,12 +53,16 @@ export function PostMediaGrid({
 
   const slots = Array.from({ length: MAX_LISTING_IMAGES }, (_, i) => items[i] ?? null);
 
+  const hintText =
+    items.length === 0
+      ? 'En fazla 5 fotoğraf ekleyebilirsiniz (En az 1 görsel zorunludur).'
+      : items.length === 1
+        ? '1 fotoğraf yüklendi (Kapak fotoğrafı olarak ayarlandı).'
+        : `${items.length} fotoğraf yüklendi. İstediğiniz görseli kapak yapabilirsiniz.`;
+
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.label, { color: text }]}>Görseller</Text>
-      <Text style={[styles.hint, { color: secondary }]}>
-        En fazla 5 fotoğraf. Birini kapak olarak işaretleyin.
-      </Text>
+      <Text style={[styles.hint, { color: secondary }]}>{hintText}</Text>
       <View style={styles.grid}>
         {slots.map((slot, index) =>
           slot ? (

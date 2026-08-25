@@ -10,6 +10,7 @@ import {
   listingRepository,
   isPaytrCheckoutEnabled,
   isListingPackageStepEnabled,
+  isSaleHorseListing,
   DEFAULT_LISTING_PACKAGE_CODE,
   type IListingRepository,
   type ListingTypePhase,
@@ -152,6 +153,7 @@ export function useListingWizard(deps: Deps = {}) {
   const selectType = useCallback((type: ListingTypeSelection) => {
     setListingWizardState((prev) => {
       const isDifferentCategory = prev.draft.type?.categoryId !== type.categoryId;
+      const isNewSaleHorse = isSaleHorseListing(type);
       return {
         ...prev,
         step: 'details',
@@ -168,6 +170,26 @@ export function useListingWizard(deps: Deps = {}) {
             ? {
                 ...prev.draft.details,
                 properties: {},
+                ...(isNewSaleHorse
+                  ? {}
+                  : {
+                      horseId: null,
+                      tjkNumber: null,
+                      tjkSkipped: false,
+                      registeredName: '',
+                      gender: undefined,
+                      breed: '',
+                      age: '',
+                      coatColor: '',
+                      birthDate: '',
+                      heightCm: '',
+                      sire: '',
+                      dam: '',
+                      damsire: '',
+                      ownersText: '',
+                      breeder: '',
+                      trainer: '',
+                    }),
                 facilityGrassPaddock: false,
                 facilitySandPaddock: false,
                 facilityStallionPaddock: false,

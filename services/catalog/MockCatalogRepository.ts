@@ -217,20 +217,20 @@ export class MockCatalogRepository implements ICatalogRepository {
       const parentDef = await this.getCategoryFormDefinition(cat.parentId, { fresh: true });
       if (parentDef && Array.isArray(parentDef.properties)) {
         parentProps = parentDef.properties.map((p) => ({
-          id: p.id,
+          id: p.id || `prop-${p.code}`,
           categoryId: cat.parentId!,
           code: p.code,
           title: p.title,
           helpText: p.helpText || null,
           dataType: p.dataType,
-          isRequired: p.isRequired,
+          isRequired: Boolean(p.isRequired),
           isPublicVisible: true,
           isFormVisible: true,
-          isFilterable: p.isFilterable,
-          sortOrder: p.sortOrder,
+          isFilterable: p.isFilterable !== false,
+          sortOrder: p.sortOrder || 1,
           isActive: true,
           version: 1,
-          options: p.options || [],
+          options: (p.options || []) as any,
           defaultValue: p.defaultValue,
           uiMetadata: p.uiMetadata,
         }));

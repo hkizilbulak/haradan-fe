@@ -80,7 +80,13 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
   if (d.age?.trim() && !props.HORSE_AGE) props.HORSE_AGE = d.age.trim();
   if (d.gender?.trim() && !props.HORSE_GENDER) props.HORSE_GENDER = d.gender.trim();
 
-  // 6. Clean up any invalid keys, nulls, or empty strings
+  // 6. Canonical mapping for Address if present on details
+  if (d.address?.trim()) {
+    props.address = d.address.trim();
+    props.ADDRESS = d.address.trim();
+  }
+
+  // 7. Clean up any invalid keys, nulls, or empty strings
   const cleaned: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(props)) {
     if (v === undefined || v === null || v === '' || v === 'undefined' || v === 'null') {
@@ -137,6 +143,11 @@ export function mapDraftToCreateAdvert(
   const description = draft.details.description?.trim();
   if (description) {
     body.description = description;
+  }
+
+  const address = draft.details.address?.trim();
+  if (address) {
+    body.address = address;
   }
 
   if (draft.details.districtId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(draft.details.districtId)) {

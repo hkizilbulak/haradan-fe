@@ -113,6 +113,27 @@ export class HttpListingRepository implements IListingRepository {
     }
 
     let currentVersion = created.version;
+
+    const address = draft.details.address?.trim();
+    if (address && created.address !== address) {
+      try {
+        const patchRes = await this.http.request<OwnerAdvertResponse>(
+          `/v1/me/adverts/${created.id}`,
+          {
+            method: 'PATCH',
+            accessToken,
+            body: JSON.stringify({
+              expectedVersion: currentVersion,
+              address,
+            }),
+          }
+        );
+        if (patchRes?.version) {
+          currentVersion = patchRes.version;
+        }
+      } catch {}
+    }
+
     const props = buildDraftProperties(draft);
     if (Object.keys(props).length > 0) {
       const propRes = await this.http.request<OwnerAdvertResponse>(

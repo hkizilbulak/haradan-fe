@@ -68,7 +68,10 @@ export class HttpCatalogRepository implements ICatalogRepository {
     const targetId = categoryId || options?.categorySlug || '';
     const targetSlug = options?.categorySlug || categoryId || '';
 
-    if (this.formCache.has(targetId) && !options?.fresh) {
+    if (options?.fresh) {
+      this.formCache.delete(targetId);
+      this.formCache.delete(targetSlug);
+    } else if (this.formCache.has(targetId)) {
       return this.formCache.get(targetId) ?? null;
     }
 

@@ -104,7 +104,7 @@ export function PostCategoryProperties({
         .then((def) => {
           if (cancelled) return;
           if (def && Array.isArray(def.properties)) {
-            setCategoryProperties(def.properties.filter((p) => p.isActive !== false));
+            setCategoryProperties(def.properties.filter((p: any) => p.isActive !== false));
           } else {
             setCategoryProperties([]);
           }
@@ -133,13 +133,16 @@ export function PostCategoryProperties({
   const handlePropertyChange = (code: string, value: unknown) => {
     const currentProps = { ...(d.properties || {}) };
     currentProps[code] = value;
+    const codeUpper = code.toUpperCase();
+    const codeLower = code.toLowerCase();
+    currentProps[codeUpper] = value;
+    currentProps[codeLower] = value;
 
     const partialUpdate: Partial<ListingDraftDetails> = {
       properties: currentProps,
     };
 
     // Keep legacy / top-level details fields in sync if applicable
-    const codeUpper = code.toUpperCase();
     if (codeUpper === 'HORSE_BREED' || codeUpper === 'BREED') {
       partialUpdate.breed = String(value ?? '');
     } else if (codeUpper === 'COAT_COLOR' || codeUpper === 'COATCOLOR') {
@@ -182,8 +185,16 @@ export function PostCategoryProperties({
   };
 
   const getPropertyValue = (code: string): unknown => {
-    if (d.properties && d.properties[code] !== undefined) {
-      return d.properties[code];
+    if (d.properties) {
+      if (d.properties[code] !== undefined && d.properties[code] !== '') {
+        return d.properties[code];
+      }
+      const normTarget = code.replace(/[-_]/g, '').toLowerCase();
+      for (const [k, v] of Object.entries(d.properties)) {
+        if (k.replace(/[-_]/g, '').toLowerCase() === normTarget && v !== undefined && v !== '') {
+          return v;
+        }
+      }
     }
     const codeUpper = code.toUpperCase();
     if (codeUpper === 'HORSE_BREED' && d.breed) return d.breed;
@@ -273,7 +284,10 @@ export function PostCategoryProperties({
                     <Pressable
                       key={optVal}
                       onPress={() =>
-                        handlePropertyChange(prop.code, opt.value || optVal)
+                        handlePropertyChange(
+                          prop.code,
+                          on ? undefined : opt.value || optVal
+                        )
                       }
                       style={[
                         styles.chip,
@@ -366,7 +380,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   section: {
-    ...Typography.subtitle,
+    ...Typography.h5,
     fontWeight: '700',
   },
   desc: {

@@ -148,10 +148,15 @@ export function PostDetailsStep({
 
   const scrollToFirstError = useCallback(() => {
     if (!errors || Object.keys(errors).length === 0) return;
-    const firstErrorKey = FIELD_ORDER.find((key) => Boolean(errors[key]));
+    const firstErrorKey =
+      FIELD_ORDER.find((key) => Boolean(errors[key])) ||
+      Object.keys(errors)[0];
     if (!firstErrorKey) return;
 
-    const y = fieldYMap.current[firstErrorKey];
+    let y = fieldYMap.current[firstErrorKey];
+    if (y == null) {
+      y = fieldYMap.current.categoryProperties;
+    }
     if (y != null && scrollViewRef?.current) {
       scrollViewRef.current.scrollTo({ y: Math.max(0, y - 20), animated: true });
     }
@@ -489,7 +494,14 @@ export function PostDetailsStep({
         </View>
       ) : null}
 
-      <PostCategoryProperties draft={draft} onUpdate={onUpdate} errors={errors} />
+      <PostCategoryProperties
+        draft={draft}
+        onUpdate={onUpdate}
+        errors={errors}
+        onLayoutSection={(_section, y) => {
+          fieldYMap.current.categoryProperties = y;
+        }}
+      />
 
 
       <View

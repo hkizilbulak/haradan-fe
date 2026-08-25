@@ -1,3 +1,4 @@
+import INITIAL_CATALOG from '@/data/catalog.json';
 import {
   HORSE_LISTING_GROUP_SLUGS,
   HORSE_LISTING_LEAF_SLUGS,
@@ -41,7 +42,8 @@ export type ListingFieldErrors = Partial<
     | 'studCoatColor'
     | 'studSire'
     | 'studDam'
-    | 'studDamsire',
+    | 'studDamsire'
+    | (string & {}),
     string
   >
 >;
@@ -142,59 +144,104 @@ export function detailsErrors(draft: ListingDraft): ListingFieldErrors {
     e.media = 'En az bir görsel eklemelisiniz.';
   }
 
-  // Kategoriye özel zorunlu alanlar
-  if (isPansiyonListing(draft.type)) {
-    const hasAnyFacility = Boolean(
-      d.facilityGrassPaddock ||
-      d.facilitySandPaddock ||
-      d.facilityStallionPaddock ||
-      d.facilityVeterinarian ||
-      d.facilityFarrier ||
-      d.facilityFoalingBarn ||
-      d.facilityTrainingTrack?.trim()
+  // Dinamik Kategori Özellikleri Zorunluluk Kontrolü (Tamamen haradan_bo tanımlarına göre)
+  if (draft.type?.categoryId || draft.type?.categorySlug) {
+    const catIdOrSlug = draft.type.categoryId || draft.type.categorySlug;
+    let allProps: any[] = [];
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('haradan_catalog_data');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && Array.isArray(parsed.categoryProperties)) {
+            allProps = parsed.categoryProperties;
+          }
+        }
+      } catch {}
+    }
+    if (allProps.length === 0) {
+      allProps = ((INITIAL_CATALOG as any)?.categoryProperties || []) as any[];
+    }
+    const clean = catIdOrSlug.replace(/^cat-/, '');
+    const requiredProps = allProps.filter(
+      (p) =>
+        p &&
+        p.isActive !== false &&
+        p.isFormVisible !== false &&
+        p.isRequired &&
+        (p.categoryId === catIdOrSlug ||
+          p.categoryId === clean ||
+          p.categoryId === `cat-${clean}` ||
+          p.categoryId === draft.type?.categorySlug ||
+          p.categoryId === draft.type?.categoryId)
     );
-    if (!hasAnyFacility) {
-      e.facility = 'En az bir tesis veya hizmet özelliği seçmelisiniz.';
+
+    const CORE_CODES = new Set([
+      'TITLE',
+      'DESCRIPTION',
+      'PRICE',
+      'LOCATION',
+      'PHONE',
+      'ADDRESS',
+      'MEDIA',
+      'IMAGES',
+      'title',
+      'description',
+      'price',
+      'location',
+      'phone',
+      'address',
+      'media',
+      'images',
+    ]);
+
+    function findPropertyValue(properties: Record<string, unknown> | undefined, propCode: string): unknown {
+      if (!properties) return undefined;
+      if (properties[propCode] !== undefined && properties[propCode] !== '') {
+        return properties[propCode];
+      }
+      const normTarget = propCode.replace(/[-_]/g, '').toLowerCase();
+      for (const [k, v] of Object.entries(properties)) {
+        if (k.replace(/[-_]/g, '').toLowerCase() === normTarget && v !== undefined && v !== '') {
+          return v;
+        }
+      }
+      return undefined;
     }
-  } else if (isTransportListing(draft.type)) {
-    if (!d.companyName?.trim()) {
-      e.companyName = 'Firma adı zorunludur.';
+
+    for (const prop of requiredProps) {
+      if (prop.dataType === 'BOOLEAN') {
+        continue;
+      }
+      const code = prop.code;
+      const codeUpper = String(code).toUpperCase();
+      if (CORE_CODES.has(code) || CORE_CODES.has(codeUpper)) {
+        continue;
+      }
+
+      let val = findPropertyValue(d.properties, code);
+      if (val === undefined || val === null || val === '') {
+        const norm = code.replace(/[-_]/g, '').toLowerCase();
+        if (norm === 'horsebreed' || norm === 'breed') val = d.breed;
+        else if (norm === 'coatcolor' || norm === 'color') val = d.coatColor;
+        else if (norm === 'horseage' || norm === 'age') val = d.age;
+        else if (norm === 'horsegender' || norm === 'gender') val = d.gender;
+        else if (norm === 'companyname') val = d.companyName;
+        else if (norm === 'websiteurl') val = d.websiteUrl;
+        else if (norm === 'stallionbreed' || norm === 'studbreed') val = d.studBreed;
+        else if (norm === 'stallionage' || norm === 'studage') val = d.studAge;
+        else if (norm === 'studhorsename') val = d.studHorseName;
+        else if (norm === 'studsire') val = d.studSire;
+        else if (norm === 'studdam') val = d.studDam;
+        else if (norm === 'studdamsire') val = d.studDamsire;
+        else if (norm === 'servicetype') val = (d as any).serviceType;
+      }
+      if (val === undefined || val === null || val === '' || String(val).trim() === '') {
+        if (!e[code]) {
+          e[code] = `${prop.title} zorunludur.`;
+        }
+      }
     }
-  } else if (isStudServiceListing(draft.type)) {
-    const hasName = Boolean(d.registeredName?.trim() || d.studHorseName?.trim());
-    if (!hasName) {
-      e.studHorseName = 'Aygır adı zorunludur.';
-      e.registeredName = 'Aygır adı zorunludur.';
-    }
-    if (!d.studBreed?.trim()) {
-      e.studBreed = 'At ırkı seçimi zorunludur.';
-    }
-    const hasAge = Boolean(d.studAge?.trim() || d.age?.trim());
-    if (!hasAge) {
-      e.studAge = 'Yaş bilgisi zorunludur.';
-    }
-    const hasColor = Boolean(d.studCoatColor?.trim() || d.coatColor?.trim());
-    if (!hasColor) {
-      e.studCoatColor = 'Donu (renk) seçimi zorunludur.';
-    }
-    const hasSire = Boolean(d.studSire?.trim() || d.sire?.trim());
-    if (!hasSire) {
-      e.studSire = 'Baba (Sire) adı zorunludur.';
-    }
-    const hasDam = Boolean(d.studDam?.trim() || d.dam?.trim());
-    if (!hasDam) {
-      e.studDam = 'Anne (Dam) adı zorunludur.';
-    }
-    const hasDamsire = Boolean(d.studDamsire?.trim() || d.damsire?.trim());
-    if (!hasDamsire) {
-      e.studDamsire = 'Annesinin babası zorunludur.';
-    }
-  } else if (isSaleHorseListing(draft.type)) {
-    if (!d.registeredName.trim()) e.registeredName = 'Atın adı gerekli.';
-    if (!d.gender) e.gender = 'Cinsiyet seçin.';
-  } else if (isHorseListing(draft.type)) {
-    if (!d.registeredName.trim()) e.registeredName = 'Atın adı gerekli.';
-    if (!d.gender) e.gender = 'Cinsiyet seçin.';
   }
 
   return e;
