@@ -18,6 +18,7 @@ import { useHeaderDrawers } from './HeaderDrawersContext';
 import { Radius } from '@/constants/Radius';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Typography } from '@/constants/Typography';
+import { useIsHydrated } from '@/hooks/useIsHydrated';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -76,7 +77,9 @@ export function AppHeader({
   const insets = useSafeAreaInsets();
   const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
-  const showAuthText = width >= 640 && !isLoggedIn;
+  const hydrated = useIsHydrated();
+  const effectiveLoggedIn = hydrated && isLoggedIn;
+  const showAuthText = width >= 640 && !effectiveLoggedIn;
   const showPostAdLabel = width >= 640;
   const active = headerNavKeyFromPath(pathname);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -102,7 +105,8 @@ export function AppHeader({
   const headerBorder = useThemeColor('headerBorder');
   const badgeSuccess = useThemeColor('badgeSuccess');
   const drawers = useHeaderDrawers();
-  const { count: badgeCount } = useFavorites();
+  const { count: rawBadgeCount } = useFavorites();
+  const badgeCount = hydrated ? rawBadgeCount : 0;
 
   const openAccount = () => {
     if (isLoggedIn) {
@@ -330,7 +334,7 @@ export function AppHeader({
 
             <AuthLinks
               showText={showAuthText && !searchOpen}
-              isLoggedIn={isLoggedIn}
+              isLoggedIn={effectiveLoggedIn}
               headerMuted={headerMuted}
               onLoginPress={onLoginPress}
               onSignupPress={onSignupPress}

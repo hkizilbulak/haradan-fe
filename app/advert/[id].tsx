@@ -7,6 +7,7 @@ import { AdvertDetailSkeleton, AdvertDetailView } from '@/components/advert-deta
 import { ErrorState } from '@/components/ui';
 import { useAdvert } from '@/hooks/useAdvert';
 import { useAuthSession } from '@/hooks/useAuthSession';
+import { useIsHydrated } from '@/hooks/useIsHydrated';
 import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Spacing } from '@/constants/Spacing';
@@ -14,6 +15,7 @@ import { prepareListingWizardEntry } from '@/services/listing';
 
 export default function AdvertDetailScreen() {
   const router = useRouter();
+  const isHydrated = useIsHydrated();
   const isWide = useIsWideLayout();
   const params = useLocalSearchParams<{ id: string | string[] }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -71,7 +73,7 @@ export default function AdvertDetailScreen() {
             secondaryLabel="Ana sayfaya dön"
             onSecondaryAction={() => router.push('/')}
           />
-        ) : isLoading || !data ? (
+        ) : !isHydrated || isLoading || !data ? (
           isWide ? (
             <HomeContentContainer style={styles.loadingPad}>
               <AdvertDetailSkeleton />
