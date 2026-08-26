@@ -53,7 +53,7 @@ export const AdvertGallery = memo(function AdvertGallery({
       toValue: 1,
       duration: 320,
       easing: EASE,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
     }).start();
   }, [index, fade]);
 

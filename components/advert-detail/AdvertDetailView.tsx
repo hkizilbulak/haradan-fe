@@ -523,7 +523,7 @@ export function AdvertDetailView({
               <AdvertGallery
                 items={detail.gallery}
                 height={galleryHeight}
-                accessToken={accessToken}
+                accessToken={isOwner ? accessToken : null}
               />
             </View>
             <View style={styles.buyCol}>
@@ -575,7 +575,7 @@ export function AdvertDetailView({
 const styles = StyleSheet.create({
   root: { flex: 1, position: 'relative' },
   flex: { flex: 1 },
-  content: { paddingTop: Spacing.lg, paddingBottom: 0 },
+  content: { paddingTop: Spacing.lg, paddingBottom: 0, flexGrow: 1 },
   mobileContent: {},
   mobileGalleryWrap: {
     position: 'relative',
