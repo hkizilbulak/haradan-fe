@@ -4,11 +4,10 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
+import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { AdvertDetail, AdvertSpecGroup, HorseProfile } from '@/types';
@@ -48,7 +47,7 @@ function getSpecIcon(label: string): keyof typeof Ionicons.glyphMap {
   if (l.includes('telefon') || l.includes('phone') || l.includes('iletişim')) return 'call-outline';
   if (l.includes('konum') || l.includes('şehir') || l.includes('ilçe') || l.includes('adres')) return 'location-outline';
   if (l.includes('aygır') || l.includes('at adı') || l.includes('isim') || l.includes('ad')) return 'ribbon-outline';
-  if (l.includes('ırk') || l.includes('breed') || l.includes('cins')) return 'leaf-outline';
+  if (l.includes('Irk') || l.includes('breed') || l.includes('cins')) return 'leaf-outline';
   if (l.includes('yaş') || l.includes('age') || l.includes('tarih') || l.includes('doğum') || l.includes('yıl')) return 'calendar-outline';
   if (l.includes('don') || l.includes('renk') || l.includes('coat') || l.includes('color')) return 'color-palette-outline';
   if (l.includes('cinsiyet') || l.includes('gender')) return 'male-female-outline';
@@ -68,8 +67,7 @@ export const AdvertSpecs = memo(function AdvertSpecs({
   horse: propHorse,
   detail,
 }: AdvertSpecsProps) {
-  const { width } = useWindowDimensions();
-  const isWide = width >= HOME_DESKTOP_BREAKPOINT;
+  const isWide = useIsWideLayout();
 
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');

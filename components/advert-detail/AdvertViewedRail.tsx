@@ -7,12 +7,12 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FeaturedListingCard } from '@/components/product/FeaturedListingCard';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
+import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { CatalogProductCard } from '@/types';
 
@@ -30,7 +30,7 @@ export const AdvertViewedRail = memo(function AdvertViewedRail({
   items,
   onPress,
 }: AdvertViewedRailProps) {
-  const { width } = useWindowDimensions();
+  const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const visible = isWide ? 4 : width >= 640 ? 2 : 1;
   const gap = isWide ? GAP : Spacing.md;
