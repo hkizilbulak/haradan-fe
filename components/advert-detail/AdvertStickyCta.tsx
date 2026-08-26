@@ -39,7 +39,7 @@ export const AdvertStickyCta = memo(function AdvertStickyCta({
   const skeleton = useThemeColor('skeleton');
   const thumbSource = useMediaImageSource(
     detail.cover?.publicUrl ?? detail.gallery[0]?.publicUrl,
-    accessToken
+    isOwner ? accessToken : null
   );
 
   const isSold = detail.backendStatus === 'SOLD';

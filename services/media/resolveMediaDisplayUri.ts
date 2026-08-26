@@ -56,6 +56,9 @@ export async function resolveMediaDisplayUri(
       }
     }
     if (!res.ok) {
+      if (res.status >= 500) {
+        return trimmed;
+      }
       const publicRes = await fetch(trimmed, { cache: 'no-store' });
       if (publicRes.ok) {
         const blob = await publicRes.blob();
