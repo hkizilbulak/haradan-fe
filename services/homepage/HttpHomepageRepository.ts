@@ -1,5 +1,5 @@
 import { HttpClient } from '@/services/http';
-import { getAuthSession } from '@/services/auth/sessionStore';
+import { getValidAccessToken } from '@/services/auth/tokenRefresh';
 import { HttpCatalogRepository } from '@/services/catalog/HttpCatalogRepository';
 import type { ICatalogRepository } from '@/services/catalog/CatalogRepository';
 import {
@@ -53,7 +53,7 @@ export class HttpHomepageRepository implements IHomepageRepository {
   }
 
   async getHomepage(options?: HomepageQueryOptions): Promise<HomepageData> {
-    const accessToken = getAuthSession()?.accessToken ?? undefined;
+    const accessToken = (await getValidAccessToken()) ?? undefined;
     try {
       return await this.fetchHomepageData(accessToken, options);
     } catch (err) {

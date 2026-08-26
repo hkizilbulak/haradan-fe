@@ -1,5 +1,5 @@
 import { HttpClient } from '@/services/http';
-import { getAuthSession } from '@/services/auth/sessionStore';
+import { getValidAccessToken } from '@/services/auth/tokenRefresh';
 import { locationLookup } from '@/services/location';
 import type { CatalogProductCard } from '@/types';
 import type {
@@ -61,7 +61,7 @@ export class HttpPublishedAdvertsRepository
     params: PublishedAdvertsSearchParams
   ): Promise<CatalogProductCard[]> {
     const accessToken =
-      params.accessToken ?? getAuthSession()?.accessToken ?? null;
+      params.accessToken ?? (await getValidAccessToken()) ?? null;
     const pageLimit = Math.min(
       Math.max(params.pageLimit ?? DEFAULT_PAGE_LIMIT, 1),
       100

@@ -1,5 +1,6 @@
 import { ApiError, HttpClient } from '@/services/http';
 import { getAuthSession } from '@/services/auth/sessionStore';
+import { getValidAccessToken } from '@/services/auth/tokenRefresh';
 import type { AdvertDetail } from '@/types';
 import type { OwnerAdvertDto } from '@/services/my-listings/mapOwnerAdvert';
 import type { AdvertQueryOptions, IAdvertRepository } from './AdvertRepository';
@@ -35,7 +36,7 @@ export class HttpAdvertRepository implements IAdvertRepository {
     options?: AdvertQueryOptions
   ): Promise<AdvertDetail> {
     const accessToken =
-      options?.accessToken ?? getAuthSession()?.accessToken ?? null;
+      options?.accessToken ?? (await getValidAccessToken()) ?? null;
     const viewerUserId =
       options?.viewerUserId ?? getAuthSession()?.user.id ?? null;
 
