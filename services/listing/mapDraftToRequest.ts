@@ -41,12 +41,46 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
     }
   }
 
-  // 2. Clean up any invalid keys, core columns, nulls, or empty strings
+  // 2. Automatic injection from top-level fields (covers TJK auto-fill and direct state)
+  const TOP_LEVEL_INJECTIONS: [string, unknown][] = [
+    ['COAT_COLOR', d.coatColor],
+    ['coatColor', d.coatColor],
+    ['HORSE_BREED', d.breed],
+    ['breed', d.breed],
+    ['HORSE_AGE', d.age],
+    ['age', d.age],
+    ['HORSE_GENDER', d.gender],
+    ['gender', d.gender],
+    ['COMPANY_NAME', d.companyName],
+    ['companyName', d.companyName],
+    ['WEBSITE_URL', d.websiteUrl],
+    ['websiteUrl', d.websiteUrl],
+    ['STALLION_BREED', d.studBreed],
+    ['studBreed', d.studBreed],
+    ['STALLION_AGE', d.studAge],
+    ['studAge', d.studAge],
+    ['studHorseName', d.studHorseName],
+    ['studSire', d.studSire],
+    ['studDam', d.studDam],
+    ['studDamsire', d.studDamsire],
+    ['serviceType', (d as any).serviceType],
+    ['SERVICE_TYPE', (d as any).serviceType],
+    ['service_type', (d as any).serviceType],
+  ];
+
+  for (const [code, val] of TOP_LEVEL_INJECTIONS) {
+    if (val !== undefined && val !== null && String(val).trim() !== '' && !props[code]) {
+      props[code] = typeof val === 'string' ? val.trim() : val;
+    }
+  }
+
+  // 3. Clean up any invalid keys, core columns, nulls, or empty strings
   const CORE_EXCLUDED_KEYS = new Set([
     'address',
     'ADDRESS',
     'sellerPhone',
     'phone',
+    'PHONE',
     'title',
     'TITLE',
     'description',
@@ -54,6 +88,8 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
     'price',
     'PRICE',
     'priceTl',
+    'location',
+    'LOCATION',
     'provinceId',
     'districtId',
     'media',

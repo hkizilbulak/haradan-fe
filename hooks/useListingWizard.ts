@@ -58,6 +58,26 @@ export function applyTjkProfile(
   details: ListingDraftDetails,
   horse: TjkHorseProfile
 ): ListingDraftDetails {
+  const existingProps = { ...(details.properties || {}) };
+
+  // Sync TJK fields directly to properties map (both canonical and uppercase/lowercase)
+  if (horse.coatColor) {
+    existingProps['COAT_COLOR'] = horse.coatColor;
+    existingProps['coatColor'] = horse.coatColor;
+  }
+  if (horse.gender) {
+    existingProps['HORSE_GENDER'] = horse.gender;
+    existingProps['gender'] = horse.gender;
+  }
+  if (horse.age != null) {
+    existingProps['HORSE_AGE'] = String(horse.age);
+    existingProps['age'] = String(horse.age);
+  }
+  if (horse.breed) {
+    existingProps['HORSE_BREED'] = horse.breed;
+    existingProps['breed'] = horse.breed;
+  }
+
   return {
     ...details,
     registeredName: horse.registeredName,
@@ -76,6 +96,7 @@ export function applyTjkProfile(
     tjkNumber: horse.tjkNumber,
     tjkSkipped: false,
     title: details.title.trim() || horse.registeredName,
+    properties: existingProps,
   };
 }
 
