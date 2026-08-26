@@ -54,37 +54,74 @@ function wizardSteps(): ListingWizardStep[] {
   return isPaytrCheckoutEnabled() ? STEPS_FULL : STEPS_PACKAGE_ONLY;
 }
 
+export function normalizeTjkAge(rawAge: number | string | undefined): string {
+  if (rawAge == null || rawAge === '') return '';
+  const str = String(rawAge).trim();
+  if (str.includes('Yaş') || str.includes('Tay')) return str;
+  const num = parseInt(str, 10);
+  if (isNaN(num)) return str;
+  if (num <= 1) return 'Tay (0-1 Yaş)';
+  if (num === 2) return '2 Yaş';
+  if (num === 3) return '3 Yaş';
+  if (num === 4) return '4 Yaş';
+  return '5+ Yaş';
+}
+
+export function normalizeTjkGender(rawGender: string | null | undefined): string {
+  if (!rawGender) return '';
+  const g = rawGender.trim().replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase();
+  if (g.startsWith('e')) return 'Erkek';
+  if (g.startsWith('d')) return 'Dişi';
+  if (g.startsWith('i') || g.startsWith('ı')) return 'İğdiş';
+  return rawGender.trim();
+}
+
+export function normalizeTjkBreed(rawBreed: string | undefined): string {
+  if (!rawBreed) return '';
+  const b = rawBreed.trim().replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase();
+  if (b.includes('ingiliz')) return 'İngiliz (Thoroughbred)';
+  if (b.includes('arap')) return 'Safkan Arap';
+  return rawBreed.trim();
+}
+
 export function applyTjkProfile(
   details: ListingDraftDetails,
   horse: TjkHorseProfile
 ): ListingDraftDetails {
   const existingProps = { ...(details.properties || {}) };
 
-  // Sync TJK fields directly to properties map (both canonical and uppercase/lowercase)
+  // Remove any lowercase keys that might conflict with strict backend validation
+  delete existingProps['coatColor'];
+  delete existingProps['gender'];
+  delete existingProps['age'];
+  delete existingProps['breed'];
+
+  const normalizedAge = normalizeTjkAge(horse.age);
+  const normalizedGender = normalizeTjkGender(horse.gender);
+  const normalizedBreed = normalizeTjkBreed(horse.breed);
+
+  // Sync TJK fields directly to canonical property codes
   if (horse.coatColor) {
     existingProps['COAT_COLOR'] = horse.coatColor;
-    existingProps['coatColor'] = horse.coatColor;
   }
-  if (horse.gender) {
-    existingProps['HORSE_GENDER'] = horse.gender;
-    existingProps['gender'] = horse.gender;
+  if (normalizedGender) {
+    existingProps['HORSE_GENDER'] = normalizedGender;
   }
-  if (horse.age != null) {
-    existingProps['HORSE_AGE'] = String(horse.age);
-    existingProps['age'] = String(horse.age);
+  if (normalizedAge) {
+    existingProps['HORSE_AGE'] = normalizedAge;
   }
-  if (horse.breed) {
-    existingProps['HORSE_BREED'] = horse.breed;
-    existingProps['breed'] = horse.breed;
+  if (normalizedBreed) {
+    existingProps['HORSE_BREED'] = normalizedBreed;
   }
 
   return {
     ...details,
     registeredName: horse.registeredName,
-    gender: horse.gender,
+    gender: normalizedGender as any || horse.gender,
     birthDate: horse.birthDate,
-    age: String(horse.age),
+    age: normalizedAge || String(horse.age),
     coatColor: horse.coatColor,
+    breed: normalizedBreed || horse.breed,
     heightCm: horse.heightCm != null ? String(horse.heightCm) : '',
     sire: horse.sire,
     dam: horse.dam,

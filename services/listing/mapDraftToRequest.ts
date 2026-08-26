@@ -42,30 +42,51 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
   }
 
   // 2. Automatic injection from top-level fields (covers TJK auto-fill and direct state)
+  const normAge = (raw: unknown): string | undefined => {
+    if (raw == null || raw === '') return undefined;
+    const str = String(raw).trim();
+    if (str.includes('Yaş') || str.includes('Tay')) return str;
+    const num = parseInt(str, 10);
+    if (isNaN(num)) return str;
+    if (num <= 1) return 'Tay (0-1 Yaş)';
+    if (num === 2) return '2 Yaş';
+    if (num === 3) return '3 Yaş';
+    if (num === 4) return '4 Yaş';
+    return '5+ Yaş';
+  };
+
+  const normGender = (raw: unknown): string | undefined => {
+    if (raw == null || raw === '') return undefined;
+    const g = String(raw).trim().replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase();
+    if (g.startsWith('e')) return 'Erkek';
+    if (g.startsWith('d')) return 'Dişi';
+    if (g.startsWith('i') || g.startsWith('ı')) return 'İğdiş';
+    return String(raw).trim();
+  };
+
+  const normBreed = (raw: unknown): string | undefined => {
+    if (raw == null || raw === '') return undefined;
+    const b = String(raw).trim().replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase();
+    if (b.includes('ingiliz')) return 'İngiliz (Thoroughbred)';
+    if (b.includes('arap')) return 'Safkan Arap';
+    return String(raw).trim();
+  };
+
   const TOP_LEVEL_INJECTIONS: [string, unknown][] = [
     ['COAT_COLOR', d.coatColor],
-    ['coatColor', d.coatColor],
-    ['HORSE_BREED', d.breed],
-    ['breed', d.breed],
-    ['HORSE_AGE', d.age],
-    ['age', d.age],
-    ['HORSE_GENDER', d.gender],
-    ['gender', d.gender],
+    ['HORSE_BREED', normBreed(d.breed)],
+    ['HORSE_AGE', normAge(d.age)],
+    ['HORSE_GENDER', normGender(d.gender)],
     ['COMPANY_NAME', d.companyName],
-    ['companyName', d.companyName],
     ['WEBSITE_URL', d.websiteUrl],
-    ['websiteUrl', d.websiteUrl],
-    ['STALLION_BREED', d.studBreed],
-    ['studBreed', d.studBreed],
-    ['STALLION_AGE', d.studAge],
-    ['studAge', d.studAge],
+    ['STALLION_BREED', normBreed(d.studBreed)],
+    ['STALLION_AGE', normAge(d.studAge)],
     ['studHorseName', d.studHorseName],
     ['studSire', d.studSire],
     ['studDam', d.studDam],
     ['studDamsire', d.studDamsire],
     ['serviceType', (d as any).serviceType],
     ['SERVICE_TYPE', (d as any).serviceType],
-    ['service_type', (d as any).serviceType],
   ];
 
   for (const [code, val] of TOP_LEVEL_INJECTIONS) {
@@ -74,8 +95,16 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
     }
   }
 
-  // 3. Clean up any invalid keys, core columns, nulls, or empty strings
-  const CORE_EXCLUDED_KEYS = new Set([
+  // If HORSE_AGE exists in props, ensure it's normalized to the select option string
+  if (props['HORSE_AGE']) {
+    const matchedAge = normAge(props['HORSE_AGE']);
+    if (matchedAge) {
+      props['HORSE_AGE'] = matchedAge;
+    }
+  }
+
+  // 3. Clean up any invalid keys, core columns, legacy lowercase keys, nulls, or empty strings
+  const EXCLUDED_KEYS = new Set([
     'address',
     'ADDRESS',
     'sellerPhone',
@@ -96,6 +125,22 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
     'MEDIA',
     'images',
     'IMAGES',
+    // Exclude legacy lowercase keys that live backend rejects as undefined category properties
+    'age',
+    'breed',
+    'coatColor',
+    'gender',
+    'companyName',
+    'websiteUrl',
+    'studBreed',
+    'studAge',
+    'service_type',
+    'facilityGrassPaddock',
+    'facilitySandPaddock',
+    'facilityStallionPaddock',
+    'facilityVeterinarian',
+    'facilityFarrier',
+    'facilityFoalingBarn',
   ]);
 
   const cleaned: Record<string, unknown> = {};
@@ -103,8 +148,8 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
     if (v === undefined || v === null || v === '' || v === 'undefined' || v === 'null') {
       continue;
     }
-    // Never send old hardcoded prefixed keys or core SQL columns
-    if (k.startsWith('facility') || CORE_EXCLUDED_KEYS.has(k)) {
+    // Never send old hardcoded prefixed keys, lowercase helpers, or core SQL columns
+    if (EXCLUDED_KEYS.has(k)) {
       continue;
     }
     cleaned[k] = v;
