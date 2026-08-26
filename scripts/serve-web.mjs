@@ -106,33 +106,13 @@ function tryFile(abs) {
   return null;
 }
 
-function resolveDynamicRoute(root, urlPath) {
-  const decoded = decodeURIComponent((urlPath.split('?')[0] || '/').replace(/\\/g, '/'));
-  const segments = decoded.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
-  if (!segments.length) return null;
-
-  const parent = segments.slice(0, -1).join('/');
-  const candidates = [
-    join(root, parent, '[id].html'),
-    join(root, parent, '[...all].html'),
-    join(root, parent, '[...slug].html'),
-  ];
-  for (const candidate of candidates) {
-    if (existsSync(candidate) && statSync(candidate).isFile()) {
-      return candidate;
-    }
-  }
-  return null;
-}
-
 function resolvePath(urlPath) {
   const abs = safeJoin(ROOT, urlPath);
   if (!abs) return null;
   return (
     tryFile(abs) ||
     tryFile(`${abs}.html`) ||
-    tryFile(join(abs, 'index.html')) ||
-    resolveDynamicRoute(ROOT, urlPath)
+    tryFile(join(abs, 'index.html'))
   );
 }
 
