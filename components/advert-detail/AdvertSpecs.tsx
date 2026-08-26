@@ -4,13 +4,11 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
-import { useIsHydrated } from '@/hooks/useIsHydrated';
+import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { AdvertDetail, AdvertSpecGroup, HorseProfile } from '@/types';
 import { useAdvertLocation } from '@/services/location';
@@ -69,9 +67,7 @@ export const AdvertSpecs = memo(function AdvertSpecs({
   horse: propHorse,
   detail,
 }: AdvertSpecsProps) {
-  const { width } = useWindowDimensions();
-  const isHydrated = useIsHydrated();
-  const isWide = isHydrated ? width >= HOME_DESKTOP_BREAKPOINT : false;
+  const isWide = useIsWideLayout();
 
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');

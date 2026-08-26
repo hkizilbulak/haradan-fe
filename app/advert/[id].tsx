@@ -1,23 +1,20 @@
 import React, { useCallback } from 'react';
-import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import { AppHeader, HomeContentContainer } from '@/components/layout';
 import { AdvertDetailSkeleton, AdvertDetailView } from '@/components/advert-detail';
 import { ErrorState } from '@/components/ui';
-import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { useAdvert } from '@/hooks/useAdvert';
 import { useAuthSession } from '@/hooks/useAuthSession';
-import { useIsHydrated } from '@/hooks/useIsHydrated';
+import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Spacing } from '@/constants/Spacing';
 import { prepareListingWizardEntry } from '@/services/listing';
 
 export default function AdvertDetailScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const isHydrated = useIsHydrated();
-  const isWide = isHydrated ? width >= HOME_DESKTOP_BREAKPOINT : false;
+  const isWide = useIsWideLayout();
   const params = useLocalSearchParams<{ id: string | string[] }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const bg = useThemeColor('background');

@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,7 +33,7 @@ import {
   mobileDetailScrollInset,
 } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
-import { useIsHydrated } from '@/hooks/useIsHydrated';
+import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -58,9 +57,8 @@ export function AdvertDetailView({
   accessToken = null,
 }: AdvertDetailViewProps) {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const isHydrated = useIsHydrated();
-  const isWide = isHydrated ? width >= HOME_DESKTOP_BREAKPOINT : false;
+  const width = useLayoutWidth();
+  const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const scrollRef = useRef<ScrollView>(null);
   const scrollYRef = useRef(0);
   const specsAnchorRef = useRef<View>(null);
@@ -113,7 +111,7 @@ export function AdvertDetailView({
 
   const galleryHeight = isWide
     ? 440
-    : Math.min(Math.round((isHydrated ? width : 390) * 0.78), 420);
+    : Math.min(Math.round(width * 0.78), 420);
 
   useEffect(() => {
     setTab('general');
