@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
+import { useIsHydrated } from '@/hooks/useIsHydrated';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { AdvertDetail, AdvertSpecGroup, HorseProfile } from '@/types';
 import { useAdvertLocation } from '@/services/location';
@@ -69,7 +70,8 @@ export const AdvertSpecs = memo(function AdvertSpecs({
   detail,
 }: AdvertSpecsProps) {
   const { width } = useWindowDimensions();
-  const isWide = width >= HOME_DESKTOP_BREAKPOINT;
+  const isHydrated = useIsHydrated();
+  const isWide = isHydrated ? width >= HOME_DESKTOP_BREAKPOINT : false;
 
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');

@@ -34,6 +34,7 @@ import {
   mobileDetailScrollInset,
 } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
+import { useIsHydrated } from '@/hooks/useIsHydrated';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -58,7 +59,8 @@ export function AdvertDetailView({
 }: AdvertDetailViewProps) {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const isWide = width >= HOME_DESKTOP_BREAKPOINT;
+  const isHydrated = useIsHydrated();
+  const isWide = isHydrated ? width >= HOME_DESKTOP_BREAKPOINT : false;
   const scrollRef = useRef<ScrollView>(null);
   const scrollYRef = useRef(0);
   const specsAnchorRef = useRef<View>(null);
@@ -109,7 +111,9 @@ export function AdvertDetailView({
   const border = useThemeColor('border');
   const bg = useThemeColor('background');
 
-  const galleryHeight = isWide ? 440 : Math.min(Math.round(width * 0.78), 420);
+  const galleryHeight = isWide
+    ? 440
+    : Math.min(Math.round((isHydrated ? width : 390) * 0.78), 420);
 
   useEffect(() => {
     setTab('general');

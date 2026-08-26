@@ -6,6 +6,7 @@ import {
   mobileDetailScrollInset,
 } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
+import { useIsHydrated } from '@/hooks/useIsHydrated';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
 
 type AdvertDetailSkeletonProps = {
@@ -16,13 +17,14 @@ export function AdvertDetailSkeleton({
   variant = 'default',
 }: AdvertDetailSkeletonProps) {
   const { width } = useWindowDimensions();
-  const isWide = width >= HOME_DESKTOP_BREAKPOINT;
+  const isHydrated = useIsHydrated();
+  const isWide = isHydrated ? width >= HOME_DESKTOP_BREAKPOINT : false;
   const isMobile = variant === 'mobile' || !isWide;
   const safeInsets = useSafeInsets();
   const mobileScrollPad = mobileDetailScrollInset(safeInsets.bottom);
 
   if (isMobile) {
-    const galleryH = Math.min(Math.round(width * 0.78), 420);
+    const galleryH = Math.min(Math.round((isHydrated ? width : 390) * 0.78), 420);
     return (
       <SkeletonPulse>
         <Skeleton width="100%" height={galleryH} borderRadius={0} />
