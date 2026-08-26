@@ -29,9 +29,11 @@ import { LazySection } from '@/components/ui/LazySection';
 import { RatingStars } from '@/components/product/RatingStars';
 import { HomeContentContainer } from '@/components/layout';
 import { SiteFooter } from '@/components/home';
+import {
+  HOME_DESKTOP_BREAKPOINT,
+  mobileDetailScrollInset,
+} from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
-import { mobileDetailScrollInset } from '@/constants/Layout';
-import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -55,8 +57,8 @@ export function AdvertDetailView({
   accessToken = null,
 }: AdvertDetailViewProps) {
   const router = useRouter();
-  const isWide = useIsWideLayout();
   const { width } = useWindowDimensions();
+  const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const scrollRef = useRef<ScrollView>(null);
   const scrollYRef = useRef(0);
   const specsAnchorRef = useRef<View>(null);

@@ -48,9 +48,10 @@ export class HttpAdvertRepository implements IAdvertRepository {
           ...(accessToken ? { accessToken } : null),
         }
       );
-      const owned = Boolean(
-        accessToken && viewerUserId && dto.sellerId && dto.sellerId === viewerUserId
-      );
+      const owned =
+        accessToken && viewerUserId
+          ? await this.isOwned(id, accessToken)
+          : false;
 
       let tjkHorse: TjkHorseProfile | null = null;
       if (dto.horse?.id) {
