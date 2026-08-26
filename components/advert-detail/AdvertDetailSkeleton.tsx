@@ -1,11 +1,12 @@
 import React from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Skeleton, SkeletonPulse } from '@/components/ui/Skeleton';
 import {
   HOME_DESKTOP_BREAKPOINT,
   mobileDetailScrollInset,
 } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
+import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
 
 type AdvertDetailSkeletonProps = {
@@ -15,7 +16,7 @@ type AdvertDetailSkeletonProps = {
 export function AdvertDetailSkeleton({
   variant = 'default',
 }: AdvertDetailSkeletonProps) {
-  const { width } = useWindowDimensions();
+  const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const isMobile = variant === 'mobile' || !isWide;
   const safeInsets = useSafeInsets();

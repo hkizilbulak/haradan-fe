@@ -8,12 +8,12 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
+import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useAdvertLocation } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
@@ -40,7 +40,7 @@ export const AdvertBundleOffer = memo(function AdvertBundleOffer({
   onPress,
   onViewAll,
 }: AdvertBundleOfferProps) {
-  const { width } = useWindowDimensions();
+  const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const visible = isWide ? 3 : width >= 640 ? 2 : 1;
   const gap = isWide ? GAP : Spacing.md;
