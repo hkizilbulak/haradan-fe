@@ -107,10 +107,5 @@ export function LazySection({
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    ...Platform.select({
-      web: { contentVisibility: 'auto' } as ViewStyle,
-      default: {},
-    }),
-  },
+  wrap: {},
 });

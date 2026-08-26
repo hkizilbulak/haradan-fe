@@ -62,33 +62,31 @@ export default function AdvertDetailScreen() {
         />
       ) : null}
 
-      <View style={styles.flex}>
-        {isError ? (
-          <ErrorState
-            variant="notFound"
-            message={error}
-            onRetry={refetch}
-            secondaryLabel="Ana sayfaya dön"
-            onSecondaryAction={() => router.push('/')}
-          />
-        ) : isLoading || !data ? (
-          isWide ? (
-            <HomeContentContainer style={styles.loadingPad}>
-              <AdvertDetailSkeleton />
-            </HomeContentContainer>
-          ) : (
-            <AdvertDetailSkeleton variant="mobile" />
-          )
+      {isError ? (
+        <ErrorState
+          variant="notFound"
+          message={error}
+          onRetry={refetch}
+          secondaryLabel="Ana sayfaya dön"
+          onSecondaryAction={() => router.push('/')}
+        />
+      ) : isLoading || !data ? (
+        isWide ? (
+          <HomeContentContainer style={styles.loadingPad}>
+            <AdvertDetailSkeleton />
+          </HomeContentContainer>
         ) : (
-          <AdvertDetailView
-            detail={data}
-            isOwner={
-              Boolean(session?.user.id) && data.sellerId === session?.user.id
-            }
-            accessToken={session?.accessToken ?? null}
-          />
-        )}
-      </View>
+          <AdvertDetailSkeleton variant="mobile" />
+        )
+      ) : (
+        <AdvertDetailView
+          detail={data}
+          isOwner={
+            Boolean(session?.user.id) && data.sellerId === session?.user.id
+          }
+          accessToken={session?.accessToken ?? null}
+        />
+      )}
     </View>
   );
 }
