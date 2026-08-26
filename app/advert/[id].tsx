@@ -1,21 +1,23 @@
 import React, { useCallback } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Head from 'expo-router/head';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader, HomeContentContainer } from '@/components/layout';
 import { AdvertDetailSkeleton, AdvertDetailView } from '@/components/advert-detail';
 import { ErrorState } from '@/components/ui';
+import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { useAdvert } from '@/hooks/useAdvert';
 import { useAuthSession } from '@/hooks/useAuthSession';
-import { useIsWideLayout } from '@/hooks/useLayoutWidth';
+import { useIsHydrated } from '@/hooks/useIsHydrated';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Spacing } from '@/constants/Spacing';
 import { prepareListingWizardEntry } from '@/services/listing';
 
 export default function AdvertDetailScreen() {
   const router = useRouter();
-  const isWide = useIsWideLayout();
+  const { width } = useWindowDimensions();
+  const isHydrated = useIsHydrated();
+  const isWide = isHydrated ? width >= HOME_DESKTOP_BREAKPOINT : false;
   const params = useLocalSearchParams<{ id: string | string[] }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const bg = useThemeColor('background');
@@ -63,10 +65,7 @@ export default function AdvertDetailScreen() {
         />
       ) : null}
 
-      <SafeAreaView
-        edges={isWide ? ['left', 'right', 'bottom'] : ['left', 'right']}
-        style={styles.flex}
-      >
+      <View style={styles.flex}>
         {isError ? (
           <ErrorState
             variant="notFound"
@@ -92,7 +91,7 @@ export default function AdvertDetailScreen() {
             accessToken={session?.accessToken ?? null}
           />
         )}
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

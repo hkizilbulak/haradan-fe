@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,9 +29,12 @@ import { LazySection } from '@/components/ui/LazySection';
 import { RatingStars } from '@/components/product/RatingStars';
 import { HomeContentContainer } from '@/components/layout';
 import { SiteFooter } from '@/components/home';
-import { mobileDetailScrollInset } from '@/constants/Layout';
+import {
+  HOME_DESKTOP_BREAKPOINT,
+  mobileDetailScrollInset,
+} from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
-import { useIsWideLayout, useLayoutWidth } from '@/hooks/useLayoutWidth';
+import { useIsHydrated } from '@/hooks/useIsHydrated';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -54,8 +58,9 @@ export function AdvertDetailView({
   accessToken = null,
 }: AdvertDetailViewProps) {
   const router = useRouter();
-  const isWide = useIsWideLayout();
-  const width = useLayoutWidth();
+  const { width } = useWindowDimensions();
+  const isHydrated = useIsHydrated();
+  const isWide = isHydrated ? width >= HOME_DESKTOP_BREAKPOINT : false;
   const scrollRef = useRef<ScrollView>(null);
   const scrollYRef = useRef(0);
   const specsAnchorRef = useRef<View>(null);
@@ -106,7 +111,9 @@ export function AdvertDetailView({
   const border = useThemeColor('border');
   const bg = useThemeColor('background');
 
-  const galleryHeight = isWide ? 440 : Math.min(Math.round(width * 0.78), 420);
+  const galleryHeight = isWide
+    ? 440
+    : Math.min(Math.round((isHydrated ? width : 390) * 0.78), 420);
 
   useEffect(() => {
     setTab('general');

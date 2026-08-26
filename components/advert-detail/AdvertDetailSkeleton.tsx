@@ -1,12 +1,12 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Skeleton, SkeletonPulse } from '@/components/ui/Skeleton';
 import {
   HOME_DESKTOP_BREAKPOINT,
   mobileDetailScrollInset,
 } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
-import { useLayoutWidth } from '@/hooks/useLayoutWidth';
+import { useIsHydrated } from '@/hooks/useIsHydrated';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
 
 type AdvertDetailSkeletonProps = {
@@ -16,14 +16,15 @@ type AdvertDetailSkeletonProps = {
 export function AdvertDetailSkeleton({
   variant = 'default',
 }: AdvertDetailSkeletonProps) {
-  const width = useLayoutWidth();
-  const isWide = width >= HOME_DESKTOP_BREAKPOINT;
+  const { width } = useWindowDimensions();
+  const isHydrated = useIsHydrated();
+  const isWide = isHydrated ? width >= HOME_DESKTOP_BREAKPOINT : false;
   const isMobile = variant === 'mobile' || !isWide;
   const safeInsets = useSafeInsets();
   const mobileScrollPad = mobileDetailScrollInset(safeInsets.bottom);
 
   if (isMobile) {
-    const galleryH = Math.min(Math.round(width * 0.78), 420);
+    const galleryH = Math.min(Math.round((isHydrated ? width : 390) * 0.78), 420);
     return (
       <SkeletonPulse>
         <Skeleton width="100%" height={galleryH} borderRadius={0} />

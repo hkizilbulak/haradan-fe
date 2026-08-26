@@ -6,13 +6,14 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FeaturedListingCard } from '@/components/product/FeaturedListingCard';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
-import { useLayoutWidth } from '@/hooks/useLayoutWidth';
+import { useIsHydrated } from '@/hooks/useIsHydrated';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { CatalogProductCard } from '@/types';
 
@@ -30,9 +31,10 @@ export const AdvertViewedRail = memo(function AdvertViewedRail({
   items,
   onPress,
 }: AdvertViewedRailProps) {
-  const width = useLayoutWidth();
-  const isWide = width >= HOME_DESKTOP_BREAKPOINT;
-  const visible = isWide ? 4 : width >= 640 ? 2 : 1;
+  const { width } = useWindowDimensions();
+  const isHydrated = useIsHydrated();
+  const isWide = isHydrated ? width >= HOME_DESKTOP_BREAKPOINT : false;
+  const visible = isWide ? 4 : isHydrated && width >= 640 ? 2 : 1;
   const gap = isWide ? GAP : Spacing.md;
 
   const scrollRef = useRef<ScrollView>(null);
@@ -49,9 +51,12 @@ export const AdvertViewedRail = memo(function AdvertViewedRail({
   const pageCount = Math.max(1, Math.ceil(list.length / visible));
 
   const cardWidth = useMemo(() => {
-    if (railWidth <= 0) return isWide ? 240 : Math.min(220, width * 0.78);
+    if (railWidth <= 0) {
+      const w = isHydrated ? width : 390;
+      return isWide ? 240 : Math.min(220, w * 0.78);
+    }
     return Math.floor((railWidth - gap * (visible - 1)) / visible);
-  }, [railWidth, gap, visible, isWide, width]);
+  }, [railWidth, gap, visible, isWide, width, isHydrated]);
 
   const step = visible * (cardWidth + gap);
 

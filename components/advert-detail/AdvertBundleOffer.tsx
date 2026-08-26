@@ -8,12 +8,13 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
-import { useLayoutWidth } from '@/hooks/useLayoutWidth';
+import { useIsHydrated } from '@/hooks/useIsHydrated';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useAdvertLocation } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
@@ -40,9 +41,10 @@ export const AdvertBundleOffer = memo(function AdvertBundleOffer({
   onPress,
   onViewAll,
 }: AdvertBundleOfferProps) {
-  const width = useLayoutWidth();
-  const isWide = width >= HOME_DESKTOP_BREAKPOINT;
-  const visible = isWide ? 3 : width >= 640 ? 2 : 1;
+  const { width } = useWindowDimensions();
+  const isHydrated = useIsHydrated();
+  const isWide = isHydrated ? width >= HOME_DESKTOP_BREAKPOINT : false;
+  const visible = isWide ? 3 : isHydrated && width >= 640 ? 2 : 1;
   const gap = isWide ? GAP : Spacing.md;
 
   const scrollRef = useRef<ScrollView>(null);
@@ -63,9 +65,12 @@ export const AdvertBundleOffer = memo(function AdvertBundleOffer({
   const pageCount = Math.max(1, Math.ceil(list.length / visible));
 
   const cardWidth = useMemo(() => {
-    if (railWidth <= 0) return isWide ? 280 : Math.min(260, width * 0.82);
+    if (railWidth <= 0) {
+      const w = isHydrated ? width : 390;
+      return isWide ? 280 : Math.min(260, w * 0.82);
+    }
     return Math.floor((railWidth - gap * (visible - 1)) / visible);
-  }, [railWidth, gap, visible, isWide, width]);
+  }, [railWidth, gap, visible, isWide, width, isHydrated]);
 
   const step = visible * (cardWidth + gap);
 
