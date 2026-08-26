@@ -15,7 +15,6 @@ import type { AuthUser } from '@/types';
 export type ProfileDrawerAction =
   | 'listings'
   | 'favorites'
-  | 'messages'
   | 'settings';
 
 type ProfileDrawerProps = {
@@ -47,7 +46,6 @@ const NAV: {
 }[] = [
   { key: 'listings', label: 'İlanlarım', icon: 'grid-outline' },
   { key: 'favorites', label: 'Favoriler', icon: 'heart-outline' },
-  { key: 'messages', label: 'Mesajlar', icon: 'chatbubble-outline' },
   { key: 'settings', label: 'Ayarlar', icon: 'settings-outline' },
 ];
 
