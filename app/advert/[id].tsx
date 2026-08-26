@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Head from 'expo-router/head';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader, HomeContentContainer } from '@/components/layout';
 import { AdvertDetailSkeleton, AdvertDetailView } from '@/components/advert-detail';
 import { ErrorState } from '@/components/ui';
@@ -62,31 +63,36 @@ export default function AdvertDetailScreen() {
         />
       ) : null}
 
-      {isError ? (
-        <ErrorState
-          variant="notFound"
-          message={error}
-          onRetry={refetch}
-          secondaryLabel="Ana sayfaya dön"
-          onSecondaryAction={() => router.push('/')}
-        />
-      ) : isLoading || !data ? (
-        isWide ? (
-          <HomeContentContainer style={styles.loadingPad}>
-            <AdvertDetailSkeleton />
-          </HomeContentContainer>
+      <SafeAreaView
+        edges={isWide ? ['left', 'right', 'bottom'] : ['left', 'right']}
+        style={styles.flex}
+      >
+        {isError ? (
+          <ErrorState
+            variant="notFound"
+            message={error}
+            onRetry={refetch}
+            secondaryLabel="Ana sayfaya dön"
+            onSecondaryAction={() => router.push('/')}
+          />
+        ) : isLoading || !data ? (
+          isWide ? (
+            <HomeContentContainer style={styles.loadingPad}>
+              <AdvertDetailSkeleton />
+            </HomeContentContainer>
+          ) : (
+            <AdvertDetailSkeleton variant="mobile" />
+          )
         ) : (
-          <AdvertDetailSkeleton variant="mobile" />
-        )
-      ) : (
-        <AdvertDetailView
-          detail={data}
-          isOwner={
-            Boolean(session?.user.id) && data.sellerId === session?.user.id
-          }
-          accessToken={session?.accessToken ?? null}
-        />
-      )}
+          <AdvertDetailView
+            detail={data}
+            isOwner={
+              Boolean(session?.user.id) && data.sellerId === session?.user.id
+            }
+            accessToken={session?.accessToken ?? null}
+          />
+        )}
+      </SafeAreaView>
     </View>
   );
 }
