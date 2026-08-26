@@ -1,4 +1,5 @@
 import { resolvePublicMediaUrl } from '@/services/media/publicUrl';
+import { MOCK_BANNERS } from '@/mocks/homepage';
 import type { ActiveBannerItem, BannerPlacement } from '@/types';
 
 const HERO_PLACEMENTS: BannerPlacement[] = ['HOMEPAGE_HERO', 'HOMEPAGE'];
@@ -53,7 +54,7 @@ export function selectHomeHeroBanners(
   banners: ActiveBannerItem[]
 ): ActiveBannerItem[] {
   const seen = new Set<string>();
-  return banners
+  const filtered = banners
     .filter(
       (b) =>
         HERO_PLACEMENTS.includes(b.placement) &&
@@ -65,6 +66,12 @@ export function selectHomeHeroBanners(
       seen.add(b.id);
       return true;
     });
+
+  if (filtered.length > 0) return filtered;
+
+  return MOCK_BANNERS.filter(
+    (b) => HERO_PLACEMENTS.includes(b.placement) && Boolean(b.imageUrl?.trim())
+  );
 }
 
 /** Promo / içerik arası banner. */
@@ -74,5 +81,7 @@ export function selectHomePromoBanner(
   const promo = banners
     .filter((b) => b.placement === 'HOMEPAGE_PROMO' && b.imageUrl?.trim())
     .sort((a, b) => a.sortOrder - b.sortOrder);
-  return promo[0] ?? null;
+  if (promo.length > 0) return promo[0];
+
+  return MOCK_BANNERS.find((b) => b.placement === 'HOMEPAGE_PROMO') ?? null;
 }

@@ -13,6 +13,7 @@ import type {
   PublicMediaItem,
 } from '@/types';
 import type { TjkHorseProfile } from '@/types/listing';
+import { MOCK_ADVERT_FALLBACK } from '@/mocks/advertDetail';
 
 type BeMoney = { amountMinor: number; currency: string } | null;
 
@@ -193,7 +194,10 @@ export function mapPublishedDetailToAdvert(
   sellerId?: string | null,
   tjkHorse?: TjkHorseProfile | null
 ): AdvertDetail {
-  const gallery = absolutizeMedia(dto.media ?? [], apiBase);
+  let gallery = absolutizeMedia(dto.media ?? [], apiBase);
+  if (gallery.length === 0) {
+    gallery = MOCK_ADVERT_FALLBACK.gallery;
+  }
   const cover =
     gallery.find((m) => m.isCover) ?? gallery[0] ?? null;
   const horse: HorseProfile = buildHorseFromTjkOrDto(dto.horse, tjkHorse);
@@ -290,13 +294,16 @@ export function mapOwnerToAdvertDetail(
   const media = filterDeliverableMedia(dto.media).sort(
     (a, b) => a.displayOrder - b.displayOrder
   );
-  const gallery: PublicMediaItem[] = media.map((m) => ({
+  let gallery: PublicMediaItem[] = media.map((m) => ({
     assetId: m.assetId,
     displayOrder: m.displayOrder,
     isCover: m.isCover,
     publicUrl: mediaDeliveryUrl(m.assetId, 'DETAIL', apiBase),
     usage: m.isCover ? 'cover' : 'gallery',
   }));
+  if (gallery.length === 0) {
+    gallery = MOCK_ADVERT_FALLBACK.gallery;
+  }
   const cover = gallery.find((m) => m.isCover) ?? gallery[0] ?? null;
   const title = (dto.title ?? '').trim() || 'Başlıksız ilan';
   const publishedAt =

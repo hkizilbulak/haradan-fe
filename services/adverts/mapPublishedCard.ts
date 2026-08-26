@@ -1,5 +1,6 @@
 import { resolvePublicMediaUrl } from '@/services/media/publicUrl';
 import { formatAdvertLocation } from '@/services/location';
+import { MOCK_CATALOG_PRODUCTS } from '@/mocks/homepage';
 import type {
   CatalogProductCard,
   PublishedAdvertCard,
@@ -36,11 +37,25 @@ type BePublishedCard = {
   viewCount?: number;
 };
 
+function getFallbackCover(id?: string, categoryId?: string): PublicMediaItem {
+  const match = MOCK_CATALOG_PRODUCTS.find((p) => p.id === id || (categoryId && p.categoryId === categoryId));
+  if (match?.cover) return match.cover;
+  let hash = 0;
+  const str = id || 'haradan';
+  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  const item = MOCK_CATALOG_PRODUCTS[hash % MOCK_CATALOG_PRODUCTS.length];
+  return item?.cover ?? MOCK_CATALOG_PRODUCTS[0].cover!;
+}
+
 function mapCover(
   cover: BePublishedCard['cover'],
-  apiBase: string
+  apiBase: string,
+  id?: string,
+  categoryId?: string
 ): PublicMediaItem | null {
-  if (!cover) return null;
+  if (!cover || !cover.publicUrl?.trim()) {
+    return getFallbackCover(id, categoryId);
+  }
   return {
     assetId: cover.assetId,
     displayOrder: cover.displayOrder,
@@ -83,7 +98,12 @@ export function mapPublishedCardToCatalog(
     provinceName,
     locationName,
     horseId: card.horseId ?? null,
-    cover: mapCover(card.cover as BePublishedCard['cover'], apiBase),
+    cover: mapCover(
+      card.cover as BePublishedCard['cover'],
+      apiBase,
+      card.id,
+      card.categoryId
+    ),
     isFavorite: card.isFavorite,
     packageCode: card.packageCode ?? null,
     packageDisplayName: card.packageDisplayName ?? null,

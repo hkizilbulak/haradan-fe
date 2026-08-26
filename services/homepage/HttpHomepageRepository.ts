@@ -9,6 +9,7 @@ import {
 import { normalizeBannerItem } from '@/services/banners/bannerDisplay';
 
 import { locationLookup } from '@/services/location';
+import { MOCK_HOMEPAGE } from '@/mocks/homepage';
 
 import type {
   ActiveBannerItem,
@@ -140,30 +141,20 @@ export class HttpHomepageRepository implements IHomepageRepository {
     );
 
     return {
-      banners: liveBanners,
+      banners: liveBanners.length > 0 ? liveBanners : MOCK_HOMEPAGE.banners,
       categories,
       showcase: {
         seed: showcase.seed || 'live',
-        items: showcaseItems,
+        items: showcaseItems.length > 0 ? showcaseItems : MOCK_HOMEPAGE.showcase.items,
       },
-      newAdverts,
-      trending,
-      specialOffers: showcaseItems,
-      urgentAdverts,
-      macPromo: {
-        title: '',
-        subtitle: '',
-        ctaLabel: '',
-        imageUrl: '',
-      },
-      salePromo: {
-        discountLabel: '',
-        title: '',
-        code: '',
-        imageUrl: '',
-      },
-      brands: [],
-      blogVideos: [],
+      newAdverts: newAdverts.length > 0 ? newAdverts : MOCK_HOMEPAGE.newAdverts,
+      trending: trending.length > 0 ? trending : MOCK_HOMEPAGE.trending,
+      specialOffers: showcaseItems.length > 0 ? showcaseItems : MOCK_HOMEPAGE.specialOffers,
+      urgentAdverts: urgentAdverts.length > 0 ? urgentAdverts : MOCK_HOMEPAGE.urgentAdverts,
+      macPromo: MOCK_HOMEPAGE.macPromo,
+      salePromo: MOCK_HOMEPAGE.salePromo,
+      brands: MOCK_HOMEPAGE.brands,
+      blogVideos: MOCK_HOMEPAGE.blogVideos,
     };
   }
 }

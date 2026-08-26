@@ -4,8 +4,11 @@ import { HttpPublishedAdvertsRepository } from './HttpPublishedAdvertsRepository
 import { MockPublishedAdvertsRepository } from './MockPublishedAdvertsRepository';
 
 export function createPublishedAdvertsRepository(): IPublishedAdvertsRepository {
-  const baseUrl = resolveApiBaseUrl() || 'https://haradan-be-production.up.railway.app/api';
-  return new HttpPublishedAdvertsRepository(baseUrl);
+  if (isHttpApiEnabled(process.env.EXPO_PUBLIC_USE_MOCK_ADVERTS_SEARCH)) {
+    const baseUrl = resolveApiBaseUrl();
+    if (baseUrl) return new HttpPublishedAdvertsRepository(baseUrl);
+  }
+  return new MockPublishedAdvertsRepository();
 }
 
 export const publishedAdvertsRepository: IPublishedAdvertsRepository =

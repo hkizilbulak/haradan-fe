@@ -4,11 +4,11 @@ import { HttpMediaUploader } from './HttpMediaUploader';
 import { LocalMediaUploader } from './LocalMediaUploader';
 
 export function createMediaUploader(): IMediaUploader {
-  if (process.env.EXPO_PUBLIC_USE_MOCK_MEDIA === '1') {
-    return new LocalMediaUploader();
+  if (isHttpApiEnabled(process.env.EXPO_PUBLIC_USE_MOCK_MEDIA)) {
+    const baseUrl = resolveApiBaseUrl();
+    if (baseUrl) return new HttpMediaUploader(baseUrl);
   }
-  const baseUrl = resolveApiBaseUrl() || 'https://haradan-be-production.up.railway.app/api';
-  return new HttpMediaUploader(baseUrl);
+  return new LocalMediaUploader();
 }
 
 export const mediaUploader: IMediaUploader = createMediaUploader();
