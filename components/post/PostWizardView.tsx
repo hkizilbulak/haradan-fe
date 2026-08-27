@@ -62,8 +62,10 @@ export function PostWizardView() {
     void catalogRepository
       .getCategoryFormDefinition('ortak-alanlar', { fresh: true, categorySlug: 'ortak-alanlar' })
       .then((def) => {
-        if (!cancelled && def && Array.isArray(def.properties) && def.properties.length > 0) {
+        if (!cancelled && def && Array.isArray(def.properties)) {
           const map = getGlobalPropertiesConfig();
+          const returnedCodes = new Set(def.properties.map((p) => String(p.code || '').toUpperCase()));
+
           for (const p of def.properties) {
             const code = String(p.code || '').toUpperCase();
             if (code) {
@@ -79,6 +81,17 @@ export function PostWizardView() {
               };
             }
           }
+
+          for (const code of ['ADDRESS', 'DESCRIPTION', 'PRICE', 'LOCATION', 'PHONE']) {
+            if (!returnedCodes.has(code) && map[code]) {
+              map[code] = {
+                ...map[code],
+                isActive: false,
+                isFormVisible: false,
+              };
+            }
+          }
+
           setGlobalPropertiesConfig(map);
           setGlobalConfigs({ ...map });
         }

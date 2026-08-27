@@ -106,6 +106,38 @@ export class HttpCatalogRepository implements ICatalogRepository {
       resolvedUUID = targetNode?.id ?? null;
     }
 
+    let responseSlug = targetNode?.slug || targetSlug;
+    let responseName = targetNode?.name || '';
+    let responseCategoryId = resolvedUUID || targetId;
+
+    const isGlobalCategory =
+      targetId === 'ortak-alanlar' ||
+      targetSlug === 'ortak-alanlar' ||
+      targetId === 'c1000000-0000-4000-8000-000000000000' ||
+      targetId === 'cat-ortak-alanlar';
+
+    if (isGlobalCategory && !resolvedUUID) {
+      try {
+        const rawRes = await this.http.request<CategoryTreeResponse>('/v1/categories', {
+          method: 'GET',
+        });
+        if (rawRes && Array.isArray(rawRes.items)) {
+          const globalNode = rawRes.items.find(
+            (c) =>
+              c.slug === 'ortak-alanlar' ||
+              c.id === 'c1000000-0000-4000-8000-000000000000' ||
+              c.name?.toLowerCase().includes('ortak alan')
+          );
+          if (globalNode) {
+            resolvedUUID = globalNode.id;
+            responseSlug = globalNode.slug;
+            responseName = globalNode.name;
+            responseCategoryId = globalNode.id;
+          }
+        }
+      } catch {}
+    }
+
     let parentDef: CategoryFormDefinitionResponse | null = null;
     const parentNode = targetNode
       ? findCategoryParent(tree, targetNode.id) || findCategoryParent(tree, targetNode.slug)
@@ -120,9 +152,6 @@ export class HttpCatalogRepository implements ICatalogRepository {
     }
 
     let directProps: CategoryPropertyPublic[] = [];
-    let responseSlug = targetNode?.slug || targetSlug;
-    let responseName = targetNode?.name || '';
-    let responseCategoryId = resolvedUUID || targetId;
 
     if (resolvedUUID) {
       try {

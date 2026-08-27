@@ -97,23 +97,28 @@ export function PostDetailsStep({
   const activeConfigs = propGlobalConfigs ?? fallbackConfigs;
 
   const addressConfig = {
+    title: activeConfigs.ADDRESS?.title || 'Açık adres',
     isActive: Boolean(activeConfigs.ADDRESS?.isActive && activeConfigs.ADDRESS?.isFormVisible),
     isRequired: Boolean(activeConfigs.ADDRESS?.isRequired),
   };
   const descConfig = {
-    isActive: Boolean(activeConfigs.DESCRIPTION?.isActive && activeConfigs.DESCRIPTION?.isFormVisible !== false),
+    title: activeConfigs.DESCRIPTION?.title || 'Açıklama',
+    isActive: Boolean(activeConfigs.DESCRIPTION?.isActive && activeConfigs.DESCRIPTION?.isFormVisible),
     isRequired: Boolean(activeConfigs.DESCRIPTION?.isRequired),
   };
   const priceConfig = {
-    isActive: Boolean(activeConfigs.PRICE?.isActive && activeConfigs.PRICE?.isFormVisible !== false),
+    title: activeConfigs.PRICE?.title || 'Fiyat',
+    isActive: Boolean(activeConfigs.PRICE?.isActive && activeConfigs.PRICE?.isFormVisible),
     isRequired: Boolean(activeConfigs.PRICE?.isRequired),
   };
   const locationConfig = {
-    isActive: Boolean(activeConfigs.LOCATION?.isActive && activeConfigs.LOCATION?.isFormVisible !== false),
+    title: activeConfigs.LOCATION?.title || 'Konum',
+    isActive: Boolean(activeConfigs.LOCATION?.isActive && activeConfigs.LOCATION?.isFormVisible),
     isRequired: Boolean(activeConfigs.LOCATION?.isRequired),
   };
   const phoneConfig = {
-    isActive: Boolean(activeConfigs.PHONE?.isActive && activeConfigs.PHONE?.isFormVisible !== false),
+    title: activeConfigs.PHONE?.title || 'İletişim Telefonu',
+    isActive: Boolean(activeConfigs.PHONE?.isActive && activeConfigs.PHONE?.isFormVisible),
     isRequired: Boolean(activeConfigs.PHONE?.isRequired),
   };
 
@@ -302,7 +307,7 @@ export function PostDetailsStep({
         {descConfig.isActive ? (
           <View onLayout={(e) => updateFieldY('description', e.nativeEvent.layout.y)}>
             <PostField
-              label="Açıklama"
+              label={descConfig.title}
               required={descConfig.isRequired}
               value={d.description}
               onChangeText={(description) => onUpdate({ description })}
@@ -320,7 +325,7 @@ export function PostDetailsStep({
         {priceConfig.isActive ? (
           <View onLayout={(e) => updateFieldY('priceTl', e.nativeEvent.layout.y)}>
             <PostField
-              label="Fiyat"
+              label={priceConfig.title}
               required={priceConfig.isRequired}
               value={d.priceTl}
               onChangeText={(raw) => onUpdate({ priceTl: formatTlGrouped(raw) })}
@@ -339,7 +344,7 @@ export function PostDetailsStep({
               onLayout={(e) => updateFieldY('provinceId', e.nativeEvent.layout.y)}
             >
               <Text style={[styles.fieldLabel, { color: secondary }]}>
-                Konum
+                {locationConfig.title}
                 {locationConfig.isRequired ? (
                   <Text style={{ color: errorColor }}> *</Text>
                 ) : null}
@@ -426,7 +431,7 @@ export function PostDetailsStep({
             onLayout={(e) => updateFieldY('address', e.nativeEvent.layout.y)}
           >
             <PostField
-              label="Açık adres"
+              label={addressConfig.title}
               required={addressConfig.isRequired}
               value={d.address}
               onChangeText={(address) => onUpdate({ address })}
@@ -447,7 +452,7 @@ export function PostDetailsStep({
             updateFieldY('sellerPhone');
           }}
         >
-          <Text style={[styles.section, { color: text }]}>İletişim</Text>
+          <Text style={[styles.section, { color: text }]}>{phoneConfig.title}</Text>
           <View onLayout={(e) => updateFieldY('sellerPhone', e.nativeEvent.layout.y)}>
             <PostPhoneField
               iso={d.phoneCountryIso || 'TR'}
