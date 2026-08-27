@@ -22,8 +22,8 @@ const DEFAULT_GLOBAL_CONFIGS: GlobalPropertiesMap = {
     title: 'Açık Adres',
     isActive: false,
     isRequired: false,
-    isFormVisible: false,
-    isPublicVisible: false,
+    isFormVisible: true,
+    isPublicVisible: true,
   },
   DESCRIPTION: {
     code: 'DESCRIPTION',
@@ -170,7 +170,7 @@ export function getGlobalPropertiesConfig(): GlobalPropertiesMap {
         result[code] = {
           code,
           title: p.title || code,
-          isActive: Boolean(p.isActive !== false),
+          isActive: code === 'ADDRESS' ? false : Boolean(p.isActive !== false),
           isRequired: Boolean(p.isRequired),
           isFormVisible: Boolean(p.isFormVisible !== false),
           isPublicVisible: Boolean(p.isPublicVisible !== false),
