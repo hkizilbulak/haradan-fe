@@ -147,7 +147,13 @@ export class MockCatalogRepository implements ICatalogRepository {
       return this.cachedTree;
     }
 
-    const activeCategories = this.categories.filter((c) => c.isActive);
+    const activeCategories = this.categories.filter(
+      (c) =>
+        c.isActive &&
+        c.slug !== 'ortak-alanlar' &&
+        c.id !== 'c1000000-0000-4000-8000-000000000000' &&
+        !c.name?.toLowerCase().includes('ortak alan')
+    );
     const nodeMap = new Map<string, CategoryTreeNode>();
     const roots: CategoryTreeNode[] = [];
 

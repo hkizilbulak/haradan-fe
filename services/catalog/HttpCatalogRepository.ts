@@ -49,7 +49,12 @@ export class HttpCatalogRepository implements ICatalogRepository {
         method: 'GET',
       });
       if (res && Array.isArray(res.items) && res.items.length > 0) {
-        this.tree = res.items;
+        this.tree = res.items.filter(
+          (node) =>
+            node.slug !== 'ortak-alanlar' &&
+            node.id !== 'c1000000-0000-4000-8000-000000000000' &&
+            !node.name?.toLowerCase().includes('ortak alan')
+        );
         return this.tree;
       }
     } catch {
@@ -57,8 +62,13 @@ export class HttpCatalogRepository implements ICatalogRepository {
     }
 
     const fallbackTree = await this.fallback.getCategoryTree(options);
-    this.tree = fallbackTree;
-    return fallbackTree;
+    this.tree = fallbackTree.filter(
+      (node) =>
+        node.slug !== 'ortak-alanlar' &&
+        node.id !== 'c1000000-0000-4000-8000-000000000000' &&
+        !node.name?.toLowerCase().includes('ortak alan')
+    );
+    return this.tree;
   }
 
   async getCategoryFormDefinition(

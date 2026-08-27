@@ -20,10 +20,10 @@ const DEFAULT_GLOBAL_CONFIGS: GlobalPropertiesMap = {
   ADDRESS: {
     code: 'ADDRESS',
     title: 'Açık Adres',
-    isActive: true,
-    isRequired: true,
-    isFormVisible: true,
-    isPublicVisible: true,
+    isActive: false,
+    isRequired: false,
+    isFormVisible: false,
+    isPublicVisible: false,
   },
   DESCRIPTION: {
     code: 'DESCRIPTION',

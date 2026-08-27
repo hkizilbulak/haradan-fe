@@ -97,7 +97,7 @@ export function PostDetailsStep({
   const activeConfigs = propGlobalConfigs ?? fallbackConfigs;
 
   const addressConfig = {
-    isActive: Boolean(activeConfigs.ADDRESS?.isActive && activeConfigs.ADDRESS?.isFormVisible !== false),
+    isActive: Boolean(activeConfigs.ADDRESS?.isActive && activeConfigs.ADDRESS?.isFormVisible),
     isRequired: Boolean(activeConfigs.ADDRESS?.isRequired),
   };
   const descConfig = {

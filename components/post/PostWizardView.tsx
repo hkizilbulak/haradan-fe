@@ -67,12 +67,14 @@ export function PostWizardView() {
           for (const p of def.properties) {
             const code = String(p.code || '').toUpperCase();
             if (code) {
+              const isFormVis = Boolean((p as any).isFormVisible !== false && (p as any).is_form_visible !== false);
+              const isAct = Boolean((p as any).isActive !== false && (p as any).is_active !== false && isFormVis);
               map[code] = {
                 code,
                 title: p.title || code,
-                isActive: Boolean((p as any).isActive !== false && (p as any).is_active !== false),
+                isActive: isAct,
                 isRequired: Boolean(p.isRequired || (p as any).is_required),
-                isFormVisible: Boolean((p as any).isFormVisible !== false && (p as any).is_form_visible !== false),
+                isFormVisible: isFormVis,
                 isPublicVisible: Boolean((p as any).isPublicVisible !== false && (p as any).is_public_visible !== false),
               };
             }

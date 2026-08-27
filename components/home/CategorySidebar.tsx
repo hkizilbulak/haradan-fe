@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -45,7 +45,18 @@ export const CategorySidebar = memo(function CategorySidebar({
   const surface = useThemeColor('surface');
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  const activeCategory = categories.find((c) => c.id === activeId) ?? null;
+  const validCategories = useMemo(
+    () =>
+      (categories || []).filter(
+        (c: CategoryTreeNode) =>
+          c.slug !== 'ortak-alanlar' &&
+          c.id !== 'c1000000-0000-4000-8000-000000000000' &&
+          !c.name?.toLowerCase().includes('ortak alan')
+      ),
+    [categories]
+  );
+
+  const activeCategory = validCategories.find((c: CategoryTreeNode) => c.id === activeId) ?? null;
   const hasFlyout =
     isWide && activeCategory != null && activeCategory.children.length > 0;
   const isMenuOpen =
@@ -160,7 +171,7 @@ export const CategorySidebar = memo(function CategorySidebar({
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-          {categories.map((cat) => (
+          {validCategories.map((cat: CategoryTreeNode) => (
             <CategoryRow
               key={cat.id}
               label={cat.name}
