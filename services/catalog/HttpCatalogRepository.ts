@@ -138,6 +138,19 @@ export class HttpCatalogRepository implements ICatalogRepository {
       } catch {}
     }
 
+    let parentDef: CategoryFormDefinitionResponse | null = null;
+    const parentNode = targetNode
+      ? findCategoryParent(tree, targetNode.id) || findCategoryParent(tree, targetNode.slug)
+      : (resolvedUUID ? findCategoryParent(tree, resolvedUUID) : null);
+
+    if (parentNode && parentNode.id !== resolvedUUID && parentNode.id !== targetId) {
+      try {
+        parentDef = await this.getCategoryFormDefinition(parentNode.id, options);
+      } catch {
+        // Parent properties optional
+      }
+    }
+
     let directProps: CategoryPropertyPublic[] = [];
 
     if (resolvedUUID) {
@@ -167,11 +180,23 @@ export class HttpCatalogRepository implements ICatalogRepository {
       }
     }
 
-    if (directProps.length === 0) {
+    if (directProps.length === 0 && (!parentDef || !parentDef.properties || parentDef.properties.length === 0)) {
       return null;
     }
 
-    const mergedProperties = [...directProps].sort(
+    const merged = new Map<string, CategoryPropertyPublic>();
+
+    if (parentDef && Array.isArray(parentDef.properties)) {
+      for (const p of parentDef.properties) {
+        merged.set(p.code, p);
+      }
+    }
+
+    for (const p of directProps) {
+      merged.set(p.code, p);
+    }
+
+    const mergedProperties = Array.from(merged.values()).sort(
       (a, b) => (a.sortOrder || 1) - (b.sortOrder || 1) || a.title.localeCompare(b.title, 'tr')
     );
 
