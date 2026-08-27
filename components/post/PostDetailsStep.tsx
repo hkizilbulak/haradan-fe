@@ -49,6 +49,7 @@ type PostDetailsStepProps = {
   scrollViewRef?: React.RefObject<ScrollView | null>;
   scrollTrigger?: number;
   globalConfigs?: GlobalPropertiesMap;
+  customGlobalProperties?: CategoryPropertyPublic[];
   kicker?: string;
   heading?: string;
   lead?: string;
@@ -65,6 +66,7 @@ export function PostDetailsStep({
   draft,
   errors,
   globalConfigs: propGlobalConfigs,
+  customGlobalProperties,
   tjkPromptSeen,
   scrollViewRef,
   scrollTrigger,
@@ -252,6 +254,19 @@ export function PostDetailsStep({
         : isTransport
           ? 'Nakliye hizmeti, firma ve iletişim bilgilerini girin.'
           : 'Başlık, fiyat, konum ve iletişim bilgilerini girin.';
+
+  const handleCustomPropertyChange = useCallback(
+    (code: string, value: unknown) => {
+      const currentProps = { ...(d.properties || {}) };
+      if (value === undefined || value === null || value === '') {
+        delete currentProps[code];
+      } else {
+        currentProps[code] = value;
+      }
+      onUpdate({ properties: currentProps });
+    },
+    [d.properties, onUpdate]
+  );
 
   return (
     <View style={styles.wrap}>
@@ -441,6 +456,135 @@ export function PostDetailsStep({
               multiline
             />
           </View>
+        ) : null}
+
+        {customGlobalProperties && customGlobalProperties.length > 0 ? (
+          customGlobalProperties.map((prop) => {
+            const val =
+              d.properties?.[prop.code] ??
+              d.properties?.[prop.code.toLowerCase()] ??
+              d.properties?.[prop.code.toUpperCase()];
+            const err = errors[prop.code as keyof ListingFieldErrors];
+
+            if (prop.dataType === 'BOOLEAN') {
+              const boolVal = Boolean(val);
+              return (
+                <View
+                  key={prop.code}
+                  style={styles.fieldBlock}
+                  onLayout={(e) => updateFieldY(prop.code, e.nativeEvent.layout.y)}
+                >
+                  <Pressable
+                    onPress={() => handleCustomPropertyChange(prop.code, !boolVal)}
+                    style={styles.toggleRow}
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: boolVal }}
+                  >
+                    <Text
+                      style={[
+                        styles.toggleLabel,
+                        { color: boolVal ? text : secondary, fontWeight: boolVal ? '600' : '400' },
+                      ]}
+                    >
+                      {prop.title}
+                      {prop.isRequired ? <Text style={{ color: errorColor }}> *</Text> : null}
+                    </Text>
+                    <View
+                      style={[
+                        styles.switch,
+                        {
+                          backgroundColor: boolVal ? header : border,
+                          justifyContent: boolVal ? 'flex-end' : 'flex-start',
+                        },
+                      ]}
+                    >
+                      <View style={styles.switchKnob} />
+                    </View>
+                  </Pressable>
+                  {err ? <Text style={[styles.err, { color: errorColor }]}>{err}</Text> : null}
+                </View>
+              );
+            }
+
+            if (prop.options && prop.options.length > 0) {
+              return (
+                <View
+                  key={prop.code}
+                  style={styles.fieldBlock}
+                  onLayout={(e) => updateFieldY(prop.code, e.nativeEvent.layout.y)}
+                >
+                  <Text style={[styles.fieldLabel, { color: secondary }]}>
+                    {prop.title}
+                    {prop.isRequired ? <Text style={{ color: errorColor }}> *</Text> : null}
+                  </Text>
+                  <View style={styles.chips}>
+                    {prop.options.map((opt) => {
+                      const optVal = opt.value || opt.label;
+                      const isSelected =
+                        String(val ?? '').toLocaleLowerCase('tr') === optVal.toLocaleLowerCase('tr') ||
+                        String(val ?? '').toLocaleLowerCase('tr') === (opt.value || '').toLocaleLowerCase('tr');
+                      return (
+                        <Pressable
+                          key={opt.value || opt.label}
+                          onPress={() =>
+                            handleCustomPropertyChange(
+                              prop.code,
+                              isSelected ? '' : opt.value || opt.label
+                            )
+                          }
+                          style={[
+                            styles.chip,
+                            {
+                              borderColor: isSelected ? header : border,
+                              backgroundColor: isSelected ? header : surface,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.chipText,
+                              {
+                                color: isSelected ? '#fff' : text,
+                                fontWeight: isSelected ? '600' : '400',
+                              },
+                            ]}
+                          >
+                            {opt.label || opt.value}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  {err ? <Text style={[styles.err, { color: errorColor }]}>{err}</Text> : null}
+                </View>
+              );
+            }
+
+            return (
+              <View
+                key={prop.code}
+                style={styles.fieldBlock}
+                onLayout={(e) => updateFieldY(prop.code, e.nativeEvent.layout.y)}
+              >
+                <PostField
+                  label={prop.title}
+                  required={Boolean(prop.isRequired)}
+                  value={val != null ? String(val) : ''}
+                  onChangeText={(txt) => handleCustomPropertyChange(prop.code, txt)}
+                  placeholder={prop.helpText || `${prop.title} giriniz…`}
+                  keyboardType={
+                    prop.dataType === 'INTEGER' ||
+                    prop.dataType === 'DECIMAL' ||
+                    prop.dataType === 'YEAR'
+                      ? 'numeric'
+                      : 'default'
+                  }
+                  multiline={prop.dataType === 'TEXT'}
+                  error={err}
+                />
+              </View>
+            );
+          })
         ) : null}
       </View>
 
@@ -678,6 +822,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipLabel: { ...Typography.small, fontWeight: '600' },
+  chipText: { ...Typography.small, fontWeight: '600' },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  toggleLabel: {
+    ...Typography.body,
+    fontSize: 15,
+  },
+  switch: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  switchKnob: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+  },
   row: { flexDirection: 'row', gap: Spacing.sm },
   flex: { flex: 1 },
   err: { ...Typography.caption },

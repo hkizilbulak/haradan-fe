@@ -128,7 +128,8 @@ export function typeStepComplete(draft: ListingDraft): boolean {
 export function detailsErrors(
   draft: ListingDraft,
   categoryProperties?: CategoryPropertyPublic[],
-  globalPropertiesConfig?: GlobalPropertiesMap
+  globalPropertiesConfig?: GlobalPropertiesMap,
+  customGlobalProperties?: CategoryPropertyPublic[]
 ): ListingFieldErrors {
   const e: ListingFieldErrors = {};
   const d = draft.details;
@@ -181,6 +182,28 @@ export function detailsErrors(
   // 7. Medya
   if (!draft.media || draft.media.length === 0) {
     e.media = 'En az bir görsel eklemelisiniz.';
+  }
+
+  // 8. Dinamik Ortak Alanlar (Custom Global Properties) Zorunluluk Kontrolü
+  if (customGlobalProperties && Array.isArray(customGlobalProperties)) {
+    for (const prop of customGlobalProperties) {
+      if (
+        prop &&
+        (prop as any).isActive !== false &&
+        (prop as any).is_active !== false &&
+        (prop as any).isFormVisible !== false &&
+        (prop as any).is_form_visible !== false &&
+        prop.isRequired
+      ) {
+        const val =
+          d.properties?.[prop.code] ??
+          d.properties?.[prop.code.toLowerCase()] ??
+          d.properties?.[prop.code.toUpperCase()];
+        if (val === undefined || val === null || val === '') {
+          e[prop.code as keyof ListingFieldErrors] = `${prop.title} zorunludur.`;
+        }
+      }
+    }
   }
 
   // Dinamik Kategori Özellikleri Zorunluluk Kontrolü (Tamamen haradan_bo tanımlarına göre)

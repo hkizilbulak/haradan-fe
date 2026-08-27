@@ -37,6 +37,7 @@ export function PostWizardView() {
   const [scrollTrigger, setScrollTrigger] = useState(0);
   const [loadedCategoryProperties, setLoadedCategoryProperties] = useState<CategoryPropertyPublic[]>([]);
   const [globalConfigs, setGlobalConfigs] = useState<GlobalPropertiesMap>(getGlobalPropertiesConfig());
+  const [customGlobalProperties, setCustomGlobalProperties] = useState<CategoryPropertyPublic[]>([]);
   const { session, isLoggedIn } = useAuthSession();
   const { categoryTree, error: catalogError, loading: catalogLoading } = useCatalogFacets();
   const { packages, error: packageError } = useListingPackages();
@@ -46,6 +47,7 @@ export function PostWizardView() {
   const packageStepEnabled = isListingPackageStepEnabled();
   const paytrEnabled = packageStepEnabled && isPaytrCheckoutEnabled();
   const errorColor = useThemeColor('error');
+
   const { back, unwindAndExit } = useListingWizardBack({
     step: wizard.step,
     typePhase: wizard.typePhase,
@@ -65,6 +67,26 @@ export function PostWizardView() {
         if (!cancelled && def && Array.isArray(def.properties)) {
           const map = getGlobalPropertiesConfig();
           const returnedCodes = new Set(def.properties.map((p) => String(p.code || '').toUpperCase()));
+
+          const CANONICAL_CODES = new Set([
+            'ADDRESS',
+            'DESCRIPTION',
+            'PRICE',
+            'LOCATION',
+            'PHONE',
+            'TITLE',
+            'MEDIA',
+            'IMAGES',
+          ]);
+          const customProps = def.properties.filter(
+            (p) =>
+              !CANONICAL_CODES.has(String(p.code || '').toUpperCase()) &&
+              (p as any).isActive !== false &&
+              (p as any).is_active !== false &&
+              (p as any).isFormVisible !== false &&
+              (p as any).is_form_visible !== false
+          );
+          setCustomGlobalProperties(customProps);
 
           for (const p of def.properties) {
             const code = String(p.code || '').toUpperCase();
@@ -161,8 +183,22 @@ export function PostWizardView() {
     wizard.categoryProperties ?? (loadedCategoryProperties.length > 0 ? loadedCategoryProperties : undefined);
 
   const currentFieldErrors = useMemo(
-    () => (wizard.detailsAttempted ? detailsErrors(wizard.draft, activeCategoryProperties, globalConfigs) : {}),
-    [wizard.draft, wizard.detailsAttempted, activeCategoryProperties, globalConfigs]
+    () =>
+      wizard.detailsAttempted
+        ? detailsErrors(
+            wizard.draft,
+            activeCategoryProperties,
+            globalConfigs,
+            customGlobalProperties
+          )
+        : {},
+    [
+      wizard.draft,
+      wizard.detailsAttempted,
+      activeCategoryProperties,
+      globalConfigs,
+      customGlobalProperties,
+    ]
   );
 
   const onNext = useCallback(async () => {
@@ -171,7 +207,8 @@ export function PostWizardView() {
       const errs = detailsErrors(
         wizard.draft,
         activeCategoryProperties,
-        globalConfigs
+        globalConfigs,
+        customGlobalProperties
       );
       if (Object.keys(errs).length > 0) {
         const firstError = Object.values(errs)[0];
@@ -197,7 +234,14 @@ export function PostWizardView() {
       return;
     }
     wizard.goNext();
-  }, [wizard, packageStepEnabled, submitListing, activeCategoryProperties, globalConfigs]);
+  }, [
+    wizard,
+    packageStepEnabled,
+    submitListing,
+    activeCategoryProperties,
+    globalConfigs,
+    customGlobalProperties,
+  ]);
 
   const nextLabel =
     wizard.step === 'details' && !packageStepEnabled
@@ -247,6 +291,7 @@ export function PostWizardView() {
             draft={wizard.draft}
             errors={currentFieldErrors}
             globalConfigs={globalConfigs}
+            customGlobalProperties={customGlobalProperties}
             tjkPromptSeen={wizard.tjkPromptSeen}
             scrollViewRef={scrollViewRef}
             scrollTrigger={scrollTrigger}
