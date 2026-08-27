@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PostWizardShell } from './PostWizardShell';
@@ -13,6 +13,12 @@ import { useListingWizard } from '@/hooks/useListingWizard';
 import { useListingWizardBack } from '@/hooks/useListingWizardBack';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { getValidAccessToken } from '@/services/auth';
+import { catalogRepository } from '@/services/catalog';
+import {
+  getGlobalPropertiesConfig,
+  setGlobalPropertiesConfig,
+  type GlobalPropertiesMap,
+} from '@/services/catalog/addressConfig';
 import {
   detailsErrors,
   isListingPackageStepEnabled,
@@ -30,6 +36,7 @@ export function PostWizardView() {
   const scrollViewRef = useRef<ScrollView>(null);
   const [scrollTrigger, setScrollTrigger] = useState(0);
   const [loadedCategoryProperties, setLoadedCategoryProperties] = useState<CategoryPropertyPublic[]>([]);
+  const [globalConfigs, setGlobalConfigs] = useState<GlobalPropertiesMap>(getGlobalPropertiesConfig());
   const { session, isLoggedIn } = useAuthSession();
   const { categoryTree, error: catalogError, loading: catalogLoading } = useCatalogFacets();
   const { packages, error: packageError } = useListingPackages();
@@ -47,6 +54,43 @@ export function PostWizardView() {
 
   const { updateDetails } = wizard;
   const sellerPhone = wizard.draft.details.sellerPhone;
+
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () => setGlobalConfigs(getGlobalPropertiesConfig());
+
+    void catalogRepository
+      .getCategoryFormDefinition('ortak-alanlar', { fresh: true, categorySlug: 'ortak-alanlar' })
+      .then((def) => {
+        if (!cancelled && def && Array.isArray(def.properties) && def.properties.length > 0) {
+          const map = getGlobalPropertiesConfig();
+          for (const p of def.properties) {
+            const code = String(p.code || '').toUpperCase();
+            if (code) {
+              map[code] = {
+                code,
+                title: p.title || code,
+                isActive: Boolean((p as any).isActive !== false && (p as any).is_active !== false),
+                isRequired: Boolean(p.isRequired || (p as any).is_required),
+                isFormVisible: Boolean((p as any).isFormVisible !== false && (p as any).is_form_visible !== false),
+                isPublicVisible: Boolean((p as any).isPublicVisible !== false && (p as any).is_public_visible !== false),
+              };
+            }
+          }
+          setGlobalPropertiesConfig(map);
+          setGlobalConfigs({ ...map });
+        }
+      })
+      .catch(() => {});
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('haradan_global_properties_changed', refresh);
+      return () => {
+        cancelled = true;
+        window.removeEventListener('haradan_global_properties_changed', refresh);
+      };
+    }
+  }, []);
 
   useEffect(() => {
     const phone = session?.user.phone;
@@ -98,13 +142,21 @@ export function PostWizardView() {
     }
   }, [wizard, isLoggedIn, router, paytrEnabled]);
 
+  const activeCategoryProperties =
+    wizard.categoryProperties ?? (loadedCategoryProperties.length > 0 ? loadedCategoryProperties : undefined);
+
+  const currentFieldErrors = useMemo(
+    () => (wizard.detailsAttempted ? detailsErrors(wizard.draft, activeCategoryProperties, globalConfigs) : {}),
+    [wizard.draft, wizard.detailsAttempted, activeCategoryProperties, globalConfigs]
+  );
+
   const onNext = useCallback(async () => {
     setSubmitError(null);
     if (wizard.step === 'details') {
-      const activeProps = wizard.categoryProperties ?? (loadedCategoryProperties.length > 0 ? loadedCategoryProperties : undefined);
       const errs = detailsErrors(
         wizard.draft,
-        activeProps
+        activeCategoryProperties,
+        globalConfigs
       );
       if (Object.keys(errs).length > 0) {
         const firstError = Object.values(errs)[0];
@@ -130,7 +182,7 @@ export function PostWizardView() {
       return;
     }
     wizard.goNext();
-  }, [wizard, packageStepEnabled, submitListing, loadedCategoryProperties]);
+  }, [wizard, packageStepEnabled, submitListing, activeCategoryProperties, globalConfigs]);
 
   const nextLabel =
     wizard.step === 'details' && !packageStepEnabled
@@ -178,7 +230,8 @@ export function PostWizardView() {
           ) : null}
           <PostDetailsStep
             draft={wizard.draft}
-            errors={wizard.fieldErrors}
+            errors={currentFieldErrors}
+            globalConfigs={globalConfigs}
             tjkPromptSeen={wizard.tjkPromptSeen}
             scrollViewRef={scrollViewRef}
             scrollTrigger={scrollTrigger}

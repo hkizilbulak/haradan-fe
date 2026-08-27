@@ -18,3 +18,11 @@ export {
   getCategoryIcon,
   pickListingRootCategories,
 } from './categoryDisplay';
+export {
+  getGlobalPropertiesConfig,
+  getGlobalPropertyConfig,
+  getAddressFieldConfig,
+  type GlobalPropertyFieldConfig,
+  type GlobalPropertiesMap,
+  type AddressFieldConfig,
+} from './addressConfig';

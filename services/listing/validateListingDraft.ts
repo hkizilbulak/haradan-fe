@@ -7,7 +7,10 @@ import {
   isListingPackageStepEnabled,
   isPaytrCheckoutEnabled,
 } from '@/constants/Paytr';
-import { getAddressFieldConfig } from '@/services/catalog/addressConfig';
+import {
+  getGlobalPropertiesConfig,
+  type GlobalPropertiesMap,
+} from '@/services/catalog/addressConfig';
 import { isValidNationalPhone } from '@/services/phone';
 import type { CategoryPropertyPublic } from '@/types';
 import type {
@@ -124,26 +127,58 @@ export function typeStepComplete(draft: ListingDraft): boolean {
 
 export function detailsErrors(
   draft: ListingDraft,
-  categoryProperties?: CategoryPropertyPublic[]
+  categoryProperties?: CategoryPropertyPublic[],
+  globalPropertiesConfig?: GlobalPropertiesMap
 ): ListingFieldErrors {
   const e: ListingFieldErrors = {};
   const d = draft.details;
-  if (!d.title.trim()) e.title = 'Başlık gerekli.';
-  const price = parseTlInput(d.priceTl);
-  if (price == null || price <= 0) e.priceTl = 'Geçerli bir fiyat girin.';
-  if (!d.provinceId) e.provinceId = 'İl seçin.';
-  if (!d.districtId) e.districtId = 'İlçe seçin.';
+  const globalConfigs = globalPropertiesConfig ?? getGlobalPropertiesConfig();
 
-  const addressConfig = getAddressFieldConfig();
-  if (addressConfig.isActive && addressConfig.isRequired) {
+  // 1. Başlık
+  if (!d.title.trim()) e.title = 'Başlık gerekli.';
+
+  // 2. Fiyat
+  const priceCfg = globalConfigs.PRICE;
+  if (priceCfg && priceCfg.isActive && priceCfg.isRequired) {
+    const price = parseTlInput(d.priceTl);
+    if (price == null || price <= 0) e.priceTl = 'Geçerli bir fiyat girin.';
+  } else if (d.priceTl && d.priceTl.trim()) {
+    const price = parseTlInput(d.priceTl);
+    if (price == null || price < 0) e.priceTl = 'Geçerli bir fiyat girin.';
+  }
+
+  // 3. Konum
+  const locCfg = globalConfigs.LOCATION;
+  if (!locCfg || (locCfg.isActive && locCfg.isRequired)) {
+    if (!d.provinceId) e.provinceId = 'İl seçin.';
+    if (!d.districtId) e.districtId = 'İlçe seçin.';
+  }
+
+  // 4. Açık Adres
+  const addressConfig = globalConfigs.ADDRESS;
+  if (addressConfig && addressConfig.isActive && addressConfig.isRequired) {
     if (!d.address.trim() || d.address.trim().length < 5) {
       e.address = 'Açık adres zorunludur (en az 5 karakter).';
     }
   }
 
-  if (!isValidNationalPhone(d.phoneCountryIso || 'TR', d.sellerPhone)) {
-    e.sellerPhone = 'Geçerli bir telefon girin.';
+  // 5. Açıklama
+  const descConfig = globalConfigs.DESCRIPTION;
+  if (descConfig && descConfig.isActive && descConfig.isRequired) {
+    if (!d.description || !d.description.trim()) {
+      e.description = 'İlan açıklaması zorunludur.';
+    }
   }
+
+  // 6. Telefon
+  const phoneCfg = globalConfigs.PHONE;
+  if (!phoneCfg || (phoneCfg.isActive && phoneCfg.isRequired)) {
+    if (!isValidNationalPhone(d.phoneCountryIso || 'TR', d.sellerPhone)) {
+      e.sellerPhone = 'Geçerli bir telefon girin.';
+    }
+  }
+
+  // 7. Medya
   if (!draft.media || draft.media.length === 0) {
     e.media = 'En az bir görsel eklemelisiniz.';
   }

@@ -76,7 +76,12 @@ export function pickListingRootCategories(
   tree: CategoryTreeNode[]
 ): CategoryTreeNode[] {
   if (!tree || tree.length === 0) return [];
-  return tree;
+  return tree.filter(
+    (n) =>
+      n.slug !== 'ortak-alanlar' &&
+      n.slug !== 'cat-ortak-alanlar' &&
+      n.id !== 'c1000000-0000-4000-8000-000000000000'
+  );
 }
 
 /** Mobil chip — uzun kategori adlarını kısa premium etiketlere çevirir. */

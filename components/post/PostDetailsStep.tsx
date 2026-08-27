@@ -15,7 +15,12 @@ import {
   isStudServiceListing,
   isTransportListing,
 } from '@/services/listing';
-import { getAddressFieldConfig } from '@/services/catalog/addressConfig';
+import { catalogRepository } from '@/services/catalog';
+import {
+  getGlobalPropertiesConfig,
+  setGlobalPropertiesConfig,
+  type GlobalPropertiesMap,
+} from '@/services/catalog/addressConfig';
 import { PostCategoryProperties } from './PostCategoryProperties';
 import type { ListingFieldErrors } from '@/services/listing';
 import type { CategoryPropertyPublic } from '@/types';
@@ -43,6 +48,7 @@ type PostDetailsStepProps = {
   tjkPromptSeen: boolean;
   scrollViewRef?: React.RefObject<ScrollView | null>;
   scrollTrigger?: number;
+  globalConfigs?: GlobalPropertiesMap;
   kicker?: string;
   heading?: string;
   lead?: string;
@@ -58,6 +64,7 @@ type PostDetailsStepProps = {
 export function PostDetailsStep({
   draft,
   errors,
+  globalConfigs: propGlobalConfigs,
   tjkPromptSeen,
   scrollViewRef,
   scrollTrigger,
@@ -85,14 +92,39 @@ export function PostDetailsStep({
   const [tjkMode, setTjkMode] = useState<'ask' | 'search'>('ask');
   const [provinceOpen, setProvinceOpen] = useState(false);
   const [districtOpen, setDistrictOpen] = useState(false);
-  const [addressConfig, setAddressConfig] = useState(getAddressFieldConfig());
+  const [fallbackConfigs, setFallbackConfigs] = useState(getGlobalPropertiesConfig());
+
+  const activeConfigs = propGlobalConfigs ?? fallbackConfigs;
+
+  const addressConfig = {
+    isActive: Boolean(activeConfigs.ADDRESS?.isActive && activeConfigs.ADDRESS?.isFormVisible !== false),
+    isRequired: Boolean(activeConfigs.ADDRESS?.isRequired),
+  };
+  const descConfig = {
+    isActive: Boolean(activeConfigs.DESCRIPTION?.isActive && activeConfigs.DESCRIPTION?.isFormVisible !== false),
+    isRequired: Boolean(activeConfigs.DESCRIPTION?.isRequired),
+  };
+  const priceConfig = {
+    isActive: Boolean(activeConfigs.PRICE?.isActive && activeConfigs.PRICE?.isFormVisible !== false),
+    isRequired: Boolean(activeConfigs.PRICE?.isRequired),
+  };
+  const locationConfig = {
+    isActive: Boolean(activeConfigs.LOCATION?.isActive && activeConfigs.LOCATION?.isFormVisible !== false),
+    isRequired: Boolean(activeConfigs.LOCATION?.isRequired),
+  };
+  const phoneConfig = {
+    isActive: Boolean(activeConfigs.PHONE?.isActive && activeConfigs.PHONE?.isFormVisible !== false),
+    isRequired: Boolean(activeConfigs.PHONE?.isRequired),
+  };
 
   useEffect(() => {
-    const refresh = () => setAddressConfig(getAddressFieldConfig());
+    const refresh = () => setFallbackConfigs(getGlobalPropertiesConfig());
+
     if (typeof window !== 'undefined') {
       window.addEventListener('storage', refresh);
       window.addEventListener('haradan_catalog_data_changed', refresh);
       window.addEventListener('haradan_category_properties_changed', refresh);
+      window.addEventListener('haradan_global_properties_changed', refresh);
       try {
         const bc = new BroadcastChannel('haradan_catalog_channel');
         bc.onmessage = refresh;
@@ -100,6 +132,7 @@ export function PostDetailsStep({
           window.removeEventListener('storage', refresh);
           window.removeEventListener('haradan_catalog_data_changed', refresh);
           window.removeEventListener('haradan_category_properties_changed', refresh);
+          window.removeEventListener('haradan_global_properties_changed', refresh);
           bc.close();
         };
       } catch {
@@ -107,6 +140,7 @@ export function PostDetailsStep({
           window.removeEventListener('storage', refresh);
           window.removeEventListener('haradan_catalog_data_changed', refresh);
           window.removeEventListener('haradan_category_properties_changed', refresh);
+          window.removeEventListener('haradan_global_properties_changed', refresh);
         };
       }
     }
@@ -265,107 +299,127 @@ export function PostDetailsStep({
             error={errors.title}
           />
         </View>
-        <View onLayout={(e) => updateFieldY('description', e.nativeEvent.layout.y)}>
-          <PostField
-            label="Açıklama"
-            value={d.description}
-            onChangeText={(description) => onUpdate({ description })}
-            placeholder="Durum, bakım ve öne çıkan özellikler… (opsiyonel)"
-            multiline
-            error={errors.description}
-          />
-        </View>
-        <View onLayout={(e) => updateFieldY('priceTl', e.nativeEvent.layout.y)}>
-          <PostField
-            label="Fiyat"
-            required
-            value={d.priceTl}
-            onChangeText={(raw) => onUpdate({ priceTl: formatTlGrouped(raw) })}
-            placeholder="0"
-            keyboardType="numeric"
-            error={errors.priceTl}
-            suffix="₺"
-          />
-        </View>
-        <View
-          style={styles.fieldBlock}
-          onLayout={(e) => updateFieldY('provinceId', e.nativeEvent.layout.y)}
-        >
-          <Text style={[styles.fieldLabel, { color: secondary }]}>
-            Konum
-            <Text style={{ color: errorColor }}> *</Text>
-          </Text>
-          <Pressable
-            onPress={() => setProvinceOpen(true)}
-            style={[
-              styles.select,
-              {
-                borderColor: errors.provinceId ? errorColor : border,
-                backgroundColor: surface,
-              },
-            ]}
-          >
-            <Text
-              style={{
-                color: provinceName ? text : muted,
-                ...Typography.body,
-                flex: 1,
-              }}
+        {descConfig.isActive ? (
+          <View onLayout={(e) => updateFieldY('description', e.nativeEvent.layout.y)}>
+            <PostField
+              label="Açıklama"
+              required={descConfig.isRequired}
+              value={d.description}
+              onChangeText={(description) => onUpdate({ description })}
+              placeholder={
+                descConfig.isRequired
+                  ? 'Durum, bakım ve öne çıkan özellikler…'
+                  : 'Durum, bakım ve öne çıkan özellikler… (opsiyonel)'
+              }
+              multiline
+              error={errors.description}
+            />
+          </View>
+        ) : null}
+
+        {priceConfig.isActive ? (
+          <View onLayout={(e) => updateFieldY('priceTl', e.nativeEvent.layout.y)}>
+            <PostField
+              label="Fiyat"
+              required={priceConfig.isRequired}
+              value={d.priceTl}
+              onChangeText={(raw) => onUpdate({ priceTl: formatTlGrouped(raw) })}
+              placeholder="0"
+              keyboardType="numeric"
+              error={errors.priceTl}
+              suffix="₺"
+            />
+          </View>
+        ) : null}
+
+        {locationConfig.isActive ? (
+          <>
+            <View
+              style={styles.fieldBlock}
+              onLayout={(e) => updateFieldY('provinceId', e.nativeEvent.layout.y)}
             >
-              {provinceName || 'İl seçin'}
-            </Text>
-            <Ionicons name="chevron-down" size={16} color={muted} />
-          </Pressable>
-          {errors.provinceId ? (
-            <Text style={[styles.err, { color: errorColor }]}>{errors.provinceId}</Text>
-          ) : provincesError ? (
-            <Pressable onPress={retryProvinces}>
-              <Text style={[styles.err, { color: errorColor }]}>
-                {provincesError} · Yenile
+              <Text style={[styles.fieldLabel, { color: secondary }]}>
+                Konum
+                {locationConfig.isRequired ? (
+                  <Text style={{ color: errorColor }}> *</Text>
+                ) : null}
               </Text>
-            </Pressable>
-          ) : null}
-        </View>
-        <View
-          style={styles.fieldBlock}
-          onLayout={(e) => updateFieldY('districtId', e.nativeEvent.layout.y)}
-        >
-          <Text style={[styles.fieldLabel, { color: secondary }]}>
-            İlçe
-            <Text style={{ color: errorColor }}> *</Text>
-          </Text>
-          <Pressable
-            onPress={() => d.provinceId && setDistrictOpen(true)}
-            style={[
-              styles.select,
-              {
-                borderColor: errors.districtId ? errorColor : border,
-                backgroundColor: surface,
-                opacity: d.provinceId ? 1 : 0.55,
-              },
-            ]}
-          >
-            <Text
-              style={{
-                color: districtName ? text : muted,
-                ...Typography.body,
-                flex: 1,
-              }}
+              <Pressable
+                onPress={() => setProvinceOpen(true)}
+                style={[
+                  styles.select,
+                  {
+                    borderColor: errors.provinceId ? errorColor : border,
+                    backgroundColor: surface,
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: provinceName ? text : muted,
+                    ...Typography.body,
+                    flex: 1,
+                  }}
+                >
+                  {provinceName || 'İl seçin'}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color={muted} />
+              </Pressable>
+              {errors.provinceId ? (
+                <Text style={[styles.err, { color: errorColor }]}>{errors.provinceId}</Text>
+              ) : provincesError ? (
+                <Pressable onPress={retryProvinces}>
+                  <Text style={[styles.err, { color: errorColor }]}>
+                    {provincesError} · Yenile
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+            <View
+              style={styles.fieldBlock}
+              onLayout={(e) => updateFieldY('districtId', e.nativeEvent.layout.y)}
             >
-              {districtName || (d.provinceId ? 'İlçe seçin' : 'Önce il seçin')}
-            </Text>
-            <Ionicons name="chevron-down" size={16} color={muted} />
-          </Pressable>
-          {errors.districtId ? (
-            <Text style={[styles.err, { color: errorColor }]}>{errors.districtId}</Text>
-          ) : districtsError ? (
-            <Pressable onPress={retryDistricts}>
-              <Text style={[styles.err, { color: errorColor }]}>
-                {districtsError} · Yenile
+              <Text style={[styles.fieldLabel, { color: secondary }]}>
+                İlçe
+                {locationConfig.isRequired ? (
+                  <Text style={{ color: errorColor }}> *</Text>
+                ) : null}
               </Text>
-            </Pressable>
-          ) : null}
-        </View>
+              <Pressable
+                onPress={() => d.provinceId && setDistrictOpen(true)}
+                style={[
+                  styles.select,
+                  {
+                    borderColor: errors.districtId ? errorColor : border,
+                    backgroundColor: surface,
+                    opacity: d.provinceId ? 1 : 0.55,
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: districtName ? text : muted,
+                    ...Typography.body,
+                    flex: 1,
+                  }}
+                >
+                  {districtName || (d.provinceId ? 'İlçe seçin' : 'Önce il seçin')}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color={muted} />
+              </Pressable>
+              {errors.districtId ? (
+                <Text style={[styles.err, { color: errorColor }]}>{errors.districtId}</Text>
+              ) : districtsError ? (
+                <Pressable onPress={retryDistricts}>
+                  <Text style={[styles.err, { color: errorColor }]}>
+                    {districtsError} · Yenile
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </>
+        ) : null}
+
         {addressConfig.isActive ? (
           <View
             style={styles.fieldBlock}
@@ -385,24 +439,26 @@ export function PostDetailsStep({
         ) : null}
       </View>
 
-      <View
-        style={[styles.card, { backgroundColor: surface, borderColor: border }]}
-        onLayout={(e) => {
-          cardPhoneY.current = e.nativeEvent.layout.y;
-          updateFieldY('sellerPhone');
-        }}
-      >
-        <Text style={[styles.section, { color: text }]}>İletişim</Text>
-        <View onLayout={(e) => updateFieldY('sellerPhone', e.nativeEvent.layout.y)}>
-          <PostPhoneField
-            iso={d.phoneCountryIso || 'TR'}
-            national={d.sellerPhone}
-            error={errors.sellerPhone}
-            required
-            onChange={onUpdate}
-          />
+      {phoneConfig.isActive ? (
+        <View
+          style={[styles.card, { backgroundColor: surface, borderColor: border }]}
+          onLayout={(e) => {
+            cardPhoneY.current = e.nativeEvent.layout.y;
+            updateFieldY('sellerPhone');
+          }}
+        >
+          <Text style={[styles.section, { color: text }]}>İletişim</Text>
+          <View onLayout={(e) => updateFieldY('sellerPhone', e.nativeEvent.layout.y)}>
+            <PostPhoneField
+              iso={d.phoneCountryIso || 'TR'}
+              national={d.sellerPhone}
+              error={errors.sellerPhone}
+              required={phoneConfig.isRequired}
+              onChange={onUpdate}
+            />
+          </View>
         </View>
-      </View>
+      ) : null}
 
       {isSaleHorse ? (
         <View

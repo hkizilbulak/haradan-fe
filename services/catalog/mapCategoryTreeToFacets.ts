@@ -31,12 +31,19 @@ function toOption(node: CategoryTreeNode): CatalogFacetOption {
 export function mapCategoryTreeToFacets(
   tree: CategoryTreeNode[]
 ): CatalogFacets {
+  const visibleNodes = tree.filter(
+    (n) =>
+      n.slug !== 'ortak-alanlar' &&
+      n.slug !== 'cat-ortak-alanlar' &&
+      n.id !== 'c1000000-0000-4000-8000-000000000000'
+  );
+
   const categoryGroup: CatalogFacetGroup = {
     id: 'listing-type',
     label: 'İlan türü',
     kind: 'category',
     defaultExpanded: false,
-    options: tree.map(toOption),
+    options: visibleNodes.map(toOption),
   };
 
   const breedGroup: CatalogFacetGroup = {
