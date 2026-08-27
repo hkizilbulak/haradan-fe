@@ -105,6 +105,9 @@ export class MockCatalogRepository implements ICatalogRepository {
                 parsed.categoryProperties.unshift(gp);
               }
             }
+            parsed.categoryProperties = parsed.categoryProperties.filter(
+              (p: any) => p.code !== 'liveFoalGuarantee' && p.id !== 'p1000000-0000-4000-8000-000000000044'
+            );
             this.categories = parsed.categories;
             this.properties = parsed.categoryProperties;
             return;
