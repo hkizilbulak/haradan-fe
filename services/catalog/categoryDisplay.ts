@@ -80,7 +80,9 @@ export function pickListingRootCategories(
     (n) =>
       n.slug !== 'ortak-alanlar' &&
       n.slug !== 'cat-ortak-alanlar' &&
-      n.id !== 'c1000000-0000-4000-8000-000000000000'
+      n.id !== 'c1000000-0000-4000-8000-000000000000' &&
+      !n.name?.toLowerCase().includes('ortak alan') &&
+      !n.slug?.toLowerCase().includes('ortak')
   );
 }
 

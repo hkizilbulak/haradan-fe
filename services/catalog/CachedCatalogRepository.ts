@@ -48,9 +48,17 @@ export function createCachedCatalogRepository(
       if (tree) return tree;
       if (treeInflight) return treeInflight;
       treeInflight = inner.getCategoryTree(options).then((result) => {
-        tree = result;
+        const filtered = (result || []).filter(
+          (n) =>
+            n.slug !== 'ortak-alanlar' &&
+            n.slug !== 'cat-ortak-alanlar' &&
+            n.id !== 'c1000000-0000-4000-8000-000000000000' &&
+            !n.name?.toLowerCase().includes('ortak alan') &&
+            !n.slug?.toLowerCase().includes('ortak')
+        );
+        tree = filtered;
         treeInflight = null;
-        return result;
+        return filtered;
       });
       return treeInflight;
     },

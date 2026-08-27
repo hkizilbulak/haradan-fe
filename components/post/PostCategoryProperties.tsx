@@ -93,12 +93,29 @@ export function PostCategoryProperties({
 
   useEffect(() => {
     const catId = type?.categoryId || type?.categorySlug;
-    if (!catId) {
+    if (
+      !catId ||
+      catId === 'ortak-alanlar' ||
+      catId === 'cat-ortak-alanlar' ||
+      catId === 'c1000000-0000-4000-8000-000000000000' ||
+      type?.categorySlug === 'ortak-alanlar'
+    ) {
       setCategoryProperties([]);
       onPropertiesLoadedRef.current?.([]);
       return;
     }
     let cancelled = false;
+
+    const GLOBAL_CODES = new Set([
+      'ADDRESS',
+      'DESCRIPTION',
+      'PRICE',
+      'LOCATION',
+      'PHONE',
+      'TITLE',
+      'MEDIA',
+      'IMAGES',
+    ]);
 
     const loadProps = () => {
       catalogRepository
@@ -109,7 +126,11 @@ export function PostCategoryProperties({
         .then((def) => {
           if (cancelled) return;
           if (def && Array.isArray(def.properties)) {
-            const filtered = def.properties.filter((p: any) => p.isActive !== false);
+            const filtered = def.properties.filter(
+              (p: any) =>
+                p.isActive !== false &&
+                !GLOBAL_CODES.has(String(p.code || '').toUpperCase())
+            );
             setCategoryProperties(filtered);
             setListingWizardState({ categoryProperties: filtered });
             onPropertiesLoadedRef.current?.(filtered);
