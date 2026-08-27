@@ -6,6 +6,7 @@ import type {
 
 export interface CatalogQueryOptions {
   fresh?: boolean;
+  categorySlug?: string;
 }
 
 /**

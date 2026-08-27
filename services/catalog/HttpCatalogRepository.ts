@@ -1,12 +1,14 @@
 import type {
   CatalogFacets,
   CategoryFormDefinitionResponse,
+  CategoryPropertyPublic,
   CategoryTreeNode,
   CategoryTreeResponse,
 } from '@/types';
 
 import { HttpClient } from '@/services/http';
 import type { CatalogQueryOptions, ICatalogRepository } from './CatalogRepository';
+import { findCategoryById, findCategoryBySlug, findCategoryParent } from './categoryTree';
 import { mapCategoryTreeToFacets } from './mapCategoryTreeToFacets';
 import { MockCatalogRepository } from './MockCatalogRepository';
 
@@ -73,32 +75,44 @@ export class HttpCatalogRepository implements ICatalogRepository {
       this.formCache.delete(targetSlug);
     } else if (this.formCache.has(targetId)) {
       return this.formCache.get(targetId) ?? null;
+    } else if (this.formCache.has(targetSlug)) {
+      return this.formCache.get(targetSlug) ?? null;
     }
 
+    const tree = await this.getCategoryTree(options);
+
+    let targetNode: CategoryTreeNode | null = null;
     let resolvedUUID: string | null = null;
+
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)) {
       resolvedUUID = targetId;
+      targetNode = findCategoryById(tree, targetId);
     } else {
-      const tree = await this.getCategoryTree();
-      const findUUID = (nodes: CategoryTreeNode[]): string | null => {
-        for (const node of nodes) {
-          if (
-            node.slug === targetSlug ||
-            node.slug === targetId ||
-            node.id === targetId ||
-            node.slug === targetId.replace(/^cat-/, '')
-          ) {
-            return node.id;
-          }
-          if (node.children && node.children.length > 0) {
-            const res = findUUID(node.children);
-            if (res) return res;
-          }
-        }
-        return null;
-      };
-      resolvedUUID = findUUID(tree);
+      targetNode =
+        findCategoryBySlug(tree, targetSlug) ||
+        findCategoryBySlug(tree, targetId) ||
+        findCategoryById(tree, targetId) ||
+        findCategoryBySlug(tree, targetId.replace(/^cat-/, ''));
+      resolvedUUID = targetNode?.id ?? null;
     }
+
+    let parentDef: CategoryFormDefinitionResponse | null = null;
+    const parentNode = targetNode
+      ? findCategoryParent(tree, targetNode.id) || findCategoryParent(tree, targetNode.slug)
+      : (resolvedUUID ? findCategoryParent(tree, resolvedUUID) : null);
+
+    if (parentNode && parentNode.id !== resolvedUUID && parentNode.id !== targetId) {
+      try {
+        parentDef = await this.getCategoryFormDefinition(parentNode.id, options);
+      } catch {
+        // Parent properties optional
+      }
+    }
+
+    let directProps: CategoryPropertyPublic[] = [];
+    let responseSlug = targetNode?.slug || targetSlug;
+    let responseName = targetNode?.name || '';
+    let responseCategoryId = resolvedUUID || targetId;
 
     if (resolvedUUID) {
       try {
@@ -108,35 +122,61 @@ export class HttpCatalogRepository implements ICatalogRepository {
         );
 
         if (res && Array.isArray(res.properties)) {
-          const response: CategoryFormDefinitionResponse = {
-            categoryId: res.categoryId || resolvedUUID,
-            slug: res.slug || targetSlug,
-            name: res.name,
-            properties: res.properties,
-          };
-          this.formCache.set(targetId, response);
-          if (targetSlug && targetSlug !== targetId) {
-            this.formCache.set(targetSlug, response);
-          }
-          this.formCache.set(resolvedUUID, response);
-          return response;
+          directProps = res.properties;
+          if (res.slug) responseSlug = res.slug;
+          if (res.name) responseName = res.name;
+          if (res.categoryId) responseCategoryId = res.categoryId;
         }
       } catch {
-        // Fallback to local JSON catalog
+        // Fallback
       }
     }
 
-    // Use fallback
-    const fallbackDef = await this.fallback.getCategoryFormDefinition(categoryId, options);
-    if (fallbackDef) {
-      this.formCache.set(targetId, fallbackDef);
-      if (targetSlug && targetSlug !== targetId) {
-        this.formCache.set(targetSlug, fallbackDef);
+    if (directProps.length === 0) {
+      const fallbackDef = await this.fallback.getCategoryFormDefinition(categoryId, options);
+      if (fallbackDef && Array.isArray(fallbackDef.properties)) {
+        directProps = fallbackDef.properties;
+        if (!responseName && fallbackDef.name) responseName = fallbackDef.name;
+        if (!responseSlug && fallbackDef.slug) responseSlug = fallbackDef.slug;
       }
-      return fallbackDef;
     }
 
-    return null;
+    if (directProps.length === 0 && (!parentDef || !parentDef.properties || parentDef.properties.length === 0)) {
+      return null;
+    }
+
+    const merged = new Map<string, CategoryPropertyPublic>();
+
+    if (parentDef && Array.isArray(parentDef.properties)) {
+      for (const p of parentDef.properties) {
+        merged.set(p.code, p);
+      }
+    }
+
+    for (const p of directProps) {
+      merged.set(p.code, p);
+    }
+
+    const mergedProperties = Array.from(merged.values()).sort(
+      (a, b) => (a.sortOrder || 1) - (b.sortOrder || 1) || a.title.localeCompare(b.title, 'tr')
+    );
+
+    const response: CategoryFormDefinitionResponse = {
+      categoryId: responseCategoryId,
+      slug: responseSlug,
+      name: responseName,
+      properties: mergedProperties,
+    };
+
+    this.formCache.set(targetId, response);
+    if (targetSlug && targetSlug !== targetId) {
+      this.formCache.set(targetSlug, response);
+    }
+    if (resolvedUUID && resolvedUUID !== targetId) {
+      this.formCache.set(resolvedUUID, response);
+    }
+
+    return response;
   }
 
   async getFacets(options?: CatalogQueryOptions): Promise<CatalogFacets> {

@@ -30,6 +30,7 @@ import type {
   CatalogFacetOption,
   CatalogFacets,
   CategoryPropertyPublic,
+  CategoryTreeNode,
 } from '@/types';
 
 
@@ -66,6 +67,7 @@ type ListingsFilterSidebarProps = {
   resultCount: number;
   /** Mobil sheet — üst başlık sheet'te; sidebar başlığını gizle. */
   hideHeader?: boolean;
+  categoryTree?: CategoryTreeNode[];
 };
 
 export {
@@ -315,6 +317,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
   onChange,
   resultCount,
   hideHeader = false,
+  categoryTree,
 }: ListingsFilterSidebarProps) {
   const groups = useMemo(() => facets?.groups ?? [], [facets?.groups]);
   const { items: provinces } = useProvinces();
@@ -322,7 +325,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     value.provinceIds.length === 1 ? value.provinceIds[0] : null;
   const { items: districts } = useDistricts(selectedProvinceId);
 
-  const isPansiyonActive = isPansiyonCategory(value.categorySlug);
+  const isPansiyonActive = isPansiyonCategory(value.categorySlug, categoryTree);
 
   const [categoryProperties, setCategoryProperties] = useState<CategoryPropertyPublic[]>([]);
 

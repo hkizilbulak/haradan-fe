@@ -753,6 +753,7 @@ export const ListingsView = memo(function ListingsView({
           onChange={onFilterChange}
           resultCount={items.length}
           onClear={clearAllFilters}
+          categoryTree={categoryTree}
         />
 
         <MobileMenuSheet
@@ -799,6 +800,7 @@ export const ListingsView = memo(function ListingsView({
                   value={filters}
                   onChange={onFilterChange}
                   resultCount={items.length}
+                  categoryTree={categoryTree}
                 />
               </Pressable>
 

@@ -146,8 +146,48 @@ export function periodLabel(period: string | null | undefined): string | null {
   return PERIOD_OPTIONS.find((p) => p.id === period)?.label ?? null;
 }
 
-export function isHorseCategory(slug: string | null): boolean {
+import type { CategoryTreeNode } from '@/types';
+
+function hasAncestorSlug(
+  tree: CategoryTreeNode[] | undefined,
+  targetSlug: string | null | undefined,
+  ancestorSlugs: string[]
+): boolean {
+  if (!tree || tree.length === 0 || !targetSlug) return false;
+  const cleanTarget = targetSlug.toLowerCase().replace(/^cat-/, '');
+
+  const checkNode = (node: CategoryTreeNode, isUnderAncestor: boolean): boolean => {
+    const nodeSlugClean = node.slug.toLowerCase().replace(/^cat-/, '');
+    const isAncestor = ancestorSlugs.some(
+      (a) => a.toLowerCase().replace(/^cat-/, '') === nodeSlugClean
+    );
+    const under = isUnderAncestor || isAncestor;
+    if (
+      node.slug.toLowerCase() === targetSlug.toLowerCase() ||
+      node.id.toLowerCase() === targetSlug.toLowerCase() ||
+      nodeSlugClean === cleanTarget
+    ) {
+      return under;
+    }
+    for (const child of node.children || []) {
+      if (checkNode(child, under)) return true;
+    }
+    return false;
+  };
+
+  for (const root of tree) {
+    if (checkNode(root, false)) return true;
+  }
+  return false;
+}
+
+export function isHorseCategory(slug: string | null, categoryTree?: CategoryTreeNode[]): boolean {
   if (!slug) return false;
+  if (categoryTree && categoryTree.length > 0) {
+    if (hasAncestorSlug(categoryTree, slug, ['satilik-atlar', 'cat-satilik-atlar'])) {
+      return true;
+    }
+  }
   const s = slug.toLowerCase();
   return (
     s === 'satilik-atlar' ||
@@ -171,8 +211,13 @@ export function isHorseCategory(slug: string | null): boolean {
   ) && !s.includes('asim') && !s.includes('aşım');
 }
 
-export function isPansiyonCategory(slug: string | null): boolean {
+export function isPansiyonCategory(slug: string | null, categoryTree?: CategoryTreeNode[]): boolean {
   if (!slug) return false;
+  if (categoryTree && categoryTree.length > 0) {
+    if (hasAncestorSlug(categoryTree, slug, ['pansiyon-haralar', 'cat-pansiyon', 'ahir-tesisler'])) {
+      return true;
+    }
+  }
   const s = slug.toLowerCase();
   return (
     s === 'pansiyon-haralar' ||
@@ -182,8 +227,13 @@ export function isPansiyonCategory(slug: string | null): boolean {
   );
 }
 
-export function isTransportCategory(slug: string | null): boolean {
+export function isTransportCategory(slug: string | null, categoryTree?: CategoryTreeNode[]): boolean {
   if (!slug) return false;
+  if (categoryTree && categoryTree.length > 0) {
+    if (hasAncestorSlug(categoryTree, slug, ['at-nakliyesi', 'cat-nakliye'])) {
+      return true;
+    }
+  }
   const s = slug.toLowerCase();
   return (
     s === 'at-nakliyesi' ||
@@ -195,8 +245,13 @@ export function isTransportCategory(slug: string | null): boolean {
   );
 }
 
-export function isFarrierCategory(slug: string | null): boolean {
+export function isFarrierCategory(slug: string | null, categoryTree?: CategoryTreeNode[]): boolean {
   if (!slug) return false;
+  if (categoryTree && categoryTree.length > 0) {
+    if (hasAncestorSlug(categoryTree, slug, ['nalbantlar', 'cat-nalbant'])) {
+      return true;
+    }
+  }
   const s = slug.toLowerCase();
   return (
     s === 'nalbantlar' ||
@@ -206,8 +261,13 @@ export function isFarrierCategory(slug: string | null): boolean {
   );
 }
 
-export function isStudCategory(slug: string | null): boolean {
+export function isStudCategory(slug: string | null, categoryTree?: CategoryTreeNode[]): boolean {
   if (!slug) return false;
+  if (categoryTree && categoryTree.length > 0) {
+    if (hasAncestorSlug(categoryTree, slug, ['asim-hizmetleri', 'cat-asim'])) {
+      return true;
+    }
+  }
   const s = slug.toLowerCase();
   return (
     s === 'asim-hizmetleri' ||

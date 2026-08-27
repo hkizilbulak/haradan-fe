@@ -18,7 +18,7 @@ import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import type { CatalogFacets } from '@/types';
+import type { CatalogFacets, CategoryTreeNode } from '@/types';
 
 type MobileListingsFilterSheetProps = {
   visible: boolean;
@@ -28,6 +28,7 @@ type MobileListingsFilterSheetProps = {
   onChange: (next: ListingsFiltersState) => void;
   resultCount: number;
   onClear: () => void;
+  categoryTree?: CategoryTreeNode[];
 };
 
 /** Mobil filtre bottom sheet — sidebar içeriğini sheet içinde sunar. */
@@ -39,6 +40,7 @@ export function MobileListingsFilterSheet({
   onChange,
   resultCount,
   onClear,
+  categoryTree,
 }: MobileListingsFilterSheetProps) {
   const insets = useSafeInsets();
   const primary = useThemeColor('primary');
@@ -122,6 +124,7 @@ export function MobileListingsFilterSheet({
               onChange={onChange}
               resultCount={resultCount}
               hideHeader
+              categoryTree={categoryTree}
             />
           </ScrollView>
 

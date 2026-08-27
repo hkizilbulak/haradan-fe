@@ -56,22 +56,34 @@ export function createCachedCatalogRepository(
     },
 
     async getCategoryFormDefinition(categoryId: string, options?: CatalogQueryOptions) {
-      if (!categoryId) return null;
+      if (!categoryId && !options?.categorySlug) return null;
+      const targetKey = categoryId || options?.categorySlug || '';
       if (options?.fresh) {
         formCache.delete(categoryId);
+        if (options?.categorySlug) {
+          formCache.delete(options.categorySlug);
+        }
       }
-      if (formCache.has(categoryId)) {
+      if (formCache.has(targetKey)) {
+        return formCache.get(targetKey) ?? null;
+      }
+      if (categoryId && formCache.has(categoryId)) {
         return formCache.get(categoryId) ?? null;
       }
-      if (formInflight.has(categoryId)) {
-        return formInflight.get(categoryId)!;
+      if (options?.categorySlug && formCache.has(options.categorySlug)) {
+        return formCache.get(options.categorySlug) ?? null;
+      }
+      if (formInflight.has(targetKey)) {
+        return formInflight.get(targetKey)!;
       }
       const promise = inner.getCategoryFormDefinition(categoryId, options).then((res) => {
-        formCache.set(categoryId, res);
-        formInflight.delete(categoryId);
+        formCache.set(targetKey, res);
+        if (categoryId && categoryId !== targetKey) formCache.set(categoryId, res);
+        if (options?.categorySlug && options.categorySlug !== targetKey) formCache.set(options.categorySlug, res);
+        formInflight.delete(targetKey);
         return res;
       });
-      formInflight.set(categoryId, promise);
+      formInflight.set(targetKey, promise);
       return promise;
     },
   };
