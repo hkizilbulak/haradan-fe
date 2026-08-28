@@ -162,20 +162,8 @@ export class HttpCatalogRepository implements ICatalogRepository {
       } catch {}
     }
 
-    let parentDef: CategoryFormDefinitionResponse | null = null;
-    const parentNode = targetNode
-      ? findCategoryParent(tree, targetNode.id) || findCategoryParent(tree, targetNode.slug)
-      : (resolvedUUID ? findCategoryParent(tree, resolvedUUID) : null);
-
-    if (parentNode && parentNode.id !== resolvedUUID && parentNode.id !== targetId) {
-      try {
-        parentDef = await this.getCategoryFormDefinition(parentNode.id, options);
-      } catch {
-        // Parent properties optional
-      }
-    }
-
     let directProps: CategoryPropertyPublic[] = [];
+    let apiSucceeded = false;
 
     if (resolvedUUID) {
       try {
@@ -186,6 +174,7 @@ export class HttpCatalogRepository implements ICatalogRepository {
 
         if (res && Array.isArray(res.properties)) {
           directProps = res.properties;
+          apiSucceeded = true;
           if (res.slug) responseSlug = res.slug;
           if (res.name) responseName = res.name;
           if (res.categoryId) responseCategoryId = res.categoryId;
@@ -195,7 +184,7 @@ export class HttpCatalogRepository implements ICatalogRepository {
       }
     }
 
-    if (directProps.length === 0) {
+    if (!apiSucceeded) {
       const fallbackDef = await this.fallback.getCategoryFormDefinition(categoryId, options);
       if (fallbackDef && Array.isArray(fallbackDef.properties)) {
         directProps = fallbackDef.properties;
@@ -204,23 +193,11 @@ export class HttpCatalogRepository implements ICatalogRepository {
       }
     }
 
-    if (directProps.length === 0 && (!parentDef || !parentDef.properties || parentDef.properties.length === 0)) {
+    if (directProps.length === 0 && !apiSucceeded) {
       return null;
     }
 
-    const merged = new Map<string, CategoryPropertyPublic>();
-
-    if (parentDef && Array.isArray(parentDef.properties)) {
-      for (const p of parentDef.properties) {
-        merged.set(p.code, p);
-      }
-    }
-
-    for (const p of directProps) {
-      merged.set(p.code, p);
-    }
-
-    const mergedProperties = Array.from(merged.values()).sort(
+    const sortedProperties = [...directProps].sort(
       (a, b) => (a.sortOrder || 1) - (b.sortOrder || 1) || a.title.localeCompare(b.title, 'tr')
     );
 
@@ -228,7 +205,7 @@ export class HttpCatalogRepository implements ICatalogRepository {
       categoryId: responseCategoryId,
       slug: responseSlug,
       name: responseName,
-      properties: mergedProperties,
+      properties: sortedProperties,
     };
 
     this.formCache.set(targetId, response);
