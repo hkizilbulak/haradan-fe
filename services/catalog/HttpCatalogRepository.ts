@@ -12,12 +12,21 @@ import { findCategoryById, findCategoryBySlug, findCategoryParent } from './cate
 import { mapCategoryTreeToFacets } from './mapCategoryTreeToFacets';
 import { MockCatalogRepository } from './MockCatalogRepository';
 
+/**
+ * Kategori ağacı ve facet verisinin ne kadar süre cache'de tutulacağı (ms).
+ * Bu süre dolduğunda bir sonraki istek BE'den taze veri çeker; böylece
+ * BO'dan yapılan pasife/aktife alma işlemleri FE'ye otomatik yansır.
+ */
+const CATALOG_TREE_TTL_MS = 5 * 60 * 1000; // 5 dakika
+
 /** CATALOG-01 — GET /v1/categories, CATALOG-02 — GET /v1/categories/{categoryId}/form */
 export class HttpCatalogRepository implements ICatalogRepository {
   private readonly http: HttpClient;
   private readonly fallback: MockCatalogRepository;
   private facets: CatalogFacets | null = null;
+  private facetsFetchedAt: number = 0;
   private tree: CategoryTreeNode[] | null = null;
+  private treeFetchedAt: number = 0;
   private formCache = new Map<string, CategoryFormDefinitionResponse>();
 
   constructor(baseUrl: string) {
@@ -35,15 +44,27 @@ export class HttpCatalogRepository implements ICatalogRepository {
 
   invalidate(): void {
     this.facets = null;
+    this.facetsFetchedAt = 0;
     this.tree = null;
+    this.treeFetchedAt = 0;
     this.formCache.clear();
     this.fallback.invalidate();
   }
 
   async getCategoryTree(options?: CatalogQueryOptions): Promise<CategoryTreeNode[]> {
-    if (this.tree && !options?.fresh) {
+    const now = Date.now();
+    const treeExpired = (now - this.treeFetchedAt) > CATALOG_TREE_TTL_MS;
+
+    if (this.tree && !options?.fresh && !treeExpired) {
       return this.tree;
     }
+
+    // Cache süresi doldu veya fresh istek — eski veriyi temizle
+    if (treeExpired || options?.fresh) {
+      this.tree = null;
+      this.treeFetchedAt = 0;
+    }
+
     try {
       const res = await this.http.request<CategoryTreeResponse>('/v1/categories', {
         method: 'GET',
@@ -55,6 +76,7 @@ export class HttpCatalogRepository implements ICatalogRepository {
             node.id !== 'c1000000-0000-4000-8000-000000000000' &&
             !node.name?.toLowerCase().includes('ortak alan')
         );
+        this.treeFetchedAt = Date.now();
         return this.tree;
       }
     } catch {
@@ -68,6 +90,8 @@ export class HttpCatalogRepository implements ICatalogRepository {
         node.id !== 'c1000000-0000-4000-8000-000000000000' &&
         !node.name?.toLowerCase().includes('ortak alan')
     );
+    // Fallback verisi için daha kısa TTL — 1 dakika
+    this.treeFetchedAt = Date.now() - (CATALOG_TREE_TTL_MS - 60_000);
     return this.tree;
   }
 
@@ -219,11 +243,17 @@ export class HttpCatalogRepository implements ICatalogRepository {
   }
 
   async getFacets(options?: CatalogQueryOptions): Promise<CatalogFacets> {
-    if (this.facets && !options?.fresh) {
+    const now = Date.now();
+    const facetsExpired = (now - this.facetsFetchedAt) > CATALOG_TREE_TTL_MS;
+
+    if (this.facets && !options?.fresh && !facetsExpired) {
       return this.facets;
     }
+
+    // getCategoryTree TTL kontrolünü kendi içinde yapıyor; fresh data gelecek
     const tree = await this.getCategoryTree(options);
     this.facets = mapCategoryTreeToFacets(tree);
+    this.facetsFetchedAt = Date.now();
     return this.facets;
   }
 }

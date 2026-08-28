@@ -9,8 +9,13 @@ import type { CatalogQueryOptions, ICatalogRepository } from './CatalogRepositor
 export function createCachedCatalogRepository(
   inner: ICatalogRepository
 ): ICatalogRepository {
+  /** 5 dakika — HttpCatalogRepository ile senkronize TTL */
+  const TTL_MS = 5 * 60 * 1000;
+
   let facets: CatalogFacets | null = null;
+  let facetsFetchedAt: number = 0;
   let tree: CategoryTreeNode[] | null = null;
+  let treeFetchedAt: number = 0;
   let inflight: Promise<CatalogFacets> | null = null;
   let treeInflight: Promise<CategoryTreeNode[]> | null = null;
   const formInflight = new Map<string, Promise<CategoryFormDefinitionResponse | null>>();
@@ -21,20 +26,28 @@ export function createCachedCatalogRepository(
     getCachedCategoryTree: () => tree,
     invalidate: () => {
       facets = null;
+      facetsFetchedAt = 0;
       tree = null;
+      treeFetchedAt = 0;
       formCache.clear();
       formInflight.clear();
       inner.invalidate?.();
     },
 
     async getFacets(options?: CatalogQueryOptions) {
-      if (options?.fresh) {
+      const now = Date.now();
+      const expired = (now - facetsFetchedAt) > TTL_MS;
+
+      if (options?.fresh || expired) {
         facets = null;
+        facetsFetchedAt = 0;
+        inflight = null;
       }
       if (facets) return facets;
       if (inflight) return inflight;
       inflight = inner.getFacets(options).then((result) => {
         facets = result;
+        facetsFetchedAt = Date.now();
         inflight = null;
         return result;
       });
@@ -42,8 +55,13 @@ export function createCachedCatalogRepository(
     },
 
     async getCategoryTree(options?: CatalogQueryOptions) {
-      if (options?.fresh) {
+      const now = Date.now();
+      const expired = (now - treeFetchedAt) > TTL_MS;
+
+      if (options?.fresh || expired) {
         tree = null;
+        treeFetchedAt = 0;
+        treeInflight = null;
       }
       if (tree) return tree;
       if (treeInflight) return treeInflight;
@@ -57,6 +75,7 @@ export function createCachedCatalogRepository(
             !n.slug?.toLowerCase().includes('ortak')
         );
         tree = filtered;
+        treeFetchedAt = Date.now();
         treeInflight = null;
         return filtered;
       });
