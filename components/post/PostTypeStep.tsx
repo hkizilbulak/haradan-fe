@@ -41,6 +41,7 @@ function toSelection(
     categorySlug: node.slug,
     categoryName: node.name,
     parentSlug,
+    allowTjk: Boolean(node.allowTjk),
   };
 }
 

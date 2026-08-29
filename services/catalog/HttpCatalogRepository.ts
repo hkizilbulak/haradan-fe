@@ -133,6 +133,7 @@ export class HttpCatalogRepository implements ICatalogRepository {
     let responseSlug = targetNode?.slug || targetSlug;
     let responseName = targetNode?.name || '';
     let responseCategoryId = resolvedUUID || targetId;
+    let responseAllowTjk = typeof targetNode?.allowTjk === 'boolean' ? targetNode.allowTjk : false;
 
     const isGlobalCategory =
       targetId === 'ortak-alanlar' ||
@@ -157,6 +158,9 @@ export class HttpCatalogRepository implements ICatalogRepository {
             responseSlug = globalNode.slug;
             responseName = globalNode.name;
             responseCategoryId = globalNode.id;
+            if (typeof globalNode.allowTjk === 'boolean') {
+              responseAllowTjk = globalNode.allowTjk;
+            }
           }
         }
       } catch {}
@@ -178,6 +182,7 @@ export class HttpCatalogRepository implements ICatalogRepository {
           if (res.slug) responseSlug = res.slug;
           if (res.name) responseName = res.name;
           if (res.categoryId) responseCategoryId = res.categoryId;
+          if (typeof res.allowTjk === 'boolean') responseAllowTjk = res.allowTjk;
         }
       } catch {
         // Fallback
@@ -190,6 +195,7 @@ export class HttpCatalogRepository implements ICatalogRepository {
         directProps = fallbackDef.properties;
         if (!responseName && fallbackDef.name) responseName = fallbackDef.name;
         if (!responseSlug && fallbackDef.slug) responseSlug = fallbackDef.slug;
+        if (typeof fallbackDef.allowTjk === 'boolean') responseAllowTjk = fallbackDef.allowTjk;
       }
     }
 
@@ -205,6 +211,7 @@ export class HttpCatalogRepository implements ICatalogRepository {
       categoryId: responseCategoryId,
       slug: responseSlug,
       name: responseName,
+      allowTjk: responseAllowTjk,
       properties: sortedProperties,
     };
 

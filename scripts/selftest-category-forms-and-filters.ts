@@ -164,8 +164,8 @@ assert(detailsStepComplete(draftTransport), 'At Nakliyesi formu geçerli');
 const reqTransport = mapDraftToCreateAdvert(draftTransport);
 assert(Boolean(reqTransport.categoryId), 'Nakliye categoryId aktarıldı');
 const propsTransport = buildDraftProperties(draftTransport);
-assertEqual(propsTransport.companyName, 'Lider At Taşımacılık', 'Firma adı property aktarıldı');
-assertEqual(propsTransport.websiteUrl, 'https://www.lidernakliyat.com', 'Web sitesi property aktarıldı');
+assertEqual(propsTransport.companyName || propsTransport.COMPANY_NAME, 'Lider At Taşımacılık', 'Firma adı property aktarıldı');
+assertEqual(propsTransport.websiteUrl || propsTransport.WEBSITE_URL, 'https://www.lidernakliyat.com', 'Web sitesi property aktarıldı');
 
 // C. Nalbantlar Formu (Fotoğraf, Başlık*, Fiyat*, Açıklama, Adres*)
 const draftFarrier = createBaseValidDraft();
@@ -733,7 +733,9 @@ const draftEmptyAddress = {
   ...draftWithAddress,
   details: { ...draftWithAddress.details, address: '' },
 };
-const errs2 = detailsErrors(draftEmptyAddress as any);
+const errs2 = detailsErrors(draftEmptyAddress as any, undefined, {
+  ADDRESS: { code: 'ADDRESS', title: 'Açık Adres', isActive: true, isRequired: true, isFormVisible: true, isPublicVisible: true }
+});
 assertEqual(errs2.address, 'Açık adres zorunludur (en az 5 karakter).', 'Boş adres zorunlu iken hata verdi');
 
 console.log(`\nÖzet: ${passed} geçti, ${failed} kaldı.`);

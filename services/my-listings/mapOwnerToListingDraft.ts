@@ -51,6 +51,7 @@ export function mapOwnerToListingDraft(
           categorySlug: node.slug,
           categoryName: node.name,
           parentSlug: parent?.slug ?? null,
+          allowTjk: Boolean(node.allowTjk),
         }
       : null,
     packageCode: (dto.packageCode as ListingDraft['packageCode']) || 'STANDARD',

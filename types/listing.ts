@@ -9,6 +9,7 @@ export type ListingTypeSelection = {
   categorySlug: string;
   categoryName: string;
   parentSlug: string | null;
+  allowTjk?: boolean;
 };
 
 export type ListingBreedSelection = {

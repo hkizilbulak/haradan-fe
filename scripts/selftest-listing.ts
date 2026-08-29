@@ -127,7 +127,11 @@ assertEqual(
   'price required'
 );
 assertEqual(
-  detailsErrors({ ...incomplete, details: { ...incomplete.details, address: '' } }).address,
+  detailsErrors(
+    { ...incomplete, details: { ...incomplete.details, address: '' } },
+    undefined,
+    { ADDRESS: { code: 'ADDRESS', title: 'Açık Adres', isActive: true, isRequired: true, isFormVisible: true, isPublicVisible: true } }
+  ).address,
   'Açık adres zorunludur (en az 5 karakter).',
   'address required'
 );

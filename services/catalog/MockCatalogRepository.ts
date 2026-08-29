@@ -48,7 +48,7 @@ export class MockCatalogRepository implements ICatalogRepository {
   constructor() {
     this.refreshData();
 
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
       try {
         const bc = new BroadcastChannel('haradan_catalog_channel');
         bc.onmessage = (event) => {
@@ -298,6 +298,7 @@ export class MockCatalogRepository implements ICatalogRepository {
       categoryId: cat.id,
       slug: cat.slug,
       name: cat.name,
+      allowTjk: Boolean((cat as any).allowTjk),
       properties: mappedProperties,
     };
   }

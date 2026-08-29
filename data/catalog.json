@@ -7,6 +7,7 @@
       "name": "Ortak Alanlar (Tüm İlanlar)",
       "description": "Tüm ilan kategorilerinde geçerli olan genel alanlar (Açık Adres vb.)",
       "isActive": true,
+      "allowTjk": false,
       "sortOrder": 0,
       "version": 1
     },
@@ -17,6 +18,7 @@
       "name": "Satılık Atlar",
       "description": "Satılık yarış, kısrak, aygır, binek ve pony atları",
       "isActive": true,
+      "allowTjk": false,
       "sortOrder": 1,
       "version": 1
     },
@@ -27,6 +29,7 @@
       "name": "Satılık Yarış Atı",
       "description": "Yarış hayatı devam eden veya başlayacak atlar",
       "isActive": true,
+      "allowTjk": true,
       "sortOrder": 1,
       "version": 1
     },
@@ -37,6 +40,7 @@
       "name": "Satılık Kısrak",
       "description": "Damızlık ve yarış kısrakları",
       "isActive": true,
+      "allowTjk": true,
       "sortOrder": 2,
       "version": 1
     },
@@ -47,6 +51,7 @@
       "name": "Satılık Aygır",
       "description": "Damızlık ve yarış aygırları",
       "isActive": true,
+      "allowTjk": true,
       "sortOrder": 3,
       "version": 1
     },
@@ -57,6 +62,7 @@
       "name": "Satılık Binek Atı",
       "description": "Binicilik, engel atlama ve dresaj atları",
       "isActive": true,
+      "allowTjk": false,
       "sortOrder": 4,
       "version": 1
     },
@@ -67,6 +73,7 @@
       "name": "Satılık Pony",
       "description": "Midilli ve pony türleri",
       "isActive": true,
+      "allowTjk": false,
       "sortOrder": 5,
       "version": 1
     },
@@ -77,6 +84,7 @@
       "name": "At Hizmetleri",
       "description": "Pansiyon, nakliye, nalbant ve veteriner hizmetleri",
       "isActive": true,
+      "allowTjk": false,
       "sortOrder": 2,
       "version": 1
     },
@@ -87,6 +95,7 @@
       "name": "Pansiyon Haralar",
       "description": "At pansiyonu ve hara bakım hizmetleri",
       "isActive": true,
+      "allowTjk": false,
       "sortOrder": 1,
       "version": 1
     },
@@ -97,6 +106,7 @@
       "name": "At Nakliyesi",
       "description": "Şehirlerarası ve uluslararası at taşımacılığı",
       "isActive": true,
+      "allowTjk": false,
       "sortOrder": 2,
       "version": 1
     },
@@ -107,6 +117,7 @@
       "name": "Nalbantlar",
       "description": "Profesyonel nalbant ve ayak bakım hizmetleri",
       "isActive": true,
+      "allowTjk": false,
       "sortOrder": 3,
       "version": 1
     },
@@ -117,6 +128,7 @@
       "name": "Aşım Hizmetleri",
       "description": "Arap ve İngiliz aygır aşım hizmetleri",
       "isActive": true,
+      "allowTjk": false,
       "sortOrder": 3,
       "version": 1
     },
@@ -127,6 +139,7 @@
       "name": "Arap Aygır",
       "description": "Safkan Arap aygır aşım hizmetleri",
       "isActive": true,
+      "allowTjk": true,
       "sortOrder": 1,
       "version": 1
     },
@@ -137,6 +150,7 @@
       "name": "İngiliz Aygır",
       "description": "Thoroughbred İngiliz aygır aşım hizmetleri",
       "isActive": true,
+      "allowTjk": true,
       "sortOrder": 2,
       "version": 1
     },
@@ -147,6 +161,7 @@
       "name": "Ekipman & Malzemeler",
       "description": "Binicilik, eyer, semer, başlık ve ahır malzemeleri",
       "isActive": true,
+      "allowTjk": false,
       "sortOrder": 4,
       "version": 1
     },
@@ -157,6 +172,7 @@
       "name": "Ahır & Tesisler",
       "description": "Ahır kiralama, padok ve çiftlik tesisleri",
       "isActive": true,
+      "allowTjk": false,
       "sortOrder": 5,
       "version": 1
     }

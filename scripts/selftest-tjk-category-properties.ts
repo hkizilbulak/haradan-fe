@@ -12,31 +12,35 @@ import type { TjkHorseProfile } from '../types/listing';
 
 console.log('--- 1. TJK Kategori Uygunluk (Eligibility) Testleri ---');
 
-const yarisAti = { categoryId: 'cat-1', categorySlug: 'satilik-yaris-ati', parentSlug: 'satilik-atlar', categoryName: 'Yarış Atı' };
-const kisrak = { categoryId: 'cat-2', categorySlug: 'satilik-kisrak', parentSlug: 'satilik-atlar', categoryName: 'Kısrak' };
-const aygir = { categoryId: 'cat-3', categorySlug: 'satilik-aygir', parentSlug: 'satilik-atlar', categoryName: 'Aygır' };
-const binekAti = { categoryId: 'cat-4', categorySlug: 'satilik-binek-ati', parentSlug: 'satilik-atlar', categoryName: 'Binek Atı' };
-const pony = { categoryId: 'cat-5', categorySlug: 'satilik-pony', parentSlug: 'satilik-atlar', categoryName: 'Pony' };
-const arapAygir = { categoryId: 'cat-6', categorySlug: 'arap-aygir', parentSlug: 'asim-hizmetleri', categoryName: 'Arap Aygır' };
-const ingilizAygir = { categoryId: 'cat-7', categorySlug: 'ingiliz-aygir', parentSlug: 'asim-hizmetleri', categoryName: 'İngiliz Aygır' };
-const pansiyon = { categoryId: 'cat-8', categorySlug: 'pansiyon-haralar', parentSlug: 'at-hizmetleri', categoryName: 'Pansiyon' };
-const nakliye = { categoryId: 'cat-9', categorySlug: 'at-nakliyesi', parentSlug: 'at-hizmetleri', categoryName: 'Nakliye' };
+const yarisAti = { categoryId: 'cat-1', categorySlug: 'satilik-yaris-ati', parentSlug: 'satilik-atlar', categoryName: 'Yarış Atı', allowTjk: true };
+const kisrak = { categoryId: 'cat-2', categorySlug: 'satilik-kisrak', parentSlug: 'satilik-atlar', categoryName: 'Kısrak', allowTjk: true };
+const aygir = { categoryId: 'cat-3', categorySlug: 'satilik-aygir', parentSlug: 'satilik-atlar', categoryName: 'Aygır', allowTjk: true };
+const binekAti = { categoryId: 'cat-4', categorySlug: 'satilik-binek-ati', parentSlug: 'satilik-atlar', categoryName: 'Binek Atı', allowTjk: false };
+const pony = { categoryId: 'cat-5', categorySlug: 'satilik-pony', parentSlug: 'satilik-atlar', categoryName: 'Pony', allowTjk: false };
+const arapAygir = { categoryId: 'cat-6', categorySlug: 'arap-aygir', parentSlug: 'asim-hizmetleri', categoryName: 'Arap Aygır', allowTjk: true };
+const ingilizAygir = { categoryId: 'cat-7', categorySlug: 'ingiliz-aygir', parentSlug: 'asim-hizmetleri', categoryName: 'İngiliz Aygır', allowTjk: true };
+const pansiyon = { categoryId: 'cat-8', categorySlug: 'pansiyon-haralar', parentSlug: 'at-hizmetleri', categoryName: 'Pansiyon', allowTjk: false };
+const nakliye = { categoryId: 'cat-9', categorySlug: 'at-nakliyesi', parentSlug: 'at-hizmetleri', categoryName: 'Nakliye', allowTjk: false };
 
-// TJK'da kaydı olan kategoriler
+// TJK'da kaydı olan kategoriler (BE allowTjk: true)
 assert(isTjkEligibleListing(yarisAti), 'Satılık Yarış Atı TJK uyumlu');
 assert(isTjkEligibleListing(kisrak), 'Satılık Kısrak TJK uyumlu');
 assert(isTjkEligibleListing(aygir), 'Satılık Aygır TJK uyumlu');
 assert(isTjkEligibleListing(arapAygir), 'Arap Aygır (Aşım) TJK uyumlu');
 assert(isTjkEligibleListing(ingilizAygir), 'İngiliz Aygır (Aşım) TJK uyumlu');
 
-// Kullanıcının özel isteği: Binek atı ve pony TJK'da olmaz, çıkarıldı!
+// Binek atı ve pony TJK'da olmaz (BE allowTjk: false)
 assert(!isTjkEligibleListing(binekAti), 'Satılık Binek Atı TJK sorgusu ALMAZ (TJK dışı)');
 assert(!isTjkEligibleListing(pony), 'Satılık Pony TJK sorgusu ALMAZ (TJK dışı)');
 
-// Diğer hizmetler TJK almaz
+// Diğer hizmetler TJK almaz (BE allowTjk: false)
 assert(!isTjkEligibleListing(pansiyon), 'Pansiyon TJK uyumlu değildir');
 assert(!isTjkEligibleListing(nakliye), 'Nakliye TJK uyumlu değildir');
 assert(!isTjkEligibleListing(null), 'Null tip TJK uyumlu değildir');
+
+// formDef üzerinden override testi (BE categoryFormDefinition)
+assert(isTjkEligibleListing(binekAti, { allowTjk: true }), 'formDef allowTjk true ise uyumlu');
+assert(!isTjkEligibleListing(yarisAti, { allowTjk: false }), 'formDef allowTjk false ise uyumsuz');
 
 console.log('Tüm kategori uygunluk kontrolleri başarılı!');
 

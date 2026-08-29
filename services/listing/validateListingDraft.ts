@@ -111,7 +111,7 @@ export function isSaleHorseListing(
   );
 }
 
-/** TJK kaydı olabilecek kategoriler (BE allowTjk veya fallback leaf listesi) */
+/** TJK kaydı olabilecek kategoriler (Tamamen BE allowTjk sözleşmesine göre) */
 export function isTjkEligibleListing(
   type: ListingTypeSelection | null | undefined,
   formDef?: { allowTjk?: boolean } | null
@@ -119,23 +119,10 @@ export function isTjkEligibleListing(
   if (formDef && typeof formDef.allowTjk === 'boolean') {
     return formDef.allowTjk;
   }
-  if (!type) return false;
-  // Binek atı ve pony kategorilerinde TJK kaydı bulunmaz
-  if (
-    type.categorySlug === 'satilik-binek-ati' ||
-    type.categorySlug === 'satilik-pony' ||
-    type.categoryId === 'c1000000-0000-4000-8000-000000000014' ||
-    type.categoryId === 'c1000000-0000-4000-8000-000000000015'
-  ) {
-    return false;
+  if (type && typeof type.allowTjk === 'boolean') {
+    return type.allowTjk;
   }
-  return (
-    type.categorySlug === 'satilik-yaris-ati' ||
-    type.categorySlug === 'satilik-kisrak' ||
-    type.categorySlug === 'satilik-aygir' ||
-    type.categorySlug === 'arap-aygir' ||
-    type.categorySlug === 'ingiliz-aygir'
-  );
+  return false;
 }
 
 export function isHorseListing(
@@ -229,6 +216,90 @@ export function detailsErrors(
         if (val === undefined || val === null || val === '') {
           e[prop.code as keyof ListingFieldErrors] = `${prop.title} zorunludur.`;
         }
+      }
+    }
+  }
+
+  // Kategoriye özel yedek zorunlu alan kontrolleri (categoryProperties henüz yüklenmediğinde)
+  if (categoryProperties === undefined) {
+    if (isPansiyonListing(draft.type)) {
+      const hasAnyFacility = Boolean(
+        d.facilityGrassPaddock ||
+        d.facilitySandPaddock ||
+        d.facilityStallionPaddock ||
+        d.facilityVeterinarian ||
+        d.facilityFarrier ||
+        d.facilityFoalingBarn ||
+        d.facilityTrainingTrack?.trim() ||
+        d.properties?.grassPaddock ||
+        d.properties?.sandPaddock ||
+        d.properties?.vet
+      );
+      if (!hasAnyFacility) {
+        e.facility = 'En az bir tesis veya hizmet özelliği seçmelisiniz.';
+      }
+    } else if (isTransportListing(draft.type)) {
+      if (!d.companyName?.trim() && !d.properties?.companyName) {
+        e.companyName = 'Firma adı zorunludur.';
+      }
+    } else if (isStudServiceListing(draft.type)) {
+      const hasName = Boolean(
+        d.registeredName?.trim() ||
+        d.studHorseName?.trim() ||
+        d.properties?.REGISTERED_NAME ||
+        d.properties?.studHorseName
+      );
+      if (!hasName) {
+        e.studHorseName = 'Aygır adı zorunludur.';
+        e.registeredName = 'Aygır adı zorunludur.';
+      }
+      if (!d.studBreed?.trim() && !d.properties?.studBreed && !d.properties?.STALLION_BREED) {
+        e.studBreed = 'At ırkı seçimi zorunludur.';
+      }
+      const hasAge = Boolean(
+        d.studAge?.trim() ||
+        d.age?.trim() ||
+        d.properties?.studAge ||
+        d.properties?.STALLION_AGE
+      );
+      if (!hasAge) {
+        e.studAge = 'Yaş bilgisi zorunludur.';
+      }
+      const hasColor = Boolean(
+        d.studCoatColor?.trim() ||
+        d.coatColor?.trim() ||
+        d.properties?.studCoatColor ||
+        d.properties?.COAT_COLOR
+      );
+      if (!hasColor) {
+        e.studCoatColor = 'Donu (renk) seçimi zorunludur.';
+      }
+      const hasSire = Boolean(
+        d.studSire?.trim() ||
+        d.sire?.trim() ||
+        d.properties?.studSire ||
+        d.properties?.SIRE
+      );
+      if (!hasSire) {
+        e.studSire = 'Baba (Sire) adı zorunludur.';
+      }
+      const hasDam = Boolean(
+        d.studDam?.trim() ||
+        d.dam?.trim() ||
+        d.properties?.studDam ||
+        d.properties?.DAM
+      );
+      if (!hasDam) {
+        e.studDam = 'Anne (Dam) adı zorunludur.';
+      }
+      const hasDamsire = Boolean(
+        d.studDamsire?.trim() ||
+        d.damsire?.trim() ||
+        d.properties?.studDamsire ||
+        d.properties?.DAMSIRE
+      );
+      if (!hasDamsire) {
+        e.studDamsire = 'Annesinin babası zorunludur.';
       }
     }
   }
