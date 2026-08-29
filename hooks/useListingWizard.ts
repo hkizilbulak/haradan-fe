@@ -11,6 +11,7 @@ import {
   isPaytrCheckoutEnabled,
   isListingPackageStepEnabled,
   isSaleHorseListing,
+  isTjkEligibleListing,
   DEFAULT_LISTING_PACKAGE_CODE,
   type IListingRepository,
   type ListingTypePhase,
@@ -54,8 +55,8 @@ function wizardSteps(): ListingWizardStep[] {
   return isPaytrCheckoutEnabled() ? STEPS_FULL : STEPS_PACKAGE_ONLY;
 }
 
-export function normalizeTjkAge(rawAge: number | string | undefined): string {
-  if (rawAge == null || rawAge === '') return '';
+function normalizeTjkAge(rawAge: number | string | undefined | null): string {
+  if (rawAge == null) return '';
   const str = String(rawAge).trim();
   if (str.includes('Yaş') || str.includes('Tay')) return str;
   const num = parseInt(str, 10);
@@ -67,16 +68,16 @@ export function normalizeTjkAge(rawAge: number | string | undefined): string {
   return '5+ Yaş';
 }
 
-export function normalizeTjkGender(rawGender: string | null | undefined): string {
+function normalizeTjkGender(rawGender: string | undefined | null): 'Erkek' | 'Dişi' | 'İğdiş' | '' {
   if (!rawGender) return '';
   const g = rawGender.trim().replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase();
   if (g.startsWith('e')) return 'Erkek';
   if (g.startsWith('d')) return 'Dişi';
   if (g.startsWith('i') || g.startsWith('ı')) return 'İğdiş';
-  return rawGender.trim();
+  return '';
 }
 
-export function normalizeTjkBreed(rawBreed: string | undefined): string {
+function normalizeTjkBreed(rawBreed: string | undefined | null): string {
   if (!rawBreed) return '';
   const b = rawBreed.trim().replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase();
   if (b.includes('ingiliz')) return 'İngiliz (Thoroughbred)';
@@ -100,9 +101,20 @@ export function applyTjkProfile(
   const normalizedGender = normalizeTjkGender(horse.gender);
   const normalizedBreed = normalizeTjkBreed(horse.breed);
 
+  const stallionBreed = normalizedBreed.includes('Arap')
+    ? 'Arap'
+    : normalizedBreed.includes('İngiliz')
+      ? 'İngiliz'
+      : normalizedBreed || horse.breed;
+
+  const stallionAge = normalizedAge.includes('5+')
+    ? '5+'
+    : normalizedAge ? normalizedAge.replace(/\D/g, '') : String(horse.age);
+
   // Sync TJK fields directly to canonical property codes
   if (horse.coatColor) {
     existingProps['COAT_COLOR'] = horse.coatColor;
+    existingProps['studCoatColor'] = horse.coatColor;
   }
   if (normalizedGender) {
     existingProps['HORSE_GENDER'] = normalizedGender;
@@ -110,22 +122,74 @@ export function applyTjkProfile(
   if (normalizedAge) {
     existingProps['HORSE_AGE'] = normalizedAge;
   }
+  if (stallionAge) {
+    existingProps['STALLION_AGE'] = stallionAge;
+    existingProps['studAge'] = stallionAge;
+  }
   if (normalizedBreed) {
     existingProps['HORSE_BREED'] = normalizedBreed;
+  }
+  if (stallionBreed) {
+    existingProps['STALLION_BREED'] = stallionBreed;
+    existingProps['studBreed'] = stallionBreed;
+  }
+
+  // TJK Soy Ağacı ve Kimlik Alanları (Satılık Atlar & Aşım Hizmetleri)
+  if (horse.registeredName) {
+    existingProps['REGISTERED_NAME'] = horse.registeredName;
+    existingProps['HORSE_NAME'] = horse.registeredName;
+    existingProps['studHorseName'] = horse.registeredName;
+  }
+  if (horse.tjkNumber) {
+    existingProps['TJK_NUMBER'] = horse.tjkNumber;
+  }
+  if (horse.sire) {
+    existingProps['SIRE'] = horse.sire;
+    existingProps['studSire'] = horse.sire;
+  }
+  if (horse.dam) {
+    existingProps['DAM'] = horse.dam;
+    existingProps['studDam'] = horse.dam;
+  }
+  if (horse.damsire) {
+    existingProps['DAMSIRE'] = horse.damsire;
+    existingProps['studDamsire'] = horse.damsire;
+  }
+  if (horse.birthDate) {
+    existingProps['BIRTH_DATE'] = horse.birthDate;
+  }
+  if (horse.heightCm != null) {
+    existingProps['HEIGHT_CM'] = horse.heightCm;
+  }
+  if (horse.breeder) {
+    existingProps['BREEDER'] = horse.breeder;
+  }
+  if (horse.trainer) {
+    existingProps['TRAINER'] = horse.trainer;
+  }
+  if (horse.owners && horse.owners.length > 0) {
+    existingProps['OWNER'] = horse.owners.join(', ');
   }
 
   return {
     ...details,
     registeredName: horse.registeredName,
-    gender: normalizedGender as any || horse.gender,
+    studHorseName: horse.registeredName,
+    gender: (normalizedGender as any) || horse.gender,
     birthDate: horse.birthDate,
     age: normalizedAge || String(horse.age),
+    studAge: stallionAge,
     coatColor: horse.coatColor,
+    studCoatColor: horse.coatColor,
     breed: normalizedBreed || horse.breed,
+    studBreed: stallionBreed,
     heightCm: horse.heightCm != null ? String(horse.heightCm) : '',
     sire: horse.sire,
+    studSire: horse.sire,
     dam: horse.dam,
+    studDam: horse.dam,
     damsire: horse.damsire,
+    studDamsire: horse.damsire,
     ownersText: horse.owners.join(', '),
     breeder: horse.breeder,
     trainer: horse.trainer,
@@ -212,7 +276,7 @@ export function useListingWizard(deps: Deps = {}) {
   const selectType = useCallback((type: ListingTypeSelection) => {
     setListingWizardState((prev) => {
       const isDifferentCategory = prev.draft.type?.categoryId !== type.categoryId;
-      const isNewSaleHorse = isSaleHorseListing(type);
+      const isHorse = isSaleHorseListing(type) || isTjkEligibleListing(type);
       return {
         ...prev,
         step: 'details',
@@ -229,7 +293,7 @@ export function useListingWizard(deps: Deps = {}) {
             ? {
                 ...prev.draft.details,
                 properties: {},
-                ...(isNewSaleHorse
+                ...(isHorse
                   ? {}
                   : {
                       horseId: null,

@@ -3,6 +3,7 @@ export type CategoryTreeNode = {
   id: string;
   slug: string;
   name: string;
+  allowTjk?: boolean;
   children: CategoryTreeNode[];
 };
 
@@ -69,6 +70,7 @@ export type CategoryFormDefinitionResponse = {
   categoryId: string;
   slug: string;
   name: string;
+  allowTjk?: boolean;
   properties: CategoryPropertyPublic[];
 };
 

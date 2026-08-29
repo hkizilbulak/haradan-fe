@@ -10,6 +10,7 @@ export { mapPublicPackage } from './mapPackage';
 export {
   isHorseListing,
   isSaleHorseListing,
+  isTjkEligibleListing,
   isPansiyonListing,
   isTransportListing,
   isFarrierListing,

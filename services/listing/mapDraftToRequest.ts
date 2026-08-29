@@ -72,21 +72,56 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
     return String(raw).trim();
   };
 
+  const normStudBreed = (raw: unknown): string | undefined => {
+    if (raw == null || raw === '') return undefined;
+    const b = String(raw).trim().replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase();
+    if (b.includes('ingiliz')) return 'İngiliz';
+    if (b.includes('arap')) return 'Arap';
+    return String(raw).trim();
+  };
+
+  const normStudAge = (raw: unknown): number | string | undefined => {
+    if (raw == null || raw === '') return undefined;
+    const n = Number(raw);
+    if (!isNaN(n)) return n;
+    return String(raw).trim();
+  };
+
   const TOP_LEVEL_INJECTIONS: [string, unknown][] = [
-    ['COAT_COLOR', d.coatColor],
+    ['COAT_COLOR', d.coatColor || d.studCoatColor],
     ['HORSE_BREED', normBreed(d.breed)],
     ['HORSE_AGE', normAge(d.age)],
     ['HORSE_GENDER', normGender(d.gender)],
     ['COMPANY_NAME', d.companyName],
     ['WEBSITE_URL', d.websiteUrl],
-    ['STALLION_BREED', normBreed(d.studBreed)],
-    ['STALLION_AGE', normAge(d.studAge)],
-    ['studHorseName', d.studHorseName],
-    ['studSire', d.studSire],
-    ['studDam', d.studDam],
-    ['studDamsire', d.studDamsire],
+    ['STALLION_BREED', normStudBreed(d.studBreed || d.breed)],
+    ['studBreed', normStudBreed(d.studBreed || d.breed)],
+    ['STALLION_AGE', normAge(d.studAge || d.age)],
+    ['studAge', normStudAge(d.studAge || d.age)],
+    ['studCoatColor', d.studCoatColor || d.coatColor],
+    ['studHorseName', d.studHorseName || d.registeredName],
+    ['studSire', d.studSire || d.sire],
+    ['studDam', d.studDam || d.dam],
+    ['studDamsire', d.studDamsire || d.damsire],
+    ['SIRE', d.sire || d.studSire],
+    ['DAM', d.dam || d.studDam],
+    ['DAMSIRE', d.damsire || d.studDamsire],
+    ['REGISTERED_NAME', d.registeredName || d.studHorseName],
+    ['HORSE_NAME', d.registeredName || d.studHorseName],
+    ['TJK_NUMBER', d.tjkNumber],
+    ['BIRTH_DATE', d.birthDate],
+    ['HEIGHT_CM', d.heightCm ? (isNaN(parseInt(d.heightCm, 10)) ? d.heightCm : parseInt(d.heightCm, 10)) : undefined],
+    ['BREEDER', d.breeder],
+    ['TRAINER', d.trainer],
     ['serviceType', (d as any).serviceType],
     ['SERVICE_TYPE', (d as any).serviceType],
+    ['grassPaddock', d.facilityGrassPaddock ? true : undefined],
+    ['sandPaddock', d.facilitySandPaddock ? true : undefined],
+    ['stallionPaddock', d.facilityStallionPaddock ? true : undefined],
+    ['vet', d.facilityVeterinarian ? true : undefined],
+    ['farrier', d.facilityFarrier ? true : undefined],
+    ['foalingBarn', d.facilityFoalingBarn ? true : undefined],
+    ['trainingTrack', d.facilityTrainingTrack || undefined],
   ];
 
   for (const [code, val] of TOP_LEVEL_INJECTIONS) {
@@ -132,8 +167,6 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
     'gender',
     'companyName',
     'websiteUrl',
-    'studBreed',
-    'studAge',
     'service_type',
     'facilityGrassPaddock',
     'facilitySandPaddock',

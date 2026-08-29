@@ -111,6 +111,33 @@ export function isSaleHorseListing(
   );
 }
 
+/** TJK kaydı olabilecek kategoriler (BE allowTjk veya fallback leaf listesi) */
+export function isTjkEligibleListing(
+  type: ListingTypeSelection | null | undefined,
+  formDef?: { allowTjk?: boolean } | null
+): boolean {
+  if (formDef && typeof formDef.allowTjk === 'boolean') {
+    return formDef.allowTjk;
+  }
+  if (!type) return false;
+  // Binek atı ve pony kategorilerinde TJK kaydı bulunmaz
+  if (
+    type.categorySlug === 'satilik-binek-ati' ||
+    type.categorySlug === 'satilik-pony' ||
+    type.categoryId === 'c1000000-0000-4000-8000-000000000014' ||
+    type.categoryId === 'c1000000-0000-4000-8000-000000000015'
+  ) {
+    return false;
+  }
+  return (
+    type.categorySlug === 'satilik-yaris-ati' ||
+    type.categorySlug === 'satilik-kisrak' ||
+    type.categorySlug === 'satilik-aygir' ||
+    type.categorySlug === 'arap-aygir' ||
+    type.categorySlug === 'ingiliz-aygir'
+  );
+}
+
 export function isHorseListing(
   type: ListingTypeSelection | null | undefined
 ): boolean {

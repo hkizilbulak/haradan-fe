@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     zIndex: 80,
     ...Platform.select({
       web: {
-        position: 'fixed' as const,
+        position: 'fixed' as any,
         top: 0,
         right: 0,
         bottom: 0,

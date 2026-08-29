@@ -13,6 +13,7 @@ import {
   isPansiyonListing,
   isSaleHorseListing,
   isStudServiceListing,
+  isTjkEligibleListing,
   isTransportListing,
 } from '@/services/listing';
 import { catalogRepository } from '@/services/catalog';
@@ -221,13 +222,14 @@ export function PostDetailsStep({
   const isStud = isStudServiceListing(draft.type);
   const isPansiyon = isPansiyonListing(draft.type);
   const isTransport = isTransportListing(draft.type);
+  const isTjkEligible = isTjkEligibleListing(draft.type);
 
   useEffect(() => {
-    if (isSaleHorse && !tjkPromptSeen) {
+    if (isTjkEligible && !tjkPromptSeen) {
       setTjkMode('ask');
       setTjkOpen(true);
     }
-  }, [isSaleHorse, tjkPromptSeen]);
+  }, [isTjkEligible, tjkPromptSeen]);
 
   const openTjkSearch = () => {
     setTjkMode('search');
@@ -278,7 +280,7 @@ export function PostDetailsStep({
         </Text>
       </View>
 
-      {isSaleHorse ? (
+      {isTjkEligible ? (
         <Pressable
           onPress={openTjkSearch}
           accessibilityRole="button"
@@ -294,7 +296,7 @@ export function PostDetailsStep({
           <Ionicons name="ribbon-outline" size={18} color="#fff" />
           <Text style={styles.tjkCtaLabel}>
             {d.horseId
-              ? `TJK: ${d.registeredName}${d.tjkNumber ? ` · ${d.tjkNumber}` : ''}`
+              ? `TJK: ${d.registeredName || d.studHorseName}${d.tjkNumber ? ` · ${d.tjkNumber}` : ''}`
               : 'TJK’dan bilgilerimi getir'}
           </Text>
           <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
@@ -609,90 +611,7 @@ export function PostDetailsStep({
         </View>
       ) : null}
 
-      {isSaleHorse ? (
-        <View
-          style={[styles.card, { backgroundColor: surface, borderColor: border }]}
-          onLayout={(e) => {
-            cardHorseY.current = e.nativeEvent.layout.y;
-            ['registeredName', 'gender'].forEach((k) => updateFieldY(k));
-          }}
-        >
-          <Text style={[styles.section, { color: text }]}>At Kimlik ve Soy Ağacı</Text>
-          <View onLayout={(e) => updateFieldY('registeredName', e.nativeEvent.layout.y)}>
-            <PostField
-              label="Kayıtlı adı"
-              required
-              value={d.registeredName}
-              onChangeText={(registeredName) => onUpdate({ registeredName })}
-              placeholder="Atın adı"
-              locked={locked}
-              error={errors.registeredName}
-            />
-          </View>
 
-          <View style={styles.row}>
-            <View style={styles.flex}>
-              <PostField
-                label="Doğum tarihi"
-                value={d.birthDate}
-                onChangeText={(birthDate) => onUpdate({ birthDate })}
-                placeholder="YYYY-AA-GG"
-                locked={locked}
-              />
-            </View>
-            <View style={styles.flex}>
-              <PostField
-                label="Cidago"
-                value={d.heightCm}
-                onChangeText={(heightCm) => onUpdate({ heightCm })}
-                keyboardType="number-pad"
-                locked={locked}
-                suffix="cm"
-              />
-            </View>
-          </View>
-
-          <PostField
-            label="Baba (Sire)"
-            value={d.sire}
-            onChangeText={(sire) => onUpdate({ sire })}
-            locked={locked}
-            placeholder="Örn: SEA THE STARS"
-          />
-          <PostField
-            label="Anne (Dam)"
-            value={d.dam}
-            onChangeText={(dam) => onUpdate({ dam })}
-            locked={locked}
-            placeholder="Örn: GALIPOLI QUEEN"
-          />
-          <PostField
-            label="Annenin babası (Damsire)"
-            value={d.damsire}
-            onChangeText={(damsire) => onUpdate({ damsire })}
-            locked={locked}
-            placeholder="Örn: GALILEO"
-          />
-          <PostField
-            label="Sahip"
-            value={d.ownersText}
-            onChangeText={(ownersText) => onUpdate({ ownersText })}
-            locked={locked}
-          />
-          <PostField
-            label="Yetiştirici"
-            value={d.breeder}
-            onChangeText={(breeder) => onUpdate({ breeder })}
-            locked={locked}
-          />
-          <PostField
-            label="Antrenör"
-            value={d.trainer}
-            onChangeText={(trainer) => onUpdate({ trainer })}
-            locked={locked}
-          />
-        </View>
-      ) : null}
 
       <PostCategoryProperties
         draft={draft}

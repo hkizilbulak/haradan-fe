@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
   dismissLayer: {
     ...Platform.select({
       web: {
-        position: 'fixed' as const,
+        position: 'fixed' as any,
         top: 0,
         left: 0,
         right: 0,

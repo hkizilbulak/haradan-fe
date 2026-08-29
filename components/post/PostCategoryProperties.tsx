@@ -211,14 +211,30 @@ export function PostCategoryProperties({
       partialUpdate.studBreed = String(value ?? '');
     } else if (code === 'STALLION_AGE' || code === 'studAge') {
       partialUpdate.studAge = String(value ?? '');
-    } else if (code === 'studHorseName') {
+    } else if (code === 'studHorseName' || codeUpper === 'REGISTERED_NAME' || codeUpper === 'HORSE_NAME') {
       partialUpdate.studHorseName = String(value ?? '');
-    } else if (code === 'studSire') {
+      partialUpdate.registeredName = String(value ?? '');
+    } else if (code === 'studSire' || codeUpper === 'SIRE') {
       partialUpdate.studSire = String(value ?? '');
-    } else if (code === 'studDam') {
+      partialUpdate.sire = String(value ?? '');
+    } else if (code === 'studDam' || codeUpper === 'DAM') {
       partialUpdate.studDam = String(value ?? '');
-    } else if (code === 'studDamsire') {
+      partialUpdate.dam = String(value ?? '');
+    } else if (code === 'studDamsire' || codeUpper === 'DAMSIRE') {
       partialUpdate.studDamsire = String(value ?? '');
+      partialUpdate.damsire = String(value ?? '');
+    } else if (codeUpper === 'HEIGHT_CM') {
+      partialUpdate.heightCm = String(value ?? '');
+    } else if (codeUpper === 'BIRTH_DATE') {
+      partialUpdate.birthDate = String(value ?? '');
+    } else if (codeUpper === 'BREEDER') {
+      partialUpdate.breeder = String(value ?? '');
+    } else if (codeUpper === 'TRAINER') {
+      partialUpdate.trainer = String(value ?? '');
+    } else if (codeUpper === 'TJK_NUMBER') {
+      partialUpdate.tjkNumber = String(value ?? '');
+    } else if (codeUpper === 'OWNER') {
+      partialUpdate.ownersText = String(value ?? '');
     } else if (code === 'serviceType' || code === 'service_type' || codeUpper === 'SERVICE_TYPE') {
       (partialUpdate as any).serviceType = String(value ?? '');
     }
@@ -253,10 +269,16 @@ export function PostCategoryProperties({
     if ((code === 'WEBSITE_URL' || code === 'websiteUrl') && d.websiteUrl) return d.websiteUrl;
     if ((code === 'STALLION_BREED' || code === 'studBreed') && d.studBreed) return d.studBreed;
     if ((code === 'STALLION_AGE' || code === 'studAge') && d.studAge) return d.studAge;
-    if (code === 'studHorseName' && d.studHorseName) return d.studHorseName;
-    if (code === 'studSire' && d.studSire) return d.studSire;
-    if (code === 'studDam' && d.studDam) return d.studDam;
-    if (code === 'studDamsire' && d.studDamsire) return d.studDamsire;
+    if ((code === 'studHorseName' || codeUpper === 'REGISTERED_NAME' || codeUpper === 'HORSE_NAME') && (d.studHorseName || d.registeredName)) return d.studHorseName || d.registeredName;
+    if ((code === 'studSire' || codeUpper === 'SIRE') && (d.studSire || d.sire)) return d.studSire || d.sire;
+    if ((code === 'studDam' || codeUpper === 'DAM') && (d.studDam || d.dam)) return d.studDam || d.dam;
+    if ((code === 'studDamsire' || codeUpper === 'DAMSIRE') && (d.studDamsire || d.damsire)) return d.studDamsire || d.damsire;
+    if (codeUpper === 'HEIGHT_CM' && d.heightCm) return d.heightCm;
+    if (codeUpper === 'BIRTH_DATE' && d.birthDate) return d.birthDate;
+    if (codeUpper === 'BREEDER' && d.breeder) return d.breeder;
+    if (codeUpper === 'TRAINER' && d.trainer) return d.trainer;
+    if (codeUpper === 'TJK_NUMBER' && d.tjkNumber) return d.tjkNumber;
+    if (codeUpper === 'OWNER' && d.ownersText) return d.ownersText;
     return undefined;
   };
 
