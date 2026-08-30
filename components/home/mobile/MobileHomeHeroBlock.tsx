@@ -4,23 +4,20 @@ import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { HeroSlider } from '../HeroSlider';
 import { HomeSearchBar } from '../HomeSearchBar';
-import { CategoryStrip } from '../CategoryStrip';
 import { QuickSearchStrip } from '../QuickSearchStrip';
 import type { ActiveBannerItem, CategoryTreeNode } from '@/types';
 
 type MobileHomeHeroBlockProps = {
   banners: ActiveBannerItem[];
   onBannerPress: (slide: ActiveBannerItem) => void;
-  categories: CategoryTreeNode[];
-  onCategorySelect: (cat: CategoryTreeNode) => void;
+  categories?: CategoryTreeNode[];
+  onCategorySelect?: (cat: CategoryTreeNode) => void;
 };
 
-/** Mobil hero — BE banner cover + yüzen arama + premium kısayollar + slider altı önerilen aramalar. */
+/** Mobil hero — BE banner cover + yüzen arama + arama altında önerilen aramalar. */
 export function MobileHomeHeroBlock({
   banners,
   onBannerPress,
-  categories,
-  onCategorySelect,
 }: MobileHomeHeroBlockProps) {
   const { width } = useWindowDimensions();
   const heroBg = useThemeColor('hero');
@@ -28,7 +25,7 @@ export function MobileHomeHeroBlock({
   const hasBanners = banners.length > 0;
 
   const heroHeight = useMemo(
-    () => Math.min(Math.round(width * 1.08), 480),
+    () => Math.min(Math.round(width * 0.95), 440),
     [width]
   );
 
@@ -51,16 +48,9 @@ export function MobileHomeHeroBlock({
         ) : null}
 
         <View style={styles.bottomPanel}>
-          <HomeSearchBar variant="glass" fullWidth compact showQuickLinks={false} />
-          <CategoryStrip
-            variant="premium"
-            categories={categories}
-            onSelect={onCategorySelect}
-          />
+          <HomeSearchBar variant="glass" fullWidth compact showQuickLinks={true} />
         </View>
       </View>
-
-      <QuickSearchStrip />
     </View>
   );
 }

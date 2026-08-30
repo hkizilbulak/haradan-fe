@@ -41,12 +41,12 @@ export type QuickSearchLink = {
 };
 
 export const DEFAULT_QUICK_LINKS: QuickSearchLink[] = [
-  { id: 'ingiliz', label: 'İngiliz Atı', query: 'İngiliz Atı', icon: 'flash', iconColor: '#f59e0b' },
-  { id: 'arap', label: 'Arap Atı', query: 'Arap Atı', icon: 'sparkles', iconColor: '#38bdf8' },
-  { id: 'tay', label: 'Tay', query: 'Tay', icon: 'ribbon', iconColor: '#c084fc' },
-  { id: 'gebe', label: 'Gebe Kısrak', query: 'Gebe Kısrak', icon: 'heart', iconColor: '#f472b6' },
-  { id: 'aygir', label: 'Aygır', query: 'Aygır', icon: 'trophy', iconColor: '#fbbf24' },
-  { id: 'acil', label: 'Acil İlanlar', params: { urgent: '1' }, icon: 'flame', iconColor: '#ef4444' },
+  { id: 'ingiliz', label: 'İngiliz Atı', query: 'İngiliz Atı' },
+  { id: 'arap', label: 'Arap Atı', query: 'Arap Atı' },
+  { id: 'tay', label: 'Tay', query: 'Tay' },
+  { id: 'gebe', label: 'Gebe Kısrak', query: 'Gebe Kısrak' },
+  { id: 'aygir', label: 'Aygır', query: 'Aygır' },
+  { id: 'acil', label: 'Acil İlanlar', params: { urgent: '1' } },
 ];
 
 type HomeSearchBarProps = {

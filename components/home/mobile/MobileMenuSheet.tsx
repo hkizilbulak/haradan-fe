@@ -26,28 +26,17 @@ type MobileMenuSheetProps = {
   visible: boolean;
   onClose: () => void;
   categories: CategoryTreeNode[];
-  onNav: (key: HeaderNavKey) => void;
+  onNav?: (key: HeaderNavKey) => void;
   onCategory: (cat: CategoryTreeNode) => void;
   isLoggedIn: boolean;
   onLogin: () => void;
   onPostAd: () => void;
 };
 
-const NAV: {
-  key: HeaderNavKey;
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-}[] = [
-  { key: 'home', label: 'Anasayfa', icon: 'home-outline' },
-  { key: 'listings', label: 'Tüm ilanlar', icon: 'search-outline' },
-  { key: 'my-listings', label: 'İlanlarım', icon: 'layers-outline' },
-];
-
 export function MobileMenuSheet({
   visible,
   onClose,
   categories,
-  onNav,
   onCategory,
   isLoggedIn,
   onLogin,
@@ -107,23 +96,6 @@ export function MobileMenuSheet({
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scroll}
           >
-            <View style={styles.navGroup}>
-              {NAV.map((item) => (
-                <Pressable
-                  key={item.key}
-                  onPress={() => run(() => onNav(item.key))}
-                  style={({ pressed }) => [
-                    styles.navItem,
-                    pressed && styles.navItemPressed,
-                  ]}
-                >
-                  <View style={styles.navIcon}>
-                    <Ionicons name={item.icon} size={18} color="#fff" />
-                  </View>
-                  <Text style={styles.navLabel}>{item.label}</Text>
-                </Pressable>
-              ))}
-            </View>
 
             {categoryRoots.length > 0 ? (
               <>
@@ -281,30 +253,26 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   categoryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
     marginBottom: Spacing.md,
   },
   categoryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 14,
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.06)',
-    flexBasis: '46%',
-    flexGrow: 1,
-    maxWidth: '48%',
+    width: '100%',
   },
   categoryChipPressed: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
   categoryIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.1)',
@@ -312,7 +280,7 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
     letterSpacing: -0.1,
     flex: 1,

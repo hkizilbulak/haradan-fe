@@ -18,18 +18,21 @@ import { DEFAULT_QUICK_LINKS, type QuickSearchLink } from './HomeSearchBar';
 type QuickSearchStripProps = {
   links?: QuickSearchLink[];
   title?: string;
+  variant?: 'default' | 'glass';
 };
 
 /**
- * Slider altında yer alan Önerilen Aramalar (Hızlı Arama Linkleri) şeridi.
+ * Önerilen Aramalar (Hızlı Arama Linkleri) şeridi.
  */
 export const QuickSearchStrip = memo(function QuickSearchStrip({
   links = DEFAULT_QUICK_LINKS,
-  title = 'Önerilen Aramalar',
+  title,
+  variant = 'default',
 }: QuickSearchStripProps) {
   const router = useRouter();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const isGlass = variant === 'glass';
 
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
@@ -50,18 +53,27 @@ export const QuickSearchStrip = memo(function QuickSearchStrip({
   if (!links || links.length === 0) return null;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isGlass && styles.containerGlass]}>
       {title ? (
-        <View style={styles.headerRow}>
-          <Ionicons name="sparkles" size={13} color={useThemeColor('primary')} />
-          <Text style={[styles.titleText, { color: textMuted }]}>{title}</Text>
+        <View style={[styles.headerRow, isGlass && styles.headerRowGlass]}>
+          <Text
+            style={[
+              styles.titleText,
+              { color: isGlass ? 'rgba(255, 255, 255, 0.85)' : textMuted },
+            ]}
+          >
+            {title}
+          </Text>
         </View>
       ) : null}
 
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isGlass && styles.scrollContentGlass,
+        ]}
       >
         {links.map((link) => (
           <Pressable
@@ -72,17 +84,31 @@ export const QuickSearchStrip = memo(function QuickSearchStrip({
             style={({ pressed }) => [
               styles.chip,
               {
-                backgroundColor: pressed
-                  ? isDark
-                    ? 'rgba(255, 255, 255, 0.14)'
-                    : 'rgba(0, 0, 0, 0.08)'
-                  : isDark
-                    ? 'rgba(255, 255, 255, 0.06)'
-                    : surface,
-                borderColor: border,
+                backgroundColor: isGlass
+                  ? pressed
+                    ? 'rgba(255, 255, 255, 0.32)'
+                    : 'rgba(255, 255, 255, 0.18)'
+                  : pressed
+                    ? isDark
+                      ? 'rgba(255, 255, 255, 0.14)'
+                      : 'rgba(0, 0, 0, 0.08)'
+                    : isDark
+                      ? 'rgba(255, 255, 255, 0.06)'
+                      : surface,
+                borderColor: isGlass
+                  ? pressed
+                    ? 'rgba(255, 255, 255, 0.55)'
+                    : 'rgba(255, 255, 255, 0.32)'
+                  : border,
                 transform: [{ scale: pressed ? 0.97 : 1 }],
                 ...(Platform.OS === 'web'
                   ? ({
+                      backdropFilter: isGlass
+                        ? 'blur(12px) saturate(140%)'
+                        : undefined,
+                      WebkitBackdropFilter: isGlass
+                        ? 'blur(12px) saturate(140%)'
+                        : undefined,
                       cursor: 'pointer',
                       transition: 'all 180ms cubic-bezier(0.22, 1, 0.36, 1)',
                     } as object)
@@ -94,10 +120,21 @@ export const QuickSearchStrip = memo(function QuickSearchStrip({
               <Ionicons
                 name={link.icon}
                 size={13}
-                color={link.iconColor ?? (isDark ? '#e2e8f0' : '#475569')}
+                color={
+                  isGlass
+                    ? 'rgba(255, 255, 255, 0.9)'
+                    : link.iconColor ?? (isDark ? '#e2e8f0' : '#475569')
+                }
               />
             ) : null}
-            <Text style={[styles.chipText, { color: text }]}>{link.label}</Text>
+            <Text
+              style={[
+                styles.chipText,
+                { color: isGlass ? '#ffffff' : text },
+              ]}
+            >
+              {link.label}
+            </Text>
           </Pressable>
         ))}
       </ScrollView>
@@ -109,7 +146,12 @@ const styles = StyleSheet.create({
   container: {
     marginTop: Spacing.md,
     marginBottom: Spacing.xs,
-    gap: 8,
+    gap: 6,
+  },
+  containerGlass: {
+    marginTop: 0,
+    marginBottom: 0,
+    gap: 4,
   },
   headerRow: {
     flexDirection: 'row',
@@ -117,16 +159,22 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: Spacing.md,
   },
+  headerRowGlass: {
+    paddingHorizontal: 2,
+  },
   titleText: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.2,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   scrollContent: {
     paddingHorizontal: Spacing.md,
     gap: 8,
     alignItems: 'center',
+  },
+  scrollContentGlass: {
+    paddingHorizontal: 0,
   },
   chip: {
     flexDirection: 'row',
