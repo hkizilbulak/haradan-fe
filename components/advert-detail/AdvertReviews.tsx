@@ -19,6 +19,7 @@ import { useAdvertComments } from '@/hooks/useAdvertComments';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { AdvertComment, AdvertDetail, AdvertReview } from '@/types';
+import { toast } from '@/components/ui';
 import { CommentModal } from './CommentModal';
 import { DeleteCommentModal } from './DeleteCommentModal';
 
@@ -81,29 +82,22 @@ export const AdvertReviews = memo(function AdvertReviews({
 
   const handleOpenCommentModal = useCallback(() => {
     if (!accessToken) {
-      if (Platform.OS === 'web') {
-        if (window.confirm('Yorum yapabilmek için giriş yapmalısınız. Giriş sayfasına yönlendirilsin mi?')) {
-          router.push('/auth/login');
-        }
-      } else {
-        Alert.alert(
-          'Oturum Gerekli',
-          'Yorum yapabilmek için lütfen giriş yapınız.',
-          [
-            { text: 'Vazgeç', style: 'cancel' },
-            { text: 'Giriş Yap', onPress: () => router.push('/auth/login') },
-          ]
-        );
-      }
+      toast.warning('Yorum yapabilmek için lütfen giriş yapınız.', 'Oturum Gerekli');
+      router.push(`/auth/login?next=/advert/${detail.id}`);
       return;
     }
     setModalVisible(true);
-  }, [accessToken, router]);
+  }, [accessToken, router, detail.id]);
 
   const handleSubmitComment = useCallback(
     async (content: string, rating?: number | null) => {
       if (!accessToken) return;
-      await postComment(content, accessToken, rating);
+      try {
+        await postComment(content, accessToken, rating);
+        toast.success('Yorumunuz başarıyla gönderildi.');
+      } catch (err: any) {
+        toast.error(err?.message || 'Yorum gönderilemedi.', 'Hata');
+      }
     },
     [accessToken, postComment]
   );
@@ -114,14 +108,11 @@ export const AdvertReviews = memo(function AdvertReviews({
     setIsDeleting(true);
     try {
       await deleteComment(targetDeleteId, accessToken);
+      toast.success('Yorum silindi.');
       setTargetDeleteId(null);
     } catch (err: any) {
       const msg = err?.message || 'Yorum silinemedi.';
-      if (Platform.OS === 'web') {
-        window.alert(msg);
-      } else {
-        Alert.alert('Hata', msg);
-      }
+      toast.error(msg, 'Hata');
     } finally {
       setIsDeleting(false);
     }

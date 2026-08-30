@@ -5,6 +5,7 @@ import { useColorScheme, View } from 'react-native';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { HeaderDrawersProvider } from '@/components/layout/HeaderDrawersContext';
 import { MobileDockHost } from '@/components/layout/MobileDockHost';
+import { ToastProvider } from '@/components/ui';
 import { Colors } from '@/constants/Colors';
 import { useIsHydrated } from '@/hooks/useIsHydrated';
 
@@ -31,8 +32,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics ?? undefined}>
       <ThemeProvider value={navTheme}>
-        <HeaderDrawersProvider>
-          <View style={{ flex: 1 }}>
+        <ToastProvider>
+          <HeaderDrawersProvider>
+            <View style={{ flex: 1 }}>
             <Stack>
               <Stack.Screen
                 name="(tabs)"
@@ -92,7 +94,8 @@ export default function RootLayout() {
           </View>
           <StatusBar style="auto" />
         </HeaderDrawersProvider>
-      </ThemeProvider>
+      </ToastProvider>
+    </ThemeProvider>
     </SafeAreaProvider>
   );
 }

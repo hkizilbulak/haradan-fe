@@ -1,29 +1,44 @@
-/**
- * Favoriler sekmesi — login zorunlu; liste BE /v1/me/favorites.
- */
-import React, { useCallback } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MobileScreenHeader } from '@/components/layout/mobile/MobileScreenHeader';
 import { ScreenWrapper } from '@/components/ui';
 import { FavoriteListCard } from '@/components/product/FavoriteListCard';
 import { mobileDockScrollInset } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
+import { useAuthSession } from '@/hooks/useAuthSession';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
+import { useThemeColor } from '@/hooks/useThemeColor';
 
 export default function FavoritesScreen() {
   const router = useRouter();
   const isWide = useIsWideLayout();
   const safeInsets = useSafeInsets();
   const dockPad = mobileDockScrollInset(safeInsets.bottom);
+  const primary = useThemeColor('primary');
+  const { isLoggedIn } = useAuthSession();
   const { items, hydrating, remove } = useFavorites();
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      router.replace('/auth/login?next=/favorites');
+    }
+  }, [isLoggedIn, router]);
 
   const onPress = useCallback(
     (id: string) => router.push(`/advert/${id}`),
     [router]
   );
+
+  if (!isLoggedIn) {
+    return (
+      <View style={styles.redirect}>
+        <ActivityIndicator color={primary} />
+      </View>
+    );
+  }
 
   const listPad = !isWide ? dockPad : Spacing.lg;
 
@@ -81,6 +96,11 @@ export default function FavoritesScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
+  redirect: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   list: { padding: Spacing.md, gap: Spacing.md },
   row: { marginBottom: Spacing.sm },
 });

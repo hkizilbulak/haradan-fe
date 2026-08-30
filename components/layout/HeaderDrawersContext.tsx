@@ -76,7 +76,7 @@ export function HeaderDrawersProvider({
   const openFavorites = useCallback(
     (opts?: { fromProfile?: boolean }) => {
       if (!isLoggedIn) {
-        router.push('/auth/login?next=/');
+        router.push('/auth/login?next=/favorites');
         return;
       }
       setFromProfile(opts?.fromProfile === true);

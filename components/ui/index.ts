@@ -19,3 +19,6 @@ export { Badge } from './Badge';
 export type { BadgeTone } from './Badge';
 
 export { IconButton } from './IconButton';
+
+export { ToastProvider, useToast, toast } from './ToastContext';
+export type { ToastType, ToastOptions } from './ToastContext';

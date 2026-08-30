@@ -25,6 +25,7 @@ import {
 import { MobileAdvertStickyBar } from '@/components/advert-detail/mobile/MobileAdvertStickyBar';
 import { MobileAdvertTopBar } from '@/components/advert-detail/mobile/MobileAdvertTopBar';
 import { LazySection } from '@/components/ui/LazySection';
+import { toast } from '@/components/ui';
 import { RatingStars } from '@/components/product/RatingStars';
 import { HomeContentContainer } from '@/components/layout';
 import { SiteFooter } from '@/components/home';
@@ -136,11 +137,7 @@ export function AdvertDetailView({
 
   const onCall = useCallback(() => {
     if (!phone) {
-      if (Platform.OS === 'web') {
-        window.alert('Bu ilan için telefon numarası belirtilmemiş.');
-      } else {
-        Alert.alert('İletişim Bilgisi', 'Bu ilan için telefon numarası belirtilmemiş.');
-      }
+      toast.warning('Bu ilan için telefon numarası belirtilmemiş.', 'İletişim Bilgisi');
       return;
     }
     void openPhoneCall(phone);
@@ -148,11 +145,7 @@ export function AdvertDetailView({
 
   const onWhatsApp = useCallback(() => {
     if (!phone) {
-      if (Platform.OS === 'web') {
-        window.alert('Bu ilan için WhatsApp numarası belirtilmemiş.');
-      } else {
-        Alert.alert('İletişim Bilgisi', 'Bu ilan için WhatsApp numarası belirtilmemiş.');
-      }
+      toast.warning('Bu ilan için WhatsApp numarası belirtilmemiş.', 'İletişim Bilgisi');
       return;
     }
     void openWhatsApp(

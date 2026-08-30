@@ -5,6 +5,7 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { HeroSlider } from '../HeroSlider';
 import { HomeSearchBar } from '../HomeSearchBar';
 import { CategoryStrip } from '../CategoryStrip';
+import { QuickSearchStrip } from '../QuickSearchStrip';
 import type { ActiveBannerItem, CategoryTreeNode } from '@/types';
 
 type MobileHomeHeroBlockProps = {
@@ -14,7 +15,7 @@ type MobileHomeHeroBlockProps = {
   onCategorySelect: (cat: CategoryTreeNode) => void;
 };
 
-/** Mobil hero — BE banner cover + yüzen arama + premium kısayollar. */
+/** Mobil hero — BE banner cover + yüzen arama + premium kısayollar + slider altı önerilen aramalar. */
 export function MobileHomeHeroBlock({
   banners,
   onBannerPress,
@@ -48,26 +49,28 @@ export function MobileHomeHeroBlock({
             mobileCover
           />
         ) : null}
+
+        <View style={styles.bottomPanel}>
+          <HomeSearchBar variant="glass" fullWidth compact showQuickLinks={false} />
+          <CategoryStrip
+            variant="premium"
+            categories={categories}
+            onSelect={onCategorySelect}
+          />
+        </View>
       </View>
 
-      <View style={styles.bottomPanel}>
-        <HomeSearchBar variant="glass" fullWidth compact />
-        <CategoryStrip
-          variant="premium"
-          categories={categories}
-          onSelect={onCategorySelect}
-        />
-      </View>
+      <QuickSearchStrip />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    marginBottom: Spacing.lg,
-    position: 'relative',
+    marginBottom: Spacing.md,
   },
   hero: {
+    position: 'relative',
     overflow: 'hidden',
   },
   bottomPanel: {

@@ -18,5 +18,6 @@ export { BrandStrip } from './BrandStrip';
 export { NewsletterBlogSection } from './NewsletterBlogSection';
 export { SiteFooter } from './SiteFooter';
 export { HomeSearchBar } from './HomeSearchBar';
+export { QuickSearchStrip } from './QuickSearchStrip';
 export { HomeFeed } from './HomeFeed';
 export { HomeSkeleton } from './HomeSkeleton';
