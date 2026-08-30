@@ -94,7 +94,7 @@ export const AdvertReviews = memo(function AdvertReviews({
       if (!accessToken) return;
       try {
         await postComment(content, accessToken, rating);
-        toast.success('Yorumunuz başarıyla gönderildi.');
+        toast.success('Yorumunuz başarıyla alınmıştır. Onaylandıktan sonra yayınlanacaktır.');
       } catch (err: any) {
         toast.error(err?.message || 'Yorum gönderilemedi.', 'Hata');
       }

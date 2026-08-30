@@ -52,8 +52,6 @@ export function useAdvertComments(advertId: string | null) {
           { content, rating: rating ?? undefined },
           accessToken
         );
-        setComments((prev) => [created, ...prev]);
-        setTotalCount((prev) => prev + 1);
         return created;
       } catch (err) {
         const message =

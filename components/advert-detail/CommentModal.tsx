@@ -103,7 +103,7 @@ export const CommentModal = memo(function CommentModal({
           </View>
 
           <Text style={[styles.hint, { color: textMuted }]}>
-            Yorumunuz ve puanınız doğrudan yayınlanacaktır. Lütfen nezaket kurallarına dikkat ediniz.
+            Yorumunuz ve puanınız admin onayından sonra yayınlanacaktır. Lütfen nezaket kurallarına dikkat ediniz.
           </Text>
 
           {/* Yıldız Puanlama Bölümü */}
