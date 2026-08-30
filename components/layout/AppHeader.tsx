@@ -95,6 +95,7 @@ export function AppHeader({
     setIsOpen,
     clear: clearSearch,
     close: closeDropdown,
+    ensureLoaded,
   } = useLiveAdvertSearch({
     limit: 6,
     debounceMs: 180,
@@ -267,6 +268,7 @@ export function AppHeader({
                       if (txt.trim().length > 0) setIsOpen(true);
                     }}
                     onFocus={() => {
+                      void ensureLoaded();
                       if (query.trim().length > 0) setIsOpen(true);
                     }}
                     placeholder="At, kısrak, ilan ara…"
@@ -306,6 +308,7 @@ export function AppHeader({
                     handleCloseSearch();
                   } else {
                     setSearchOpen(true);
+                    void ensureLoaded();
                   }
                 }}
               />

@@ -31,6 +31,7 @@ export function formatAdvertLocation(input?: AdvertLocationInput | null): string
 /**
  * React hook that returns the formatted advert location ("İlçe, İl" or "İl")
  * and automatically re-renders whenever asynchronous district/province data finishes loading.
+ * Geo listesi yalnızca display name yoksa çekilir — kartlarda BE isimleri varsa ekstra istek yok.
  */
 export function useAdvertLocation(input?: AdvertLocationInput | null): string {
   const [, setTick] = useState(0);
@@ -38,8 +39,12 @@ export function useAdvertLocation(input?: AdvertLocationInput | null): string {
   useEffect(() => {
     if (!input) return;
 
-    // Trigger async fetch for districts of this province if not yet loaded
-    if (input.provinceId) {
+    const hasNames =
+      Boolean(input.locationName?.trim()) ||
+      Boolean(input.provinceName?.trim()) ||
+      Boolean(input.districtName?.trim());
+
+    if (!hasNames && input.provinceId) {
       void locationLookup.listDistricts(input.provinceId).catch(() => {});
     }
 

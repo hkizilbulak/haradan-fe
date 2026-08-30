@@ -20,6 +20,7 @@ export type UseLiveAdvertSearchOptions = {
 // Modül düzeyinde hafif önbellek — hızlı anlık filtreleme için
 let advertsCache: CatalogProductCard[] | null = null;
 let cacheTime = 0;
+let inflight: Promise<CatalogProductCard[]> | null = null;
 const CACHE_TTL_MS = 60_000; // 1 dakika
 
 export function useLiveAdvertSearch({
@@ -49,29 +50,36 @@ export function useLiveAdvertSearch({
     return () => clearTimeout(handler);
   }, [query, debounceMs]);
 
-  // Load all adverts for live filtering (with in-memory cache)
-  const fetchAdverts = useCallback(async () => {
+  /** İlk odak / ilk yazımda yükle — anasayfa açılışında /v1/adverts atılmaz. */
+  const ensureLoaded = useCallback(async () => {
     const now = Date.now();
     if (advertsCache && now - cacheTime < CACHE_TTL_MS) {
       setAllAdverts(advertsCache);
       return advertsCache;
     }
-
-    try {
-      const data = await repo.search({ maxItems: 100 });
-      advertsCache = data;
-      cacheTime = Date.now();
+    if (inflight) {
+      const data = await inflight;
       setAllAdverts(data);
       return data;
-    } catch {
-      return advertsCache ?? [];
     }
-  }, [repo]);
 
-  // Initial fetch on mount or repo change
-  useEffect(() => {
-    void fetchAdverts();
-  }, [fetchAdverts]);
+    inflight = (async () => {
+      try {
+        const data = await repo.search({ maxItems: 100 });
+        advertsCache = data;
+        cacheTime = Date.now();
+        return data;
+      } catch {
+        return advertsCache ?? [];
+      } finally {
+        inflight = null;
+      }
+    })();
+
+    const data = await inflight;
+    setAllAdverts(data);
+    return data;
+  }, [repo]);
 
   // Filter resolver for extra fields (il, ilçe, kategori adı)
   const resolveExtra = useCallback(
@@ -100,7 +108,7 @@ export function useLiveAdvertSearch({
     [categoryTree, locationLookup]
   );
 
-  // Perform search whenever debouncedQuery changes
+  // Perform search whenever debouncedQuery changes — fetch only when needed
   useEffect(() => {
     const trimmed = debouncedQuery.trim();
     if (!trimmed) {
@@ -126,17 +134,18 @@ export function useLiveAdvertSearch({
 
     if (allAdverts.length > 0) {
       performFilter(allAdverts);
-    } else {
-      fetchAdverts()
-        .then((dataset) => performFilter(dataset))
-        .catch(() => {
-          if (reqId === activeReqId.current) {
-            setResults([]);
-            setLoading(false);
-          }
-        });
+      return;
     }
-  }, [debouncedQuery, allAdverts, limit, resolveExtra, fetchAdverts]);
+
+    ensureLoaded()
+      .then((dataset) => performFilter(dataset))
+      .catch(() => {
+        if (reqId === activeReqId.current) {
+          setResults([]);
+          setLoading(false);
+        }
+      });
+  }, [debouncedQuery, allAdverts, limit, resolveExtra, ensureLoaded]);
 
   const clear = useCallback(() => {
     setQuery('');
@@ -167,5 +176,6 @@ export function useLiveAdvertSearch({
     clear,
     close,
     open,
+    ensureLoaded,
   };
 }

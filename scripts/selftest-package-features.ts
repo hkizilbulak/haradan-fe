@@ -110,23 +110,20 @@ async function main(): Promise<void> {
     featuredUntil: new Date().toISOString(),
   };
 
-  responses['GET /api/v1/homepage/new-adverts?limit=20'] = {
+  responses['GET /api/v1/homepage?limit=20'] = {
     status: 200,
-    body: { items: [], hasMore: false },
+    body: {
+      newAdverts: { items: [], hasMore: false },
+      urgent: { items: [sample], hasMore: false },
+      featured: {
+        items: [{ ...sample, id: 'adv-featured', isUrgent: false }],
+        hasMore: false,
+      },
+      showcase: { seed: 's1', items: [] },
+      banners: { items: [] },
+      categories: { items: [] },
+    },
   };
-  responses['GET /api/v1/homepage/urgent?limit=20'] = {
-    status: 200,
-    body: { items: [sample], hasMore: false },
-  };
-  responses['GET /api/v1/homepage/featured?limit=20'] = {
-    status: 200,
-    body: { items: [{ ...sample, id: 'adv-featured', isUrgent: false }], hasMore: false },
-  };
-  responses['GET /api/v1/homepage/showcase?limit=20'] = {
-    status: 200,
-    body: { seed: 's1', items: [] },
-  };
-  responses['GET /api/v1/categories'] = { status: 200, body: { items: [] } };
 
   const home = new HttpHomepageRepository('http://localhost:8080/api');
   const data = await home.getHomepage();
@@ -136,6 +133,19 @@ async function main(): Promise<void> {
   assert(data.trending[0]?.isFeatured, 'featured feed item is featured');
   assertEqual(data.specialOffers.length, 0, 'empty showcase does not use mock adverts');
   assertEqual(data.categories.length, 0, 'empty catalog is not replaced with mock categories');
+  assertEqual(
+    calls.filter((c) => c.url.includes('/v1/homepage')).length,
+    1,
+    'homepage uses single bootstrap request'
+  );
+  assert(
+    !calls.some((c) => c.url.includes('/v1/homepage/urgent')),
+    'legacy homepage feed endpoints are not called'
+  );
+  assert(
+    !calls.some((c) => c.url.includes('/districts')),
+    'homepage does not preload districts'
+  );
 
   const media: IMediaUploader = {
     upload: async () => ({ assetId: 'asset-1', publicUrl: 'file://x' }),

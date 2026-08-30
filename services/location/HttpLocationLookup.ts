@@ -30,8 +30,6 @@ export class HttpLocationLookup implements ILocationLookup {
   constructor(baseUrl: string) {
     this.http = new HttpClient(baseUrl);
     this.staticLookup = new StaticLocationLookup();
-    // Warm up provinces in background on startup
-    void this.listProvinces().catch(() => {});
   }
 
   subscribe(listener: () => void): () => void {

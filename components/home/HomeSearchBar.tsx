@@ -101,6 +101,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
     setIsOpen,
     clear,
     close: closeDropdown,
+    ensureLoaded,
   } = useLiveAdvertSearch({
     initialQuery,
     limit: 6,
@@ -290,6 +291,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
           onChangeText={updateQuery}
           onFocus={() => {
             setFocused(true);
+            void ensureLoaded();
             if (query.trim().length > 0) setIsOpen(true);
           }}
           onBlur={() => {

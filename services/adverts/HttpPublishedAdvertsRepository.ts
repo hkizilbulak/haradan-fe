@@ -208,9 +208,15 @@ export class HttpPublishedAdvertsRepository
         }
       );
 
+      const mapped = (page.items ?? []).map((item) =>
+        mapPublishedCardToCatalog(item, this.baseUrl)
+      );
+      // District preload yalnızca isim gelmeyen kartlar için (eski BE uyumu)
       const provinceIds = new Set<string>();
       for (const item of page.items ?? []) {
-        if (item.provinceId) provinceIds.add(item.provinceId);
+        if (item.provinceId && !item.provinceName && !item.districtName) {
+          provinceIds.add(item.provinceId);
+        }
       }
       if (provinceIds.size > 0) {
         await Promise.allSettled(
@@ -218,9 +224,6 @@ export class HttpPublishedAdvertsRepository
         );
       }
 
-      const mapped = (page.items ?? []).map((item) =>
-        mapPublishedCardToCatalog(item, this.baseUrl)
-      );
       out.push(...mapped);
       if (!page.hasMore || !page.nextCursor) break;
       cursor = page.nextCursor;

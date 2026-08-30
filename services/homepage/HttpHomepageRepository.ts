@@ -1,18 +1,14 @@
 import { HttpClient } from '@/services/http';
 import { getValidAccessToken } from '@/services/auth/tokenRefresh';
-import { HttpCatalogRepository } from '@/services/catalog/HttpCatalogRepository';
-import type { ICatalogRepository } from '@/services/catalog/CatalogRepository';
 import {
   mapPublishedCardToCatalog,
   type BePublishedCard,
 } from '@/services/adverts/mapPublishedCard';
 import { normalizeBannerItem } from '@/services/banners/bannerDisplay';
 
-import { locationLookup } from '@/services/location';
-
 import type {
   ActiveBannerItem,
-  ActiveBannerListResponse,
+  CategoryTreeNode,
   HomepageData,
 } from '@/types';
 import type {
@@ -31,21 +27,41 @@ type BeShowcaseResponse = {
   items: BePublishedCard[];
 };
 
+type BeHomepageBootstrap = {
+  newAdverts: BeSearchResponse;
+  urgent: BeSearchResponse;
+  featured: BeSearchResponse;
+  showcase: BeShowcaseResponse;
+  banners: { items?: ActiveBannerItem[] };
+  categories: { items?: CategoryTreeNode[] };
+};
+
+const HIDDEN_CATEGORY = {
+  slug: 'ortak-alanlar',
+  id: 'c1000000-0000-4000-8000-000000000000',
+};
+
+function filterCategories(items: CategoryTreeNode[] | undefined): CategoryTreeNode[] {
+  return (items ?? []).filter(
+    (node) =>
+      node.slug !== HIDDEN_CATEGORY.slug &&
+      node.id !== HIDDEN_CATEGORY.id &&
+      !node.name?.toLowerCase().includes('ortak alan')
+  );
+}
+
 /**
- * HOMEPAGE advert feeds — yalnız BE.
+ * HOMEPAGE bootstrap — tek GET /v1/homepage.
  * İlan kartları mock’a düşmez; boş feed boş section demektir.
- * Kategoriler: HTTP catalog (app-wide mock singleton’a bağlanmaz).
- * Bannerlar: BE /v1/banners?placement=HOMEPAGE ile canlı getirilir; boş ise fallback mock'a düşer.
+ * Bannerlar boş gelebilir; UI kendi fallback’ini kullanır.
  */
 export class HttpHomepageRepository implements IHomepageRepository {
   private readonly http: HttpClient;
   private readonly apiBase: string;
-  private readonly catalog: ICatalogRepository;
 
-  constructor(baseUrl: string, catalog?: ICatalogRepository) {
+  constructor(baseUrl: string) {
     this.http = new HttpClient(baseUrl);
     this.apiBase = baseUrl;
-    this.catalog = catalog ?? new HttpCatalogRepository(baseUrl);
   }
 
   getCached(): HomepageData | null {
@@ -53,89 +69,35 @@ export class HttpHomepageRepository implements IHomepageRepository {
   }
 
   async getHomepage(options?: HomepageQueryOptions): Promise<HomepageData> {
+    void options;
     const accessToken = (await getValidAccessToken()) ?? undefined;
     try {
-      return await this.fetchHomepageData(accessToken, options);
+      return await this.fetchHomepageData(accessToken);
     } catch (err) {
       if (accessToken) {
         // If an authenticated request failed (e.g. 401 session revoked), retry as guest
-        return await this.fetchHomepageData(undefined, options);
+        return await this.fetchHomepageData(undefined);
       }
       throw err;
     }
   }
 
-  private async fetchHomepageData(
-    accessToken?: string,
-    options?: HomepageQueryOptions
-  ): Promise<HomepageData> {
+  private async fetchHomepageData(accessToken?: string): Promise<HomepageData> {
     const auth = accessToken ? { accessToken } : {};
+    const bootstrap = await this.http.request<BeHomepageBootstrap>(
+      '/v1/homepage?limit=20',
+      { method: 'GET', ...auth }
+    );
 
-    const [newPage, urgentPage, featuredPage, showcase, categories, bannersRes] =
-      await Promise.all([
-        this.http.request<BeSearchResponse>('/v1/homepage/new-adverts?limit=20', {
-          method: 'GET',
-          ...auth,
-        }),
-        this.http.request<BeSearchResponse>('/v1/homepage/urgent?limit=20', {
-          method: 'GET',
-          ...auth,
-        }),
-        this.http.request<BeSearchResponse>('/v1/homepage/featured?limit=20', {
-          method: 'GET',
-          ...auth,
-        }),
-        this.http.request<BeShowcaseResponse>('/v1/homepage/showcase?limit=20', {
-          method: 'GET',
-          ...auth,
-        }),
-        this.catalog.getCategoryTree({ fresh: Boolean(options?.fresh) }),
-        Promise.all([
-          this.http
-            .request<ActiveBannerListResponse>('/v1/banners?placement=HOMEPAGE_HERO', {
-              method: 'GET',
-            })
-            .catch(() => ({ items: [] as ActiveBannerItem[] })),
-          this.http
-            .request<ActiveBannerListResponse>('/v1/banners?placement=HOMEPAGE_PROMO', {
-              method: 'GET',
-            })
-            .catch(() => ({ items: [] as ActiveBannerItem[] })),
-          this.http
-            .request<ActiveBannerListResponse>('/v1/banners?placement=HOMEPAGE', {
-              method: 'GET',
-            })
-            .catch(() => ({ items: [] as ActiveBannerItem[] })),
-        ]).then(([hero, promo, legacy]) => ({
-          items: [...(hero?.items ?? []), ...(promo?.items ?? []), ...(legacy?.items ?? [])],
-        })),
-      ]);
-
-    // Preload districts for all provinces present on the homepage cards so both district & province names resolve
-    const provinceIds = new Set<string>();
-    for (const card of [
-      ...(urgentPage.items ?? []),
-      ...(featuredPage.items ?? []),
-      ...(newPage.items ?? []),
-      ...(showcase.items ?? []),
-    ]) {
-      if (card.provinceId) provinceIds.add(card.provinceId);
-    }
-    if (provinceIds.size > 0) {
-      await Promise.allSettled(
-        Array.from(provinceIds).map((p) => locationLookup.listDistricts(p))
-      );
-    }
-
-    const mapItems = (items: BePublishedCard[]) =>
+    const mapItems = (items: BePublishedCard[] | undefined) =>
       (items ?? []).map((item) => mapPublishedCardToCatalog(item, this.apiBase));
 
-    const urgentAdverts = mapItems(urgentPage.items);
-    const trending = mapItems(featuredPage.items);
-    const newAdverts = mapItems(newPage.items);
-    const showcaseItems = mapItems(showcase.items);
-
-    const liveBanners = (bannersRes?.items ?? []).map((item) =>
+    const urgentAdverts = mapItems(bootstrap.urgent?.items);
+    const trending = mapItems(bootstrap.featured?.items);
+    const newAdverts = mapItems(bootstrap.newAdverts?.items);
+    const showcaseItems = mapItems(bootstrap.showcase?.items);
+    const categories = filterCategories(bootstrap.categories?.items);
+    const liveBanners = (bootstrap.banners?.items ?? []).map((item) =>
       normalizeBannerItem(item, this.apiBase)
     );
 
@@ -143,7 +105,7 @@ export class HttpHomepageRepository implements IHomepageRepository {
       banners: liveBanners,
       categories,
       showcase: {
-        seed: showcase.seed || 'live',
+        seed: bootstrap.showcase?.seed || 'live',
         items: showcaseItems,
       },
       newAdverts,
@@ -167,5 +129,3 @@ export class HttpHomepageRepository implements IHomepageRepository {
     };
   }
 }
-
-
