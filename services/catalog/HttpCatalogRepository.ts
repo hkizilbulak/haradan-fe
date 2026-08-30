@@ -11,6 +11,7 @@ import type { CatalogQueryOptions, ICatalogRepository } from './CatalogRepositor
 import { findCategoryById, findCategoryBySlug, findCategoryParent } from './categoryTree';
 import { mapCategoryTreeToFacets } from './mapCategoryTreeToFacets';
 import { MockCatalogRepository } from './MockCatalogRepository';
+import CATALOG_DATA from '../../data/catalog.json';
 
 /**
  * Kategori ağacı ve facet verisinin ne kadar süre cache'de tutulacağı (ms).
@@ -201,6 +202,14 @@ export class HttpCatalogRepository implements ICatalogRepository {
 
     if (directProps.length === 0 && !apiSucceeded) {
       return null;
+    }
+
+    const initialProps = (CATALOG_DATA.categoryProperties || []) as any[];
+    for (const ip of initialProps) {
+      const found = directProps.find((p) => p.code === ip.code);
+      if (found && ip.options && ip.options.length > 0) {
+        found.options = ip.options;
+      }
     }
 
     const sortedProperties = [...directProps].sort(

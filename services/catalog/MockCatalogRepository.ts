@@ -105,6 +105,12 @@ export class MockCatalogRepository implements ICatalogRepository {
                 parsed.categoryProperties.unshift(gp);
               }
             }
+            for (const ip of initialProps) {
+              const found = parsed.categoryProperties.find((p: any) => p.code === ip.code);
+              if (found && ip.options && ip.options.length > 0) {
+                found.options = ip.options;
+              }
+            }
             const ORPHAN_CODES = new Set([
               'liveFoalGuarantee',
               'mobileService',

@@ -82,8 +82,6 @@ export const PANSIYON_FACILITY_OPTIONS: { key: PansiyonFacilityKey; label: strin
 
 export const STUD_BREED_OPTIONS = ['Arap', 'İngiliz'];
 
-export const STUD_AGE_OPTIONS = ['0', '1', '1.5', '2', '3', '4', '5+'];
-
 export const COAT_COLOR_OPTIONS = [
   'Doru',
   'Al',
@@ -105,12 +103,22 @@ export const HORSE_BREED_OPTIONS = [
 ];
 
 export const HORSE_AGE_OPTIONS = [
-  'Tay (0-1 Yaş)',
-  '2 Yaş',
-  '3 Yaş',
-  '4 Yaş',
-  '5+ Yaş',
+  '0',
+  '1',
+  '1.5',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '7',
+  '8',
+  '9',
+  '10-15 arası',
+  '15 üzeri',
 ];
+
+export const STUD_AGE_OPTIONS = [...HORSE_AGE_OPTIONS];
 
 export const HORSE_GENDER_OPTIONS = ['Erkek', 'Dişi', 'İğdiş'];
 
@@ -476,7 +484,25 @@ export function matchHorseAge(
   return selectedAges.some((ageOption) => {
     const norm = ageOption.trim().toLocaleLowerCase('tr');
 
-    // 5+ Yaş
+    // 10-15 arası
+    if (norm.includes('10-15')) {
+      if (parsedAge != null && parsedAge >= 10 && parsedAge <= 15) return true;
+      return (
+        text.includes('10-15') ||
+        /\b(?:10|11|12|13|14|15)\s*(?:yaş|yas|ya)\b/i.test(text)
+      );
+    }
+
+    // 15 üzeri
+    if (norm.includes('15') && (norm.includes('üzeri') || norm.includes('uzeri'))) {
+      if (parsedAge != null && parsedAge >= 15) return true;
+      return (
+        text.includes('15 üzeri') ||
+        /\b(?:15|16|17|18|19|20|21|22|23|24|25)\s*(?:yaş|yas|ya)\b/i.test(text)
+      );
+    }
+
+    // 5+ Yaş legacy
     if (norm.includes('5+') || norm === '5+') {
       if (parsedAge != null && parsedAge >= 5) return true;
       return (
@@ -511,7 +537,7 @@ export function matchHorseAge(
       );
     }
 
-    // Specific number: e.g. "2 Yaş", "3 Yaş", "4 Yaş", "2", "3", "4"
+    // Specific number: e.g. "2", "3", "4", "5", etc.
     const targetNumMatch = norm.match(/(\d+)/);
     if (targetNumMatch) {
       const targetNum = parseInt(targetNumMatch[1], 10);

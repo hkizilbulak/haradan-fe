@@ -88,7 +88,7 @@ const props = updatedDetails.properties || {};
 assert.strictEqual(props.HORSE_BREED, 'İngiliz (Thoroughbred)', 'HORSE_BREED property aktarıldı');
 assert.strictEqual(props.STALLION_BREED, 'İngiliz', 'STALLION_BREED property aktarıldı');
 assert.strictEqual(props.COAT_COLOR, 'Doru', 'COAT_COLOR property aktarıldı');
-assert.strictEqual(props.HORSE_AGE, '4 Yaş', 'HORSE_AGE property aktarıldı');
+assert.strictEqual(props.HORSE_AGE, '4', 'HORSE_AGE property aktarıldı');
 assert.strictEqual(props.STALLION_AGE, '4', 'STALLION_AGE property aktarıldı');
 assert.strictEqual(props.HORSE_GENDER, 'Erkek', 'HORSE_GENDER property aktarıldı');
 assert.strictEqual(props.SIRE, 'PERSIAN BOLD', 'SIRE property aktarıldı');

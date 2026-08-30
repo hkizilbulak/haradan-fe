@@ -56,16 +56,27 @@ function wizardSteps(): ListingWizardStep[] {
 }
 
 function normalizeTjkAge(rawAge: number | string | undefined | null): string {
-  if (rawAge == null) return '';
+  if (rawAge == null || rawAge === '') return '';
   const str = String(rawAge).trim();
-  if (str.includes('Yaş') || str.includes('Tay')) return str;
-  const num = parseInt(str, 10);
+  if ([
+    '0', '1', '1.5', '2', '3', '4', '5', '6', '7', '8', '9', '10-15 arası', '15 üzeri'
+  ].includes(str)) return str;
+  const num = parseFloat(str.replace(',', '.'));
   if (isNaN(num)) return str;
-  if (num <= 1) return 'Tay (0-1 Yaş)';
-  if (num === 2) return '2 Yaş';
-  if (num === 3) return '3 Yaş';
-  if (num === 4) return '4 Yaş';
-  return '5+ Yaş';
+  if (num === 0) return '0';
+  if (num === 1) return '1';
+  if (num === 1.5) return '1.5';
+  if (num === 2) return '2';
+  if (num === 3) return '3';
+  if (num === 4) return '4';
+  if (num === 5) return '5';
+  if (num === 6) return '6';
+  if (num === 7) return '7';
+  if (num === 8) return '8';
+  if (num === 9) return '9';
+  if (num >= 10 && num <= 15) return '10-15 arası';
+  if (num > 15) return '15 üzeri';
+  return String(num);
 }
 
 function normalizeTjkGender(rawGender: string | undefined | null): 'Erkek' | 'Dişi' | 'İğdiş' | '' {
@@ -107,9 +118,7 @@ export function applyTjkProfile(
       ? 'İngiliz'
       : normalizedBreed || horse.breed;
 
-  const stallionAge = normalizedAge.includes('5+')
-    ? '5+'
-    : normalizedAge ? normalizedAge.replace(/\D/g, '') : String(horse.age);
+  const stallionAge = normalizedAge || (horse.age != null ? String(horse.age) : '');
 
   // Sync TJK fields directly to canonical property codes
   if (horse.coatColor) {

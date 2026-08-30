@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { PostField } from './PostField';
 import { catalogRepository } from '@/services/catalog';
+import CATALOG_DATA from '@/data/catalog.json';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -131,6 +132,13 @@ export function PostCategoryProperties({
                 p.isActive !== false &&
                 !GLOBAL_CODES.has(String(p.code || '').toUpperCase())
             );
+            const initialProps = (CATALOG_DATA.categoryProperties || []) as any[];
+            for (const ip of initialProps) {
+              const found = filtered.find((p: any) => p.code === ip.code);
+              if (found && ip.options && ip.options.length > 0) {
+                found.options = ip.options;
+              }
+            }
             setCategoryProperties(filtered);
             setListingWizardState({ categoryProperties: filtered });
             onPropertiesLoadedRef.current?.(filtered);

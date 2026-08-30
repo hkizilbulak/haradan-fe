@@ -236,7 +236,7 @@ assertEqual(STUD_BREED_OPTIONS.length, 2, 'Aşım ırk filtreleri 2 seçenek');
 assertEqual(STUD_BREED_OPTIONS[0], 'Arap', 'Aşım ırkı: Arap');
 assertEqual(STUD_BREED_OPTIONS[1], 'İngiliz', 'Aşım ırkı: İngiliz');
 
-assertEqual(STUD_AGE_OPTIONS.join(','), '0,1,1.5,2,3,4,5+', 'Aşım yaş filtreleri spesifikasyona birebir uygun (0, 1, 1.5, 2, 3, 4, 5+)');
+assertEqual(STUD_AGE_OPTIONS.join(','), '0,1,1.5,2,3,4,5,6,7,8,9,10-15 arası,15 üzeri', 'Aşım yaş filtreleri 13 seçeneğe tam uygun');
 
 assertEqual(COAT_COLOR_OPTIONS.join(','), 'Doru,Al,Kır,Beyaz,Yağız,Kula,Boz', 'Don (renk) seçenekleri spesifikasyona uygun');
 
