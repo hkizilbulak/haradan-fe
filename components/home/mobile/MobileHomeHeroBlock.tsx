@@ -44,6 +44,7 @@ export function MobileHomeHeroBlock({
             height={heroHeight}
             fullBleed
             mobileCover
+            progressBottom={6}
           />
         ) : null}
 

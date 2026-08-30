@@ -30,6 +30,7 @@ type HeroSliderProps = {
   fullBleed?: boolean;
   /** Mobil: görsel tam alanı kaplar, metin overlay minimal */
   mobileCover?: boolean;
+  progressBottom?: number;
 };
 
 /**
@@ -41,6 +42,7 @@ export const HeroSlider = memo(function HeroSlider({
   height = 320,
   fullBleed = false,
   mobileCover = false,
+  progressBottom,
 }: HeroSliderProps) {
   const width = useLayoutWidth();
   const isWide = width >= 900;
@@ -173,7 +175,7 @@ export const HeroSlider = memo(function HeroSlider({
         ))}
       </ScrollView>
 
-      <HeroProgress index={index} total={sorted.length} lite={useCover} />
+      <HeroProgress index={index} total={sorted.length} lite={useCover} bottom={progressBottom} />
     </View>
   );
 });
@@ -182,10 +184,12 @@ function HeroProgress({
   index,
   total,
   lite = false,
+  bottom,
 }: {
   index: number;
   total: number;
   lite?: boolean;
+  bottom?: number;
 }) {
   const widthAnim = useRef(new Animated.Value(((index + 1) / Math.max(total, 1)) * 100)).current;
 
@@ -205,7 +209,11 @@ function HeroProgress({
 
   return (
     <View
-      style={[styles.progressTrack, lite && styles.progressTrackLite]}
+      style={[
+        styles.progressTrack,
+        lite && styles.progressTrackLite,
+        bottom !== undefined && { bottom },
+      ]}
       accessible={false}
     >
       <Animated.View
@@ -324,9 +332,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressTrackLite: {
-    left: Spacing.lg,
-    right: Spacing.lg,
-    bottom: 158,
+    left: Spacing.md,
+    right: Spacing.md,
+    bottom: 6,
     backgroundColor: 'rgba(255,255,255,0.22)',
   },
   progressFill: {
