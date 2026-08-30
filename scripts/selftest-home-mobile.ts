@@ -51,7 +51,7 @@ assert(roots.length >= 3, 'listing root categories from catalog tree');
 assert(roots[0]?.slug === 'satilik-atlar', 'satilik-atlar first root');
 assert(getCategoryIcon('satilik-atlar') === 'trophy-outline', 'satilik icon');
 assert(getCategoryIcon('at-hizmetleri') === 'briefcase-outline', 'hizmet icon');
-assert(getCategoryIcon('asim-hizmetleri') === 'heart-outline', 'asim icon');
+assert(getCategoryIcon('asim-hizmetleri') === 'flame-outline', 'asim icon');
 assert(getCategoryIcon('yeni-urun-grubu') === 'grid-outline', 'unknown slug fallback');
 
 const componentsRoot = join(process.cwd(), 'components');

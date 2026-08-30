@@ -5,6 +5,7 @@ import {
   LayoutAnimation,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -30,6 +31,24 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+export type QuickSearchLink = {
+  id: string;
+  label: string;
+  query?: string;
+  params?: Record<string, string>;
+  icon?: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
+};
+
+export const DEFAULT_QUICK_LINKS: QuickSearchLink[] = [
+  { id: 'ingiliz', label: 'İngiliz Atı', query: 'İngiliz Atı', icon: 'flash', iconColor: '#f59e0b' },
+  { id: 'arap', label: 'Arap Atı', query: 'Arap Atı', icon: 'sparkles', iconColor: '#38bdf8' },
+  { id: 'tay', label: 'Tay', query: 'Tay', icon: 'ribbon', iconColor: '#c084fc' },
+  { id: 'gebe', label: 'Gebe Kısrak', query: 'Gebe Kısrak', icon: 'heart', iconColor: '#f472b6' },
+  { id: 'aygir', label: 'Aygır', query: 'Aygır', icon: 'trophy', iconColor: '#fbbf24' },
+  { id: 'acil', label: 'Acil İlanlar', params: { urgent: '1' }, icon: 'flame', iconColor: '#ef4444' },
+];
+
 type HomeSearchBarProps = {
   placeholder?: string;
   /** Listings sayfası — mevcut arama metni. */
@@ -44,6 +63,10 @@ type HomeSearchBarProps = {
   compact?: boolean;
   /** Liquid glass — hero üzerinde yüzen arama */
   variant?: 'default' | 'glass';
+  /** Hızlı arama linklerini göster/gizle (varsayılan: !live) */
+  showQuickLinks?: boolean;
+  /** Özel hızlı arama linkleri */
+  quickLinks?: QuickSearchLink[];
 };
 
 const EASE = Easing.bezier(0.22, 1, 0.36, 1);
@@ -60,6 +83,8 @@ export const HomeSearchBar = memo(function HomeSearchBar({
   fullWidth = false,
   compact = false,
   variant = 'default',
+  showQuickLinks = !live,
+  quickLinks = DEFAULT_QUICK_LINKS,
 }: HomeSearchBarProps) {
   const router = useRouter();
   const width = useLayoutWidth();
@@ -167,6 +192,20 @@ export const HomeSearchBar = memo(function HomeSearchBar({
     if (q) goListings({ q });
     else goListings({});
   }, [query, live, onQueryChange, goListings, closeDropdown]);
+
+  const handleQuickLinkPress = useCallback(
+    (link: QuickSearchLink) => {
+      closeDropdown();
+      if (link.query) {
+        setQuery(link.query);
+        onQueryChange?.(link.query);
+        goListings({ q: link.query, ...link.params });
+      } else if (link.params) {
+        goListings(link.params);
+      }
+    },
+    [closeDropdown, setQuery, onQueryChange, goListings]
+  );
 
   const handleSelectAdvert = useCallback(
     (advert: CatalogProductCard) => {
@@ -307,6 +346,85 @@ export const HomeSearchBar = memo(function HomeSearchBar({
         </Pressable>
       </Animated.View>
 
+      {/* Hızlı Arama Linkleri (Minimalist) */}
+      {showQuickLinks && quickLinks.length > 0 ? (
+        <View style={styles.quickLinksWrap}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.quickLinksScroll}
+          >
+            {quickLinks.map((link) => (
+              <Pressable
+                key={link.id}
+                onPress={() => handleQuickLinkPress(link)}
+                accessibilityRole="button"
+                accessibilityLabel={link.label}
+                style={({ pressed }) => [
+                  styles.quickChip,
+                  {
+                    backgroundColor: isGlass
+                      ? pressed
+                        ? 'rgba(255, 255, 255, 0.32)'
+                        : 'rgba(255, 255, 255, 0.18)'
+                      : pressed
+                        ? isDark
+                          ? 'rgba(255, 255, 255, 0.14)'
+                          : 'rgba(0, 0, 0, 0.06)'
+                        : isDark
+                          ? 'rgba(255, 255, 255, 0.06)'
+                          : 'rgba(0, 0, 0, 0.03)',
+                    borderColor: isGlass
+                      ? pressed
+                        ? 'rgba(255, 255, 255, 0.55)'
+                        : 'rgba(255, 255, 255, 0.32)'
+                      : border,
+                    transform: [{ scale: pressed ? 0.98 : 1 }],
+                    ...(Platform.OS === 'web'
+                      ? ({
+                          backdropFilter: isGlass
+                            ? 'blur(12px) saturate(140%)'
+                            : undefined,
+                          WebkitBackdropFilter: isGlass
+                            ? 'blur(12px) saturate(140%)'
+                            : undefined,
+                          cursor: 'pointer',
+                          transition:
+                            'all 180ms cubic-bezier(0.22, 1, 0.36, 1)',
+                        } as object)
+                      : null),
+                  },
+                ]}
+              >
+                {link.icon ? (
+                  <Ionicons
+                    name={link.icon}
+                    size={12}
+                    color={
+                      isGlass
+                        ? 'rgba(255, 255, 255, 0.9)'
+                        : textSecondary
+                    }
+                  />
+                ) : null}
+                <Text
+                  style={[
+                    styles.quickChipText,
+                    {
+                      color: isGlass
+                        ? '#ffffff'
+                        : text,
+                    },
+                  ]}
+                >
+                  {link.label}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
+
       {/* Canlı Filtreleme Açılır Menüsü */}
       <SearchDropdown
         results={results}
@@ -432,5 +550,30 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '700',
+  },
+  quickLinksWrap: {
+    marginTop: 10,
+  },
+  quickLinksScroll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 2,
+    paddingVertical: 2,
+  },
+  quickChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 13,
+    paddingVertical: 6,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    minHeight: 32,
+  },
+  quickChipText: {
+    fontSize: 12.5,
+    fontWeight: '500',
+    letterSpacing: -0.1,
   },
 });

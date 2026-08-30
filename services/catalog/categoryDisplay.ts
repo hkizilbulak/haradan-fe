@@ -5,7 +5,7 @@ import type { CategoryTreeNode } from '@/types';
 const ROOT_CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   'satilik-atlar': 'trophy-outline',
   'at-hizmetleri': 'briefcase-outline',
-  'asim-hizmetleri': 'heart-outline',
+  'asim-hizmetleri': 'flame-outline',
   'ekipman-malzemeler': 'construct-outline',
   'ahir-tesisler': 'home-outline',
 };
@@ -27,7 +27,7 @@ const LEAF_CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 function slugHeuristicIcon(slug: string): keyof typeof Ionicons.glyphMap {
   const s = (slug || '').toLowerCase();
   if (s.includes('asim') || s.includes('aşım') || s.includes('aygir') || s.includes('aygır')) {
-    return 'heart-outline';
+    return 'flame-outline';
   }
   if (
     s.includes('hizmet') ||
