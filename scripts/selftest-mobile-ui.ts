@@ -99,9 +99,8 @@ assert(profileScreen.includes('MobileScreenHeader'), 'profile mobile header');
 assert(profileScreen.includes('ProfileDrawer'), 'profile reuses drawer content');
 assert(profileScreen.includes('mobileDockScrollInset'), 'profile dynamic dock pad');
 assert(
-  profileScreen.includes('if (!isWide) return') &&
-    profileScreen.includes("router.replace('/')"),
-  'profile redirect only on wide'
+  profileScreen.includes("router.replace('/auth/login?next=/profile')"),
+  'profile redirects unauthenticated to login'
 );
 
 const myListingsScreen = read('app/my-listings/index.tsx');

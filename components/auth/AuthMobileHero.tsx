@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { BrandMark } from '@/components/layout/BrandMark';
 import { Spacing } from '@/constants/Spacing';
@@ -14,6 +15,7 @@ type AuthMobileHeroProps = {
 const EASE = Easing.bezier(0.22, 1, 0.36, 1);
 
 export function AuthMobileHero({ tagline }: AuthMobileHeroProps) {
+  const router = useRouter();
   const { tokens } = useAuthTheme();
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(8)).current;
@@ -50,7 +52,15 @@ export function AuthMobileHero({ tagline }: AuthMobileHeroProps) {
           { opacity, transform: [{ translateY }] },
         ]}
       >
-        <BrandMark variant="light" height={32} />
+        <Pressable
+          onPress={() => router.replace('/')}
+          accessibilityRole="button"
+          accessibilityLabel="Ana sayfa"
+          hitSlop={8}
+          style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+        >
+          <BrandMark variant="light" height={32} />
+        </Pressable>
         <Text style={styles.tagline}>{tagline}</Text>
       </Animated.View>
     </View>

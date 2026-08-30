@@ -17,7 +17,6 @@ import {
   type ProfileDrawerAction,
 } from '@/components/layout/ProfileDrawer';
 import { SettingsDrawer } from '@/components/layout/SettingsDrawer';
-import { ScreenWrapper } from '@/components/ui';
 import { mobileDockScrollInset } from '@/constants/Layout';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthSession } from '@/hooks/useAuthSession';
@@ -39,17 +38,14 @@ export default function ProfileScreen() {
   const [panel, setPanel] = useState<MobilePanel>('menu');
 
   useEffect(() => {
-    if (!isWide) return;
-    if (isLoggedIn) {
-      router.replace('/');
+    if (!isLoggedIn) {
+      router.replace('/auth/login?next=/profile');
       return;
     }
-    router.replace('/auth/login?next=/profile');
+    if (isWide) {
+      router.replace('/');
+    }
   }, [isWide, isLoggedIn, router]);
-
-  const goLogin = useCallback(() => {
-    router.push('/auth/login?next=/profile');
-  }, [router]);
 
   const onLogout = useCallback(() => {
     void logout(session?.accessToken ?? null);
@@ -73,33 +69,10 @@ export default function ProfileScreen() {
     [router]
   );
 
-  if (isWide) {
+  if (isWide || !isLoggedIn) {
     return (
       <View style={styles.redirect}>
         <ActivityIndicator color={primary} />
-      </View>
-    );
-  }
-
-  if (!isLoggedIn) {
-    return (
-      <View style={styles.root}>
-        <MobileScreenHeader title="Hesabım" subtitle="Giriş gerekli" />
-        <ScreenWrapper
-          edges={['left', 'right']}
-          contentInsetBottom={dockPad}
-          isLoading={false}
-          isError={false}
-          isEmpty
-          emptyVariant="default"
-          emptyTitle="Hesabınıza giriş yapın"
-          emptyDescription="İlanlarınızı yönetmek ve favorilerinize erişmek için giriş yapın."
-          emptyActionLabel="Giriş yap"
-          onEmptyAction={goLogin}
-          style={styles.flex}
-        >
-          {null}
-        </ScreenWrapper>
       </View>
     );
   }

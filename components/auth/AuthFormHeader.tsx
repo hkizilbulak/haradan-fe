@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { BrandMark } from '@/components/layout/BrandMark';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
@@ -17,6 +18,7 @@ export function AuthFormHeader({
   subtitle,
   showBrand = false,
 }: AuthFormHeaderProps) {
+  const router = useRouter();
   const { tokens } = useAuthTheme();
   const { isGlass } = useAuthLayout();
   const centered = isGlass;
@@ -24,9 +26,19 @@ export function AuthFormHeader({
   return (
     <View style={[styles.wrap, centered && styles.wrapCenter]}>
       {showBrand || isGlass ? (
-        <View style={[styles.brandRow, centered && styles.brandCenter]}>
+        <Pressable
+          onPress={() => router.replace('/')}
+          accessibilityRole="button"
+          accessibilityLabel="Ana sayfa"
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.brandRow,
+            centered && styles.brandCenter,
+            pressed && { opacity: 0.7 },
+          ]}
+        >
           <BrandMark variant="dark" height={isGlass ? 28 : 32} />
-        </View>
+        </Pressable>
       ) : null}
       <Text
         style={[

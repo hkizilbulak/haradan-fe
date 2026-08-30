@@ -14,8 +14,7 @@ export function AuthBackButton({ onHero = false }: AuthBackButtonProps) {
   const { tokens } = useAuthTheme();
 
   const onPress = () => {
-    if (router.canGoBack()) router.back();
-    else router.replace('/');
+    router.replace('/');
   };
 
   return (

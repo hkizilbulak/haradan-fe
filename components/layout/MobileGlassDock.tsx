@@ -25,7 +25,12 @@ type SideItem = {
 };
 
 const LEFT: SideItem[] = [
-  { key: 'search', label: 'Ara', icon: 'search-outline', iconActive: 'search' },
+  {
+    key: 'discover',
+    label: 'Anasayfa',
+    icon: 'home-outline',
+    iconActive: 'home',
+  },
   {
     key: 'favorites',
     label: 'Favorilerim',
@@ -35,12 +40,7 @@ const LEFT: SideItem[] = [
 ];
 
 const RIGHT: SideItem[] = [
-  {
-    key: 'discover',
-    label: 'Keşfet',
-    icon: 'compass-outline',
-    iconActive: 'compass',
-  },
+  { key: 'search', label: 'Ara', icon: 'search-outline', iconActive: 'search' },
   {
     key: 'profile',
     label: 'Hesabım',
@@ -56,7 +56,7 @@ function normalizePath(pathname: string): string {
 }
 
 /**
- * Referans tab bar — Ara | Favorilerim | İlan Ver | Keşfet | Hesabım.
+ * Referans tab bar — Anasayfa | Favorilerim | İlan Ver | Ara | Hesabım.
  * Root overlay; web + native mobil viewport.
  */
 export function MobileGlassDock() {
