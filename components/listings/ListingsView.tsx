@@ -43,6 +43,7 @@ import { Spacing } from '@/constants/Spacing';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useCatalogFacets } from '@/hooks/useCatalogFacets';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useIsHydrated } from '@/hooks/useIsHydrated';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { usePublishedAdvertsSearch } from '@/hooks/usePublishedAdvertsSearch';
 import { usePlacementBanners } from '@/hooks/usePlacementBanners';
@@ -71,7 +72,6 @@ import {
 } from '@/components/listings/filterConfig';
 import { syncListingsQuery } from '@/components/listings/syncListingsQuery';
 import { categoryLabel, collectCategoryIds } from '@/services/catalog';
-import { locationLookup } from '@/services/location';
 import { normalizeSearchText } from '@/services/adverts';
 import type { CatalogProductCard, CategoryTreeNode } from '@/types';
 
@@ -343,7 +343,7 @@ export const ListingsView = memo(function ListingsView({
   const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const safeInsets = useSafeInsets();
-  const { session, isLoggedIn } = useAuthSession();
+  const { isLoggedIn } = useAuthSession();
   const { banners: searchBanners } = usePlacementBanners('SEARCH');
 
   const text = useThemeColor('text');
@@ -373,8 +373,8 @@ export const ListingsView = memo(function ListingsView({
   });
   const [page, setPage] = useState(0);
   const [liveQuery, setLiveQuery] = useState(query.q ?? '');
-  const [locationTick, setLocationTick] = useState(0);
   const skipHydrate = useRef(false);
+  const hydrated = useIsHydrated();
 
   useEffect(() => {
     if (skipHydrate.current) {
@@ -423,7 +423,9 @@ export const ListingsView = memo(function ListingsView({
       provinceIds: filters.provinceIds,
     },
     categoryTree,
-    session?.accessToken ?? null
+    null,
+    undefined,
+    { enabled: hydrated }
   );
 
   const q = liveQuery.trim();
@@ -436,29 +438,6 @@ export const ListingsView = memo(function ListingsView({
   useEffect(() => {
     remember(items);
   }, [remember, items]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const provinces = await locationLookup.listProvinces();
-        const needed = new Set(
-          search.items.map((i) => i.provinceId).filter(Boolean)
-        );
-        await Promise.all(
-          provinces
-            .filter((p) => needed.has(p.id))
-            .map((p) => locationLookup.listDistricts(p.id))
-        );
-        if (!cancelled) setLocationTick((n) => n + 1);
-      } catch {
-        /* konum isimleri opsiyonel */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [search.items]);
 
   const syncUrl = useCallback(
     (next: ListingsFiltersState, searchText = liveQuery) => {
@@ -647,8 +626,6 @@ export const ListingsView = memo(function ListingsView({
     </Pressable>
   );
 
-  const gridKey = `loc-${locationTick}`;
-
   const resultsBlock = search.loading ? (
     <View style={styles.loader}>
       <ActivityIndicator size="large" color={textMuted} />
@@ -675,7 +652,6 @@ export const ListingsView = memo(function ListingsView({
     </View>
   ) : (
     <ListingsGrid
-      key={gridKey}
       items={items}
       page={page}
       onPageChange={setPage}

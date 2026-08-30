@@ -1,12 +1,22 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { useHomepage } from '@/hooks/useHomepage';
 import { useFavorites } from '@/hooks/useFavorites';
 
 /**
  * Ana sayfa view-model: tek cache, ortak favori store.
+ * Sadece tab/screen odaktayken network — listings’e gidince bootstrap yenilenmez.
  */
 export function useHomepageFeed() {
-  const home = useHomepage();
+  const [focused, setFocused] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, [])
+  );
+
+  const home = useHomepage(undefined, { enabled: focused });
   const { apply, remember, items, count, toggle, remove } = useFavorites();
 
   const urgent = useMemo(() => {

@@ -7,7 +7,7 @@ import type { CatalogFacets, CategoryTreeNode } from '@/types';
 
 /**
  * Katalog facet’leri — cache-first.
- * Repo enjekte edilir (test / HttpCatalogRepository).
+ * Tek HTTP: getCategoryTree; facets ağaçtan türetilir (çift /v1/categories yok).
  */
 export function useCatalogFacets(
   repo: ICatalogRepository = catalogRepository
@@ -28,10 +28,10 @@ export function useCatalogFacets(
     void (async () => {
       setLoading(true);
       try {
-        const [nextFacets, tree] = await Promise.all([
-          repo.getFacets(),
-          repo.getCategoryTree(),
-        ]);
+        const tree = await repo.getCategoryTree();
+        if (cancelled) return;
+        // Facets tree cache üzerinden — ikinci /v1/categories yok
+        const nextFacets = await repo.getFacets();
         if (cancelled) return;
         setFacets(nextFacets);
         setCategoryTree(tree);

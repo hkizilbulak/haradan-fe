@@ -41,27 +41,8 @@ export default function ListingsScreen() {
   const { isLoggedIn } = useAuthSession();
   const hydrated = useIsHydrated();
 
-  const query = useMemo(() => {
-    if (!hydrated) {
-      return {
-        q: null,
-        category: null,
-        breed: null,
-        province: null,
-        district: null,
-        min: null,
-        max: null,
-        urgent: null,
-        period: null,
-        facilities: null,
-        breeds: null,
-        ages: null,
-        colors: null,
-        genders: null,
-        features: null,
-      };
-    }
-    return {
+  const query = useMemo(
+    () => ({
       q: first(params.q),
       category: first(params.category),
       breed: first(params.breed),
@@ -77,25 +58,25 @@ export default function ListingsScreen() {
       colors: first(params.colors),
       genders: first(params.genders),
       features: first(params.features),
-    };
-  }, [
-    hydrated,
-    params.q,
-    params.category,
-    params.breed,
-    params.province,
-    params.district,
-    params.min,
-    params.max,
-    params.urgent,
-    params.period,
-    params.facilities,
-    params.breeds,
-    params.ages,
-    params.colors,
-    params.genders,
-    params.features,
-  ]);
+    }),
+    [
+      params.q,
+      params.category,
+      params.breed,
+      params.province,
+      params.district,
+      params.min,
+      params.max,
+      params.urgent,
+      params.period,
+      params.facilities,
+      params.breeds,
+      params.ages,
+      params.colors,
+      params.genders,
+      params.features,
+    ]
+  );
 
   const onLogin = useCallback(() => router.push('/auth/login'), [router]);
   const onSignup = useCallback(() => router.push('/auth/signup'), [router]);
@@ -131,7 +112,7 @@ export default function ListingsScreen() {
         edges={isWide ? ['left', 'right', 'bottom'] : ['left', 'right']}
         style={styles.flex}
       >
-        <ListingsView query={query} />
+        {hydrated ? <ListingsView query={query} /> : null}
       </SafeAreaView>
     </View>
   );

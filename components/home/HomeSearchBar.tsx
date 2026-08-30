@@ -106,6 +106,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
     initialQuery,
     limit: 6,
     debounceMs: 180,
+    enabled: !live,
   });
 
   useEffect(() => {

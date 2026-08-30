@@ -4,6 +4,7 @@ import type {
   CategoryTreeNode,
 } from '@/types';
 import type { CatalogQueryOptions, ICatalogRepository } from './CatalogRepository';
+import { mapCategoryTreeToFacets } from './mapCategoryTreeToFacets';
 
 /** Bellek önbelleği — HttpCatalogRepository gelince aynı sarmalayıcı kullanılır. */
 export function createCachedCatalogRepository(
@@ -36,7 +37,7 @@ export function createCachedCatalogRepository(
 
     async getFacets(options?: CatalogQueryOptions) {
       const now = Date.now();
-      const expired = (now - facetsFetchedAt) > TTL_MS;
+      const expired = facetsFetchedAt > 0 && now - facetsFetchedAt > TTL_MS;
 
       if (options?.fresh || expired) {
         facets = null;
@@ -45,7 +46,9 @@ export function createCachedCatalogRepository(
       }
       if (facets) return facets;
       if (inflight) return inflight;
-      inflight = inner.getFacets(options).then((result) => {
+      // Own getCategoryTree so treeInflight dedupes parallel callers
+      inflight = repo.getCategoryTree(options).then((nextTree) => {
+        const result = mapCategoryTreeToFacets(nextTree);
         facets = result;
         facetsFetchedAt = Date.now();
         inflight = null;
@@ -56,7 +59,7 @@ export function createCachedCatalogRepository(
 
     async getCategoryTree(options?: CatalogQueryOptions) {
       const now = Date.now();
-      const expired = (now - treeFetchedAt) > TTL_MS;
+      const expired = treeFetchedAt > 0 && now - treeFetchedAt > TTL_MS;
 
       if (options?.fresh || expired) {
         tree = null;

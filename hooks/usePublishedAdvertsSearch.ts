@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   publishedAdvertsRepository,
   resolveSearchCategoryIds,
@@ -11,21 +11,32 @@ export type PublishedSearchFilters = {
   provinceIds: string[];
 };
 
+export type UsePublishedAdvertsSearchOptions = {
+  /** false iken istek atılmaz (SSR hydrate / kategori ağacı beklenirken). */
+  enabled?: boolean;
+};
+
 /**
- * İlanlar araması — server filtreleri (kategori / il) BE’den;
- * cache-first değil, filtre değişince yeniden çeker.
+ * İlanlar araması — server filtreleri (kategori / il) BE’den.
+ * Auth token repo içinde resolve edilir; session hydrate yüzünden çift istek yok.
  */
 export function usePublishedAdvertsSearch(
   filters: PublishedSearchFilters,
   categoryTree: CategoryTreeNode[],
-  accessToken: string | null = null,
-  repo: IPublishedAdvertsRepository = publishedAdvertsRepository
+  _accessToken: string | null = null,
+  repo: IPublishedAdvertsRepository = publishedAdvertsRepository,
+  options: UsePublishedAdvertsSearchOptions = {}
 ) {
+  const enabled = options.enabled !== false;
   const [items, setItems] = useState<CatalogProductCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const reqId = useRef(0);
 
-  const provinceKey = filters.provinceIds.slice().sort().join(',');
+  const provinceKey = useMemo(
+    () => filters.provinceIds.slice().sort().join(','),
+    [filters.provinceIds]
+  );
 
   const resolved = useMemo(
     () => resolveSearchCategoryIds(categoryTree, filters.categorySlug),
@@ -37,15 +48,21 @@ export function usePublishedAdvertsSearch(
     ? [...resolved.clientCategoryIds].sort().join(',')
     : '';
 
+  // Kategori slug varken ağaç gelene kadar bekle — boş ağaçla gereksiz full search yok
+  const waitingForTree = Boolean(filters.categorySlug) && categoryTree.length === 0;
+  const canFetch = enabled && !waitingForTree;
+
   const load = useCallback(async () => {
+    if (!canFetch) return;
+    const id = ++reqId.current;
     setLoading(true);
     try {
       const next = await repo.search({
         categoryIds: resolved.serverCategoryIds,
         provinceIds:
           filters.provinceIds.length > 0 ? filters.provinceIds : undefined,
-        accessToken,
       });
+      if (id !== reqId.current) return;
       let filtered = next;
       if (resolved.clientCategoryIds) {
         filtered = next.filter((p) =>
@@ -55,25 +72,31 @@ export function usePublishedAdvertsSearch(
       setItems(filtered);
       setError(null);
     } catch (err) {
+      if (id !== reqId.current) return;
       setItems([]);
       setError(err instanceof Error ? err.message : 'İlanlar yüklenemedi.');
     } finally {
-      setLoading(false);
+      if (id === reqId.current) setLoading(false);
     }
   }, [
+    canFetch,
     repo,
     categoryIdsKey,
     clientCategoryKey,
     provinceKey,
-    accessToken,
+    // resolved ids derived from keys above; keep stable values for search call
     resolved.serverCategoryIds,
     resolved.clientCategoryIds,
     filters.provinceIds,
   ]);
 
   useEffect(() => {
+    if (!canFetch) {
+      if (waitingForTree || !enabled) setLoading(true);
+      return;
+    }
     void load();
-  }, [load]);
+  }, [canFetch, waitingForTree, enabled, load]);
 
   return {
     items,

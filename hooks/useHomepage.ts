@@ -19,8 +19,13 @@ function prefetchCritical(data: HomepageData) {
 /**
  * Cache-first + stale-while-revalidate.
  * İlk içerik senkron set edilir; arka plan yenilemesi startTransition ile gelir.
+ * focused=false iken network atılmaz (listings/stack’te home kalırsa gereksiz bootstrap yok).
  */
-export function useHomepage(repo: IHomepageRepository = homepageRepository) {
+export function useHomepage(
+  repo: IHomepageRepository = homepageRepository,
+  options: { enabled?: boolean } = {}
+) {
+  const enabled = options.enabled !== false;
   const [data, setData] = useState<HomepageData | null>(() => repo.getCached());
   const [status, setStatus] = useState<Status>(() =>
     repo.getCached() ? 'success' : 'loading'
@@ -53,8 +58,9 @@ export function useHomepage(repo: IHomepageRepository = homepageRepository) {
   );
 
   useEffect(() => {
+    if (!enabled) return;
     void load(false);
-  }, [load]);
+  }, [enabled, load]);
 
   const categoryRoots = useMemo(
     () => data?.categories ?? [],
