@@ -299,14 +299,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(12,12,14,0.94)',
     ...Platform.select({
       ios: {
-        shadowColor: '#f34770',
+        shadowColor: '#ff6000',
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.45,
         shadowRadius: 12,
       },
       android: { elevation: 10 },
       web: {
-        boxShadow: '0 8px 24px rgba(243,71,112,0.45)',
+        boxShadow: '0 8px 24px rgba(255,96,0,0.45)',
       } as object,
       default: {},
     }),

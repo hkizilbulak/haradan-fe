@@ -7,12 +7,12 @@ export const AuthDarkTheme = {
   textSecondary: '#a1a1aa',
   textMuted: '#71717a',
   border: 'rgba(255,255,255,0.1)',
-  borderFocus: 'rgba(255,140,66,0.65)',
-  primary: '#f34770',
-  primaryDark: '#d63a5f',
-  accent: '#ff8c42',
-  accentSoft: 'rgba(255,140,66,0.18)',
-  glow: 'rgba(243,71,112,0.22)',
+  borderFocus: 'rgba(255,96,0,0.65)',
+  primary: '#ff6000',
+  primaryDark: '#e05300',
+  accent: '#ff6000',
+  accentSoft: 'rgba(255,96,0,0.18)',
+  glow: 'rgba(255,96,0,0.22)',
   error: '#ff6b8a',
   divider: 'rgba(255,255,255,0.08)',
   checkboxBorder: 'rgba(255,255,255,0.2)',
@@ -20,7 +20,7 @@ export const AuthDarkTheme = {
 } as const;
 
 /**
- * Haradan auth — temiz beyaz zemin, marka pembesi CTA.
+ * Haradan auth — temiz beyaz zemin, canlı turuncu CTA.
  * Mobil ve masaüstü giriş / kayıt ekranları.
  */
 export const AuthLuxuryTheme = {
@@ -31,12 +31,12 @@ export const AuthLuxuryTheme = {
   textSecondary: '#6c727f',
   textMuted: '#9ca3af',
   border: '#e3e9ef',
-  borderFocus: 'rgba(243,71,112,0.45)',
-  primary: '#f34770',
-  primaryDark: '#d63a5f',
-  accent: '#f34770',
-  accentSoft: 'rgba(243,71,112,0.08)',
-  glow: 'rgba(243,71,112,0.22)',
+  borderFocus: 'rgba(255,96,0,0.45)',
+  primary: '#ff6000',
+  primaryDark: '#e05300',
+  accent: '#ff6000',
+  accentSoft: 'rgba(255,96,0,0.08)',
+  glow: 'rgba(255,96,0,0.22)',
   error: '#dc2626',
   errorSoft: '#fef2f2',
   success: '#16a34a',

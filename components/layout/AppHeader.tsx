@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#ef4444',
+    backgroundColor: '#ff6000',
     paddingHorizontal: 16,
     paddingVertical: 9,
     borderRadius: 10,

@@ -34,49 +34,49 @@ const QUICK_ACCESS_LINKS: Array<{
   color: string;
   params: Record<string, string>;
 }> = [
-  {
-    id: 'vitrin',
-    title: 'Vitrin İlanları',
-    icon: 'diamond-outline' as const,
-    color: '#eab308',
-    params: { featured: '1' },
-  },
-  {
-    id: 'acil',
-    title: 'Acil İlanlar',
-    icon: 'flash-outline' as const,
-    color: '#ef4444',
-    params: { urgent: '1' },
-  },
-  {
-    id: 'kosar',
-    title: 'Koşar Durumda Yarış Atları',
-    icon: 'trophy-outline' as const,
-    color: '#3b82f6',
-    params: { q: 'Koşar Durumda' },
-  },
-  {
-    id: 'kisrak',
-    title: 'Satılık Kısraklar',
-    icon: 'female-outline' as const,
-    color: '#ec4899',
-    params: { category: 'satilik-kisrak' },
-  },
-  {
-    id: 'aygir',
-    title: 'Aşım Aygırları',
-    icon: 'flame-outline' as const,
-    color: '#f97316',
-    params: { category: 'asim-hizmetleri' },
-  },
-  {
-    id: 'nakliye',
-    title: 'At Nakliyesi & Tesisler',
-    icon: 'car-outline' as const,
-    color: '#10b981',
-    params: { category: 'at-hizmetleri' },
-  },
-];
+    {
+      id: 'vitrin',
+      title: 'Vitrin İlanları',
+      icon: 'diamond-outline' as const,
+      color: '#eab308',
+      params: { featured: '1' },
+    },
+    {
+      id: 'acil',
+      title: 'Acil İlanlar',
+      icon: 'flash-outline' as const,
+      color: '#ef4444',
+      params: { urgent: '1' },
+    },
+    {
+      id: 'kosar',
+      title: 'Koşar Durumda Yarış Atları',
+      icon: 'trophy-outline' as const,
+      color: '#3b82f6',
+      params: { q: 'Koşar Durumda' },
+    },
+    {
+      id: 'kisrak',
+      title: 'Satılık Kısraklar',
+      icon: 'female-outline' as const,
+      color: '#ec4899',
+      params: { category: 'satilik-kisrak' },
+    },
+    {
+      id: 'aygir',
+      title: 'Aşım Aygırları',
+      icon: 'flame-outline' as const,
+      color: '#f97316',
+      params: { category: 'asim-hizmetleri' },
+    },
+    {
+      id: 'nakliye',
+      title: 'At Nakliyesi & Tesisler',
+      icon: 'car-outline' as const,
+      color: '#10b981',
+      params: { category: 'at-hizmetleri' },
+    },
+  ];
 
 const HERO_BG_IMAGE =
   'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?q=80&w=1600&auto=format&fit=crop';
@@ -181,16 +181,13 @@ export const HomeHeroSection = memo(function HomeHeroSection({
             </Animated.View>
 
             <Text style={[styles.headlineText, !isWide && styles.headlineTextMobile]}>
-              {' '}bulup
+              {' '}bulmak için
             </Text>
           </View>
 
           <View style={styles.subHeadlineWrap}>
-            <View style={styles.ohhBeBadge}>
-              <Text style={styles.ohhBeText}>TAM İSABET</Text>
-            </View>
             <Text style={[styles.headlineText, !isWide && styles.headlineTextMobile]}>
-              {' '}demek için Haradan!
+              HARADAN!
             </Text>
           </View>
 
@@ -224,9 +221,7 @@ export const HomeHeroSection = memo(function HomeHeroSection({
                 },
               ]}
             >
-              <View style={[styles.iconChip, { backgroundColor: `${item.color}18` }]}>
-                <Ionicons name={item.icon} size={15} color={item.color} />
-              </View>
+              <Ionicons name={item.icon} size={16} color={item.color} style={styles.quickAccessIcon} />
               <Text style={[styles.quickAccessLabel, { color: text }]} numberOfLines={1}>
                 {item.title}
               </Text>
@@ -285,7 +280,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
   },
   headlineText: {
     color: '#ffffff',
@@ -309,7 +304,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   wordText: {
-    color: '#38bdf8',
+    color: '#ff6000',
     fontSize: 32,
     fontWeight: '900',
     letterSpacing: -0.5,
@@ -317,25 +312,7 @@ const styles = StyleSheet.create({
   wordTextMobile: {
     fontSize: 22,
   },
-  ohhBeBadge: {
-    backgroundColor: '#ef4444',
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 10,
-    marginHorizontal: 4,
-    ...Platform.select({
-      web: {
-        boxShadow: '0 4px 14px rgba(239, 68, 68, 0.5)',
-      },
-      default: {},
-    }),
-  },
-  ohhBeText: {
-    color: '#ffffff',
-    fontSize: 26,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
+
   searchBoxCard: {
     width: '100%',
     marginTop: Spacing.sm,
@@ -377,12 +354,8 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
-  iconChip: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
+  quickAccessIcon: {
+    opacity: 0.45,
   },
   quickAccessLabel: {
     fontSize: 13.5,
