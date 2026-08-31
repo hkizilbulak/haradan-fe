@@ -1,20 +1,21 @@
-import type { AdvertComment, CommentListResponse, CreateCommentPayload } from '@/types';
+import type { AdvertComment, CommentListResponse, CreateCommentPayload } from '@/types'
+import type { AdvertId } from '@/types/advertId';
 
 export interface ICommentRepository {
   getComments(
-    advertId: string,
+    advertId: AdvertId,
     limit?: number,
     offset?: number
   ): Promise<CommentListResponse>;
 
   createComment(
-    advertId: string,
+    advertId: AdvertId,
     payload: CreateCommentPayload,
     accessToken: string
   ): Promise<AdvertComment>;
 
   deleteComment(
-    advertId: string,
+    advertId: AdvertId,
     commentId: string,
     accessToken: string
   ): Promise<void>;

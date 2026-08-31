@@ -8,6 +8,7 @@ import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { CatalogProductCard } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 import { PriceBlock } from './PriceBlock';
 import { RatingStars } from './RatingStars';
 
@@ -17,8 +18,8 @@ type ProductCardProps = {
   product: CatalogProductCard;
   variant?: ProductCardVariant;
   width?: number;
-  onPress?: (id: string) => void;
-  onAddToCart?: (id: string) => void;
+  onPress?: (id: AdvertId) => void;
+  onAddToCart?: (id: AdvertId) => void;
 };
 
 function ProductCardComponent({
@@ -89,7 +90,7 @@ function ProductCardComponent({
           style={[styles.image, { backgroundColor: skeleton }]}
           contentFit="contain"
           transition={200}
-          recyclingKey={product.id}
+          recyclingKey={String(product.id)}
         />
         {product.packageBadgeText ? (
           <View style={styles.badge}>

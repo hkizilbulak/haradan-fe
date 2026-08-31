@@ -22,7 +22,7 @@ function assert(cond: unknown, name: string): void {
 // ── mapOwnerAdvertToCard: soldAt fallback ──────────────────────────────────
 
 const baseDto = {
-  id: 'abc',
+  id: 1001,
   status: 'PUBLISHED',
   version: 1,
   mediaVersion: 1,
@@ -94,7 +94,7 @@ async function runAsyncTests() {
 
   // not found
   try {
-    await repo.markSold('nonexistent-id', 1, 'token');
+    await repo.markSold(999999999, 1, 'token');
     assert(false, 'markSold with unknown id should throw');
   } catch {
     assert(true, 'markSold with unknown id throws NOT_FOUND');

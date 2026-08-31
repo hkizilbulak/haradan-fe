@@ -81,7 +81,7 @@ assertEqual(
 
 const card = mapOwnerAdvertToCard(
   {
-    id: 'adv-1',
+    id: 1,
     status: 'PENDING_REVIEW',
     version: 1,
     mediaVersion: 1,

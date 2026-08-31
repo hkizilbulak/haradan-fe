@@ -2,6 +2,7 @@ import { HttpClient } from '@/services/http';
 import { getValidAccessToken } from '@/services/auth/tokenRefresh';
 import { locationLookup } from '@/services/location';
 import type { CatalogProductCard } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 import type {
   IPublishedAdvertsRepository,
   PublishedAdvertsSearchParams,
@@ -97,7 +98,7 @@ export class HttpPublishedAdvertsRepository
         )
       );
 
-      const merged = new Map<string, CatalogProductCard>();
+      const merged = new Map<AdvertId, CatalogProductCard>();
       for (const chunk of chunks) {
         for (const item of chunk) {
           merged.set(item.id, item);

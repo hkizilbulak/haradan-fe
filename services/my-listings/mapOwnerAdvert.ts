@@ -1,6 +1,7 @@
 import { pickDeliverableCover } from '@/services/media/pickDeliverableCover';
 import { mediaDeliveryUrl } from '@/services/media/publicUrl';
 import type { Money, MyListingCard, PublicMediaItem } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 import { toMyListingTab } from './statusTabs';
 
 export type OwnerMediaRelationDto = {
@@ -12,7 +13,7 @@ export type OwnerMediaRelationDto = {
 
 /** BE OwnerAdvertResponse (+ provinceId / updatedAt enrichment). */
 export type OwnerAdvertDto = {
-  id: string;
+  id: AdvertId;
   status: string;
   version: number;
   mediaVersion: number;

@@ -8,6 +8,7 @@ import type {
   PublishListingResult,
 } from '@/types/listing';
 import type { PaytrChargeStatus, PaytrCheckoutResult } from '@/types/paytr';
+import type { AdvertId } from '@/types/advertId';
 import type { IListingRepository } from './ListingRepository';
 import { buildDraftProperties, mapDraftToCreateAdvert } from './mapDraftToRequest';
 import {
@@ -16,7 +17,7 @@ import {
 } from './mapPackage';
 
 type AdvertMediaCollectionResponse = {
-  advertId: string;
+  advertId: AdvertId;
   mediaVersion: number;
 };
 
@@ -48,7 +49,7 @@ export class HttpListingRepository implements IListingRepository {
   async createDraft(
     draft: ListingDraft,
     accessToken: string
-  ): Promise<{ advertId: string; version: number; status: string }> {
+  ): Promise<{ advertId: AdvertId; version: number; status: string }> {
     const uploaded = await Promise.all(
       draft.media.map(async (slot) => {
         if (slot.assetId) return slot;
@@ -160,7 +161,7 @@ export class HttpListingRepository implements IListingRepository {
   }
 
   async startPaytrCheckout(
-    advertId: string,
+    advertId: AdvertId,
     packageCode: string,
     accessToken: string
   ): Promise<PaytrCheckoutResult> {
@@ -175,7 +176,7 @@ export class HttpListingRepository implements IListingRepository {
   }
 
   async getPaytrChargeStatus(
-    advertId: string,
+    advertId: AdvertId,
     merchantOid: string,
     accessToken: string
   ): Promise<PaytrChargeStatus> {

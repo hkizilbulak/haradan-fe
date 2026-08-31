@@ -9,7 +9,8 @@ import type {
   MyListingListResponse,
   MyListingStatus,
   UpdateListingRequest,
-} from '@/types';
+} from '@/types'
+import type { AdvertId } from '@/types/advertId';
 import type {
   IMyListingsRepository,
   MyListingEditPayload,
@@ -54,7 +55,7 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
       )
     );
 
-    const merged = new Map<string, MyListingCard>();
+    const merged = new Map<AdvertId, MyListingCard>();
     for (const page of pages) {
       for (const item of page.items ?? []) {
         const card = mapOwnerAdvertToCard(item, {
@@ -72,11 +73,11 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
   }
 
   async getEditDraft(
-    id: string,
+    id: AdvertId,
     accessToken: string
   ): Promise<MyListingEditPayload> {
     const dto = await this.http.request<OwnerAdvertDto>(
-      `/v1/me/adverts/${encodeURIComponent(id)}`,
+      `/v1/me/adverts/${encodeURIComponent(String(id))}`,
       { method: 'GET', accessToken }
     );
     const tree = await this.catalog.getCategoryTree();
@@ -99,7 +100,7 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
   }
 
   async update(
-    id: string,
+    id: AdvertId,
     payload: UpdateListingRequest,
     accessToken: string
   ): Promise<MyListingCard> {
@@ -121,7 +122,7 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
     }
 
     let dto = await this.http.request<OwnerAdvertDto>(
-      `/v1/me/adverts/${encodeURIComponent(id)}`,
+      `/v1/me/adverts/${encodeURIComponent(String(id))}`,
       {
         method: 'PATCH',
         accessToken,
@@ -154,7 +155,7 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
   }
 
   async removeDraft(
-    id: string,
+    id: AdvertId,
     expectedVersion: number,
     accessToken: string
   ): Promise<void> {
@@ -171,7 +172,7 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
   }
 
   async markSold(
-    id: string,
+    id: AdvertId,
     expectedVersion: number,
     accessToken: string
   ): Promise<MyListingCard> {

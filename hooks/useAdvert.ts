@@ -4,7 +4,8 @@ import {
   advertRepository,
   type IAdvertRepository,
 } from '@/services/advert';
-import type { AdvertDetail } from '@/types';
+import type { AdvertDetail } from '@/types'
+import type { AdvertId } from '@/types/advertId';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
@@ -19,7 +20,7 @@ function prefetchGallery(detail: AdvertDetail) {
  * İlan detay — id bazlı cache-first + SWR.
  */
 export function useAdvert(
-  id: string | undefined,
+  id: AdvertId | undefined,
   accessToken: string | null = null,
   viewerUserId: string | null = null,
   repo: IAdvertRepository = advertRepository

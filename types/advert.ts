@@ -1,5 +1,6 @@
 import type { Money } from './money';
 import type { PublicMediaItem } from './media';
+import type { AdvertId } from './advertId';
 
 /** OpenAPI: PackageCode */
 export type PackageCode = string;
@@ -9,7 +10,7 @@ export type PackageCode = string;
  * GET /v1/homepage/new-adverts | /v1/homepage/showcase | /v1/adverts
  */
 export type PublishedAdvertCard = {
-  id: string;
+  id: AdvertId;
   title: string;
   publishedAt: string;
   price: Money | null;

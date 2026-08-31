@@ -17,7 +17,8 @@ import { SideDrawer } from '@/components/layout/SideDrawer';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useFavorites } from '@/hooks/useFavorites';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks/useThemeColor'
+import type { AdvertId } from '@/types/advertId';
 
 type DrawerPanel = 'none' | 'profile' | 'favorites' | 'settings';
 
@@ -148,7 +149,7 @@ export function HeaderDrawersProvider({
   );
 
   const onFavoriteItemPress = useCallback(
-    (id: string) => {
+    (id: AdvertId) => {
       closeAll();
       router.push(`/advert/${id}`);
     },

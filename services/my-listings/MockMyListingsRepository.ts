@@ -8,7 +8,8 @@ import type {
   MyListingListResponse,
   MyListingStatus,
   UpdateListingRequest,
-} from '@/types';
+} from '@/types'
+import type { AdvertId } from '@/types/advertId';
 import type {
   IMyListingsRepository,
   MyListingEditPayload,
@@ -37,8 +38,8 @@ function clone(items: MyListingCard[]): MyListingCard[] {
 
 export class MockMyListingsRepository implements IMyListingsRepository {
   private instanceItems: MyListingCard[] = clone(MOCK_MY_LISTINGS);
-  private instanceDrafts = new Map<string, ListingDraft>();
-  private instanceVersions = new Map<string, number>();
+  private instanceDrafts = new Map<AdvertId, ListingDraft>();
+  private instanceVersions = new Map<AdvertId, number>();
 
   private getItems(): MyListingCard[] {
     return isBrowserStore ? readMockItems() : this.instanceItems;
@@ -51,7 +52,7 @@ export class MockMyListingsRepository implements IMyListingsRepository {
     }
   }
 
-  private getDraft(id: string, card: MyListingCard): ListingDraft {
+  private getDraft(id: AdvertId, card: MyListingCard): ListingDraft {
     if (isBrowserStore) {
       return getOrCreateMockDraft(id, card);
     }
@@ -64,7 +65,7 @@ export class MockMyListingsRepository implements IMyListingsRepository {
     return draft;
   }
 
-  private saveDraft(id: string, draft: ListingDraft, version: number): void {
+  private saveDraft(id: AdvertId, draft: ListingDraft, version: number): void {
     this.instanceDrafts.set(id, draft);
     this.instanceVersions.set(id, version);
     if (isBrowserStore) {
@@ -73,7 +74,7 @@ export class MockMyListingsRepository implements IMyListingsRepository {
     }
   }
 
-  private getVersion(id: string, fallback: number): number {
+  private getVersion(id: AdvertId, fallback: number): number {
     if (isBrowserStore) {
       const versions = readMockVersions();
       return versions[id] ?? fallback;
@@ -81,7 +82,7 @@ export class MockMyListingsRepository implements IMyListingsRepository {
     return this.instanceVersions.get(id) ?? fallback;
   }
 
-  private removeDraftFromStorage(id: string): void {
+  private removeDraftFromStorage(id: AdvertId): void {
     this.instanceDrafts.delete(id);
     this.instanceVersions.delete(id);
     if (isBrowserStore) {
@@ -104,7 +105,7 @@ export class MockMyListingsRepository implements IMyListingsRepository {
   }
 
   async getEditDraft(
-    id: string,
+    id: AdvertId,
     _accessToken: string
   ): Promise<MyListingEditPayload> {
     await wait(180);
@@ -119,7 +120,7 @@ export class MockMyListingsRepository implements IMyListingsRepository {
   }
 
   async update(
-    id: string,
+    id: AdvertId,
     payload: UpdateListingRequest,
     _accessToken: string
   ): Promise<MyListingCard> {
@@ -167,7 +168,7 @@ export class MockMyListingsRepository implements IMyListingsRepository {
   }
 
   async removeDraft(
-    id: string,
+    id: AdvertId,
     expectedVersion: number,
     _accessToken: string
   ): Promise<void> {
@@ -191,7 +192,7 @@ export class MockMyListingsRepository implements IMyListingsRepository {
   }
 
   async markSold(
-    id: string,
+    id: AdvertId,
     expectedVersion: number,
     _accessToken: string
   ): Promise<MyListingCard> {

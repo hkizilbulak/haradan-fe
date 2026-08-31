@@ -19,11 +19,12 @@ import { useAdvertLocation } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
 import { formatViewCount } from '@/utils/formatViewCount';
 import type { CatalogProductCard } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 
 type AdvertBundleOfferProps = {
   title?: string;
   items: CatalogProductCard[];
-  onPress?: (id: string) => void;
+  onPress?: (id: AdvertId) => void;
   onViewAll?: () => void;
 };
 
@@ -230,7 +231,7 @@ const FeaturedSlideCard = memo(function FeaturedSlideCard({
 }: {
   product: CatalogProductCard;
   width: number;
-  onPress?: (id: string) => void;
+  onPress?: (id: AdvertId) => void;
   text: string;
   textMuted: string;
   textSecondary: string;
@@ -269,7 +270,7 @@ const FeaturedSlideCard = memo(function FeaturedSlideCard({
           style={[styles.image, { backgroundColor: skeleton }]}
           contentFit="cover"
           transition={260}
-          recyclingKey={product.id}
+          recyclingKey={String(product.id)}
           priority="low"
           cachePolicy="memory-disk"
         />

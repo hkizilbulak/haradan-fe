@@ -18,6 +18,7 @@ import { formatMoney } from '@/utils/formatMoney';
 import { formatViewCount } from '@/utils/formatViewCount';
 import { WishlistButton } from '@/components/advert/WishlistButton';
 import type { CatalogProductCard } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 
 export type UrgentListingCardVariant = 'featured' | 'row' | 'tile';
 
@@ -31,7 +32,7 @@ type UrgentListingCardProps = {
   active?: boolean;
   compact?: boolean;
   progressMs?: number;
-  onPress?: (id: string) => void;
+  onPress?: (id: AdvertId) => void;
   onToggleFavorite?: (product: CatalogProductCard) => void;
 };
 
@@ -119,7 +120,7 @@ function UrgentListingCardComponent({
             style={[styles.featuredImg, { backgroundColor: skeleton }]}
             contentFit="cover"
             transition={400}
-            recyclingKey={product.id}
+            recyclingKey={String(product.id)}
             priority="high"
             cachePolicy="memory-disk"
           />
@@ -194,7 +195,7 @@ function UrgentListingCardComponent({
             style={[styles.tileImage, { backgroundColor: skeleton }]}
             contentFit="cover"
             transition={220}
-            recyclingKey={product.id}
+            recyclingKey={String(product.id)}
             priority="low"
             cachePolicy="memory-disk"
           />
@@ -257,7 +258,7 @@ function UrgentListingCardComponent({
           style={[styles.thumb, { backgroundColor: skeleton }]}
           contentFit="cover"
           transition={220}
-          recyclingKey={product.id}
+          recyclingKey={String(product.id)}
           priority="low"
           cachePolicy="memory-disk"
         />

@@ -1,5 +1,6 @@
 import { MOCK_HOMEPAGE } from '@/mocks/homepage';
 import type { CatalogProductCard, MyListingCard, MyListingStatus } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 
 export const DEMO_SELLER_ID = 'user-demo';
 
@@ -15,7 +16,7 @@ function uniqueCards(): CatalogProductCard[] {
   );
 }
 
-function mustCard(id: string): CatalogProductCard {
+function mustCard(id: AdvertId): CatalogProductCard {
   const found = uniqueCards().find((c) => c.id === id);
   if (!found) {
     throw new Error(`Mock ilan bulunamadı: ${id}`);
@@ -32,7 +33,7 @@ const BACKEND_STATUS: Record<MyListingStatus, string> = {
 };
 
 function mine(
-  id: string,
+  id: AdvertId,
   status: MyListingStatus,
   extra?: Partial<Pick<MyListingCard, 'updatedAt' | 'soldAt' | 'version'>>
 ): MyListingCard {
@@ -50,26 +51,26 @@ function mine(
 
 /** Demo kullanıcının ilanları — GET /v1/me/adverts?status= */
 export const MOCK_MY_LISTINGS: MyListingCard[] = [
-  mine('adv-001', 'published'),
-  mine('adv-002', 'published'),
-  mine('adv-006', 'published'),
-  mine('adv-003', 'pending', {
+  mine(1001, 'published'),
+  mine(1002, 'published'),
+  mine(1006, 'published'),
+  mine(1003, 'pending', {
     updatedAt: new Date(Date.now() - 2 * 3_600_000).toISOString(),
   }),
-  mine('adv-009', 'rejected', {
+  mine(1009, 'rejected', {
     updatedAt: new Date(Date.now() - 30 * 3_600_000).toISOString(),
   }),
-  mine('adv-008', 'draft', {
+  mine(1008, 'draft', {
     updatedAt: new Date(Date.now() - 2 * 86_400_000).toISOString(),
   }),
-  mine('adv-004', 'sold', {
+  mine(1004, 'sold', {
     soldAt: new Date(Date.now() - 5 * 86_400_000).toISOString(),
     updatedAt: new Date(Date.now() - 5 * 86_400_000).toISOString(),
   }),
-  mine('adv-007', 'sold', {
+  mine(1007, 'sold', {
     soldAt: new Date(Date.now() - 12 * 86_400_000).toISOString(),
     updatedAt: new Date(Date.now() - 12 * 86_400_000).toISOString(),
   }),
 ];
 
-export const MY_LISTING_IDS = new Set(MOCK_MY_LISTINGS.map((i) => i.id));
+export const MY_LISTING_IDS = new Set<AdvertId>(MOCK_MY_LISTINGS.map((i) => i.id));

@@ -15,11 +15,12 @@ import { Spacing } from '@/constants/Spacing';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { CatalogProductCard } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 
 type AdvertViewedRailProps = {
   title?: string;
   items: CatalogProductCard[];
-  onPress?: (id: string) => void;
+  onPress?: (id: AdvertId) => void;
 };
 
 const GAP = Spacing.lg;

@@ -29,6 +29,7 @@ import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { useMyListings } from '@/hooks/useMyListings';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import type { AdvertId } from '@/types/advertId';
 import { prepareListingWizardEntry } from '@/services/listing';
 import { locationLookup } from '@/services/location';
 import { MY_LISTING_TABS } from '@/services/my-listings';
@@ -86,7 +87,7 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const deletingRef = useRef(false);
 
-  const [markingSoldId, setMarkingSoldId] = useState<string | null>(null);
+  const [markingSoldId, setMarkingSoldId] = useState<AdvertId | null>(null);
   const [soldError, setSoldError] = useState<string | null>(null);
   const markingSoldRef = useRef(false);
 
@@ -191,7 +192,7 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
   };
 
   const requestRemoveItem = useCallback(
-    (id: string) => {
+    (id: AdvertId) => {
       const item = activeItems.find((entry) => entry.id === id);
       if (!item) return;
       setDeleteError(null);
@@ -226,7 +227,7 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
   }, [active, pendingDelete]);
 
   const requestMarkSold = useCallback(
-    (id: string) => {
+    (id: AdvertId) => {
       if (markingSoldRef.current) return;
       const item = activeItems.find((entry) => entry.id === id);
       if (!item) return;
@@ -238,7 +239,7 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
   );
 
   const confirmMarkSold = useCallback(
-    async (id: string, version: number) => {
+    async (id: AdvertId, version: number) => {
       if (markingSoldRef.current) return;
       markingSoldRef.current = true;
       setMarkingSoldId(id);

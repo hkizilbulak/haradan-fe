@@ -7,11 +7,12 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { useAdvertLocation } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
 import type { CatalogProductCard } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 
 type FavoriteListCardProps = {
   product: CatalogProductCard;
-  onPress?: (id: string) => void;
-  onRemove?: (id: string) => void;
+  onPress?: (id: AdvertId) => void;
+  onRemove?: (id: AdvertId) => void;
 };
 
 function FavoriteListCardComponent({
@@ -62,7 +63,7 @@ function FavoriteListCardComponent({
         style={[styles.image, { backgroundColor: skeleton }]}
         contentFit="cover"
         transition={220}
-        recyclingKey={product.id}
+        recyclingKey={String(product.id)}
       />
       <View style={styles.body}>
         <Text style={[styles.title, { color: text }]} numberOfLines={2}>

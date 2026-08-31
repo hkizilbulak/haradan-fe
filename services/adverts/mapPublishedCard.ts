@@ -5,9 +5,11 @@ import type {
   PublishedAdvertCard,
   PublicMediaItem,
 } from '@/types';
+import type { AdvertId } from '@/types/advertId';
+import { parseAdvertId } from '@/types/advertId';
 
 type BePublishedCard = {
-  id: string;
+  id: AdvertId | string;
   title: string;
   publishedAt: string;
   price: { amountMinor: number; currency: string } | null;
@@ -72,7 +74,7 @@ export function mapPublishedCardToCatalog(
   const cardProps = (card as any).properties ?? null;
 
   return {
-    id: card.id,
+    id: typeof card.id === 'number' ? card.id : (parseAdvertId(card.id) ?? 0),
     title: card.title,
     publishedAt: card.publishedAt,
     price: card.price,

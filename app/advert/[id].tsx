@@ -6,6 +6,7 @@ import { AppHeader, HomeContentContainer } from '@/components/layout';
 import { AdvertDetailSkeleton, AdvertDetailView } from '@/components/advert-detail';
 import { ErrorState } from '@/components/ui';
 import { useAdvert } from '@/hooks/useAdvert';
+import { parseAdvertId } from '@/types/advertId';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useIsHydrated } from '@/hooks/useIsHydrated';
 import { useIsWideLayout } from '@/hooks/useLayoutWidth';
@@ -18,12 +19,13 @@ export default function AdvertDetailScreen() {
   const isHydrated = useIsHydrated();
   const isWide = useIsWideLayout();
   const params = useLocalSearchParams<{ id: string | string[] }>();
-  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const rawId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const advertId = parseAdvertId(rawId);
   const bg = useThemeColor('background');
   const { isLoggedIn, session } = useAuthSession();
 
   const { data, isLoading, isError, error, refetch } = useAdvert(
-    id,
+    advertId ?? undefined,
     session?.accessToken ?? null,
     session?.user.id ?? null
   );

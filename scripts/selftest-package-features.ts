@@ -177,7 +177,7 @@ async function main(): Promise<void> {
   responses['POST /api/v1/me/adverts'] = {
     status: 201,
     body: {
-      id: 'adv-2',
+      id: 2,
       status: 'DRAFT',
       version: 1,
       mediaVersion: 1,
@@ -191,19 +191,19 @@ async function main(): Promise<void> {
       media: [],
     },
   };
-  responses['POST /api/v1/me/adverts/adv-2/media'] = {
+  responses['POST /api/v1/me/adverts/2/media'] = {
     status: 200,
-    body: { advertId: 'adv-2', mediaVersion: 2 },
+    body: { advertId: 2, mediaVersion: 2 },
   };
-  responses['PUT /api/v1/me/adverts/adv-2/media/cover'] = {
+  responses['PUT /api/v1/me/adverts/2/media/cover'] = {
     status: 200,
-    body: { advertId: 'adv-2', mediaVersion: 3 },
+    body: { advertId: 2, mediaVersion: 3 },
   };
-  responses['PUT /api/v1/me/adverts/adv-2/package'] = {
+  responses['PUT /api/v1/me/adverts/2/package'] = {
     status: 200,
     body: {
       id: 'asg-1',
-      advertId: 'adv-2',
+      advertId: 2,
       packageCode: 'ULTIMATE',
       status: 'ACTIVE',
       startsAt: new Date().toISOString(),
@@ -215,10 +215,10 @@ async function main(): Promise<void> {
       updatedAt: new Date().toISOString(),
     },
   };
-  responses['POST /api/v1/me/adverts/adv-2/submit'] = {
+  responses['POST /api/v1/me/adverts/2/submit'] = {
     status: 200,
     body: {
-      id: 'adv-2',
+      id: 2,
       status: 'PENDING_REVIEW',
       version: 1,
       mediaVersion: 3,
@@ -235,7 +235,7 @@ async function main(): Promise<void> {
 
   calls.length = 0;
   const published = await listing.publish(draft, 'tok');
-  assertEqual(published.advertId, 'adv-2', 'publish returns advert id');
+  assertEqual(published.advertId, 2, 'publish returns advert id');
   const pkg = calls.find((c) => c.url.includes('/package'));
   assertEqual(
     JSON.parse(String(pkg?.init.body)).packageCode,

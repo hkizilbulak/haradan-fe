@@ -11,6 +11,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import type { AdvertId } from '@/types/advertId';
 
 export default function FavoritesScreen() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function FavoritesScreen() {
   }, [isLoggedIn, router]);
 
   const onPress = useCallback(
-    (id: string) => router.push(`/advert/${id}`),
+    (id: AdvertId) => router.push(`/advert/${id}`),
     [router]
   );
 
@@ -75,7 +76,7 @@ export default function FavoritesScreen() {
       >
         <FlatList
           data={items}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => String(item.id)}
           contentContainerStyle={[styles.list, { paddingBottom: listPad }]}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (

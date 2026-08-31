@@ -1,10 +1,11 @@
 import { HttpClient } from '@/services/http';
-import type { AdvertComment, CommentListResponse, CreateCommentPayload } from '@/types';
+import type { AdvertComment, CommentListResponse, CreateCommentPayload } from '@/types'
+import type { AdvertId } from '@/types/advertId';
 import type { ICommentRepository } from './CommentRepository';
 
 type BeCommentItem = {
   id: string;
-  advertId: string;
+  advertId: AdvertId;
   userId: string;
   authorName: string;
   content: string;
@@ -25,7 +26,7 @@ export class HttpCommentRepository implements ICommentRepository {
   }
 
   async getComments(
-    advertId: string,
+    advertId: AdvertId,
     limit = 20,
     offset = 0
   ): Promise<CommentListResponse> {
@@ -53,7 +54,7 @@ export class HttpCommentRepository implements ICommentRepository {
   }
 
   async createComment(
-    advertId: string,
+    advertId: AdvertId,
     payload: CreateCommentPayload,
     accessToken: string
   ): Promise<AdvertComment> {
@@ -70,7 +71,7 @@ export class HttpCommentRepository implements ICommentRepository {
   }
 
   async deleteComment(
-    advertId: string,
+    advertId: AdvertId,
     commentId: string,
     accessToken: string
   ): Promise<void> {

@@ -14,7 +14,8 @@ import {
   toggleFavoriteLocal,
 } from '@/services/favorites';
 import { applyFavoriteOverrides } from '@/utils/applyFavoriteOverrides';
-import type { CatalogProductCard } from '@/types';
+import type { CatalogProductCard } from '@/types'
+import type { AdvertId } from '@/types/advertId';
 
 /**
  * Favoriler: login zorunlu, kaynak BE /v1/me/favorites.
@@ -128,7 +129,7 @@ export function useFavorites() {
   );
 
   const remove = useCallback(
-    (id: string) => {
+    (id: AdvertId) => {
       if (!isLoggedIn) {
         requireLogin();
         return;

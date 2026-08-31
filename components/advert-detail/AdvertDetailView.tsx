@@ -35,7 +35,8 @@ import {
 } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks/useThemeColor'
+import type { AdvertId } from '@/types/advertId';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useFavorites } from '@/hooks/useFavorites';
 import { usePlacementBanners } from '@/hooks/usePlacementBanners';
@@ -155,7 +156,7 @@ export function AdvertDetailView({
   }, [phone, detail.title]);
 
   const onRelatedPress = useCallback(
-    (id: string) => {
+    (id: AdvertId) => {
       router.push(`/advert/${id}`);
     },
     [router]

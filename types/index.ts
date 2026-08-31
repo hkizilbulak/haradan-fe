@@ -1,4 +1,6 @@
 export type { Money } from './money';
+export type { AdvertId } from './advertId';
+export { formatAdvertId, parseAdvertId, advertKey } from './advertId';
 export type { PublicMediaItem } from './media';
 export type {
   PackageCode,

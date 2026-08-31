@@ -29,7 +29,7 @@ function assertEqual<T>(actual: T, expected: T, name: string): void {
   assert(actual === expected, `${name} (got ${JSON.stringify(actual)})`);
 }
 
-function card(partial: Partial<CatalogProductCard> & { id: string }): CatalogProductCard {
+function card(partial: Partial<CatalogProductCard> & { id: number }): CatalogProductCard {
   return {
     title: 'Test',
     publishedAt: new Date().toISOString(),
@@ -54,17 +54,17 @@ function card(partial: Partial<CatalogProductCard> & { id: string }): CatalogPro
 clearFavorites();
 assertEqual(getFavoriteItems().length, 0, 'starts empty');
 
-replaceFavoritesFromServer([card({ id: 'a1', isFavorite: true })]);
+replaceFavoritesFromServer([card({ id: 101, isFavorite: true })]);
 assertEqual(getFavoriteItems().length, 1, 'hydrate from server');
 assert(getFavoriteItems()[0]?.isFavorite === true, 'hydrated favorite');
 
-const flipped = toggleFavoriteLocal(card({ id: 'a1', isFavorite: true }));
+const flipped = toggleFavoriteLocal(card({ id: 101, isFavorite: true }));
 assertEqual(flipped, false, 'toggle off');
 assertEqual(getFavoriteItems().length, 0, 'removed from list');
 
 clearFavorites();
 const applied = applyFavoriteOverrides(
-  [card({ id: 'x', isFavorite: null as unknown as boolean })],
+  [card({ id: 999, isFavorite: null as unknown as boolean })],
   {}
 );
 assertEqual(applied[0]?.isFavorite, null as unknown as boolean, 'no override leaves null');
@@ -100,10 +100,10 @@ async function main(): Promise<void> {
       hasMore: false,
       items: [
         {
-          advertId: 'adv-1',
+          advertId: 1,
           available: true,
           card: {
-            id: 'adv-1',
+            id: 1,
             title: 'Favori ilan',
             publishedAt: new Date().toISOString(),
             price: { amountMinor: 1, currency: 'TRY' },
@@ -119,22 +119,22 @@ async function main(): Promise<void> {
       ],
     },
   };
-  responses['PUT /api/v1/me/favorites/adv-2'] = {
+  responses['PUT /api/v1/me/favorites/2'] = {
     status: 200,
-    body: { advertId: 'adv-2', favorited: true },
+    body: { advertId: 2, favorited: true },
   };
-  responses['DELETE /api/v1/me/favorites/adv-2'] = {
+  responses['DELETE /api/v1/me/favorites/2'] = {
     status: 200,
-    body: { advertId: 'adv-2', favorited: false },
+    body: { advertId: 2, favorited: false },
   };
 
   const listed = await repo.list('tok');
   assertEqual(listed.items.length, 1, 'list maps available cards');
-  assertEqual(listed.items[0]?.id, 'adv-1', 'list card id');
+  assertEqual(listed.items[0]?.id, 1, 'list card id');
 
-  const added = await repo.add('adv-2', 'tok');
+  const added = await repo.add(2, 'tok');
   assertEqual(added.favorited, true, 'add favorited');
-  const removed = await repo.remove('adv-2', 'tok');
+  const removed = await repo.remove(2, 'tok');
   assertEqual(removed.favorited, false, 'remove favorited');
 
   const auth = new Headers(calls[0]?.init.headers);

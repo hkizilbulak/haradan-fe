@@ -12,6 +12,8 @@ export type UseLiveAdvertSearchOptions = {
   initialQuery?: string;
   limit?: number;
   debounceMs?: number;
+  /** false ise canlı arama devre dışı (statik mod). */
+  enabled?: boolean;
   categoryTree?: CategoryTreeNode[];
   locationLookup?: ILocationLookup;
   repo?: IPublishedAdvertsRepository;
@@ -27,6 +29,7 @@ export function useLiveAdvertSearch({
   initialQuery = '',
   limit = 8,
   debounceMs = 200,
+  enabled = true,
   categoryTree,
   locationLookup = defaultLocationLookup,
   repo = publishedAdvertsRepository,
@@ -52,6 +55,7 @@ export function useLiveAdvertSearch({
 
   /** İlk odak / ilk yazımda yükle — anasayfa açılışında /v1/adverts atılmaz. */
   const ensureLoaded = useCallback(async () => {
+    if (!enabled) return advertsCache ?? [];
     const now = Date.now();
     if (advertsCache && now - cacheTime < CACHE_TTL_MS) {
       setAllAdverts(advertsCache);
@@ -79,7 +83,7 @@ export function useLiveAdvertSearch({
     const data = await inflight;
     setAllAdverts(data);
     return data;
-  }, [repo]);
+  }, [repo, enabled]);
 
   // Filter resolver for extra fields (il, ilçe, kategori adı)
   const resolveExtra = useCallback(
@@ -110,6 +114,12 @@ export function useLiveAdvertSearch({
 
   // Perform search whenever debouncedQuery changes — fetch only when needed
   useEffect(() => {
+    if (!enabled) {
+      setResults([]);
+      setIsOpen(false);
+      setLoading(false);
+      return;
+    }
     const trimmed = debouncedQuery.trim();
     if (!trimmed) {
       setResults([]);
@@ -145,7 +155,7 @@ export function useLiveAdvertSearch({
           setLoading(false);
         }
       });
-  }, [debouncedQuery, allAdverts, limit, resolveExtra, ensureLoaded]);
+  }, [debouncedQuery, allAdverts, limit, resolveExtra, ensureLoaded, enabled]);
 
   const clear = useCallback(() => {
     setQuery('');

@@ -1,4 +1,5 @@
 import type { CatalogProductCard } from '@/types';
+import { advertKey, type AdvertId } from '@/types/advertId';
 
 type Listener = () => void;
 
@@ -15,13 +16,14 @@ export function getFavoriteOverrides(): Record<string, boolean> {
   return overrides;
 }
 
-export function setFavoriteOverride(id: string, isFavorite: boolean): void {
-  overrides = { ...overrides, [id]: isFavorite };
+export function setFavoriteOverride(id: AdvertId, isFavorite: boolean): void {
+  overrides = { ...overrides, [advertKey(id)]: isFavorite };
   notify();
 }
 
 function isCardFavorite(card: CatalogProductCard): boolean {
-  const override = overrides[card.id];
+  const key = advertKey(card.id);
+  const override = overrides[key];
   if (override !== undefined) return override;
   return card.isFavorite === true;
 }
@@ -40,12 +42,12 @@ export function clearFavorites(): void {
 export function replaceFavoritesFromServer(items: CatalogProductCard[]): void {
   const nextCards: Record<string, CatalogProductCard> = {};
   for (const item of items) {
-    nextCards[item.id] = { ...item, isFavorite: true };
+    nextCards[advertKey(item.id)] = { ...item, isFavorite: true };
   }
   cards = nextCards;
   overrides = {};
   for (const item of items) {
-    overrides[item.id] = true;
+    overrides[advertKey(item.id)] = true;
   }
   notify();
 }
@@ -56,14 +58,15 @@ export function rememberFavoriteCards(items: CatalogProductCard[]): void {
   let changed = false;
   const next = { ...cards };
   for (const item of items) {
-    const prev = next[item.id];
+    const key = advertKey(item.id);
+    const prev = next[key];
     if (
       prev == null ||
       prev.isFavorite !== item.isFavorite ||
       prev.title !== item.title ||
       prev.cover?.publicUrl !== item.cover?.publicUrl
     ) {
-      next[item.id] = item;
+      next[key] = item;
       changed = true;
     }
   }
@@ -74,13 +77,13 @@ export function rememberFavoriteCards(items: CatalogProductCard[]): void {
 
 /** Optimistic local flip (caller persists via repository). */
 export function toggleFavoriteLocal(card: CatalogProductCard): boolean {
-  cards = { ...cards, [card.id]: card };
+  cards = { ...cards, [advertKey(card.id)]: card };
   const next = !isCardFavorite(card);
   setFavoriteOverride(card.id, next);
   return next;
 }
 
-export function removeFavoriteLocal(id: string): void {
+export function removeFavoriteLocal(id: AdvertId): void {
   setFavoriteOverride(id, false);
 }
 
@@ -88,8 +91,9 @@ export function getFavoriteItems(): CatalogProductCard[] {
   const seen = new Set<string>();
   const items: CatalogProductCard[] = [];
   for (const card of Object.values(cards)) {
-    if (seen.has(card.id) || !isCardFavorite(card)) continue;
-    seen.add(card.id);
+    const key = advertKey(card.id);
+    if (seen.has(key) || !isCardFavorite(card)) continue;
+    seen.add(key);
     items.push({ ...card, isFavorite: true });
   }
   return items;
@@ -108,6 +112,6 @@ export function toggleFavorite(card: CatalogProductCard): void {
 }
 
 /** @deprecated use removeFavoriteLocal */
-export function removeFavorite(id: string): void {
+export function removeFavorite(id: AdvertId): void {
   removeFavoriteLocal(id);
 }

@@ -3,6 +3,7 @@ import type {
   ListingPackage,
   PublishListingResult,
 } from '@/types/listing';
+import type { AdvertId } from '@/types/advertId';
 import type { PaytrChargeStatus, PaytrCheckoutResult } from '@/types/paytr';
 
 /**
@@ -14,14 +15,14 @@ export interface IListingRepository {
   createDraft?(
     draft: ListingDraft,
     accessToken: string
-  ): Promise<{ advertId: string; version: number; status: string }>;
+  ): Promise<{ advertId: AdvertId; version: number; status: string }>;
   startPaytrCheckout?(
-    advertId: string,
+    advertId: AdvertId,
     packageCode: string,
     accessToken: string
   ): Promise<PaytrCheckoutResult>;
   getPaytrChargeStatus?(
-    advertId: string,
+    advertId: AdvertId,
     merchantOid: string,
     accessToken: string
   ): Promise<PaytrChargeStatus>;

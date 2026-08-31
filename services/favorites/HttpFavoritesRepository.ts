@@ -4,6 +4,7 @@ import {
   type BePublishedCard,
 } from '@/services/adverts/mapPublishedCard';
 import type { CatalogProductCard } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 import type {
   FavoriteListResult,
   FavoriteMutationResult,
@@ -11,12 +12,12 @@ import type {
 } from './FavoritesRepository';
 
 type BeFavoriteMutation = {
-  advertId: string;
+  advertId: AdvertId;
   favorited: boolean;
 };
 
 type BeFavoriteListItem = {
-  advertId: string;
+  advertId: AdvertId;
   available: boolean;
   card?: BePublishedCard | null;
   unavailableReason?: string | null;
@@ -70,7 +71,7 @@ export class HttpFavoritesRepository implements IFavoritesRepository {
   }
 
   async add(
-    advertId: string,
+    advertId: AdvertId,
     accessToken: string
   ): Promise<FavoriteMutationResult> {
     const res = await this.http.request<BeFavoriteMutation>(
@@ -81,7 +82,7 @@ export class HttpFavoritesRepository implements IFavoritesRepository {
   }
 
   async remove(
-    advertId: string,
+    advertId: AdvertId,
     accessToken: string
   ): Promise<FavoriteMutationResult> {
     const res = await this.http.request<BeFavoriteMutation>(

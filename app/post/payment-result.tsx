@@ -8,6 +8,7 @@ import {
   setListingWizardState,
 } from '@/services/listing';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { parseAdvertId } from '@/types/advertId';
 import { Typography } from '@/constants/Typography';
 
 /**
@@ -30,12 +31,12 @@ export default function PaymentResultScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    const advertId = String(params.advertId ?? '');
+    const advertId = parseAdvertId(params.advertId);
     const merchantOid = String(params.merchantOid ?? '');
     const statusParam = String(params.status ?? '');
 
     async function run() {
-      if (!advertId || !merchantOid) {
+      if (advertId == null || !merchantOid) {
         setFailed(true);
         setMessage('Ödeme sonucu doğrulanamadı.');
         return;

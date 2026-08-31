@@ -1,7 +1,8 @@
 import type { CatalogProductCard } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 
 export type FavoriteMutationResult = {
-  advertId: string;
+  advertId: AdvertId;
   favorited: boolean;
 };
 
@@ -17,6 +18,6 @@ export type FavoriteListResult = {
  */
 export interface IFavoritesRepository {
   list(accessToken: string): Promise<FavoriteListResult>;
-  add(advertId: string, accessToken: string): Promise<FavoriteMutationResult>;
-  remove(advertId: string, accessToken: string): Promise<FavoriteMutationResult>;
+  add(advertId: AdvertId, accessToken: string): Promise<FavoriteMutationResult>;
+  remove(advertId: AdvertId, accessToken: string): Promise<FavoriteMutationResult>;
 }

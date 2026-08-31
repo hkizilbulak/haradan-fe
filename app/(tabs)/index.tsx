@@ -7,7 +7,8 @@ import { HomeFeed } from '@/components/home';
 import { MobileHomeTopBar } from '@/components/home/mobile/MobileHomeTopBar';
 import { MobileMenuSheet } from '@/components/home/mobile/MobileMenuSheet';
 import { ErrorState } from '@/components/ui';
-import { useHomepageFeed } from '@/hooks/useHomepageFeed';
+import { useHomepageFeed } from '@/hooks/useHomepageFeed'
+import type { AdvertId } from '@/types/advertId';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -58,7 +59,7 @@ export default function HomeScreen() {
   }, [refetch]);
 
   const onProductPress = useCallback(
-    (id: string) => {
+    (id: AdvertId) => {
       router.push(`/advert/${id}`);
     },
     [router]

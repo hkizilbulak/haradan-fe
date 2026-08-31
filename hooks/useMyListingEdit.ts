@@ -8,13 +8,16 @@ import {
 } from '@/services/my-listings';
 import { tjkRepository, type ITjkRepository } from '@/services/tjk';
 import type { ListingDraft, ListingDraftDetails, ListingMediaSlot } from '@/types';
+import type { AdvertId } from '@/types/advertId';
+import { parseAdvertId } from '@/types/advertId';
 
 export function useMyListingEdit(
-  id: string | undefined,
+  rawId: string | undefined,
   accessToken: string | null,
   repo: IMyListingsRepository = myListingsRepository,
   tjk: ITjkRepository = tjkRepository
 ) {
+  const id = parseAdvertId(rawId) ?? undefined;
   const [draft, setDraft] = useState<ListingDraft | null>(null);
   const [version, setVersion] = useState(1);
   const [loading, setLoading] = useState(true);

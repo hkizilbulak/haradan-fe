@@ -1,3 +1,5 @@
+import type { AdvertId } from './advertId';
+
 export type PaytrCheckoutResult = {
   chargeId: string;
   merchantOid: string;
@@ -6,13 +8,13 @@ export type PaytrCheckoutResult = {
   amountMinor: number;
   currencyCode: string;
   packageCode: string;
-  advertId: string;
+  advertId: AdvertId;
   status: string;
 };
 
 export type PaytrChargeStatus = {
   merchantOid: string;
-  advertId: string;
+  advertId: AdvertId;
   packageCode: string;
   amountMinor: number;
   currencyCode: string;

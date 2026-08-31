@@ -23,6 +23,7 @@ import type {
   CategoryTreeNode,
   HomepageData,
 } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 import { selectHomeHeroBanners } from '@/services/banners/bannerDisplay';
 import { BrandStrip } from './BrandStrip';
 import { CategoryStrip } from './CategoryStrip';
@@ -48,7 +49,7 @@ type HomeFeedProps = {
   specialOffers: CatalogProductCard[];
   refreshing: boolean;
   onRefresh: () => void;
-  onProductPress: (id: string) => void;
+  onProductPress: (id: AdvertId) => void;
   onBannerPress: (slide: ActiveBannerItem) => void;
   onCategorySelect: (cat: CategoryTreeNode) => void;
   onPostAdPress: () => void;

@@ -4,7 +4,8 @@ import type {
   CatalogProductCard,
   HorseProfile,
   Money,
-} from '@/types';
+} from '@/types'
+import type { AdvertId } from '@/types/advertId';
 import { MOCK_HOMEPAGE } from '@/mocks/homepage';
 import { DEMO_SELLER_ID, MY_LISTING_IDS } from '@/mocks/myListings';
 
@@ -361,7 +362,7 @@ function buildDetail(base: CatalogProductCard): AdvertDetail {
 
   return {
     ...base,
-    slug: base.id,
+    slug: String(base.id),
     rating: base.rating || 4.5,
     reviewCount: reviews.length,
     description:
@@ -448,7 +449,7 @@ function buildDetail(base: CatalogProductCard): AdvertDetail {
   };
 }
 
-function buildDetailFromStored(id: string): AdvertDetail | null {
+function buildDetailFromStored(id: AdvertId): AdvertDetail | null {
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
     return null;
   }
@@ -513,7 +514,7 @@ function buildDetailFromStored(id: string): AdvertDetail | null {
 
     return {
       id,
-      slug: id,
+      slug: String(id),
       title,
       description:
         draft?.details?.description?.trim() || 'Açıklama belirtilmemiş.',
@@ -613,7 +614,7 @@ function buildDetailFromStored(id: string): AdvertDetail | null {
   }
 }
 
-const DETAIL_BY_ID: Record<string, AdvertDetail> = Object.fromEntries(
+const DETAIL_BY_ID: Record<number, AdvertDetail> = Object.fromEntries(
   cardsFromHome().map((card) => [card.id, buildDetail(card)])
 );
 
@@ -621,7 +622,7 @@ export const MOCK_ADVERT_FALLBACK = buildDetail(
   MOCK_HOMEPAGE.trending[0] ?? MOCK_HOMEPAGE.newAdverts[0]
 );
 
-export function getMockAdvertDetail(id: string): AdvertDetail {
+export function getMockAdvertDetail(id: AdvertId): AdvertDetail {
   if (DETAIL_BY_ID[id]) return DETAIL_BY_ID[id];
   const userDetail = buildDetailFromStored(id);
   if (userDetail) return userDetail;

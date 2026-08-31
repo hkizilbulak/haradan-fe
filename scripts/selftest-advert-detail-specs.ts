@@ -77,7 +77,7 @@ async function runTests() {
   // -------------------------------------------------------------
   console.log('\n--- Test 1: Direct Property ---');
   const directDto: BePublishedAdvertDetail = {
-    id: 'adv-direct-1',
+    id: 8001,
     title: 'Pansiyon Harası',
     description: 'Açıklama',
     publishedAt: '2026-08-25T10:00:00Z',
@@ -104,7 +104,7 @@ async function runTests() {
   console.log('\n--- Test 2: Parent Inherited Property ---');
   const parentInheritedDto: BePublishedAdvertDetail = {
     ...directDto,
-    id: 'adv-child-1',
+    id: 8002,
     category: { id: 'c-pansiyon-child', name: 'Butik Pansiyon', slug: 'butik-pansiyon' },
     properties: [
       { code: 'grassPaddock', title: 'Çim Padok', value: true, displayValue: 'Evet' },
@@ -124,7 +124,7 @@ async function runTests() {
   console.log('\n--- Test 3: Multi-level Parent Inheritance ---');
   const multiLevelDto: BePublishedAdvertDetail = {
     ...directDto,
-    id: 'adv-grandchild-1',
+    id: 8003,
     properties: [
       { code: 'rootProp', title: 'Genel Hizmet', value: '7/24 Açık' },
       { code: 'midProp', title: 'Orta Kademe', value: 'Özel Bakım' },
@@ -231,14 +231,14 @@ async function runTests() {
   // -------------------------------------------------------------
   console.log('\n--- Test 10: 404 Error State ---');
   const advertRepo = new HttpAdvertRepository('http://localhost:8080/api');
-  mockResponses['/v1/adverts/non-existent-id'] = {
+  mockResponses['/v1/adverts/999999999'] = {
     status: 404,
     body: { code: 'NOT_FOUND', message: 'İlan bulunamadı.' },
   };
 
   let caught404 = false;
   try {
-    await advertRepo.getById('non-existent-id');
+    await advertRepo.getById(999999999);
   } catch (err: any) {
     caught404 = true;
     assert(err.status === 404 || err.code === 'NOT_FOUND', '404 Hatası fırlatıldı');
@@ -250,7 +250,7 @@ async function runTests() {
   // -------------------------------------------------------------
   console.log('\n--- Test 11: Existing Advert Data Integrity ---');
   const completeDto: BePublishedAdvertDetail = {
-    id: 'adv-full-1',
+    id: 8004,
     title: 'Şampiyon Yarış Aygırı',
     description: 'Efsane soy kütüğüne sahip aygır.',
     publishedAt: '2026-08-25T12:00:00Z',

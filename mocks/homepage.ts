@@ -7,6 +7,7 @@ import type {
   CategoryTreeNode,
   HomepageData,
 } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 
 const img = (id: string, w = 800) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=80`;
@@ -111,10 +112,11 @@ function product(
   };
 }
 
-function seededViewCount(id: string): number {
+function seededViewCount(id: AdvertId | string): number {
+  const key = String(id);
   let hash = 0;
-  for (let i = 0; i < id.length; i += 1) {
-    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  for (let i = 0; i < key.length; i += 1) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
   }
   return 180 + (hash % 12400);
 }
@@ -274,7 +276,7 @@ export const MOCK_CATEGORIES: CategoryTreeNode[] = [
 
 const PRODUCTS: CatalogProductCard[] = [
   product({
-    id: 'adv-001',
+    id: 1001,
     title: '3 yaş İngiliz yarış aygırı — Veliefendi hazır',
     publishedAt: hoursAgo(2),
     price: tryPrice(2_850_000),
@@ -294,7 +296,7 @@ const PRODUCTS: CatalogProductCard[] = [
     provinceId: 'prov-34',
   }),
   product({
-    id: 'adv-002',
+    id: 1002,
     title: 'Safkan Arap kısrak, 5 yaş — doğum belgesi tam',
     publishedAt: hoursAgo(5),
     price: tryPrice(1_650_000),
@@ -313,7 +315,7 @@ const PRODUCTS: CatalogProductCard[] = [
     provinceId: 'prov-34',
   }),
   product({
-    id: 'adv-003',
+    id: 1003,
     title: 'Binek Haflinger, sakin mizaç — binicilik okulu uygun',
     publishedAt: hoursAgo(8),
     price: tryPrice(420_000),
@@ -332,7 +334,7 @@ const PRODUCTS: CatalogProductCard[] = [
     districtId: 'dist-06-cub',
   }),
   product({
-    id: 'adv-004',
+    id: 1004,
     title: 'İngiliz aygır, 7 yaş — aşım sezonu müsait',
     publishedAt: daysAgo(1),
     price: tryPrice(4_200_000),
@@ -352,7 +354,7 @@ const PRODUCTS: CatalogProductCard[] = [
     districtId: 'dist-35-tor',
   }),
   product({
-    id: 'adv-005',
+    id: 1005,
     title: 'Pony Shetland, 4 yaş — çocuk biniciliği',
     publishedAt: daysAgo(1),
     price: tryPrice(185_000),
@@ -371,7 +373,7 @@ const PRODUCTS: CatalogProductCard[] = [
     districtId: 'dist-16-nil',
   }),
   product({
-    id: 'adv-006',
+    id: 1006,
     title: 'Arap aygır aşım — 2026 sezonu rezervasyon',
     publishedAt: daysAgo(2),
     price: tryPrice(95_000),
@@ -390,7 +392,7 @@ const PRODUCTS: CatalogProductCard[] = [
     districtId: 'dist-07-kas',
   }),
   product({
-    id: 'adv-007',
+    id: 1007,
     title: 'Dressaj Warmblood, 9 yaş — orta seviye',
     publishedAt: daysAgo(2),
     price: tryPrice(980_000),
@@ -409,7 +411,7 @@ const PRODUCTS: CatalogProductCard[] = [
     districtId: 'dist-42-sel',
   }),
   product({
-    id: 'adv-008',
+    id: 1008,
     title: 'Silivri pansiyon hara — günlük / aylık bakım',
     publishedAt: daysAgo(3),
     price: tryPrice(18_500),
@@ -425,7 +427,7 @@ const PRODUCTS: CatalogProductCard[] = [
     horseId: null,
   }),
   product({
-    id: 'adv-009',
+    id: 1009,
     title: 'İngiliz kısrak, 6 yaş — damızlık uygun',
     publishedAt: daysAgo(1),
     price: tryPrice(1_250_000),
@@ -443,7 +445,7 @@ const PRODUCTS: CatalogProductCard[] = [
     districtId: 'dist-06-cub',
   }),
   product({
-    id: 'adv-010',
+    id: 1010,
     title: 'At nakliyesi — İstanbul / Anadolu hattı',
     publishedAt: daysAgo(2),
     price: tryPrice(12_000),
@@ -461,7 +463,7 @@ const PRODUCTS: CatalogProductCard[] = [
     districtId: 'dist-34-cek',
   }),
   product({
-    id: 'adv-011',
+    id: 1011,
     title: 'Safkan Arap aygır, 8 yaş — şecere belgeli',
     publishedAt: daysAgo(2),
     price: tryPrice(3_750_000),
@@ -479,7 +481,7 @@ const PRODUCTS: CatalogProductCard[] = [
     districtId: 'dist-35-tor',
   }),
   product({
-    id: 'adv-012',
+    id: 1012,
     title: 'Jumping pony, 5 yaş — yarışmaya hazır',
     publishedAt: daysAgo(3),
     price: tryPrice(265_000),
@@ -497,7 +499,7 @@ const PRODUCTS: CatalogProductCard[] = [
     districtId: 'dist-16-nil',
   }),
   product({
-    id: 'adv-013',
+    id: 1013,
     title: 'Profesyonel ortopedik nalbantlık ve sıcak nal hizmeti',
     publishedAt: hoursAgo(12),
     price: tryPrice(3_500),
@@ -515,7 +517,7 @@ const PRODUCTS: CatalogProductCard[] = [
     districtId: 'dist-34-sil',
   }),
   product({
-    id: 'adv-014',
+    id: 1014,
     title: 'Şampiyon İngiliz Aygır Aşım Hizmeti — Doru, 6 Yaş',
     publishedAt: hoursAgo(20),
     price: tryPrice(140_000),

@@ -2,13 +2,14 @@ import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AdvertCard } from '@/components/advert';
 import { Spacing } from '@/constants/Spacing';
-import type { PublishedAdvertCard } from '@/types';
+import type { PublishedAdvertCard } from '@/types'
+import type { AdvertId } from '@/types/advertId';
 import { SectionHeader } from './SectionHeader';
 
 type NewArrivalsCompactProps = {
   adverts: PublishedAdvertCard[];
   onViewAll?: () => void;
-  onAdvertPress?: (id: string) => void;
+  onAdvertPress?: (id: AdvertId) => void;
   maxItems?: number;
 };
 

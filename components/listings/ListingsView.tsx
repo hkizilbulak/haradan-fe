@@ -48,7 +48,8 @@ import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { usePublishedAdvertsSearch } from '@/hooks/usePublishedAdvertsSearch';
 import { usePlacementBanners } from '@/hooks/usePlacementBanners';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks/useThemeColor'
+import type { AdvertId } from '@/types/advertId';
 import { prepareListingWizardEntry } from '@/services/listing';
 import {
   navigateHome,
@@ -544,7 +545,7 @@ export const ListingsView = memo(function ListingsView({
   );
 
   const onProductPress = useCallback(
-    (id: string) => {
+    (id: AdvertId) => {
       router.push(`/advert/${id}`);
     },
     [router]

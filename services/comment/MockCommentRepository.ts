@@ -1,11 +1,12 @@
 import type { AdvertComment, CommentListResponse, CreateCommentPayload } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 import type { ICommentRepository } from './CommentRepository';
 
 export class MockCommentRepository implements ICommentRepository {
   private comments: AdvertComment[] = [
     {
       id: 'c-1',
-      advertId: 'adv-1',
+      advertId: 1,
       userId: 'u-1',
       authorName: 'Ahmet K.',
       content: 'Atın soyu ve orijini harika görünüyor. Tayın idman videoları var mı?',
@@ -14,7 +15,7 @@ export class MockCommentRepository implements ICommentRepository {
     },
     {
       id: 'c-2',
-      advertId: 'adv-1',
+      advertId: 1,
       userId: 'u-2',
       authorName: 'Mehmet Y.',
       content: 'Fiyat performans açısından oldukça makul bir ilan, alıcısına hayırlı olsun.',
@@ -24,12 +25,12 @@ export class MockCommentRepository implements ICommentRepository {
   ];
 
   async getComments(
-    advertId: string,
+    advertId: AdvertId,
     limit = 20,
     offset = 0
   ): Promise<CommentListResponse> {
     const filtered = this.comments.filter(
-      (c) => c.advertId === advertId || advertId === 'demo-1'
+      (c) => c.advertId === advertId || advertId === 1001
     );
     const paged = filtered.slice(offset, offset + limit);
     return {
@@ -39,7 +40,7 @@ export class MockCommentRepository implements ICommentRepository {
   }
 
   async createComment(
-    advertId: string,
+    advertId: AdvertId,
     payload: CreateCommentPayload,
     _accessToken: string
   ): Promise<AdvertComment> {
@@ -57,11 +58,10 @@ export class MockCommentRepository implements ICommentRepository {
   }
 
   async deleteComment(
-    _advertId: string,
+    _advertId: AdvertId,
     commentId: string,
     _accessToken: string
   ): Promise<void> {
     this.comments = this.comments.filter((c) => c.id !== commentId);
   }
 }
-

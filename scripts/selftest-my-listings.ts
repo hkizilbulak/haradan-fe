@@ -72,7 +72,7 @@ assertEqual(
 
 const card = mapOwnerAdvertToCard(
   {
-    id: 'adv-1',
+    id: 1,
     status: 'PENDING_REVIEW',
     version: 2,
     mediaVersion: 1,
@@ -108,7 +108,7 @@ assert(
 
 const skipPendingCover = mapOwnerAdvertToCard(
   {
-    id: 'adv-pending-cover',
+    id: 9101,
     status: 'PENDING_REVIEW',
     version: 1,
     mediaVersion: 1,
@@ -146,7 +146,7 @@ assertEqual(
 
 const detail = mapOwnerToAdvertDetail(
   {
-    id: 'adv-1',
+    id: 1,
     status: 'DRAFT',
     version: 1,
     mediaVersion: 1,
@@ -169,7 +169,7 @@ assertEqual(detail.title, 'Taslak', 'owner detail title');
 
 const published = mapPublishedDetailToAdvert(
   {
-    id: 'adv-2',
+    id: 2,
     title: 'Yayın',
     description: 'Public desc',
     publishedAt: '2026-08-01T00:00:00Z',
@@ -276,28 +276,28 @@ async function main(): Promise<void> {
   );
 
   const http = new HttpMyListingsRepository('http://localhost:8080/api');
-  responses['DELETE /api/v1/me/adverts/adv-draft?expectedVersion=3'] = {
+  responses['DELETE /api/v1/me/adverts/9102?expectedVersion=3'] = {
     status: 200,
     body: {
-      id: 'adv-draft',
+      id: 9102,
       status: 'DRAFT',
       version: 4,
       mediaVersion: 1,
       deletedAt: '2026-08-18T10:00:00Z',
     },
   };
-  await http.removeDraft('adv-draft', 3, 'tok');
+  await http.removeDraft(9102, 3, 'tok');
   const del = calls.find((c) => (c.init.method ?? 'GET').toUpperCase() === 'DELETE');
   assert(del != null, 'http DELETE called');
   assert(
-    del?.url.endsWith('/v1/me/adverts/adv-draft?expectedVersion=3'),
+    del?.url.endsWith('/v1/me/adverts/9102?expectedVersion=3'),
     'DELETE path + expectedVersion query'
   );
   const auth = new Headers(del?.init.headers);
   assertEqual(auth.get('Authorization'), 'Bearer tok', 'DELETE sends Bearer');
 
   const badVersion = await http
-    .removeDraft('adv-draft', 0, 'tok')
+    .removeDraft(9102, 0, 'tok')
     .then(() => null)
     .catch((err: unknown) => err);
   assert(
@@ -305,18 +305,18 @@ async function main(): Promise<void> {
     'expectedVersion < 1 is VALIDATION_ERROR'
   );
 
-  responses['DELETE /api/v1/me/adverts/adv-pub?expectedVersion=1'] = {
+  responses['DELETE /api/v1/me/adverts/9103?expectedVersion=1'] = {
     status: 200,
     body: {
-      id: 'adv-pub',
+      id: 9103,
       status: 'PUBLISHED',
       version: 2,
       mediaVersion: 1,
       deletedAt: '2026-08-18T10:00:00Z',
     },
   };
-  await http.removeDraft('adv-pub', 1, 'tok');
-  const pubDel = calls.find((c) => c.url.includes('adv-pub'));
+  await http.removeDraft(9103, 1, 'tok');
+  const pubDel = calls.find((c) => c.url.includes('/9103'));
   assert(pubDel != null, 'http DELETE for published listing called');
 
   // Test mapOwnerToListingDraft phone mapping and single-field edit validation
@@ -338,7 +338,7 @@ async function main(): Promise<void> {
   ];
 
   const dtoWithPhone = {
-    id: 'adv-edit-1',
+    id: 9104,
     status: 'PUBLISHED',
     version: 3,
     mediaVersion: 1,
@@ -387,7 +387,7 @@ async function main(): Promise<void> {
 
   // Test mapOwnerToListingDraft with pansiyon facilities
   const dtoPansiyon = {
-    id: 'adv-edit-2',
+    id: 9105,
     status: 'DRAFT',
     version: 1,
     mediaVersion: 1,

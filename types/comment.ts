@@ -1,6 +1,8 @@
+import type { AdvertId } from './advertId';
+
 export type AdvertComment = {
   id: string;
-  advertId: string;
+  advertId: AdvertId;
   userId: string;
   authorName: string;
   content: string;

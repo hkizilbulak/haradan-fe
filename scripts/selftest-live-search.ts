@@ -39,7 +39,7 @@ assertEqual(normalizeSearchText(null), '', 'Null -> empty string');
 // Mock Veri Seti
 const mockAdverts: CatalogProductCard[] = [
   {
-    id: 'adv-1',
+    id: 1,
     title: '2021 Doğumlu Bold Pilot Oğlu',
     publishedAt: '2026-08-15T10:00:00Z',
     price: { amountMinor: 150000000, currency: 'TRY' },
@@ -59,7 +59,7 @@ const mockAdverts: CatalogProductCard[] = [
     brand: 'Thoroughbred',
   },
   {
-    id: 'adv-2',
+    id: 2,
     title: 'Şampiyon Kanı Safkan Arap Aygırı',
     publishedAt: '2026-08-14T10:00:00Z',
     price: { amountMinor: 250000000, currency: 'TRY' },
@@ -79,7 +79,7 @@ const mockAdverts: CatalogProductCard[] = [
     brand: 'Arabian',
   },
   {
-    id: 'adv-3',
+    id: 3,
     title: 'Eğitimli Pony Binek Atı Çocuklar İçin',
     publishedAt: '2026-08-10T10:00:00Z',
     price: { amountMinor: 80000000, currency: 'TRY' },
@@ -129,21 +129,21 @@ console.log('\n--- Canlı Filtreleme ve Arama Testleri ---');
 // Başlık araması
 const rTitle = filterAndRankAdverts(mockAdverts, 'bold pilot', { resolveExtra: mockResolver });
 assertEqual(rTitle.length, 1, 'Search "bold pilot" finds 1 result');
-assertEqual(rTitle[0]?.id, 'adv-1', 'First match is adv-1');
+assertEqual(rTitle[0]?.id, 1, 'First match is adv-1');
 
 // Türkçe karakterli ve karaktersiz arama
 const rArap1 = filterAndRankAdverts(mockAdverts, 'şampiyon', { resolveExtra: mockResolver });
 assertEqual(rArap1.length, 1, 'Search "şampiyon" with Turkish chars finds adv-2');
-assertEqual(rArap1[0]?.id, 'adv-2', 'First match is adv-2');
+assertEqual(rArap1[0]?.id, 2, 'First match is adv-2');
 
 const rArap2 = filterAndRankAdverts(mockAdverts, 'sampiyon', { resolveExtra: mockResolver });
 assertEqual(rArap2.length, 1, 'Search "sampiyon" with ASCII chars finds adv-2');
-assertEqual(rArap2[0]?.id, 'adv-2', 'First match is adv-2');
+assertEqual(rArap2[0]?.id, 2, 'First match is adv-2');
 
 // Irk (brand) araması
 const rBreed = filterAndRankAdverts(mockAdverts, 'Thoroughbred', { resolveExtra: mockResolver });
 assertEqual(rBreed.length, 1, 'Search breed "Thoroughbred" finds adv-1');
-assertEqual(rBreed[0]?.id, 'adv-1', 'Breed match is adv-1');
+assertEqual(rBreed[0]?.id, 1, 'Breed match is adv-1');
 
 // İl / Konum araması
 const rLoc = filterAndRankAdverts(mockAdverts, 'istanbul', { resolveExtra: mockResolver });

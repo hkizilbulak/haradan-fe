@@ -5,6 +5,7 @@ import type {
   MyListingStatus,
   UpdateListingRequest,
 } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 
 export type MyListingEditPayload = {
   draft: ListingDraft;
@@ -25,19 +26,19 @@ export interface IMyListingsRepository {
     status: MyListingStatus,
     accessToken: string
   ): Promise<MyListingListResponse>;
-  getEditDraft(id: string, accessToken: string): Promise<MyListingEditPayload>;
+  getEditDraft(id: AdvertId, accessToken: string): Promise<MyListingEditPayload>;
   update(
-    id: string,
+    id: AdvertId,
     payload: UpdateListingRequest,
     accessToken: string
   ): Promise<MyListingCard>;
   removeDraft(
-    id: string,
+    id: AdvertId,
     expectedVersion: number,
     accessToken: string
   ): Promise<void>;
   markSold(
-    id: string,
+    id: AdvertId,
     expectedVersion: number,
     accessToken: string
   ): Promise<MyListingCard>;

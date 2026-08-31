@@ -5,11 +5,12 @@ import { FavoriteListCard } from '@/components/product/FavoriteListCard';
 import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { CatalogProductCard } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 
 type FavoritesDrawerProps = {
   items: CatalogProductCard[];
-  onItemPress?: (id: string) => void;
-  onRemove?: (id: string) => void;
+  onItemPress?: (id: AdvertId) => void;
+  onRemove?: (id: AdvertId) => void;
 };
 
 /** Favori çekmece içeriği — kabuk SideDrawer. */

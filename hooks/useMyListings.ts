@@ -4,6 +4,7 @@ import {
   type IMyListingsRepository,
 } from '@/services/my-listings';
 import type { MyListingCard, MyListingStatus } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 
 export function useMyListings(
   status: MyListingStatus,
@@ -39,7 +40,7 @@ export function useMyListings(
   }, [load]);
 
   const removeDraft = useCallback(
-    async (id: string, expectedVersion: number) => {
+    async (id: AdvertId, expectedVersion: number) => {
       if (!accessToken) {
         throw new Error('Oturum bulunamadı.');
       }
@@ -64,7 +65,7 @@ export function useMyListings(
   );
 
   const markSold = useCallback(
-    async (id: string, expectedVersion: number): Promise<MyListingCard> => {
+    async (id: AdvertId, expectedVersion: number): Promise<MyListingCard> => {
       if (!accessToken) {
         throw new Error('Oturum bulunamadı.');
       }

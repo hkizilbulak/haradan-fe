@@ -2,6 +2,9 @@
  * Listings first-paint request budget.
  * Çalıştır: npx tsx scripts/selftest-listings-requests.ts
  */
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createCachedCatalogRepository } from '../services/catalog/CachedCatalogRepository';
 import { mapCategoryTreeToFacets } from '../services/catalog/mapCategoryTreeToFacets';
 import type {
@@ -56,6 +59,9 @@ class CountingCatalog implements ICatalogRepository {
 }
 
 async function main(): Promise<void> {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const readSrc = (rel: string) => readFileSync(join(root, rel), 'utf8');
+
   const inner = new CountingCatalog();
   const cached = createCachedCatalogRepository(inner);
 
@@ -74,23 +80,13 @@ async function main(): Promise<void> {
   assertEqual(parallel.treeCalls, 1, 'parallel tree+facets share one tree fetch');
 
   // Live search disabled on listings
-  const homeSearchSrc = await import('fs').then((fs) =>
-    fs.readFileSync(
-      new URL('../components/home/HomeSearchBar.tsx', import.meta.url),
-      'utf8'
-    )
-  );
+  const homeSearchSrc = readSrc('components/home/HomeSearchBar.tsx');
   assert(
     homeSearchSrc.includes('enabled: !live'),
     'HomeSearchBar disables typeahead fetch when live'
   );
 
-  const listingsSrc = await import('fs').then((fs) =>
-    fs.readFileSync(
-      new URL('../components/listings/ListingsView.tsx', import.meta.url),
-      'utf8'
-    )
-  );
+  const listingsSrc = readSrc('components/listings/ListingsView.tsx');
   assert(
     !listingsSrc.includes('listDistricts'),
     'ListingsView does not preload districts'
@@ -100,12 +96,7 @@ async function main(): Promise<void> {
     'ListingsView gates search until hydrated'
   );
 
-  const searchHookSrc = await import('fs').then((fs) =>
-    fs.readFileSync(
-      new URL('../hooks/usePublishedAdvertsSearch.ts', import.meta.url),
-      'utf8'
-    )
-  );
+  const searchHookSrc = readSrc('hooks/usePublishedAdvertsSearch.ts');
   assert(
     searchHookSrc.includes('waitingForTree'),
     'search waits for category tree when slug set'

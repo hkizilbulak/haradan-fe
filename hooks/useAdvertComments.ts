@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { AdvertComment } from '@/types';
+import type { AdvertComment } from '@/types'
+import type { AdvertId } from '@/types/advertId';
 import { createCommentRepository } from '@/services/comment';
 import { ApiError } from '@/services/http';
 
-export function useAdvertComments(advertId: string | null) {
+export function useAdvertComments(advertId: AdvertId | null) {
   const [comments, setComments] = useState<AdvertComment[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);

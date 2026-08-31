@@ -295,7 +295,7 @@ async function main() {
   responses['POST /api/v1/me/adverts'] = {
     status: 201,
     body: {
-      id: 'adv-1',
+      id: 1,
       status: 'DRAFT',
       version: 1,
       mediaVersion: 1,
@@ -311,10 +311,10 @@ async function main() {
       deletedAt: null,
     },
   };
-  responses['POST /api/v1/me/adverts/adv-1/submit'] = {
+  responses['POST /api/v1/me/adverts/1/submit'] = {
     status: 200,
     body: {
-      id: 'adv-1',
+      id: 1,
       status: 'PENDING_REVIEW',
       version: 1,
       mediaVersion: 1,
@@ -330,11 +330,11 @@ async function main() {
       deletedAt: null,
     },
   };
-  responses['PUT /api/v1/me/adverts/adv-1/package'] = {
+  responses['PUT /api/v1/me/adverts/1/package'] = {
     status: 200,
     body: {
       id: 'assign-1',
-      advertId: 'adv-1',
+      advertId: 1,
       packageCode: 'PREMIUM',
       status: 'ACTIVE',
       startsAt: new Date().toISOString(),
@@ -355,7 +355,7 @@ async function main() {
   assert(!('packageCode' in createBody), 'create does not send packageCode');
   assert(!('sellerPhone' in createBody), 'create does not send sellerPhone');
   const packageCall = calls.find((c) =>
-    c.url.endsWith('/v1/me/adverts/adv-1/package')
+    c.url.endsWith('/v1/me/adverts/1/package')
   );
   assert(Boolean(packageCall), 'assigns selected package before submit');
   const packageBody = JSON.parse(String(packageCall?.init.body));
@@ -365,16 +365,16 @@ async function main() {
     return `${(c.init.method ?? 'GET').toUpperCase()} ${path}`;
   });
   const packageIdx = callOrder.findIndex((c) =>
-    c.includes('PUT /api/v1/me/adverts/adv-1/package')
+    c.includes('PUT /api/v1/me/adverts/1/package')
   );
   const submitIdx = callOrder.findIndex((c) =>
-    c.includes('POST /api/v1/me/adverts/adv-1/submit')
+    c.includes('POST /api/v1/me/adverts/1/submit')
   );
   assert(packageIdx >= 0 && packageIdx < submitIdx, 'package before submit');
   const auth = new Headers(createCall?.init.headers);
   assertEqual(auth.get('Authorization'), 'Bearer token-1', 'create uses Bearer');
   assert(
-    calls.some((c) => c.url.endsWith('/v1/me/adverts/adv-1/submit')),
+    calls.some((c) => c.url.endsWith('/v1/me/adverts/1/submit')),
     'submit path'
   );
 

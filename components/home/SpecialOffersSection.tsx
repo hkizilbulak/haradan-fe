@@ -14,12 +14,13 @@ import { FeaturedListingCard } from '@/components/product/FeaturedListingCard';
 import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import type { CatalogProductCard } from '@/types';
+import type { CatalogProductCard } from '@/types'
+import type { AdvertId } from '@/types/advertId';
 
 type SpecialOffersSectionProps = {
   products: CatalogProductCard[];
   onViewAll?: () => void;
-  onProductPress?: (id: string) => void;
+  onProductPress?: (id: AdvertId) => void;
   onToggleFavorite?: (product: CatalogProductCard) => void;
 };
 

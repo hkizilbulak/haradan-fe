@@ -1,4 +1,5 @@
-import type { AdvertDetail } from '@/types';
+import type { AdvertDetail } from '@/types'
+import type { AdvertId } from '@/types/advertId';
 
 export type AdvertQueryOptions = {
   fresh?: boolean;
@@ -7,6 +8,6 @@ export type AdvertQueryOptions = {
 };
 
 export interface IAdvertRepository {
-  getById(id: string, options?: AdvertQueryOptions): Promise<AdvertDetail>;
-  getCached(id: string): AdvertDetail | null;
+  getById(id: AdvertId, options?: AdvertQueryOptions): Promise<AdvertDetail>;
+  getCached(id: AdvertId): AdvertDetail | null;
 }

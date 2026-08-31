@@ -13,6 +13,11 @@ import type {
   PublicMediaItem,
 } from '@/types';
 import type { TjkHorseProfile } from '@/types/listing';
+import { parseAdvertId, type AdvertId } from '@/types/advertId';
+
+function normalizeAdvertId(id: AdvertId | string): AdvertId {
+  return typeof id === 'number' ? id : (parseAdvertId(id) ?? 0);
+}
 
 type BeMoney = { amountMinor: number; currency: string } | null;
 
@@ -25,7 +30,7 @@ type BePublicMedia = {
 };
 
 export type BePublishedAdvertDetail = {
-  id: string;
+  id: AdvertId | string;
   title: string;
   description: string;
   publishedAt: string;
@@ -168,7 +173,7 @@ function emptyDetailShell(
     districtName: null,
     locationName: null,
     ...partial,
-    slug: partial.id,
+    slug: String(partial.id),
     rating: 0,
     reviewCount: 0,
     viewCount: partial.viewCount ?? 0,
@@ -246,7 +251,7 @@ export function mapPublishedDetailToAdvert(
       : null);
 
   return emptyDetailShell({
-    id: dto.id,
+    id: normalizeAdvertId(dto.id),
     title: dto.title,
     description: dto.description,
     publishedAt: dto.publishedAt,
@@ -311,7 +316,7 @@ export function mapOwnerToAdvertDetail(
   );
 
   return emptyDetailShell({
-    id: dto.id,
+    id: normalizeAdvertId(dto.id),
     title,
     description: (dto.description ?? '').trim(),
     publishedAt,

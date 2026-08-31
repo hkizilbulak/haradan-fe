@@ -1,5 +1,6 @@
 import type { HorseGender } from './advertDetail';
 import type { Money } from './money';
+import type { AdvertId } from './advertId';
 
 /** 5 adımlı ilan verme süreci (ödeme dahil). */
 export type ListingWizardStep = 'type' | 'details' | 'package' | 'payment' | 'review';
@@ -143,7 +144,7 @@ export type CreateAdvertDraftRequest = {
 
 /** OpenAPI: OwnerAdvertResponse (özet) */
 export type OwnerAdvertResponse = {
-  id: string;
+  id: AdvertId;
   status: string;
   version: number;
   mediaVersion: number;
@@ -167,7 +168,7 @@ export type OwnerAdvertResponse = {
 };
 
 export type PublishListingResult = {
-  advertId: string;
+  advertId: AdvertId;
   status: string;
 };
 

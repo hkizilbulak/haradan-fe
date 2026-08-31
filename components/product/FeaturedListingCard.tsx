@@ -22,6 +22,7 @@ import { RemoveDraftButton } from '@/components/advert/RemoveDraftButton';
 import { MarkSoldButton } from '@/components/advert/MarkSoldButton';
 import { SoldOverlay } from '@/components/advert/SoldOverlay';
 import type { CatalogProductCard } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 
 const URGENT_RED = '#e11d48';
 const FEATURED_INK = '#0c0c0e';
@@ -38,13 +39,13 @@ type FeaturedListingCardProps = {
   badge?: FeaturedCardBadge | 'auto';
   /** Sahip önizlemesi (incelemede / taslak) için Bearer. */
   accessToken?: string | null;
-  onPress?: (id: string) => void;
+  onPress?: (id: AdvertId) => void;
   onToggleFavorite?: (product: CatalogProductCard) => void;
   /** Taslak sekmesi — favori yanındaki kırmızı eksi. */
-  onRemove?: (id: string) => void;
+  onRemove?: (id: AdvertId) => void;
   removing?: boolean;
   /** Yayında sekmesi — satıldı olarak işaretle butonu. */
-  onMarkSold?: (id: string) => void;
+  onMarkSold?: (id: AdvertId) => void;
   markingSold?: boolean;
 };
 
@@ -183,7 +184,7 @@ function FeaturedListingCardComponent({
               style={[styles.image, { backgroundColor: skeleton }]}
               contentFit="cover"
               transition={240}
-              recyclingKey={product.id}
+              recyclingKey={String(product.id)}
               priority="low"
               cachePolicy={accessToken ? 'memory' : 'memory-disk'}
             />

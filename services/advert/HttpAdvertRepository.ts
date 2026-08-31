@@ -2,6 +2,7 @@ import { ApiError, HttpClient } from '@/services/http';
 import { getAuthSession } from '@/services/auth/sessionStore';
 import { getValidAccessToken } from '@/services/auth/tokenRefresh';
 import type { AdvertDetail } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 import type { OwnerAdvertDto } from '@/services/my-listings/mapOwnerAdvert';
 import type { AdvertQueryOptions, IAdvertRepository } from './AdvertRepository';
 import {
@@ -27,12 +28,12 @@ export class HttpAdvertRepository implements IAdvertRepository {
     this.tjkRepo = tjkRepo ?? new HttpTjkRepository(baseUrl);
   }
 
-  getCached(_id: string): AdvertDetail | null {
+  getCached(_id: AdvertId): AdvertDetail | null {
     return null;
   }
 
   async getById(
-    id: string,
+    id: AdvertId,
     options?: AdvertQueryOptions
   ): Promise<AdvertDetail> {
     const accessToken =

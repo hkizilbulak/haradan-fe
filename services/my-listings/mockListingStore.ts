@@ -5,7 +5,8 @@ import type {
   ListingDraft,
   MyListingCard,
   PublishListingResult,
-} from '@/types';
+} from '@/types'
+import type { AdvertId } from '@/types/advertId';
 import { mapAdvertToListingDraft } from './mapAdvertToListingDraft';
 
 const STORAGE_KEY_ITEMS = 'haradan.mockMyListings.items';
@@ -46,7 +47,7 @@ export function writeMockItems(items: MyListingCard[]): void {
   }
 }
 
-export function readMockDrafts(): Record<string, ListingDraft> {
+export function readMockDrafts(): Partial<Record<AdvertId, ListingDraft>> {
   if (!isBrowserStore) return {};
   try {
     const raw = localStorage.getItem(STORAGE_KEY_DRAFTS);
@@ -57,7 +58,7 @@ export function readMockDrafts(): Record<string, ListingDraft> {
   }
 }
 
-export function writeMockDraft(id: string, draft: ListingDraft): void {
+export function writeMockDraft(id: AdvertId, draft: ListingDraft): void {
   if (!isBrowserStore) return;
   try {
     const current = readMockDrafts();
@@ -68,7 +69,7 @@ export function writeMockDraft(id: string, draft: ListingDraft): void {
   }
 }
 
-export function removeMockDraftFromStore(id: string): void {
+export function removeMockDraftFromStore(id: AdvertId): void {
   if (!isBrowserStore) return;
   try {
     const current = readMockDrafts();
@@ -79,7 +80,7 @@ export function removeMockDraftFromStore(id: string): void {
   }
 }
 
-export function readMockVersions(): Record<string, number> {
+export function readMockVersions(): Partial<Record<AdvertId, number>> {
   if (!isBrowserStore) return {};
   try {
     const raw = localStorage.getItem(STORAGE_KEY_VERSIONS);
@@ -90,7 +91,7 @@ export function readMockVersions(): Record<string, number> {
   }
 }
 
-export function writeMockVersion(id: string, version: number): void {
+export function writeMockVersion(id: AdvertId, version: number): void {
   if (!isBrowserStore) return;
   try {
     const current = readMockVersions();
@@ -101,7 +102,7 @@ export function writeMockVersion(id: string, version: number): void {
   }
 }
 
-export function removeMockVersionFromStore(id: string): void {
+export function removeMockVersionFromStore(id: AdvertId): void {
   if (!isBrowserStore) return;
   try {
     const current = readMockVersions();
@@ -113,7 +114,7 @@ export function removeMockVersionFromStore(id: string): void {
 }
 
 export function addMockListingFromDraft(draft: ListingDraft): PublishListingResult {
-  const newId = `adv-${Date.now().toString(36)}`;
+  const newId = Date.now();
   const coverSlot = draft.media?.find((m) => m.isCover) ?? draft.media?.[0];
   const title = draft.details.title.trim() || 'Yeni İlan';
   const pkgCode = draft.packageCode?.trim() || 'STANDARD';
@@ -181,7 +182,7 @@ export function addMockListingFromDraft(draft: ListingDraft): PublishListingResu
 }
 
 export function getOrCreateMockDraft(
-  id: string,
+  id: AdvertId,
   card: MyListingCard
 ): ListingDraft {
   const drafts = readMockDrafts();

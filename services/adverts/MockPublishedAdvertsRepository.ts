@@ -1,6 +1,7 @@
 import { MOCK_CATALOG_PRODUCTS } from '@/mocks/homepage';
 import { readMockDrafts, readMockItems } from '@/services/my-listings/mockListingStore';
 import type { CatalogProductCard } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 import type {
   IPublishedAdvertsRepository,
   PublishedAdvertsSearchParams,
@@ -19,7 +20,7 @@ export class MockPublishedAdvertsRepository
     await wait(180);
     const drafts = readMockDrafts();
     const storedItems = readMockItems();
-    const storedMap = new Map<string, typeof storedItems[0]>();
+    const storedMap = new Map<AdvertId, typeof storedItems[0]>();
     storedItems.forEach((item) => storedMap.set(item.id, item));
 
     // 1. Process all stored items (both newly created and edited existing ones)

@@ -16,7 +16,8 @@ import {
 } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import type { CatalogProductCard } from '@/types';
+import type { CatalogProductCard } from '@/types'
+import type { AdvertId } from '@/types/advertId';
 
 const PAGE_SIZE = 9; // 3 × 3
 
@@ -24,7 +25,7 @@ type ListingsGridProps = {
   items: CatalogProductCard[];
   page: number;
   onPageChange: (page: number) => void;
-  onProductPress?: (id: string) => void;
+  onProductPress?: (id: AdvertId) => void;
   onToggleFavorite?: (product: CatalogProductCard) => void;
   /** Mobil Ara — 2 kolon kompakt kartlar. */
   compact?: boolean;

@@ -1,4 +1,6 @@
 import type { AdvertDetail } from '@/types';
+import type { AdvertId } from '@/types/advertId';
+import { advertKey } from '@/types/advertId';
 import type { AdvertQueryOptions, IAdvertRepository } from './AdvertRepository';
 
 export function createCachedAdvertRepository(
@@ -8,27 +10,28 @@ export function createCachedAdvertRepository(
   const inflight = new Map<string, Promise<AdvertDetail>>();
 
   return {
-    getCached: (id) => cache.get(id) ?? null,
+    getCached: (id) => cache.get(advertKey(id)) ?? null,
     async getById(id, options) {
+      const key = advertKey(id);
       const fresh = options?.fresh === true;
       if (!fresh) {
-        const hit = cache.get(id);
+        const hit = cache.get(key);
         if (hit) return hit;
-        const pending = inflight.get(id);
+        const pending = inflight.get(key);
         if (pending) return pending;
       }
 
       const run = inner
         .getById(id, { fresh: true })
         .then((data) => {
-          cache.set(id, data);
+          cache.set(key, data);
           return data;
         })
         .finally(() => {
-          if (inflight.get(id) === run) inflight.delete(id);
+          if (inflight.get(key) === run) inflight.delete(key);
         });
 
-      if (!fresh) inflight.set(id, run);
+      if (!fresh) inflight.set(key, run);
       return run;
     },
   };

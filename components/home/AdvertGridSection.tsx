@@ -3,6 +3,7 @@ import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { AdvertCard } from '@/components/advert';
 import { Spacing } from '@/constants/Spacing';
 import type { PublishedAdvertCard } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 import { SectionHeader } from './SectionHeader';
 
 type AdvertGridSectionProps = {
@@ -10,8 +11,8 @@ type AdvertGridSectionProps = {
   adverts: PublishedAdvertCard[];
   categoryNameById?: Record<string, string>;
   onViewAll?: () => void;
-  onAdvertPress?: (id: string) => void;
-  onToggleFavorite?: (id: string) => void;
+  onAdvertPress?: (id: AdvertId) => void;
+  onToggleFavorite?: (id: AdvertId) => void;
   /** Mobil first: varsayılan 2 kolon */
   maxItems?: number;
 };

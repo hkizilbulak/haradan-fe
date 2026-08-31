@@ -11,11 +11,12 @@ import { Spacing } from '@/constants/Spacing';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { prepareListingWizardEntry } from '@/services/listing';
 import type { CatalogProductCard } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 import { SectionHeader } from './SectionHeader';
 
 type NewArrivalsSectionProps = {
   products: CatalogProductCard[];
-  onProductPress?: (id: string) => void;
+  onProductPress?: (id: AdvertId) => void;
   onToggleFavorite?: (product: CatalogProductCard) => void;
   onViewAll?: () => void;
 };

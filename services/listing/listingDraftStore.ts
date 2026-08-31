@@ -1,4 +1,5 @@
 import type { CategoryPropertyPublic } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 import type {
   ListingDraft,
   ListingDraftDetails,
@@ -19,7 +20,7 @@ export type ListingWizardState = {
   categoryProperties: CategoryPropertyPublic[] | null;
   tjkPromptSeen: boolean;
   detailsAttempted: boolean;
-  submittedDraftId: string | null;
+  submittedDraftId: AdvertId | null;
   submittedStatus: string | null;
   paytrMerchantOid: string | null;
   paytrIframeUrl: string | null;

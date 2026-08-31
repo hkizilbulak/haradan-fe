@@ -17,6 +17,7 @@ import { useAdvertLocation } from '@/services/location';
 import { formatRelativeTime } from '@/utils/formatRelativeTime';
 import { formatViewCount } from '@/utils/formatViewCount';
 import type { PublishedAdvertCard } from '@/types';
+import type { AdvertId } from '@/types/advertId';
 import { PriceBlock } from './PriceBlock';
 import { WishlistButton } from './WishlistButton';
 
@@ -26,8 +27,8 @@ type AdvertCardProps = {
   advert: PublishedAdvertCard;
   variant?: AdvertCardVariant;
   categoryName?: string;
-  onPress?: (id: string) => void;
-  onToggleFavorite?: (id: string) => void;
+  onPress?: (id: AdvertId) => void;
+  onToggleFavorite?: (id: AdvertId) => void;
 };
 
 function AdvertCardComponent({
@@ -125,7 +126,7 @@ function AdvertCardComponent({
           style={[styles.image, { backgroundColor: skeleton }]}
           contentFit="cover"
           transition={200}
-          recyclingKey={advert.id}
+          recyclingKey={String(advert.id)}
         />
         <View style={styles.badgeRow}>
           {advert.isUrgent ? <Badge label="Acil" tone="danger" /> : null}
