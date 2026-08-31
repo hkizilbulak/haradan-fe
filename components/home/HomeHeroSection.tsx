@@ -27,7 +27,13 @@ const DYNAMIC_WORDS = [
   'hizmeti',
 ];
 
-const QUICK_ACCESS_LINKS = [
+const QUICK_ACCESS_LINKS: Array<{
+  id: string;
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  params: Record<string, string>;
+}> = [
   {
     id: 'vitrin',
     title: 'Vitrin İlanları',

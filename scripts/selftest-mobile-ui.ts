@@ -72,7 +72,7 @@ console.log('\n── mobile chrome per screen ──');
 const homeFeed = read('components/home/HomeFeed.tsx');
 assert(!homeFeed.includes('SiteFooter') || homeFeed.includes('isWide ?'), 'home hides footer mobile');
 assert(homeFeed.includes('topBtnMobile'), 'home mobile top btn');
-assert(homeFeed.includes('MobileHomeHeroBlock'), 'home mobile hero');
+assert(homeFeed.includes('HomeHeroSection'), 'home hero section');
 
 const listingsView = read('components/listings/ListingsView.tsx');
 assert(listingsView.includes('MobileListingsTopBar'), 'listings top bar');
@@ -86,7 +86,7 @@ assert(advertView.includes('MobileAdvertStickyBar'), 'advert sticky bar');
 
 const homeScreen = read('app/(tabs)/index.tsx');
 assert(homeScreen.includes('MobileHomeTopBar'), 'home sticky top bar at screen level');
-assert(!read('components/home/mobile/MobileHomeHeroBlock.tsx').includes('MobileHomeTopBar'), 'hero block no scroll-away top bar');
+assert(!read('components/home/HomeHeroSection.tsx').includes('MobileHomeTopBar'), 'hero section no scroll-away top bar');
 
 const advertSkel = read('components/advert-detail/AdvertDetailSkeleton.tsx');
 assert(advertSkel.includes('mobileDetailScrollInset'), 'advert skeleton dynamic inset');
