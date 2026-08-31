@@ -142,6 +142,7 @@ export default function HomeScreen() {
         <AppHeader
           brandName="Haradan.com"
           isLoggedIn={isLoggedIn}
+          categories={categoryRoots}
           onFavoritesPress={onOpenFavorites}
           onLoginPress={onLoginPress}
           onSignupPress={onSignupPress}

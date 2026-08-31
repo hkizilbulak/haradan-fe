@@ -21,11 +21,7 @@ export function useHomepageFeed() {
 
   const urgent = useMemo(() => {
     if (!home.data) return [];
-    const source =
-      home.data.urgentAdverts.length > 0
-        ? home.data.urgentAdverts
-        : home.data.newAdverts;
-    return apply(source);
+    return apply(home.data.urgentAdverts ?? []);
   }, [home.data, apply]);
 
   const trending = useMemo(

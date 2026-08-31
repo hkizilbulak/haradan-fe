@@ -33,7 +33,7 @@ import {
   navigateToListings,
 } from '@/services/navigation';
 import type { HeaderNavKey } from '@/services/navigation';
-import type { CatalogProductCard } from '@/types';
+import type { CatalogProductCard, CategoryTreeNode } from '@/types';
 
 export type { HeaderNavKey };
 
@@ -47,6 +47,7 @@ type AppHeaderProps = {
   brandName?: string;
   /** Login sonrası true — yalnızca profil ikonu. */
   isLoggedIn?: boolean;
+  categories?: CategoryTreeNode[];
   onFavoritesPress?: () => void;
   onLoginPress?: () => void;
   onSignupPress?: () => void;
@@ -61,9 +62,46 @@ const ACTIVE = '#ffffff';
 const INACTIVE = '#8a8a93';
 const EASE = Easing.bezier(0.22, 1, 0.36, 1);
 
+const DEFAULT_CATEGORIES: CategoryTreeNode[] = [
+  {
+    id: 'c-satilik',
+    slug: 'satilik-atlar',
+    name: 'Satılık Atlar',
+    allowTjk: true,
+    children: [
+      { id: 'c-satilik-yaris', slug: 'satilik-yaris-ati', name: 'Satılık Yarış Atı', allowTjk: true, children: [] },
+      { id: 'c-satilik-kisrak', slug: 'satilik-kisrak', name: 'Satılık Kısrak', allowTjk: true, children: [] },
+      { id: 'c-satilik-tay', slug: 'satilik-tay', name: 'Satılık Tay', allowTjk: true, children: [] },
+      { id: 'c-satilik-aygir', slug: 'satilik-aygir', name: 'Satılık Aygır', allowTjk: true, children: [] },
+    ],
+  },
+  {
+    id: 'c-hizmet',
+    slug: 'at-hizmetleri',
+    name: 'At Hizmetleri',
+    allowTjk: false,
+    children: [
+      { id: 'c-nakliye', slug: 'at-nakliyesi', name: 'At Nakliyesi', allowTjk: false, children: [] },
+      { id: 'c-pansiyon', slug: 'pansiyon-haralar', name: 'Pansiyon Haralar', allowTjk: false, children: [] },
+      { id: 'c-nalbant', slug: 'nalbantlar', name: 'Nalbantlar', allowTjk: false, children: [] },
+    ],
+  },
+  {
+    id: 'c-asim',
+    slug: 'asim-hizmetleri',
+    name: 'Aşım Hizmetleri',
+    allowTjk: true,
+    children: [
+      { id: 'c-arap-aygir', slug: 'arap-aygir', name: 'Arap Aygır', allowTjk: true, children: [] },
+      { id: 'c-ingiliz-aygir', slug: 'ingiliz-aygir', name: 'İngiliz Aygır', allowTjk: true, children: [] },
+    ],
+  },
+];
+
 export function AppHeader({
   brandName = 'Haradan.com',
   isLoggedIn = false,
+  categories = DEFAULT_CATEGORIES,
   onFavoritesPress,
   onLoginPress,
   onSignupPress,
@@ -83,6 +121,8 @@ export function AppHeader({
   const showPostAdLabel = width >= 640;
   const active = headerNavKeyFromPath(pathname);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [openCategoryId, setOpenCategoryId] = useState<string | null>(null);
+  const categoryHoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<TextInput>(null);
   const searchAnim = useRef(new Animated.Value(0)).current;
 
@@ -157,8 +197,8 @@ export function AppHeader({
     else if (key === 'my-listings') {
       router.push(
         headerNavHref('my-listings', isLoggedIn) as
-          | '/my-listings'
-          | '/auth/login?next=/my-listings'
+        | '/my-listings'
+        | '/auth/login?next=/my-listings'
       );
     }
     onNavPress?.(key);
@@ -235,14 +275,82 @@ export function AppHeader({
           {isWide && !searchOpen ? (
             <View style={styles.navOverlay} pointerEvents="box-none">
               <View style={styles.navCenter} accessibilityRole="menubar">
-                {NAV_ITEMS.map((item) => (
-                  <NavLink
-                    key={item.key}
-                    label={item.label}
-                    active={active === item.key}
-                    onPress={() => handleNav(item.key)}
-                  />
-                ))}
+                <NavLink
+                  label="Anasayfa"
+                  active={active === 'home'}
+                  onPress={() => handleNav('home')}
+                />
+
+                {categories.slice(0, 5).map((cat) => {
+                  const isOpen = openCategoryId === cat.id;
+                  const hasChildren = cat.children && cat.children.length > 0;
+                  return (
+                    <View
+                      key={cat.id}
+                      style={styles.categoryNavWrapper}
+                      {...(Platform.OS === 'web'
+                        ? {
+                          onMouseEnter: () => {
+                            if (categoryHoverTimer.current) clearTimeout(categoryHoverTimer.current);
+                            setOpenCategoryId(cat.id);
+                          },
+                          onMouseLeave: () => {
+                            categoryHoverTimer.current = setTimeout(() => {
+                              setOpenCategoryId(null);
+                            }, 200);
+                          },
+                        }
+                        : {})}
+                    >
+                      <Pressable
+                        onPress={() => {
+                          setOpenCategoryId(null);
+                          navigateToListings(router, { category: cat.slug });
+                        }}
+                        style={({ pressed }) => [
+                          styles.navItem,
+                          styles.categoryHoverNav,
+                          { opacity: pressed ? 0.75 : 1 },
+                        ]}
+                      >
+                        <Text style={[styles.navLabel, { color: isOpen ? ACTIVE : INACTIVE }]}>
+                          {cat.name}
+                        </Text>
+                        {hasChildren ? (
+                          <Ionicons
+                            name="chevron-down"
+                            size={12}
+                            color={isOpen ? ACTIVE : INACTIVE}
+                            style={{ marginLeft: 4 }}
+                          />
+                        ) : null}
+                      </Pressable>
+
+                      {isOpen && hasChildren ? (
+                        <View style={styles.categoryDropdownMenu}>
+                          <View style={styles.categorySubList}>
+                            {cat.children.map((sub) => (
+                              <Pressable
+                                key={sub.id}
+                                onPress={() => {
+                                  setOpenCategoryId(null);
+                                  navigateToListings(router, { category: sub.slug });
+                                }}
+                                style={({ pressed }) => [
+                                  styles.categorySubItem,
+                                  pressed && { opacity: 0.7 },
+                                ]}
+                              >
+                                <Ionicons name="chevron-forward-outline" size={12} color="#94a3b8" />
+                                <Text style={styles.categorySubText}>{sub.name}</Text>
+                              </Pressable>
+                            ))}
+                          </View>
+                        </View>
+                      ) : null}
+                    </View>
+                  );
+                })}
               </View>
             </View>
           ) : null}
@@ -251,90 +359,6 @@ export function AppHeader({
             style={[styles.slot, styles.slotRight]}
             pointerEvents={HEADER_FLEX_SLOT_POINTER_EVENTS}
           >
-            <View style={styles.searchCluster} pointerEvents="auto">
-              <Animated.View
-                style={[
-                  styles.searchFieldWrap,
-                  { width: searchWidth, opacity: searchOpacity },
-                ]}
-                pointerEvents={searchOpen ? 'auto' : 'none'}
-              >
-                <View style={styles.searchField}>
-                  <TextInput
-                    ref={inputRef}
-                    value={query}
-                    onChangeText={(txt) => {
-                      setQuery(txt);
-                      if (txt.trim().length > 0) setIsOpen(true);
-                    }}
-                    onFocus={() => {
-                      void ensureLoaded();
-                      if (query.trim().length > 0) setIsOpen(true);
-                    }}
-                    placeholder="At, kısrak, ilan ara…"
-                    placeholderTextColor="rgba(255,255,255,0.35)"
-                    style={[
-                      styles.searchInput,
-                      Platform.OS === 'web'
-                        ? ({ outlineStyle: 'none' } as object)
-                        : null,
-                    ]}
-                    returnKeyType="search"
-                    onSubmitEditing={() => submitSearch()}
-                    accessibilityLabel="Ara"
-                  />
-                  {query.length > 0 ? (
-                    <Pressable
-                      onPress={clearSearch}
-                      hitSlop={6}
-                      accessibilityLabel="Temizle"
-                    >
-                      <Ionicons
-                        name="close-circle"
-                        size={14}
-                        color={headerMuted}
-                      />
-                    </Pressable>
-                  ) : null}
-                </View>
-              </Animated.View>
-
-              <HeaderIcon
-                name={searchOpen ? 'close-outline' : 'search-outline'}
-                label={searchOpen ? 'Aramayı kapat' : 'Ara'}
-                color={headerMuted}
-                onPress={() => {
-                  if (searchOpen) {
-                    handleCloseSearch();
-                  } else {
-                    setSearchOpen(true);
-                    void ensureLoaded();
-                  }
-                }}
-              />
-
-              {/* Header Canlı Arama Açılır Menüsü */}
-              {searchOpen && isOpen && query.trim().length > 0 ? (
-                <SearchDropdown
-                  results={results}
-                  loading={loading}
-                  query={query}
-                  isOpen={true}
-                  onSelectAdvert={handleSelectAdvert}
-                  onViewAll={submitSearch}
-                  onClose={closeDropdown}
-                  variant="header"
-                  maxHeight={360}
-                  style={[
-                    styles.headerDropdown,
-                    {
-                      width: isWide ? 380 : Math.min(360, width - 24),
-                    },
-                  ]}
-                />
-              ) : null}
-            </View>
-
             <AuthLinks
               showText={showAuthText && !searchOpen}
               isLoggedIn={effectiveLoggedIn}
@@ -490,7 +514,7 @@ function PostAdButton({
         },
       ]}
     >
-      <Ionicons name="add" size={compact ? 16 : 17} color="#0c0c0e" />
+      <Ionicons name="add-circle" size={compact ? 17 : 18} color="#ffffff" />
       {!compact ? <Text style={styles.postAdLabel}>İlan Ver</Text> : null}
     </Pressable>
   );
@@ -608,6 +632,46 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
   },
+  categoryNavWrapper: {
+    position: 'relative',
+    zIndex: 999,
+  },
+  categoryHoverNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  categoryDropdownMenu: {
+    position: 'absolute',
+    top: 36,
+    left: 0,
+    minWidth: 190,
+    backgroundColor: '#1e293b',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    padding: 12,
+    zIndex: 1000,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 12px 32px rgba(0,0,0,0.35)',
+      },
+      default: {},
+    }),
+  },
+  categorySubList: {
+    gap: 6,
+  },
+  categorySubItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 3,
+  },
+  categorySubText: {
+    color: '#cbd5e1',
+    fontSize: 12,
+    fontWeight: '400',
+  },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -715,8 +779,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 14,
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 16,
     paddingVertical: 9,
     borderRadius: 10,
     minHeight: 38,
@@ -729,7 +793,7 @@ const styles = StyleSheet.create({
   postAdLabel: {
     ...Typography.small,
     fontWeight: '700',
-    color: '#0c0c0e',
+    color: '#ffffff',
     letterSpacing: 0.1,
   },
   iconHit: {

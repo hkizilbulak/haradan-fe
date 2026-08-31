@@ -150,12 +150,12 @@ export const HomeSearchBar = memo(function HomeSearchBar({
   const isGlass = variant === 'glass';
 
   const focusedSurface = isGlass
-    ? 'rgba(255,255,255,0.88)'
+    ? '#ffffff'
     : isDark
       ? '#232833'
       : '#ffffff';
   const focusedBorder = isGlass
-    ? 'rgba(255,255,255,0.65)'
+    ? 'rgba(255,255,255,0.9)'
     : isDark
       ? 'rgba(255,255,255,0.22)'
       : 'rgba(12,12,14,0.18)';
@@ -163,7 +163,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
   const borderColor = focusAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [
-      isGlass ? 'rgba(255,255,255,0.45)' : border,
+      isGlass ? 'rgba(255,255,255,0.65)' : border,
       focusedBorder,
     ],
   });
@@ -171,7 +171,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
   const bg = focusAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [
-      isGlass ? 'rgba(255,255,255,0.72)' : surface,
+      isGlass ? 'rgba(255,255,255,0.95)' : surface,
       focusedSurface,
     ],
   });
@@ -285,7 +285,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
         <Ionicons
           name="search-outline"
           size={22}
-          color={focused ? textSecondary : textMuted}
+          color={isGlass ? '#334155' : (focused ? textSecondary : textMuted)}
         />
         <TextInput
           value={query}
@@ -300,16 +300,17 @@ export const HomeSearchBar = memo(function HomeSearchBar({
           }}
           onSubmitEditing={submit}
           placeholder={placeholder}
-          placeholderTextColor={textMuted}
+          placeholderTextColor={isGlass ? '#64748b' : textMuted}
           returnKeyType="search"
           autoCapitalize="none"
           autoCorrect={false}
-          selectionColor={isDark ? 'rgba(243,245,249,0.3)' : 'rgba(12,12,14,0.22)'}
+          selectionColor={isGlass ? 'rgba(15,23,42,0.3)' : (isDark ? 'rgba(243,245,249,0.3)' : 'rgba(12,12,14,0.22)')}
           underlineColorAndroid="transparent"
           style={[
             styles.input,
             {
-              color: text,
+              color: isGlass ? '#0f172a' : text,
+              fontWeight: '500',
               ...(Platform.OS === 'web'
                 ? ({ outlineStyle: 'none', outlineWidth: 0 } as object)
                 : null),
@@ -325,7 +326,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
             accessibilityLabel="Temizle"
             style={styles.iconBtn}
           >
-            <Ionicons name="close-circle" size={18} color={textMuted} />
+            <Ionicons name="close-circle" size={18} color={isGlass ? '#64748b' : textMuted} />
           </Pressable>
         ) : null}
 
@@ -368,8 +369,8 @@ export const HomeSearchBar = memo(function HomeSearchBar({
                   {
                     backgroundColor: isGlass
                       ? pressed
-                        ? 'rgba(255, 255, 255, 0.32)'
-                        : 'rgba(255, 255, 255, 0.18)'
+                        ? 'rgba(15, 23, 42, 0.65)'
+                        : 'rgba(15, 23, 42, 0.45)'
                       : pressed
                         ? isDark
                           ? 'rgba(255, 255, 255, 0.14)'
@@ -379,8 +380,8 @@ export const HomeSearchBar = memo(function HomeSearchBar({
                           : 'rgba(0, 0, 0, 0.03)',
                     borderColor: isGlass
                       ? pressed
-                        ? 'rgba(255, 255, 255, 0.55)'
-                        : 'rgba(255, 255, 255, 0.32)'
+                        ? 'rgba(255, 255, 255, 0.45)'
+                        : 'rgba(255, 255, 255, 0.25)'
                       : border,
                     transform: [{ scale: pressed ? 0.98 : 1 }],
                     ...(Platform.OS === 'web'
@@ -405,7 +406,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
                     size={12}
                     color={
                       isGlass
-                        ? 'rgba(255, 255, 255, 0.9)'
+                        ? '#ffffff'
                         : textSecondary
                     }
                   />

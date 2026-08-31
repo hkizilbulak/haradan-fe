@@ -23,29 +23,22 @@ import type {
   CategoryTreeNode,
   HomepageData,
 } from '@/types';
-import { selectHomeHeroBanners, selectHomePromoBanner } from '@/services/banners/bannerDisplay';
+import { selectHomeHeroBanners } from '@/services/banners/bannerDisplay';
 import { BrandStrip } from './BrandStrip';
-import { CategorySidebar } from './CategorySidebar';
-import { HeroSlider } from './HeroSlider';
-import { HomeSearchBar } from './HomeSearchBar';
-import { HomeFooter } from './HomeFooter';
+import { CategoryStrip } from './CategoryStrip';
+import { HomeHeroSection } from './HomeHeroSection';
 import { NewArrivalsSection } from './NewArrivalsSection';
-import { HomepageAdBanner } from './HomepageAdBanner';
-import { SiteFooter } from './SiteFooter';
-import { SpecialOffersSection } from './SpecialOffersSection';
 import { TrendingProductsSection } from './TrendingProductsSection';
-import { MobileHomeHeroBlock } from './mobile/MobileHomeHeroBlock';
+import { CampaignsSliderSection } from './CampaignsSliderSection';
+import { SiteFooter } from './SiteFooter';
+import { HomeFooter } from './HomeFooter';
 import {
   HomeBrandsSkeleton,
   HomeHeroSkeleton,
   HomeSaleSkeleton,
-  HomeSpecialSkeleton,
   HomeTrendingSkeleton,
   HomeUrgentSkeleton,
 } from './HomeSkeleton';
-
-const HERO_HEIGHT_DESKTOP = 420;
-const HERO_HEIGHT_MOBILE = 360;
 
 type HomeFeedProps = {
   data: HomepageData | null;
@@ -88,13 +81,8 @@ function HomeFeedComponent({
   const text = useThemeColor('text');
   const border = useThemeColor('border');
 
-  const heroBanners = useMemo(
+  const campaignBanners = useMemo(
     () => selectHomeHeroBanners(data?.banners ?? []),
-    [data?.banners]
-  );
-
-  const promoBanner = useMemo(
-    () => selectHomePromoBanner(data?.banners ?? []),
     [data?.banners]
   );
 
@@ -131,115 +119,36 @@ function HomeFeedComponent({
         {!data ? (
           <HomeContentContainer>
             <SkeletonPulse>
-              {!isWide ? (
-                <>
-                  <HomeHeroSkeleton isWide={false} />
-                  <HomeSearchBar variant="glass" fullWidth compact />
-                </>
-              ) : (
-                <HomeHeroSkeleton isWide={isWide} />
-              )}
+              <HomeHeroSkeleton isWide={isWide} />
               <HomeUrgentSkeleton isWide={isWide} />
               <HomeTrendingSkeleton isWide={isWide} />
               <HomeSaleSkeleton isWide={isWide} />
-              <HomeSpecialSkeleton isWide={isWide} />
               <HomeBrandsSkeleton />
             </SkeletonPulse>
           </HomeContentContainer>
-        ) : !isWide ? (
-          <>
-            <MobileHomeHeroBlock
-              banners={heroBanners}
-              onBannerPress={onBannerPress}
-              categories={categoryRoots}
-              onCategorySelect={onCategorySelect}
-            />
-
-            <HomeContentContainer>
-              <NewArrivalsSection
-                products={urgent}
-                onProductPress={onProductPress}
-                onToggleFavorite={onToggleFavorite}
-              />
-
-              <LazySection
-                fallback={
-                  <SkeletonPulse>
-                    <HomeTrendingSkeleton isWide={false} />
-                    <HomeSaleSkeleton isWide={false} />
-                  </SkeletonPulse>
-                }
-              >
-                <TrendingProductsSection
-                  products={trending}
-                  onProductPress={onProductPress}
-                  onToggleFavorite={onToggleFavorite}
-                />
-                <HomepageAdBanner
-                  banner={promoBanner}
-                  onPress={onBannerPress}
-                />
-              </LazySection>
-
-              <LazySection
-                fallback={
-                  <SkeletonPulse>
-                    <HomeSpecialSkeleton isWide={false} />
-                  </SkeletonPulse>
-                }
-              >
-                <SpecialOffersSection
-                  products={specialOffers}
-                  onProductPress={onProductPress}
-                  onToggleFavorite={onToggleFavorite}
-                />
-              </LazySection>
-
-              {data.brands.length > 0 ? (
-                <LazySection
-                  fallback={
-                    <SkeletonPulse>
-                      <HomeBrandsSkeleton />
-                    </SkeletonPulse>
-                  }
-                >
-                  <BrandStrip brands={data.brands} />
-                </LazySection>
-              ) : null}
-            </HomeContentContainer>
-          </>
         ) : (
           <HomeContentContainer>
-            <View style={styles.heroRow}>
-              <View style={styles.sidebar}>
-                <CategorySidebar
-                  categories={categoryRoots}
-                  onSelect={onCategorySelect}
-                  maxHeight={HERO_HEIGHT_DESKTOP}
-                />
-              </View>
-              <View style={styles.hero}>
-                <HeroSlider
-                  slides={heroBanners}
-                  onSlidePress={onBannerPress}
-                  height={HERO_HEIGHT_DESKTOP}
-                />
-              </View>
-            </View>
+            {/* 1. Hero & Arama (Search Bar + Dynamic Text + Quick Access Links) */}
+            <HomeHeroSection />
 
-            <HomeSearchBar />
+            {/* 2. Kategoriler (Box-style cards flowing horizontally) */}
+            <CategoryStrip
+              categories={categoryRoots}
+              onSelect={onCategorySelect}
+            />
 
+            {/* 3. Acil İlanlar (Hidden if empty; banner card at end if present) */}
             <NewArrivalsSection
               products={urgent}
               onProductPress={onProductPress}
               onToggleFavorite={onToggleFavorite}
             />
 
+            {/* 4. Vitrin İlanları (Hidden if empty; ad-like banner inserted in middle) */}
             <LazySection
               fallback={
                 <SkeletonPulse>
                   <HomeTrendingSkeleton isWide={isWide} />
-                  <HomeSaleSkeleton isWide={isWide} />
                 </SkeletonPulse>
               }
             >
@@ -248,24 +157,26 @@ function HomeFeedComponent({
                 onProductPress={onProductPress}
                 onToggleFavorite={onToggleFavorite}
               />
-              <HomepageAdBanner banner={promoBanner} onPress={onBannerPress} />
             </LazySection>
 
-            <LazySection
-              fallback={
-                <SkeletonPulse>
-                  <HomeSpecialSkeleton isWide={isWide} />
-                </SkeletonPulse>
-              }
-            >
-              <SpecialOffersSection
-                products={specialOffers}
-                onProductPress={onProductPress}
-                onToggleFavorite={onToggleFavorite}
-              />
-            </LazySection>
+            {/* 5. Kampanyalar (Slider format; click opens campaign detail) */}
+            {campaignBanners.length > 0 ? (
+              <LazySection
+                fallback={
+                  <SkeletonPulse>
+                    <HomeSaleSkeleton isWide={isWide} />
+                  </SkeletonPulse>
+                }
+              >
+                <CampaignsSliderSection
+                  banners={campaignBanners}
+                  onBannerPress={onBannerPress}
+                />
+              </LazySection>
+            ) : null}
 
-            {data.brands.length > 0 ? (
+            {/* 6. Markalar (İsteğe Bağlı Alt Blok) */}
+            {data.brands && data.brands.length > 0 ? (
               <LazySection
                 fallback={
                   <SkeletonPulse>
@@ -315,16 +226,8 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   contentMobile: {
-    paddingTop: 0,
+    paddingTop: Spacing.sm,
   },
-  heroRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    gap: Spacing.lg,
-    marginBottom: Spacing.sm,
-  },
-  sidebar: { minWidth: 248, flexShrink: 0, paddingTop: 4, zIndex: 20 },
-  hero: { flex: 1, minWidth: 0, zIndex: 1 },
   topBtn: {
     position: 'absolute',
     right: 16,

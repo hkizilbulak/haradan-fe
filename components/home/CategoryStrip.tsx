@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import {
@@ -12,11 +11,9 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import type { CategoryTreeNode } from '@/types';
 
 type CategoryStripProps = {
-  /** Catalog ağacı kökleri — pickListingRootCategories ile filtrelenir. */
   categories: CategoryTreeNode[];
   activeId?: string | null;
   onSelect?: (category: CategoryTreeNode) => void;
-  /** Hero altı premium kısayol şeridi */
   variant?: 'default' | 'premium';
 };
 
@@ -24,88 +21,48 @@ export function CategoryStrip({
   categories,
   activeId,
   onSelect,
-  variant = 'default',
 }: CategoryStripProps) {
   const primary = useThemeColor('primary');
   const surface = useThemeColor('surface');
   const border = useThemeColor('border');
   const text = useThemeColor('text');
-  const textSecondary = useThemeColor('textSecondary');
+  const textMuted = useThemeColor('textMuted');
 
-  const roots = useMemo(
-    () => pickListingRootCategories(categories),
-    [categories]
-  );
+  // Collect display categories (both roots and prominent sub-categories)
+  const displayItems = useMemo(() => {
+    const roots = pickListingRootCategories(categories);
+    const result: CategoryTreeNode[] = [];
 
-  if (roots.length === 0) return null;
+    roots.forEach((root) => {
+      if (root.children && root.children.length > 0) {
+        root.children.forEach((child) => result.push(child));
+      } else {
+        result.push(root);
+      }
+    });
 
-  if (variant === 'premium') {
-    return (
-      <View style={styles.premiumWrap}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.premiumList}
-          accessibilityRole="tablist"
-        >
-          {roots.map((cat) => {
-            const active = cat.id === activeId;
-            const icon = getCategoryIcon(cat.slug);
-            return (
-              <Pressable
-                key={cat.id}
-                onPress={() => onSelect?.(cat)}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={cat.name}
-                style={({ pressed }) => [
-                  styles.premiumItem,
-                  pressed && { opacity: 0.82 },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.premiumIcon,
-                    {
-                      backgroundColor: active
-                        ? primary
-                        : 'rgba(255,255,255,0.16)',
-                      borderColor: active
-                        ? primary
-                        : 'rgba(255,255,255,0.22)',
-                    },
-                  ]}
-                >
-                  <Ionicons name={icon} size={22} color="#fff" />
-                </View>
-                <Text
-                  style={[
-                    styles.premiumLabel,
-                    { color: active ? '#fff' : 'rgba(255,255,255,0.88)' },
-                  ]}
-                  numberOfLines={2}
-                >
-                  {cat.name}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
-    );
-  }
+    // Fallback if no subcategories expanded
+    return result.length > 0 ? result : roots;
+  }, [categories]);
+
+  if (displayItems.length === 0) return null;
 
   return (
     <View style={styles.wrap}>
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: text }]}>Kategoriler</Text>
+      </View>
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.list}
         accessibilityRole="tablist"
       >
-        {roots.map((cat) => {
+        {displayItems.map((cat) => {
           const active = cat.id === activeId;
           const icon = getCategoryIcon(cat.slug);
+
           return (
             <Pressable
               key={cat.id}
@@ -114,38 +71,40 @@ export function CategoryStrip({
               accessibilityState={{ selected: active }}
               accessibilityLabel={cat.name}
               style={({ pressed }) => [
-                styles.chip,
+                styles.boxCard,
                 {
                   backgroundColor: active ? primary : surface,
                   borderColor: active ? primary : border,
-                  opacity: pressed ? 0.9 : 1,
+                  opacity: pressed ? 0.88 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
                 },
               ]}
             >
-              <Ionicons
-                name={icon}
-                size={16}
-                color={active ? '#fff' : primary}
-              />
+              <View
+                style={[
+                  styles.iconBox,
+                  {
+                    backgroundColor: active
+                      ? 'rgba(255,255,255,0.2)'
+                      : 'rgba(59, 130, 246, 0.08)',
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={icon}
+                  size={24}
+                  color={active ? '#ffffff' : primary}
+                />
+              </View>
               <Text
                 style={[
                   styles.label,
-                  { color: active ? '#fff' : text },
+                  { color: active ? '#ffffff' : text },
                 ]}
-                numberOfLines={1}
+                numberOfLines={2}
               >
                 {cat.name}
               </Text>
-              {cat.children.length > 0 ? (
-                <Text
-                  style={{
-                    ...Typography.caption,
-                    color: active ? '#ffffffcc' : textSecondary,
-                  }}
-                >
-                  {cat.children.length}
-                </Text>
-              ) : null}
             </Pressable>
           );
         })}
@@ -154,65 +113,52 @@ export function CategoryStrip({
   );
 }
 
-const PREMIUM_ITEM_W = 76;
-
 const styles = StyleSheet.create({
   wrap: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.xl,
+  },
+  header: {
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   list: {
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.sm,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    minHeight: 40,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-  },
-  label: {
-    ...Typography.small,
-    fontWeight: '600',
-  },
-  premiumWrap: {
-    marginTop: 2,
-  },
-  premiumList: {
-    gap: 12,
     paddingHorizontal: 2,
+    gap: 12,
+    paddingBottom: 4,
   },
-  premiumItem: {
-    width: PREMIUM_ITEM_W,
-    alignItems: 'center',
-    gap: 8,
-  },
-  premiumIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
+  boxCard: {
+    width: 140,
+    height: 120,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 10,
     ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
+      web: {
+        boxShadow: '0 4px 14px rgba(0, 0, 0, 0.04)',
+        cursor: 'pointer',
+        transition: 'all 180ms ease',
       },
-      android: { elevation: 4 },
       default: {},
     }),
   },
-  premiumLabel: {
-    fontSize: 10,
+  iconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  label: {
+    fontSize: 13,
     fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 13,
-    letterSpacing: -0.1,
-    maxWidth: PREMIUM_ITEM_W,
+    lineHeight: 16,
   },
 });

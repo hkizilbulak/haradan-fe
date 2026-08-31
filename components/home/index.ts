@@ -1,4 +1,6 @@
 export { HeroSlider } from './HeroSlider';
+export { HomeHeroSection } from './HomeHeroSection';
+export { CampaignsSliderSection } from './CampaignsSliderSection';
 export { BenefitsBar } from './BenefitsBar';
 export { CategoryStrip } from './CategoryStrip';
 export { CategorySidebar } from './CategorySidebar';

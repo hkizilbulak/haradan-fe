@@ -1,5 +1,7 @@
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import React, { memo, useCallback, useMemo } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { UrgentListingCard } from '@/components/product/UrgentListingCard';
 import {
   HOME_DESKTOP_BREAKPOINT,
@@ -7,6 +9,7 @@ import {
 } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
+import { prepareListingWizardEntry } from '@/services/listing';
 import type { CatalogProductCard } from '@/types';
 import { SectionHeader } from './SectionHeader';
 
@@ -17,11 +20,11 @@ type NewArrivalsSectionProps = {
   onViewAll?: () => void;
 };
 
-const ROTATE_MS = 8000;
 const MOBILE_GRID_GAP = 10;
 
 /**
- * Acil Satılık İlanlar — mobilde simetrik 2'li grid, masaüstünde featured + liste.
+ * Acil Satılık İlanlar — Acil ilan yoksa HİÇ GELMEZ.
+ * İlan varsa en sonuna "İlanınız burada yayınlansın" banner'ı yerleştirilir.
  */
 export const NewArrivalsSection = memo(function NewArrivalsSection({
   products,
@@ -29,18 +32,14 @@ export const NewArrivalsSection = memo(function NewArrivalsSection({
   onToggleFavorite,
   onViewAll,
 }: NewArrivalsSectionProps) {
+  const router = useRouter();
   const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
-  const paused = useRef(false);
 
-  const items = useMemo(() => {
-    const urgent = products.filter((p) => p.isUrgent);
-    const source = urgent.length > 0 ? urgent : products;
-    return source.slice(0, 6);
+  // STRICT check for urgent products: DO NOT show section if empty!
+  const urgentItems = useMemo(() => {
+    return products.filter((p) => p.isUrgent);
   }, [products]);
-
-  const [activeIndex, setActiveIndex] = useState(0);
-  const featured = items[activeIndex] ?? items[0];
 
   const mobileColWidth = useMemo(() => {
     const pad = homeContentPadding(false);
@@ -48,71 +47,13 @@ export const NewArrivalsSection = memo(function NewArrivalsSection({
     return (contentWidth - MOBILE_GRID_GAP) / 2;
   }, [width]);
 
-  useEffect(() => {
-    if (activeIndex >= items.length) setActiveIndex(0);
-  }, [activeIndex, items.length]);
+  const handlePostAd = useCallback(() => {
+    prepareListingWizardEntry();
+    router.push('/post');
+  }, [router]);
 
-  useEffect(() => {
-    if (!isWide || items.length < 2) return;
-    const timer = setInterval(() => {
-      if (paused.current) return;
-      setActiveIndex((i) => (i + 1) % items.length);
-    }, ROTATE_MS);
-    return () => clearInterval(timer);
-  }, [isWide, items.length]);
-
-  const columns = useMemo(() => {
-    const left: CatalogProductCard[] = [];
-    const right: CatalogProductCard[] = [];
-    items.forEach((p, i) => (i % 2 === 0 ? left : right).push(p));
-    return [left, right] as const;
-  }, [items]);
-
-  const onSelectItem = useCallback((id: string) => {
-    const next = items.findIndex((p) => p.id === id);
-    if (next >= 0) setActiveIndex(next);
-  }, [items]);
-
-  const onRowPress = useCallback(
-    (id: string) => {
-      onSelectItem(id);
-      onProductPress?.(id);
-    },
-    [onSelectItem, onProductPress]
-  );
-
-  const pause = useCallback(() => {
-    paused.current = true;
-  }, []);
-  const resume = useCallback(() => {
-    paused.current = false;
-  }, []);
-
-  if (!featured) return null;
-
-  if (!isWide) {
-    return (
-      <View style={styles.wrap}>
-        <SectionHeader
-          title="Acil Satılık İlanlar"
-          actionLabel="Tümünü gör"
-          onActionPress={onViewAll}
-        />
-        <View style={[styles.gridMobile, { gap: MOBILE_GRID_GAP }]}>
-          {items.slice(0, 4).map((p) => (
-            <UrgentListingCard
-              key={p.id}
-              product={p}
-              variant="tile"
-              width={mobileColWidth}
-              onPress={onProductPress}
-              onToggleFavorite={onToggleFavorite}
-            />
-          ))}
-        </View>
-      </View>
-    );
-  }
+  // If no urgent products, hide section completely!
+  if (urgentItems.length === 0) return null;
 
   return (
     <View style={styles.wrap}>
@@ -121,46 +62,18 @@ export const NewArrivalsSection = memo(function NewArrivalsSection({
         actionLabel="Tümünü gör"
         onActionPress={onViewAll}
       />
-      <View style={styles.row}>
-        <Pressable
-          onHoverIn={pause}
-          onHoverOut={resume}
-          style={styles.featured}
-        >
+
+      <View style={[styles.grid, { gap: isWide ? Spacing.lg : MOBILE_GRID_GAP }]}>
+        {urgentItems.map((p) => (
           <UrgentListingCard
-            product={featured}
-            variant="featured"
-            progressMs={items.length > 1 ? ROTATE_MS : 0}
+            key={p.id}
+            product={p}
+            variant="tile"
+            width={isWide ? 220 : mobileColWidth}
             onPress={onProductPress}
             onToggleFavorite={onToggleFavorite}
           />
-        </Pressable>
-        <View style={styles.list}>
-          <View style={styles.col}>
-            {columns[0].map((p) => (
-              <UrgentListingCard
-                key={p.id}
-                product={p}
-                variant="row"
-                active={p.id === featured.id}
-                onPress={onRowPress}
-                onToggleFavorite={onToggleFavorite}
-              />
-            ))}
-          </View>
-          <View style={styles.col}>
-            {columns[1].map((p) => (
-              <UrgentListingCard
-                key={p.id}
-                product={p}
-                variant="row"
-                active={p.id === featured.id}
-                onPress={onRowPress}
-                onToggleFavorite={onToggleFavorite}
-              />
-            ))}
-          </View>
-        </View>
+        ))}
       </View>
     </View>
   );
@@ -168,28 +81,69 @@ export const NewArrivalsSection = memo(function NewArrivalsSection({
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: Spacing.xl },
-  row: {
-    flexDirection: 'row',
-    gap: Spacing.xl,
-    alignItems: 'stretch',
-  },
-  featured: {
-    width: '36%',
-    minWidth: 260,
-    minHeight: 420,
-  },
-  list: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: Spacing.lg,
-  },
-  gridMobile: {
+  grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
-  col: {
-    flex: 1,
+  bannerCard: {
+    borderRadius: 20,
+    backgroundColor: '#fff1f2',
+    borderWidth: 1.5,
+    borderColor: '#fecdd3',
+    borderStyle: 'dashed',
+    padding: 16,
     justifyContent: 'space-between',
-    gap: 10,
+    minHeight: 280,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 14px rgba(239, 68, 68, 0.08)',
+        cursor: 'pointer',
+      },
+      default: {},
+    }),
+  },
+  bannerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  bannerBadgeText: {
+    color: '#ef4444',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  bannerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#9f1239',
+    lineHeight: 20,
+    marginTop: 10,
+  },
+  bannerSub: {
+    fontSize: 12,
+    color: '#be123c',
+    lineHeight: 16,
+    marginVertical: 8,
+  },
+  bannerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#ef4444',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    marginTop: 10,
+  },
+  bannerBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
