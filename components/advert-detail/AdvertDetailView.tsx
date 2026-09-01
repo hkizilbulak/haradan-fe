@@ -254,21 +254,6 @@ export function AdvertDetailView({
       <View style={[styles.lower, !isWide && styles.lowerMobile]}>
         <View style={styles.lowerMain}>
           <View
-            ref={specsAnchorRef}
-            collapsable={false}
-            nativeID="advert-specs"
-            style={Platform.select({
-              web: { scrollMarginTop: isWide ? 24 : 16 } as any,
-              default: {},
-            })}
-          >
-            <AdvertSpecs
-              groups={detail.specs}
-              horse={detail.horse}
-              detail={detail}
-            />
-          </View>
-          <View
             ref={reviewsAnchorRef}
             collapsable={false}
             nativeID="advert-reviews"
@@ -426,6 +411,19 @@ export function AdvertDetailView({
               <AdvertDetailBanner banner={detailBanners[0] ?? null} />
             </View>
 
+            <View
+              ref={specsAnchorRef}
+              collapsable={false}
+              nativeID="advert-specs"
+              style={{ marginTop: Spacing.xl }}
+            >
+              <AdvertSpecs
+                groups={detail.specs}
+                horse={detail.horse}
+                detail={detail}
+              />
+            </View>
+
             {lowerSections}
           </HomeContentContainer>
         </ScrollView>
@@ -524,6 +522,21 @@ export function AdvertDetailView({
                 height={galleryHeight}
                 accessToken={isOwner ? accessToken : null}
               />
+              <View
+                ref={specsAnchorRef}
+                collapsable={false}
+                nativeID="advert-specs"
+                style={Platform.select({
+                  web: { scrollMarginTop: isWide ? 24 : 16 } as any,
+                  default: {},
+                })}
+              >
+                <AdvertSpecs
+                  groups={detail.specs}
+                  horse={detail.horse}
+                  detail={detail}
+                />
+              </View>
             </View>
             <View style={styles.buyCol}>
               <AdvertBuyBox
@@ -671,8 +684,8 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xl,
     alignItems: 'flex-start',
   },
-  galleryCol: { flex: 1.15, minWidth: 0 },
-  buyCol: { flex: 0.85, minWidth: 0 },
+  galleryCol: { flex: 1.15, minWidth: 0, gap: Spacing.xl },
+  buyCol: { flex: 0.85, minWidth: 0, gap: Spacing.xl },
   lower: {
     flexDirection: 'row',
     gap: Spacing.xl,
