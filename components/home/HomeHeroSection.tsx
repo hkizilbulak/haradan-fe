@@ -143,6 +143,7 @@ export const HomeHeroSection = memo(function HomeHeroSection({
   const border = useThemeColor('border');
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
+  const primary = useThemeColor('primary');
 
   return (
     <View style={styles.container}>
@@ -175,7 +176,7 @@ export const HomeHeroSection = memo(function HomeHeroSection({
                 },
               ]}
             >
-              <Text style={[styles.wordText, !isWide && styles.wordTextMobile]}>
+              <Text style={[styles.wordText, { color: primary }, !isWide && styles.wordTextMobile]}>
                 {DYNAMIC_WORDS[wordIndex]}
               </Text>
             </Animated.View>

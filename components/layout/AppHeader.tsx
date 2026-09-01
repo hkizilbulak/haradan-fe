@@ -491,6 +491,7 @@ function PostAdButton({
   onPress?: () => void;
   compact?: boolean;
 }) {
+  const primary = useThemeColor('primary');
   return (
     <Pressable
       onPress={onPress}
@@ -498,6 +499,7 @@ function PostAdButton({
       accessibilityLabel="İlan ver"
       style={({ pressed }) => [
         styles.postAdBtn,
+        { backgroundColor: primary },
         compact && styles.postAdBtnCompact,
         {
           opacity: pressed ? 0.9 : 1,
@@ -779,7 +781,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#ff6000',
     paddingHorizontal: 16,
     paddingVertical: 9,
     borderRadius: 10,

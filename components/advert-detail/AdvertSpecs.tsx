@@ -1,6 +1,7 @@
 import React, { memo, useMemo } from 'react';
 import {
   Linking,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -32,6 +33,7 @@ type SoftRow = {
 type SoftSection = {
   id: string;
   title: string;
+  icon: keyof typeof Ionicons.glyphMap;
   rows: SoftRow[];
 };
 
@@ -47,7 +49,7 @@ function getSpecIcon(label: string): keyof typeof Ionicons.glyphMap {
   if (l.includes('telefon') || l.includes('phone') || l.includes('iletişim')) return 'call-outline';
   if (l.includes('konum') || l.includes('şehir') || l.includes('ilçe') || l.includes('adres')) return 'location-outline';
   if (l.includes('aygır') || l.includes('at adı') || l.includes('isim') || l.includes('ad')) return 'ribbon-outline';
-  if (l.includes('Irk') || l.includes('breed') || l.includes('cins')) return 'leaf-outline';
+  if (l.includes('irk') || l.includes('breed') || l.includes('cins')) return 'leaf-outline';
   if (l.includes('yaş') || l.includes('age') || l.includes('tarih') || l.includes('doğum') || l.includes('yıl')) return 'calendar-outline';
   if (l.includes('don') || l.includes('renk') || l.includes('coat') || l.includes('color')) return 'color-palette-outline';
   if (l.includes('cinsiyet') || l.includes('gender')) return 'male-female-outline';
@@ -61,7 +63,17 @@ function getSpecIcon(label: string): keyof typeof Ionicons.glyphMap {
   return 'information-circle-outline';
 }
 
-/** Genel bilgiler — dinamik resolved properties, TJK soy kütüğü ve konum detayları. */
+function getSectionIcon(id: string, title: string): keyof typeof Ionicons.glyphMap {
+  const l = (title || id || '').toLowerCase();
+  if (id === 'horse-identity' || l.includes('kimlik')) return 'ribbon-outline';
+  if (id === 'horse-pedigree' || l.includes('orijin') || l.includes('soy')) return 'git-branch-outline';
+  if (id === 'horse-people' || l.includes('kişi')) return 'people-outline';
+  if (id === 'location-section' || l.includes('konum') || l.includes('adres')) return 'location-outline';
+  if (id === 'horse-performance' || l.includes('performans')) return 'trophy-outline';
+  return 'options-outline';
+}
+
+/** Genel bilgiler — kart bazlı, yüksek kontrastlı, mobil uyumlu ilan detay özellikleri. */
 export const AdvertSpecs = memo(function AdvertSpecs({
   groups,
   horse: propHorse,
@@ -72,14 +84,16 @@ export const AdvertSpecs = memo(function AdvertSpecs({
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
   const textSecondary = useThemeColor('textSecondary');
-  const header = useThemeColor('header');
+  const surface = useThemeColor('surface');
+  const border = useThemeColor('border');
+  const primary = useThemeColor('primary');
 
   const horse = detail?.horse ?? propHorse;
   const rawLocation = useAdvertLocation(detail);
   const locationCity = rawLocation || 'Belirtilmedi';
 
-  const { title, row1, row2, hasRaces } = useMemo(() => {
-    const sections: SoftSection[] = [];
+  const { title, sections, hasRaces } = useMemo(() => {
+    const list: SoftSection[] = [];
 
     // 1. TJK Horse Identity & Pedigree (if meaningful horse info is present)
     const hasHorseData = Boolean(
@@ -121,7 +135,12 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       if (horse.heightCm) identity.push({ icon: 'resize-outline', label: 'Cidago', value: `${horse.heightCm} cm` });
 
       if (identity.length > 0) {
-        sections.push({ id: 'horse-identity', title: 'Kimlik ve Fiziksel', rows: identity });
+        list.push({
+          id: 'horse-identity',
+          title: 'Kimlik ve Fiziksel',
+          icon: 'ribbon-outline',
+          rows: identity,
+        });
       }
 
       const pedigree: SoftRow[] = [];
@@ -130,7 +149,12 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       if (horse.damsire) pedigree.push({ icon: 'git-network-outline', label: 'Kısrak Babası', value: horse.damsire });
 
       if (pedigree.length > 0) {
-        sections.push({ id: 'horse-pedigree', title: 'Orijin (Soy Ağacı)', rows: pedigree });
+        list.push({
+          id: 'horse-pedigree',
+          title: 'Orijin (Soy Ağacı)',
+          icon: 'git-branch-outline',
+          rows: pedigree,
+        });
       }
 
       const people: SoftRow[] = [];
@@ -139,11 +163,16 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       if (horse.trainer) people.push({ icon: 'fitness-outline', label: 'Antrenör', value: horse.trainer });
 
       if (people.length > 0) {
-        sections.push({ id: 'horse-people', title: 'İlgili Kişiler', rows: people });
+        list.push({
+          id: 'horse-people',
+          title: 'İlgili Kişiler',
+          icon: 'people-outline',
+          rows: people,
+        });
       }
     }
 
-    // 2. Dynamic Resolved Category Properties (from groups or detail.specs)
+    // 2. Dynamic Resolved Category Properties
     const allGroups = groups && groups.length > 0 ? groups : (detail?.specs ?? []);
     for (const g of allGroups) {
       if (g && g.rows && g.rows.length > 0) {
@@ -156,19 +185,18 @@ export const AdvertSpecs = memo(function AdvertSpecs({
             hint: r.hint,
           }));
         if (validRows.length > 0) {
-          if (validRows.length > 5) {
-            const chunk1 = validRows.slice(0, Math.ceil(validRows.length / 2));
-            const chunk2 = validRows.slice(Math.ceil(validRows.length / 2));
-            sections.push({ id: `${g.id || 'props'}-1`, title: g.title || 'Özellikler', rows: chunk1 });
-            sections.push({ id: `${g.id || 'props'}-2`, title: 'Ek Özellikler', rows: chunk2 });
-          } else {
-            sections.push({ id: g.id || 'category-specs', title: g.title || 'Özellikler', rows: validRows });
-          }
+          const gTitle = g.title || 'Özellikler';
+          list.push({
+            id: g.id || 'category-specs',
+            title: gTitle,
+            icon: getSectionIcon(g.id || '', gTitle),
+            rows: validRows,
+          });
         }
       }
     }
 
-    // 3. Location and Address (Core Advert Data)
+    // 3. Location and Address
     const locationRows: SoftRow[] = [];
     if (locationCity && locationCity !== 'Belirtilmedi') {
       locationRows.push({ icon: 'location-outline', label: 'Şehir / İlçe', value: locationCity });
@@ -177,14 +205,20 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       locationRows.push({ icon: 'navigate-outline', label: 'Açık Adres', value: detail.address.trim() });
     }
     if (locationRows.length > 0) {
-      sections.push({ id: 'location-section', title: 'Konum ve Adres', rows: locationRows });
+      list.push({
+        id: 'location-section',
+        title: 'Konum ve Adres',
+        icon: 'location-outline',
+        rows: locationRows,
+      });
     }
 
-    // 4. Career Performance (for race horses)
+    // 4. Career Performance
     if (hasHorseData && horse && horse.career && horse.career.starts > 0) {
-      sections.push({
+      list.push({
         id: 'horse-performance',
         title: 'Performans ve Kazanç',
+        icon: 'trophy-outline',
         rows: [
           { icon: 'trophy-outline', label: 'Kariyer', value: `${horse.career.starts} start · ${horse.career.first}-${horse.career.second}-${horse.career.third}` },
           ...(horse.handicap ? [{ icon: 'speedometer-outline' as const, label: 'Handikap', value: String(horse.handicap) }] : []),
@@ -192,92 +226,106 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       });
     }
 
-    // Distribute sections across row1 (up to 3 sections) and row2 (remaining)
-    const r1 = sections.slice(0, 3);
-    const r2 = sections.slice(3);
-
     const titleText = hasHorseData ? 'Genel Bilgiler' : 'İlan Özellikleri ve Detaylar';
 
     return {
       title: titleText,
-      row1: r1,
-      row2: r2,
+      sections: list,
       hasRaces: Boolean(hasHorseData && horse && horse.races && horse.races.length > 0),
     };
   }, [detail, groups, horse, locationCity]);
+
+  if (sections.length === 0 && !hasRaces) return null;
 
   return (
     <View style={styles.wrap}>
       <Text style={[styles.pageTitle, { color: text }]}>{title}</Text>
 
-      {row1.length > 0 ? (
-        <View style={[styles.columns, !isWide && styles.columnsStack]}>
-          {row1.map((section) => (
-            <SpecColumn
-              key={section.id}
-              section={section}
-              text={text}
-              textMuted={textMuted}
-              textSecondary={textSecondary}
-              stack={!isWide}
-            />
-          ))}
-        </View>
-      ) : null}
+      <View style={[styles.grid, !isWide && styles.gridMobile]}>
+        {sections.map((section) => (
+          <View
+            key={section.id}
+            style={[
+              styles.sectionCard,
+              { backgroundColor: surface, borderColor: border },
+              isWide ? styles.sectionCardWide : styles.sectionCardMobile,
+            ]}
+          >
+            {/* Card Header */}
+            <View style={styles.cardHeader}>
+              <View style={[styles.headerIconWrap, { backgroundColor: `${primary}15` }]}>
+                <Ionicons name={section.icon} size={16} color={primary} />
+              </View>
+              <Text style={[styles.cardTitle, { color: text }]}>{section.title}</Text>
+            </View>
 
-      {row2.length > 0 ? (
-        <View style={[styles.columns, !isWide && styles.columnsStack]}>
-          {row2.map((section) => (
-            <SpecColumn
-              key={section.id}
-              section={section}
-              text={text}
-              textMuted={textMuted}
-              textSecondary={textSecondary}
-              stack={!isWide}
-            />
-          ))}
-        </View>
-      ) : null}
-
-      {hasRaces && horse ? (
-        <View style={[styles.columns, !isWide && styles.columnsStack]}>
-          <View style={[styles.column, !isWide && styles.columnStack]}>
-            <Text style={[styles.sectionTitle, { color: text }]}>
-              Yarış Geçmişi
-            </Text>
-            <View style={styles.raceList}>
-              {horse.races.slice(0, 5).map((race) => (
-                <View key={race.id} style={styles.raceRow}>
-                  <Text style={[styles.racePlace, { color: header }]}>
-                    {race.place}.
-                  </Text>
-                  <View style={styles.raceCopy}>
-                    <Text
-                      style={[styles.raceVenue, { color: text }]}
-                      numberOfLines={1}
-                    >
-                      {race.venue}
-                    </Text>
-                    <Text style={[styles.raceMeta, { color: textMuted }]}>
-                      {race.date} · {race.distance} · {race.surface}
-                    </Text>
+            {/* Card Content Grid */}
+            <View style={styles.rowsGrid}>
+              {section.rows.map((row) => (
+                <View key={`${section.id}-${row.label}`} style={styles.rowItem}>
+                  <View style={[styles.rowIconWrap, { borderColor: border }]}>
+                    <Ionicons name={row.icon} size={15} color={textSecondary} />
                   </View>
-                  {race.videoUrl ? (
-                    <Pressable
-                      onPress={() => Linking.openURL(race.videoUrl!)}
-                      hitSlop={8}
-                    >
-                      <Ionicons
-                        name="play-circle-outline"
-                        size={20}
-                        color={header}
-                      />
-                    </Pressable>
-                  ) : null}
+                  <View style={styles.rowContent}>
+                    <Text style={[styles.rowLabel, { color: textSecondary }]}>
+                      {row.label}
+                    </Text>
+                    <Text style={[styles.rowValue, { color: text }]}>
+                      {row.value}
+                    </Text>
+                    {row.hint ? (
+                      <Text style={[styles.rowHint, { color: textMuted }]}>
+                        {row.hint}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
               ))}
             </View>
+          </View>
+        ))}
+      </View>
+
+      {hasRaces && horse ? (
+        <View
+          style={[
+            styles.sectionCard,
+            styles.sectionCardMobile,
+            { backgroundColor: surface, borderColor: border },
+          ]}
+        >
+          <View style={styles.cardHeader}>
+            <View style={[styles.headerIconWrap, { backgroundColor: `${primary}15` }]}>
+              <Ionicons name="trophy-outline" size={16} color={primary} />
+            </View>
+            <Text style={[styles.cardTitle, { color: text }]}>Yarış Geçmişi</Text>
+          </View>
+
+          <View style={styles.raceList}>
+            {horse.races.slice(0, 5).map((race) => (
+              <View key={race.id} style={[styles.raceRow, { borderBottomColor: border }]}>
+                <Text style={[styles.racePlace, { color: primary }]}>
+                  {race.place}.
+                </Text>
+                <View style={styles.raceCopy}>
+                  <Text style={[styles.raceVenue, { color: text }]} numberOfLines={1}>
+                    {race.venue}
+                  </Text>
+                  <Text style={[styles.raceMeta, { color: textSecondary }]}>
+                    {race.date} · {race.distance} · {race.surface}
+                  </Text>
+                </View>
+                {race.videoUrl ? (
+                  <Pressable
+                    onPress={() => Linking.openURL(race.videoUrl!)}
+                    hitSlop={8}
+                    style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+                  >
+                    <Ionicons name="play-circle" size={22} color={primary} />
+                  </Pressable>
+                ) : null}
+              </View>
+            ))}
           </View>
         </View>
       ) : null}
@@ -285,114 +333,129 @@ export const AdvertSpecs = memo(function AdvertSpecs({
   );
 });
 
-function SpecColumn({
-  section,
-  text,
-  textMuted,
-  textSecondary,
-  stack,
-}: {
-  section: SoftSection;
-  text: string;
-  textMuted: string;
-  textSecondary: string;
-  stack: boolean;
-}) {
-  return (
-    <View style={[styles.column, stack && styles.columnStack]}>
-      <Text style={[styles.sectionTitle, { color: text }]}>
-        {section.title}
-      </Text>
-      <View style={styles.rows}>
-        {section.rows.map((row) => (
-          <View key={`${section.id}-${row.label}`} style={styles.row}>
-            <View style={styles.iconWrap}>
-              <Ionicons name={row.icon} size={15} color={textSecondary} />
-            </View>
-            <View style={styles.rowCopy}>
-              <Text style={[styles.rowLabel, { color: textMuted }]}>
-                {row.label}
-              </Text>
-              <Text style={[styles.rowValue, { color: text }]} numberOfLines={2}>
-                {row.value}
-              </Text>
-              {row.hint ? (
-                <Text style={[styles.rowHint, { color: textMuted }]}>
-                  {row.hint}
-                </Text>
-              ) : null}
-            </View>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  wrap: { gap: Spacing.xl },
+  wrap: {
+    gap: Spacing.lg,
+  },
   pageTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
     letterSpacing: -0.4,
+    marginBottom: 4,
   },
-  columns: {
+  grid: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 28,
+    flexWrap: 'wrap',
+    gap: 16,
   },
-  columnsStack: {
+  gridMobile: {
     flexDirection: 'column',
-    gap: 22,
+    flexWrap: 'nowrap',
+    gap: 14,
   },
-  column: {
-    flex: 1,
-    minWidth: 0,
-    gap: 12,
+  sectionCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 16,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.04)',
+      },
+      default: {},
+    }),
   },
-  columnStack: {
-    flex: undefined,
+  sectionCardWide: {
+    width: '48.5%',
+    flexGrow: 1,
+  },
+  sectionCardMobile: {
     width: '100%',
   },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: -0.15,
-  },
-  rows: { gap: 12 },
-  row: {
+  cardHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 10,
+    marginBottom: 14,
+    paddingBottom: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
-  iconWrap: {
-    width: 24,
-    height: 24,
+  headerIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  rowsGrid: {
+    gap: 12,
+  },
+  rowItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  rowIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  rowContent: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  rowLabel: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+  },
+  rowValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    lineHeight: 20,
+  },
+  rowHint: {
+    fontSize: 11,
+    fontWeight: '400',
     marginTop: 1,
   },
-  rowCopy: { flex: 1, gap: 2, minWidth: 0 },
-  rowLabel: { fontSize: 11, fontWeight: '500' },
-  rowValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: -0.15,
-    lineHeight: 18,
+  raceList: {
+    gap: 10,
   },
-  rowHint: { fontSize: 11, fontWeight: '400', marginTop: 1 },
-  raceList: { gap: 12 },
   raceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   racePlace: {
-    fontSize: 14,
-    fontWeight: '700',
-    width: 22,
+    fontSize: 15,
+    fontWeight: '800',
+    width: 24,
   },
-  raceCopy: { flex: 1, gap: 2, minWidth: 0 },
-  raceVenue: { fontSize: 13, fontWeight: '600' },
-  raceMeta: { fontSize: 11, lineHeight: 15 },
+  raceCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  raceVenue: {
+    fontSize: 13.5,
+    fontWeight: '700',
+  },
+  raceMeta: {
+    fontSize: 11.5,
+    fontWeight: '500',
+  },
 });

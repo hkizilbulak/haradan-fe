@@ -13,6 +13,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Spacing } from '@/constants/Spacing';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import type { ActiveBannerItem } from '@/types';
 
 type CampaignsSliderSectionProps = {
@@ -26,6 +27,7 @@ export const CampaignsSliderSection = memo(function CampaignsSliderSection({
   banners,
   onBannerPress,
 }: CampaignsSliderSectionProps) {
+  const primary = useThemeColor('primary');
   const width = useLayoutWidth();
   const isWide = width >= 860;
   const scrollRef = useRef<ScrollView>(null);
@@ -147,7 +149,7 @@ export const CampaignsSliderSection = memo(function CampaignsSliderSection({
                   </Text>
                 ) : null}
 
-                <View style={styles.detailCta}>
+                <View style={[styles.detailCta, { backgroundColor: primary }]}>
                   <Text style={styles.detailCtaText}>Kampanya Detayı</Text>
                   <Ionicons name="arrow-forward" size={12} color="#ffffff" />
                 </View>
@@ -265,7 +267,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#ef4444',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
