@@ -50,7 +50,7 @@ const QUICK_ACCESS_LINKS: Array<{
     },
     {
       id: 'kosar',
-      title: 'Koşar Durumda Yarış Atları',
+      title: 'Koşar Durumda Atlar',
       icon: 'trophy-outline' as const,
       color: '#3b82f6',
       params: { q: 'Koşar Durumda' },
@@ -63,6 +63,13 @@ const QUICK_ACCESS_LINKS: Array<{
       params: { category: 'satilik-kisrak' },
     },
     {
+      id: 'tay',
+      title: 'Satılık Taylar',
+      icon: 'sparkles-outline' as const,
+      color: '#a855f7',
+      params: { category: 'satilik-tay' },
+    },
+    {
       id: 'aygir',
       title: 'Aşım Aygırları',
       icon: 'flame-outline' as const,
@@ -70,11 +77,18 @@ const QUICK_ACCESS_LINKS: Array<{
       params: { category: 'asim-hizmetleri' },
     },
     {
+      id: 'pansiyon',
+      title: 'Pansiyon Haralar',
+      icon: 'home-outline' as const,
+      color: '#06b6d4',
+      params: { category: 'pansiyon-haralar' },
+    },
+    {
       id: 'nakliye',
-      title: 'At Nakliyesi & Tesisler',
+      title: 'At Nakliyesi',
       icon: 'car-outline' as const,
       color: '#10b981',
-      params: { category: 'at-hizmetleri' },
+      params: { category: 'at-nakliyesi' },
     },
   ];
 
@@ -323,6 +337,8 @@ const styles = StyleSheet.create({
   },
   quickAccessSection: {
     marginTop: Spacing.lg,
+    width: '100%',
+    overflow: 'hidden',
   },
   quickAccessTitle: {
     fontSize: 12,
@@ -333,8 +349,8 @@ const styles = StyleSheet.create({
     paddingLeft: 4,
   },
   quickAccessScroll: {
-    gap: 10,
-    paddingHorizontal: 2,
+    gap: 8,
+    paddingHorizontal: 0,
     paddingBottom: 4,
   },
   quickAccessChip: {

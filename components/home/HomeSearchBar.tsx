@@ -46,7 +46,10 @@ export const DEFAULT_QUICK_LINKS: QuickSearchLink[] = [
   { id: 'tay', label: 'Tay', query: 'Tay' },
   { id: 'gebe', label: 'Gebe Kısrak', query: 'Gebe Kısrak' },
   { id: 'aygir', label: 'Aygır', query: 'Aygır' },
+  { id: 'kosar', label: 'Koşar Durumda', query: 'Koşar Durumda' },
+  { id: 'nakliye', label: 'At Nakliyesi', params: { category: 'at-nakliyesi' } },
   { id: 'acil', label: 'Acil İlanlar', params: { urgent: '1' } },
+  { id: 'pansiyon', label: 'Pansiyon', params: { category: 'pansiyon-haralar' } },
 ];
 
 type HomeSearchBarProps = {
@@ -557,12 +560,15 @@ const styles = StyleSheet.create({
   },
   quickLinksWrap: {
     marginTop: 10,
+    width: '100%',
+    maxWidth: '100%',
+    overflow: 'hidden',
   },
   quickLinksScroll: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 2,
+    gap: 6,
+    paddingHorizontal: 0,
     paddingVertical: 2,
   },
   quickChip: {
