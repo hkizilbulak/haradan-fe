@@ -1,5 +1,6 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
+import Head from 'expo-router/head';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme, View } from 'react-native';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
@@ -34,6 +35,19 @@ export default function RootLayout() {
       <ThemeProvider value={navTheme}>
         <ToastProvider>
           <HeaderDrawersProvider>
+            <Head>
+              <link rel="manifest" href="/manifest.json" />
+              <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
+              <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+              <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+              <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+              <link rel="apple-touch-icon-precomposed" sizes="180x180" href="/apple-touch-icon-precomposed.png" />
+              <meta name="mobile-web-app-capable" content="yes" />
+              <meta name="application-name" content="Haradan" />
+              <meta name="apple-mobile-web-app-capable" content="yes" />
+              <meta name="apple-mobile-web-app-title" content="Haradan" />
+              <meta name="theme-color" content="#0d1117" />
+            </Head>
             <View style={{ flex: 1 }}>
             <Stack>
               <Stack.Screen

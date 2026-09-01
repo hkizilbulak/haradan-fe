@@ -9,6 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:web": "expo export --platform web",
+    "build:icons": "npx tsx scripts/generate-icons.ts",
     "start:web": "node scripts/serve-web.mjs",
     "lint": "expo lint",
     "selftest:auth": "npx --yes tsx scripts/selftest-auth.ts",
@@ -61,9 +62,11 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@types/pngjs": "^6.0.5",
     "@types/react": "~19.0.10",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~9.2.0",
+    "pngjs": "^7.0.0",
     "typescript": "~5.8.3"
   }
 }
