@@ -173,7 +173,7 @@ export const AdvertReviews = memo(function AdvertReviews({
     <View style={styles.wrap}>
       <View style={styles.head}>
         <View style={styles.titleRow}>
-          <Text style={[styles.title, { color: text }]}>Yorumlar ve Değerlendirmeler</Text>
+          <Text style={[styles.title, { color: text }]}>Yorumlar</Text>
           {totalCount > 0 ? (
             <View style={[styles.countBadge, { backgroundColor: border }]}>
               <Text style={[styles.countText, { color: text }]}>{totalCount}</Text>
@@ -233,10 +233,12 @@ export const AdvertReviews = memo(function AdvertReviews({
         </View>
       ) : null}
 
-      {/* Canlı Yorum Listesi */}
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: text }]}>Kullanıcı Yorumları</Text>
-      </View>
+      {/* Canlı Yorum Listesi Subheader (Sadece puan özeti varsa araya başlık koy) */}
+      {effectiveRating > 0 && comments.length > 0 ? (
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: text }]}>Kullanıcı Yorumları</Text>
+        </View>
+      ) : null}
 
       {isLoading ? (
         <View style={styles.loadingBox}>
@@ -423,7 +425,7 @@ function ReviewCard({
 }
 
 const styles = StyleSheet.create({
-  wrap: { width: '100%', gap: Spacing.lg, marginTop: Spacing.xl, paddingBottom: Spacing.xl },
+  wrap: { width: '100%', gap: Spacing.md, marginTop: Spacing.sm, paddingBottom: Spacing.lg },
   head: {
     flexDirection: 'row',
     justifyContent: 'space-between',

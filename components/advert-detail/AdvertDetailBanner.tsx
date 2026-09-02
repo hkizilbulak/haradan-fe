@@ -102,8 +102,8 @@ export const AdvertDetailBanner = memo(function AdvertDetailBanner({
 const styles = StyleSheet.create({
   wrapper: {
     width: '100%',
-    marginTop: Spacing.md,
-    marginBottom: Spacing.md,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.xs,
   },
   container: {
     width: '100%',

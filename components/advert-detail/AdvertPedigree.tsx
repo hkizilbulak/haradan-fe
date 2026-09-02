@@ -817,10 +817,10 @@ export const AdvertPedigree = memo(function AdvertPedigree({
 
   return (
     <View style={styles.wrap}>
-      {/* View Mode Switcher Header */}
-      <View style={styles.sectionHeader}>
-        {/* View Mode Switcher */}
-        <View style={[styles.viewSwitchWrap, { backgroundColor: surface, borderColor: border }]}>
+      {/* Pedigree Toolbar: View Mode Switch (Top/Left) + Branch Filters */}
+      <View style={[styles.pedigreeToolbar, !isWide && styles.pedigreeToolbarMobile]}>
+        {/* View Mode Switcher (Soy Ağacı | Tablo) */}
+        <View style={[styles.viewSwitchWrap, !isWide && styles.viewSwitchWrapMobile, { backgroundColor: surface, borderColor: border }]}>
           <Pressable
             onPress={() => setViewMode('diagram')}
             style={[
@@ -865,91 +865,90 @@ export const AdvertPedigree = memo(function AdvertPedigree({
             </Text>
           </Pressable>
         </View>
+
+        {viewMode === 'diagram' ? (
+          <View style={styles.branchFilterGroup}>
+            <Pressable
+              onPress={() => handleBranchChange('all')}
+              style={[
+                styles.branchFilterBtn,
+                activeBranch === 'all' && {
+                  backgroundColor: `${primary}18`,
+                  borderColor: primary,
+                },
+              ]}
+            >
+              <Ionicons
+                name="git-network-outline"
+                size={12}
+                color={activeBranch === 'all' ? primary : textSecondary}
+              />
+              <Text
+                style={[
+                  styles.branchFilterText,
+                  { color: activeBranch === 'all' ? primary : textSecondary },
+                ]}
+              >
+                Tüm Ağaç
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => handleBranchChange('sire')}
+              style={[
+                styles.branchFilterBtn,
+                activeBranch === 'sire' && {
+                  backgroundColor: 'rgba(56, 189, 248, 0.16)',
+                  borderColor: '#38bdf8',
+                },
+              ]}
+            >
+              <Ionicons
+                name="male"
+                size={12}
+                color={activeBranch === 'sire' ? '#38bdf8' : textSecondary}
+              />
+              <Text
+                style={[
+                  styles.branchFilterText,
+                  { color: activeBranch === 'sire' ? '#38bdf8' : textSecondary },
+                ]}
+              >
+                Baba Hattı
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => handleBranchChange('dam')}
+              style={[
+                styles.branchFilterBtn,
+                activeBranch === 'dam' && {
+                  backgroundColor: 'rgba(244, 114, 182, 0.16)',
+                  borderColor: '#f472b6',
+                },
+              ]}
+            >
+              <Ionicons
+                name="female"
+                size={12}
+                color={activeBranch === 'dam' ? '#f472b6' : textSecondary}
+              />
+              <Text
+                style={[
+                  styles.branchFilterText,
+                  { color: activeBranch === 'dam' ? '#f472b6' : textSecondary },
+                ]}
+              >
+                Anne Hattı
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
       </View>
 
       {/* Render Selected View Mode */}
       {viewMode === 'diagram' ? (
         <View style={styles.diagramViewportWrap}>
-          {/* Quick Lineage Jump Bar & Pan Controls */}
-          <View style={styles.diagramToolbar}>
-            <View style={styles.branchFilterGroup}>
-              <Pressable
-                onPress={() => handleBranchChange('all')}
-                style={[
-                  styles.branchFilterBtn,
-                  activeBranch === 'all' && {
-                    backgroundColor: `${primary}18`,
-                    borderColor: primary,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name="git-network-outline"
-                  size={12}
-                  color={activeBranch === 'all' ? primary : textSecondary}
-                />
-                <Text
-                  style={[
-                    styles.branchFilterText,
-                    { color: activeBranch === 'all' ? primary : textSecondary },
-                  ]}
-                >
-                  Tüm Ağaç
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => handleBranchChange('sire')}
-                style={[
-                  styles.branchFilterBtn,
-                  activeBranch === 'sire' && {
-                    backgroundColor: 'rgba(56, 189, 248, 0.16)',
-                    borderColor: '#38bdf8',
-                  },
-                ]}
-              >
-                <Ionicons
-                  name="male"
-                  size={12}
-                  color={activeBranch === 'sire' ? '#38bdf8' : textSecondary}
-                />
-                <Text
-                  style={[
-                    styles.branchFilterText,
-                    { color: activeBranch === 'sire' ? '#38bdf8' : textSecondary },
-                  ]}
-                >
-                  Baba Hattı
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => handleBranchChange('dam')}
-                style={[
-                  styles.branchFilterBtn,
-                  activeBranch === 'dam' && {
-                    backgroundColor: 'rgba(244, 114, 182, 0.16)',
-                    borderColor: '#f472b6',
-                  },
-                ]}
-              >
-                <Ionicons
-                  name="female"
-                  size={12}
-                  color={activeBranch === 'dam' ? '#f472b6' : textSecondary}
-                />
-                <Text
-                  style={[
-                    styles.branchFilterText,
-                    { color: activeBranch === 'dam' ? '#f472b6' : textSecondary },
-                  ]}
-                >
-                  Anne Hattı
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-
           {/* Mouse Drag Pan Canvas Container */}
           <View
             style={[
@@ -1063,13 +1062,19 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     width: '100%',
   },
-  sectionHeader: {
+  pedigreeToolbar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     gap: 10,
+    width: '100%',
+    marginBottom: 4,
     flexWrap: 'wrap',
-    marginBottom: 2,
+  },
+  pedigreeToolbarMobile: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 8,
   },
   viewSwitchWrap: {
     flexDirection: 'row',
@@ -1078,6 +1083,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 2,
     gap: 2,
+  },
+  viewSwitchWrapMobile: {
+    alignSelf: 'flex-start',
   },
   viewSwitchBtn: {
     flexDirection: 'row',
@@ -1096,13 +1104,6 @@ const styles = StyleSheet.create({
   diagramViewportWrap: {
     width: '100%',
     gap: 8,
-  },
-  diagramToolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-    flexWrap: 'wrap',
   },
   branchFilterGroup: {
     flexDirection: 'row',

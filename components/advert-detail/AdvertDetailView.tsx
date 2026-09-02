@@ -273,9 +273,7 @@ export function AdvertDetailView({
           lowerFullYRef.current = e.nativeEvent.layout.y;
         }}
       >
-        <View style={{ marginBottom: Spacing.lg }}>
-          <AdvertDetailBanner banner={detailBanners[0] ?? null} />
-        </View>
+        <AdvertDetailBanner banner={detailBanners[0] ?? null} />
         <View
           ref={reviewsAnchorRef}
           collapsable={false}
@@ -646,8 +644,8 @@ const styles = StyleSheet.create({
   buyCol: { flex: 0.85, minWidth: 0, gap: Spacing.xl },
   lowerFull: {
     width: '100%',
-    marginTop: Spacing.xl,
-    gap: Spacing.xl,
+    marginTop: Spacing.md,
+    gap: Spacing.sm,
   },
   topBtn: {
     position: 'absolute',
