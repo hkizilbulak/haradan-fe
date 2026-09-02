@@ -8,6 +8,7 @@ import type {
 import type { AdvertId } from '@/types/advertId';
 import { MOCK_HOMEPAGE } from '@/mocks/homepage';
 import { DEMO_SELLER_ID, MY_LISTING_IDS } from '@/mocks/myListings';
+import CATALOG_DATA from '@/data/catalog.json';
 
 const img = (id: string, w = 900) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=80`;
@@ -556,7 +557,27 @@ function buildDetailFromStored(id: AdvertId): AdvertDetail | null {
       horse,
       specs: (() => {
         const baseSpecs = buildSpecs(horse);
-        const storedProps = draft?.details?.properties || card?.properties || {};
+        const catalogProps = (CATALOG_DATA.categoryProperties || []) as Array<{ code: string; title: string }>;
+        const propTitleMap = new Map<string, string>();
+        for (const cp of catalogProps) {
+          propTitleMap.set(cp.code.toUpperCase(), cp.title);
+          propTitleMap.set(cp.code, cp.title);
+        }
+
+        const storedProps: Record<string, unknown> = {
+          ...(draft?.details?.properties || {}),
+          ...(card?.properties || {}),
+        };
+        if (draft?.details?.inTraining !== undefined && storedProps['IN_TRAINING'] === undefined) {
+          storedProps['IN_TRAINING'] = draft.details.inTraining;
+        }
+        if (draft?.details?.isRaceReady !== undefined && storedProps['IS_RACE_READY'] === undefined) {
+          storedProps['IS_RACE_READY'] = draft.details.isRaceReady;
+        }
+        if (draft?.details?.isForRent !== undefined && storedProps['IS_FOR_RENT'] === undefined) {
+          storedProps['IS_FOR_RENT'] = draft.details.isForRent;
+        }
+
         const customRows = Object.entries(storedProps)
           .filter(
             ([k, v]) =>
@@ -568,14 +589,17 @@ function buildDetailFromStored(id: AdvertId): AdvertDetail | null {
               k !== 'phone' &&
               !k.startsWith('facility')
           )
-          .map(([k, v]) => ({
-            label: k,
-            value: typeof v === 'boolean' ? (v ? 'Evet' : 'Hayır') : String(v),
-          }));
+          .map(([k, v]) => {
+            const title = propTitleMap.get(k.toUpperCase()) || propTitleMap.get(k) || k;
+            return {
+              label: title,
+              value: typeof v === 'boolean' ? (v ? 'Evet' : 'Hayır') : String(v),
+            };
+          });
         if (customRows.length > 0) {
           baseSpecs.push({
             id: 'custom-props',
-            title: 'Kategori ve Ek Özellikler',
+            title: 'Özellikler',
             rows: customRows,
           });
         }

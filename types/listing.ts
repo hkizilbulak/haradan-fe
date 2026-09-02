@@ -109,6 +109,10 @@ export type ListingDraftDetails = {
   studSire?: string;
   studDam?: string;
   studDamsire?: string;
+  /** Satılık Yarış Atı */
+  inTraining?: string | boolean;
+  isForRent?: string | boolean;
+  isRaceReady?: string | boolean;
   /** Dinamik Properties JSON Map */
   properties?: Record<string, unknown>;
 };

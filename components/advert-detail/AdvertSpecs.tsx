@@ -116,7 +116,16 @@ function getSpecIcon(label: string): keyof typeof Ionicons.glyphMap {
   if (l.includes('nalbant') || l.includes('farrier') || l.includes('bakım') || l.includes('bakim')) {
     return 'hammer-outline';
   }
-  if (l.includes('pist') || l.includes('track') || l.includes('idman') || l.includes('antren') || l.includes('koşu') || l.includes('kosu') || l.includes('kariyer')) {
+  if (l.includes('kiralık') || l.includes('kiralik') || l.includes('kira') || l.includes('rent') || l.includes('lease')) {
+    return 'key-outline';
+  }
+  if (l.includes('koşar') || l.includes('kosar')) {
+    return 'flash-outline';
+  }
+  if (l.includes('idman') || l.includes('antren') || l.includes('training')) {
+    return 'fitness-outline';
+  }
+  if (l.includes('pist') || l.includes('track') || l.includes('koşu') || l.includes('kosu') || l.includes('kariyer')) {
     return 'trophy-outline';
   }
 
@@ -165,74 +174,85 @@ function getSectionIcon(id: string, title: string): keyof typeof Ionicons.glyphM
 function isDuplicateHorseField(label: string): boolean {
   const norm = (label || '')
     .toLowerCase()
+    .replace(/['’`"]/g, '')
     .replace(/[^a-z0-9ğüşıöç]/g, '')
     .trim();
 
-  const duplicates = new Set([
-    'atadi',
-    'atadı',
+  // Protect race status / highlight / guarantee properties from ever being considered duplicate!
+  if (
+    norm.includes('idman') ||
+    norm.includes('kosar') ||
+    norm.includes('koşar') ||
+    norm.includes('kira') ||
+    norm.includes('saglik') ||
+    norm.includes('sağlık') ||
+    norm.includes('asi') ||
+    norm.includes('aşı') ||
+    norm.includes('secere') ||
+    norm.includes('şecere') ||
+    norm.includes('inceleme') ||
+    norm.includes('guvence') ||
+    norm.includes('güvence')
+  ) {
+    return false;
+  }
+
+  const duplicates = [
+    'irk',
+    'ırk',
+    'breed',
+    'safkan',
+    'cins',
+    'don',
+    'coat',
+    'renk',
+    'yas',
+    'yaş',
+    'age',
+    'gender',
+    'cinsiyet',
+    'cidago',
+    'height',
+    'baba',
+    'sire',
+    'anne',
+    'dam',
+    'damsire',
+    'sahip',
+    'owner',
+    'breeder',
+    'yetistirici',
+    'yetiştirici',
+    'trainer',
+    'antrenor',
+    'antrenör',
+    'dogum',
+    'doğum',
+    'tjk',
     'isim',
     'ad',
     'adi',
     'adı',
-    'horsename',
-    'atirki',
-    'atırkı',
-    'irk',
-    'ırk',
-    'breed',
-    'cins',
-    'cinsirk',
-    'cinsırk',
-    'safkan',
-    'don',
-    'donu',
-    'donurenk',
-    'renk',
-    'coatcolor',
-    'yas',
-    'yaş',
-    'age',
-    'cinsiyet',
-    'gender',
-    'dogumtarihi',
-    'doğumtarihi',
-    'dogumyili',
-    'doğumyılı',
-    'dogum',
-    'doğum',
-    'birthdate',
-    'cidago',
-    'boy',
-    'yukseklik',
-    'yükseklik',
-    'height',
-    'heightcm',
-    'baba',
-    'babaadi',
-    'babaadı',
-    'sire',
-    'anne',
-    'anneadi',
-    'anneadı',
-    'dam',
-    'kisrakbabasi',
-    'kısrakbabası',
-    'anneninbabasi',
-    'anneninbabası',
-    'damsire',
-    'sahip',
-    'owner',
-    'atsahibi',
-    'yetistirici',
-    'yetiştirici',
-    'breeder',
-    'antrenor',
-    'antrenör',
-    'trainer',
-  ]);
+  ];
 
-  return duplicates.has(norm);
+  for (const d of duplicates) {
+    if (norm === d || norm.includes(d)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function normalizeSpecLabel(label: string): string {
+  const upper = (label || '').toUpperCase().replace(/[-_]/g, '').trim();
+  if (upper === 'INTRAINING') return 'İdmanda mı';
+  if (upper === 'ISRACEREADY' || upper === 'RACEREADY') return 'Koşar durumda mı';
+  if (upper === 'ISFORRENT' || upper === 'FORRENT') return 'Kiralık mı';
+  if (upper === 'HEALTHVACCINATION') return 'Sağlık ve aşı kaydı';
+  if (upper === 'PEDIGREEIDENTITY') return 'Şecere ve kimlik';
+  if (upper === 'ONSITEINSPECTION') return 'Yerinde İnceleme';
+  return label;
 }
 
 /** Genel bilgiler — kart bazlı, yüksek kontrastlı, mobil uyumlu ilan detay özellikleri. */
@@ -275,6 +295,10 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       )
     );
 
+    let identitySection: SoftSection | null = null;
+    let pedigreeSection: SoftSection | null = null;
+    let peopleSection: SoftSection | null = null;
+
     if (hasHorseData && horse) {
       const identity: SoftRow[] = [];
       const horseName = horse.registeredName || detail?.title || '';
@@ -314,12 +338,12 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       if (horse.heightCm) identity.push({ icon: 'resize-outline', label: 'Cidago', value: `${horse.heightCm} cm` });
 
       if (identity.length > 0) {
-        list.push({
+        identitySection = {
           id: 'horse-identity',
           title: 'Kimlik ve Fiziksel',
           icon: 'ribbon-outline',
           rows: identity,
-        });
+        };
       }
 
       const pedigree: SoftRow[] = [];
@@ -349,12 +373,12 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       }
 
       if (pedigree.length > 0) {
-        list.push({
+        pedigreeSection = {
           id: 'horse-pedigree',
           title: 'Orijin (Soy Ağacı)',
           icon: 'git-branch-outline',
           rows: pedigree,
-        });
+        };
       }
 
       const people: SoftRow[] = [];
@@ -363,33 +387,75 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       if (horse.trainer) people.push({ icon: 'fitness-outline', label: 'Antrenör', value: horse.trainer });
 
       if (people.length > 0) {
-        list.push({
+        peopleSection = {
           id: 'horse-people',
           title: 'İlgili Kişiler',
           icon: 'people-outline',
           rows: people,
-        });
+        };
       }
     }
 
-    // 2. Dynamic Resolved Category Properties
+    if (identitySection) {
+      list.push(identitySection);
+    }
+
+    const isRaceHorseCat =
+      detail?.categoryId === 'satilik-yaris-ati' ||
+      detail?.categoryId === 'c1000000-0000-4000-8000-000000000011' ||
+      (detail as any)?.category?.slug === 'satilik-yaris-ati' ||
+      (detail as any)?.category?.id === 'c1000000-0000-4000-8000-000000000011' ||
+      Boolean(hasHorseData && horse?.tjkNumber);
+
+    // 2. Dynamic Resolved Category Properties (Placed 2nd so it sits at top-right next to Identity)
     const allGroups = groups && groups.length > 0 ? groups : (detail?.specs ?? []);
+    let specsGroupFound = false;
+
     for (const g of allGroups) {
       if (g && g.rows && g.rows.length > 0) {
+        specsGroupFound = true;
         const validRows: SoftRow[] = g.rows
           .filter((r) => {
             if (!r.label || r.value == null) return false;
             const valStr = String(r.value).trim();
             if (valStr === '' || valStr === 'null' || valStr === 'undefined') return false;
-            if (hasHorseData && isDuplicateHorseField(r.label)) return false;
+            const normLabel = normalizeSpecLabel(r.label);
+            if (hasHorseData && isDuplicateHorseField(normLabel)) return false;
             return true;
           })
-          .map((r) => ({
-            icon: getSpecIcon(r.label),
-            label: r.label,
-            value: String(r.value),
-            hint: r.hint,
-          }));
+          .map((r) => {
+            const normLabel = normalizeSpecLabel(r.label);
+            return {
+              icon: getSpecIcon(normLabel),
+              label: normLabel,
+              value: String(r.value),
+              hint: r.hint,
+            };
+          });
+
+        if (isRaceHorseCat) {
+          const rawProps = (detail as any)?.properties || {};
+          const statusKeys = [
+            { code: 'IN_TRAINING', label: 'İdmanda mı', icon: 'fitness-outline' as const, defaultVal: true },
+            { code: 'IS_RACE_READY', label: 'Koşar durumda mı', icon: 'flash-outline' as const, defaultVal: true },
+            { code: 'IS_FOR_RENT', label: 'Kiralık mı', icon: 'key-outline' as const, defaultVal: false },
+          ];
+
+          let insertOffset = 0;
+          for (const item of statusKeys) {
+            const exists = validRows.some((r) => r.label === item.label);
+            if (!exists) {
+              const pVal = rawProps[item.code] ?? rawProps[item.code.toLowerCase()] ?? item.defaultVal;
+              validRows.splice(insertOffset, 0, {
+                icon: item.icon,
+                label: item.label,
+                value: typeof pVal === 'boolean' ? (pVal ? 'Evet' : 'Hayır') : String(pVal),
+              });
+              insertOffset++;
+            }
+          }
+        }
+
         if (validRows.length > 0) {
           const gTitle = g.title || 'Özellikler';
           list.push({
@@ -402,7 +468,38 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       }
     }
 
-    // 3. Location and Address
+    if (!specsGroupFound && isRaceHorseCat) {
+      const rawProps = (detail as any)?.properties || {};
+      const statusKeys = [
+        { code: 'IN_TRAINING', label: 'İdmanda mı', icon: 'fitness-outline' as const, defaultVal: true },
+        { code: 'IS_RACE_READY', label: 'Koşar durumda mı', icon: 'flash-outline' as const, defaultVal: true },
+        { code: 'IS_FOR_RENT', label: 'Kiralık mı', icon: 'key-outline' as const, defaultVal: false },
+      ];
+      const validRows: SoftRow[] = statusKeys.map((item) => {
+        const pVal = rawProps[item.code] ?? rawProps[item.code.toLowerCase()] ?? item.defaultVal;
+        return {
+          icon: item.icon,
+          label: item.label,
+          value: typeof pVal === 'boolean' ? (pVal ? 'Evet' : 'Hayır') : String(pVal),
+        };
+      });
+      list.push({
+        id: 'category-specs',
+        title: 'Özellikler',
+        icon: 'options-outline',
+        rows: validRows,
+      });
+    }
+
+    // 3. Pedigree and People (Placed 3rd and 4th)
+    if (pedigreeSection) {
+      list.push(pedigreeSection);
+    }
+    if (peopleSection) {
+      list.push(peopleSection);
+    }
+
+    // 4. Location and Address
     const locationRows: SoftRow[] = [];
     if (locationCity && locationCity !== 'Belirtilmedi') {
       locationRows.push({ icon: 'location-outline', label: 'Şehir / İlçe', value: locationCity });
@@ -419,7 +516,7 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       });
     }
 
-    // 4. Career Performance
+    // 5. Career Performance
     if (hasHorseData && horse && horse.career && horse.career.starts > 0) {
       list.push({
         id: 'horse-performance',
@@ -449,6 +546,21 @@ export const AdvertSpecs = memo(function AdvertSpecs({
     (horse?.handicap != null && horse.handicap > 0)
   );
 
+  const hasHorseData = Boolean(
+    horse && (
+      (horse.registeredName && horse.registeredName !== 'Başlıksız ilan' && horse.registeredName.trim() !== '') ||
+      horse.sire ||
+      horse.dam ||
+      horse.damsire ||
+      (horse.age != null && horse.age > 0) ||
+      horse.gender ||
+      horse.coatColor ||
+      horse.breed ||
+      (horse.career && horse.career.starts > 0) ||
+      (horse.races && horse.races.length > 0)
+    )
+  );
+
   const subTabs = useMemo(() => {
     const list: {
       key: SpecsSubTab;
@@ -458,22 +570,22 @@ export const AdvertSpecs = memo(function AdvertSpecs({
     }[] = [
       { key: 'specs', label: 'Genel Bilgiler', icon: 'information-circle-outline' },
     ];
-    if (hasPedigree) {
+    if (hasPedigree || (hasHorseData && (horse?.sire || horse?.dam))) {
       list.push({ key: 'pedigree', label: 'Pedigri (Soyağacı)', icon: 'git-branch-outline' });
     }
-    if (hasStatistics) {
+    if (hasStatistics || hasHorseData) {
       list.push({ key: 'statistics', label: 'İstatistikler', icon: 'stats-chart-outline' });
     }
-    if (hasSiblings) {
+    if (hasHorseData || hasSiblings) {
       list.push({
         key: 'siblings',
         label: 'Anne Kardeşleri',
         icon: 'people-outline',
-        badge: String(horse?.siblings?.length ?? 0),
+        badge: horse?.siblings && horse.siblings.length > 0 ? String(horse.siblings.length) : undefined,
       });
     }
     return list;
-  }, [hasPedigree, hasSiblings, hasStatistics, horse?.siblings?.length]);
+  }, [hasPedigree, hasStatistics, hasHorseData, hasSiblings, horse?.sire, horse?.dam, horse?.siblings]);
 
   const [currentTab, setCurrentTab] = useState<SpecsSubTab>(activeSubTab ?? 'specs');
 

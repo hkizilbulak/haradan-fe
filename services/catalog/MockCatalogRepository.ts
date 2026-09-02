@@ -106,9 +106,28 @@ export class MockCatalogRepository implements ICatalogRepository {
               }
             }
             for (const ip of initialProps) {
-              const found = parsed.categoryProperties.find((p: any) => p.code === ip.code);
-              if (found && ip.options && ip.options.length > 0) {
-                found.options = ip.options;
+              const existingIndex = parsed.categoryProperties.findIndex(
+                (p: any) => p.id === ip.id || (p.code === ip.code && (p.categoryId === ip.categoryId || !p.categoryId))
+              );
+              if (existingIndex === -1) {
+                parsed.categoryProperties.push(ip);
+              } else {
+                parsed.categoryProperties[existingIndex].options = ip.options || [];
+                if (ip.title) {
+                  parsed.categoryProperties[existingIndex].title = ip.title;
+                }
+                if (ip.dataType) {
+                  parsed.categoryProperties[existingIndex].dataType = ip.dataType;
+                }
+                if (ip.sortOrder !== undefined) {
+                  parsed.categoryProperties[existingIndex].sortOrder = ip.sortOrder;
+                }
+                if (ip.isFormVisible !== undefined) {
+                  parsed.categoryProperties[existingIndex].isFormVisible = ip.isFormVisible;
+                }
+                if (ip.isPublicVisible !== undefined) {
+                  parsed.categoryProperties[existingIndex].isPublicVisible = ip.isPublicVisible;
+                }
               }
             }
             const ORPHAN_CODES = new Set([
@@ -130,6 +149,9 @@ export class MockCatalogRepository implements ICatalogRepository {
             );
             this.categories = parsed.categories;
             this.properties = parsed.categoryProperties;
+            try {
+              localStorage.setItem('haradan_catalog_data', JSON.stringify(parsed));
+            } catch {}
             return;
           }
         }

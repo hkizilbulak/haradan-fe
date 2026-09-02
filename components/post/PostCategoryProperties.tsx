@@ -133,12 +133,25 @@ export function PostCategoryProperties({
                 !GLOBAL_CODES.has(String(p.code || '').toUpperCase())
             );
             const initialProps = (CATALOG_DATA.categoryProperties || []) as any[];
+            const catIdClean = String(catId || '').toLowerCase();
+            const catSlugClean = String(type?.categorySlug || '').toLowerCase();
             for (const ip of initialProps) {
+              const isMatch =
+                ip.categoryId === catId ||
+                ip.categoryId === type?.categoryId ||
+                (catSlugClean === 'satilik-yaris-ati' && ip.categoryId === 'c1000000-0000-4000-8000-000000000011') ||
+                (catIdClean.includes('satilik-yaris-ati') && ip.categoryId === 'c1000000-0000-4000-8000-000000000011');
+
               const found = filtered.find((p: any) => p.code === ip.code);
-              if (found && ip.options && ip.options.length > 0) {
-                found.options = ip.options;
+              if (!found && isMatch && ip.isActive !== false && !GLOBAL_CODES.has(String(ip.code || '').toUpperCase())) {
+                filtered.push(ip);
+              } else if (found) {
+                found.options = ip.options || [];
+                found.dataType = ip.dataType;
+                found.uiMetadata = ip.uiMetadata;
               }
             }
+            filtered.sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
             setCategoryProperties(filtered);
             setListingWizardState({ categoryProperties: filtered });
             onPropertiesLoadedRef.current?.(filtered);
@@ -243,6 +256,12 @@ export function PostCategoryProperties({
       partialUpdate.tjkNumber = String(value ?? '');
     } else if (codeUpper === 'OWNER') {
       partialUpdate.ownersText = String(value ?? '');
+    } else if (codeUpper === 'IN_TRAINING' || code === 'inTraining') {
+      partialUpdate.inTraining = Boolean(value);
+    } else if (codeUpper === 'IS_FOR_RENT' || code === 'isForRent') {
+      partialUpdate.isForRent = Boolean(value);
+    } else if (codeUpper === 'IS_RACE_READY' || code === 'isRaceReady') {
+      partialUpdate.isRaceReady = Boolean(value);
     } else if (code === 'serviceType' || code === 'service_type' || codeUpper === 'SERVICE_TYPE') {
       (partialUpdate as any).serviceType = String(value ?? '');
     }
@@ -267,6 +286,9 @@ export function PostCategoryProperties({
     if (codeUpper === 'COAT_COLOR' && d.coatColor) return d.coatColor;
     if (codeUpper === 'HORSE_AGE' && d.age) return d.age;
     if (codeUpper === 'HORSE_GENDER' && d.gender) return d.gender;
+    if ((codeUpper === 'IN_TRAINING' || code === 'inTraining') && d.inTraining !== undefined) return d.inTraining;
+    if ((codeUpper === 'IS_FOR_RENT' || code === 'isForRent') && d.isForRent !== undefined) return d.isForRent;
+    if ((codeUpper === 'IS_RACE_READY' || code === 'isRaceReady') && d.isRaceReady !== undefined) return d.isRaceReady;
     if (code === 'grassPaddock' && d.facilityGrassPaddock !== undefined) return d.facilityGrassPaddock;
     if (code === 'sandPaddock' && d.facilitySandPaddock !== undefined) return d.facilitySandPaddock;
     if (code === 'stallionPaddock' && d.facilityStallionPaddock !== undefined) return d.facilityStallionPaddock;
@@ -291,19 +313,27 @@ export function PostCategoryProperties({
   };
 
   // Group properties into toggles vs chips/inputs
-  const { toggleProps, otherProps } = useMemo(() => {
+  const { statusToggles, toggleProps, otherProps } = useMemo(() => {
+    const status: CategoryPropertyPublic[] = [];
     const toggles: CategoryPropertyPublic[] = [];
     const others: CategoryPropertyPublic[] = [];
 
+    const STATUS_CODES = new Set(['IN_TRAINING', 'IS_FOR_RENT', 'IS_RACE_READY']);
+
     for (const prop of categoryProperties) {
       if (prop.dataType === 'BOOLEAN') {
-        toggles.push(prop);
+        const codeUpper = String(prop.code || '').toUpperCase();
+        if (STATUS_CODES.has(codeUpper) || (prop.uiMetadata as any)?.displayGroup === 'raceStatus') {
+          status.push(prop);
+        } else {
+          toggles.push(prop);
+        }
       } else {
         others.push(prop);
       }
     }
 
-    return { toggleProps: toggles, otherProps: others };
+    return { statusToggles: status, toggleProps: toggles, otherProps: others };
   }, [categoryProperties]);
 
   if (categoryProperties.length === 0) {
@@ -422,7 +452,29 @@ export function PostCategoryProperties({
         );
       })}
 
-      {/* 2. Boolean Toggle Grid */}
+      {/* 2. Race Status Toggles (Switch) */}
+      {statusToggles.length > 0 ? (
+        <View style={styles.toggleSection}>
+          <Text style={[styles.fieldLabel, { color: secondary, marginBottom: 4 }]}>
+            Yarış ve İdman Durumu
+          </Text>
+          <View style={styles.toggleGrid}>
+            {statusToggles.map((prop) => {
+              const val = Boolean(getPropertyValue(prop.code));
+              return (
+                <ToggleItem
+                  key={prop.code}
+                  label={prop.title}
+                  value={val}
+                  onToggle={() => handlePropertyChange(prop.code, !val)}
+                />
+              );
+            })}
+          </View>
+        </View>
+      ) : null}
+
+      {/* 3. Boolean Toggle Grid */}
       {toggleProps.length > 0 ? (
         <View style={styles.toggleSection}>
           <Text style={[styles.fieldLabel, { color: secondary, marginBottom: 4 }]}>

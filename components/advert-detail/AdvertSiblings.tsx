@@ -48,7 +48,21 @@ export const AdvertSiblings = memo(function AdvertSiblings({
     };
   }, [list]);
 
-  if (list.length === 0) return null;
+  if (list.length === 0) {
+    return (
+      <View style={[styles.emptyWrap, { backgroundColor: surface, borderColor: border }]}>
+        <View style={[styles.emptyIconBg, { backgroundColor: `${textSecondary}15` }]}>
+          <Ionicons name="people-outline" size={32} color={textSecondary} />
+        </View>
+        <Text style={[styles.emptyTitle, { color: text }]}>
+          Kayıtlı Anne Kardeşi Bulunamadı
+        </Text>
+        <Text style={[styles.emptyDesc, { color: textSecondary }]}>
+          Bu safkanın TJK sisteminde kayıtlı anne kardeşi (koşan kardeş) bilgisi bulunmamaktadır.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.wrap}>
@@ -357,5 +371,33 @@ const styles = StyleSheet.create({
   mobileStatVal: {
     fontSize: 12.5,
     fontWeight: '600',
+  },
+  emptyWrap: {
+    padding: 32,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  emptyIconBg: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  emptyDesc: {
+    fontSize: 13.5,
+    fontWeight: '400',
+    textAlign: 'center',
+    maxWidth: 400,
+    lineHeight: 20,
   },
 });

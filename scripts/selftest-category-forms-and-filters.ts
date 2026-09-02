@@ -738,6 +738,47 @@ const errs2 = detailsErrors(draftEmptyAddress as any, undefined, {
 });
 assertEqual(errs2.address, 'Açık adres zorunludur (en az 5 karakter).', 'Boş adres zorunlu iken hata verdi');
 
+// --- 10. Satılık Yarış Atı Durum Özellikleri (İdmanda mı, Kiralık mı, Koşar durumda mı) ---
+console.log('\n--- 10. Satılık Yarış Atı Durum Özellikleri Testleri ---');
+
+const yarisAtiCat = INITIAL_CATALOG.categories.find(c => c.slug === 'satilik-yaris-ati');
+assert(Boolean(yarisAtiCat), 'Satılık Yarış Atı kategorisi mevcut');
+
+const inTrainingProp = INITIAL_CATALOG.categoryProperties.find(p => p.code === 'IN_TRAINING' && p.categoryId === yarisAtiCat?.id);
+assert(Boolean(inTrainingProp), 'IN_TRAINING (İdmanda mı) özelliği tanımlı');
+assertEqual(inTrainingProp?.title, 'İdmanda mı', 'IN_TRAINING başlığı doğru');
+assertEqual(inTrainingProp?.dataType, 'BOOLEAN', 'IN_TRAINING BOOLEAN veri tipine sahip');
+
+const isForRentProp = INITIAL_CATALOG.categoryProperties.find(p => p.code === 'IS_FOR_RENT' && p.categoryId === yarisAtiCat?.id);
+assert(Boolean(isForRentProp), 'IS_FOR_RENT (Kiralık mı) özelliği tanımlı');
+assertEqual(isForRentProp?.title, 'Kiralık mı', 'IS_FOR_RENT başlığı doğru');
+assertEqual(isForRentProp?.dataType, 'BOOLEAN', 'IS_FOR_RENT BOOLEAN veri tipine sahip');
+
+const isRaceReadyProp = INITIAL_CATALOG.categoryProperties.find(p => p.code === 'IS_RACE_READY' && p.categoryId === yarisAtiCat?.id);
+assert(Boolean(isRaceReadyProp), 'IS_RACE_READY (Koşar durumda mı) özelliği tanımlı');
+assertEqual(isRaceReadyProp?.title, 'Koşar durumda mı', 'IS_RACE_READY başlığı doğru');
+assertEqual(isRaceReadyProp?.dataType, 'BOOLEAN', 'IS_RACE_READY BOOLEAN veri tipine sahip');
+
+const raceHorseDraft = {
+  ...draftWithAddress,
+  type: yarisAtiCat,
+  details: {
+    ...draftWithAddress.details,
+    inTraining: true,
+    isForRent: false,
+    isRaceReady: true,
+    properties: {
+      IN_TRAINING: true,
+      IS_FOR_RENT: false,
+      IS_RACE_READY: true,
+    },
+  },
+};
+const builtProps = buildDraftProperties(raceHorseDraft as any);
+assertEqual(builtProps.IN_TRAINING, true, 'buildDraftProperties IN_TRAINING aktardı');
+assertEqual(builtProps.IS_FOR_RENT, false, 'buildDraftProperties IS_FOR_RENT aktardı');
+assertEqual(builtProps.IS_RACE_READY, true, 'buildDraftProperties IS_RACE_READY aktardı');
+
 console.log(`\nÖzet: ${passed} geçti, ${failed} kaldı.`);
 if (failed > 0) {
   process.exit(1);
