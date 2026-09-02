@@ -13,7 +13,7 @@ import {
   View,
   useColorScheme,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
@@ -178,6 +178,20 @@ export const HomeSearchBar = memo(function HomeSearchBar({
     setQuery(initialQuery);
   }, [initialQuery, setQuery]);
 
+  // Ana sayfaya geri dönüldüğünde veya ekran odaklandığında arama çubuğunu ve dropdown'ı temizle
+  useFocusEffect(
+    useCallback(() => {
+      if (!live && !initialQuery) {
+        clear();
+      }
+      return () => {
+        if (!live) {
+          clear();
+        }
+      };
+    }, [live, initialQuery, clear])
+  );
+
   const updateQuery = (next: string) => {
     setQuery(next);
     onQueryChange?.(next);
@@ -251,44 +265,40 @@ export const HomeSearchBar = memo(function HomeSearchBar({
 
   const submit = useCallback(() => {
     const q = query.trim();
-    closeDropdown();
     if (live) {
+      closeDropdown();
       onQueryChange?.(query);
       return;
     }
+    clear();
     if (q) goListings({ q });
     else goListings({});
-  }, [query, live, onQueryChange, goListings, closeDropdown]);
+  }, [query, live, onQueryChange, goListings, clear, closeDropdown]);
 
   const handleQuickLinkPress = useCallback(
     (link: QuickSearchTag) => {
-      closeDropdown();
-      const q = link.params.q;
-      if (q) {
-        setQuery(q);
-        onQueryChange?.(q);
-      }
+      clear();
       goListings(link.params);
     },
-    [closeDropdown, setQuery, onQueryChange, goListings]
+    [clear, goListings]
   );
 
   const handleSelectAdvert = useCallback(
     (advert: CatalogProductCard) => {
-      closeDropdown();
+      clear();
       router.push(`/advert/${advert.id}`);
     },
-    [router, closeDropdown]
+    [router, clear]
   );
 
   const handleViewAll = useCallback(
     (searchQuery: string) => {
-      closeDropdown();
+      clear();
       const q = searchQuery.trim();
       if (q) goListings({ q });
       else goListings({});
     },
-    [goListings, closeDropdown]
+    [goListings, clear]
   );
 
   const handleClear = () => {
@@ -450,16 +460,16 @@ export const HomeSearchBar = memo(function HomeSearchBar({
                     transform: [{ scale: pressed ? 0.98 : 1 }],
                     ...(Platform.OS === 'web'
                       ? ({
-                          backdropFilter: isGlass
-                            ? 'blur(12px) saturate(140%)'
-                            : undefined,
-                          WebkitBackdropFilter: isGlass
-                            ? 'blur(12px) saturate(140%)'
-                            : undefined,
-                          cursor: 'pointer',
-                          transition:
-                            'all 180ms cubic-bezier(0.22, 1, 0.36, 1)',
-                        } as object)
+                        backdropFilter: isGlass
+                          ? 'blur(12px) saturate(140%)'
+                          : undefined,
+                        WebkitBackdropFilter: isGlass
+                          ? 'blur(12px) saturate(140%)'
+                          : undefined,
+                        cursor: 'pointer',
+                        transition:
+                          'all 180ms cubic-bezier(0.22, 1, 0.36, 1)',
+                      } as object)
                       : null),
                   },
                 ]}

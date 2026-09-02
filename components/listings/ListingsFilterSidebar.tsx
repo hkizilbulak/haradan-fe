@@ -709,8 +709,8 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
                   />
                   {hasKids && optionOpen
                     ? option.children.map((child) =>
-                        renderOption(child, depth + 1)
-                      )
+                      renderOption(child, depth + 1)
+                    )
                     : null}
                 </View>
               );
@@ -996,12 +996,12 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
                   const currFeatures = value.features ?? [];
                   const nextFeatures = on
                     ? currFeatures.filter(
-                        (f) =>
-                          f !== propKey &&
-                          f !== fac.code &&
-                          f !== `${propKey}:true` &&
-                          f !== `${fac.code}:true`
-                      )
+                      (f) =>
+                        f !== propKey &&
+                        f !== fac.code &&
+                        f !== `${propKey}:true` &&
+                        f !== `${fac.code}:true`
+                    )
                     : [...currFeatures, propKey];
                   onChange({
                     ...value,
