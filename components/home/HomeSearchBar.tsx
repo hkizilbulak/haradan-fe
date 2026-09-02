@@ -278,7 +278,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
   const handleQuickLinkPress = useCallback(
     (link: QuickSearchTag) => {
       clear();
-      goListings(link.params);
+      goListings(link.params as Record<string, string>);
     },
     [clear, goListings]
   );

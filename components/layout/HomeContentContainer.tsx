@@ -1,5 +1,5 @@
-import React from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import type { LayoutChangeEvent, ViewStyle } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import {
   HOME_CONTENT_MAX_WIDTH,
   HOME_DESKTOP_BREAKPOINT,
@@ -12,6 +12,7 @@ type HomeContentContainerProps = {
   style?: ViewStyle;
   nativeID?: string;
   testID?: string;
+  onLayout?: (e: LayoutChangeEvent) => void;
 };
 
 /** Header / footer / scroll içeriği — aynı max genişlik ve yatay padding. */
@@ -20,6 +21,7 @@ export function HomeContentContainer({
   style,
   nativeID,
   testID,
+  onLayout,
 }: HomeContentContainerProps) {
   const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
@@ -28,6 +30,7 @@ export function HomeContentContainer({
     <View
       nativeID={nativeID}
       testID={testID}
+      onLayout={onLayout}
       style={[
         styles.container,
         {

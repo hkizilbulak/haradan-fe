@@ -262,7 +262,11 @@ const styles = StyleSheet.create({
     opacity: 0.5,
     marginHorizontal: 2,
   },
-  descBlock: { gap: 8 },
+  descBlock: { gap: 6 },
+  blockLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
   desc: {
     fontSize: 13,
     lineHeight: 20,

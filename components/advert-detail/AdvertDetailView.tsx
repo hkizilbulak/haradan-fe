@@ -62,6 +62,9 @@ export function AdvertDetailView({
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const scrollRef = useRef<ScrollView>(null);
   const scrollYRef = useRef(0);
+  const bodyOffsetYRef = useRef(0);
+  const lowerFullYRef = useRef(0);
+  const sectionLayoutYRef = useRef<Record<string, number>>({});
   const specsAnchorRef = useRef<View>(null);
   const reviewsAnchorRef = useRef<View>(null);
   const { toggle, apply } = useFavorites();
@@ -117,6 +120,7 @@ export function AdvertDetailView({
   useEffect(() => {
     setTab('general');
     scrollYRef.current = 0;
+    sectionLayoutYRef.current = {};
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [detail.id]);
 
@@ -179,8 +183,31 @@ export function AdvertDetailView({
         return;
       }
 
-      const node = anchor.current;
       const scroll = scrollRef.current;
+      const offset = isWide ? 80 : 64;
+
+      // 1. Check known onLayout coordinates
+      let calculatedTargetY: number | null = null;
+      if (nativeId === 'advert-specs') {
+        const relY = sectionLayoutYRef.current['advert-specs'];
+        if (typeof relY === 'number' && relY >= 0) {
+          calculatedTargetY = (isWide ? 0 : (bodyOffsetYRef.current || 0)) + relY;
+        }
+      } else if (nativeId === 'advert-reviews') {
+        const relY = sectionLayoutYRef.current['advert-reviews'];
+        const lowerFullY = lowerFullYRef.current || 0;
+        if (typeof relY === 'number' && relY >= 0) {
+          calculatedTargetY = (isWide ? 0 : (bodyOffsetYRef.current || 0)) + lowerFullY + relY;
+        }
+      }
+
+      if (calculatedTargetY != null && calculatedTargetY > 0 && scroll) {
+        scroll.scrollTo({ y: Math.max(0, calculatedTargetY - offset), animated: true });
+        return;
+      }
+
+      // 2. Fallback to node layout/window measurement
+      const node = anchor.current;
       if (!node || !scroll) {
         if (attempt < 12) {
           setTimeout(() => scrollToAnchor(anchor, nativeId, attempt + 1), 50);
@@ -188,11 +215,39 @@ export function AdvertDetailView({
         return;
       }
 
-      const offset = isWide ? 80 : 64;
-      node.measureInWindow((_x, targetY) => {
-        const next = Math.max(0, scrollYRef.current + targetY - offset);
-        scroll.scrollTo({ y: next, animated: true });
-      });
+      try {
+        const responder = (scroll as any).getScrollResponder?.() || scroll;
+        node.measureLayout(
+          responder as any,
+          (_left: number, top: number) => {
+            if (typeof top === 'number' && top > 0) {
+              scroll.scrollTo({ y: Math.max(0, top - offset), animated: true });
+            } else {
+              node.measureInWindow((_x, winY) => {
+                if (typeof winY === 'number' && !isNaN(winY) && winY > 0) {
+                  const next = Math.max(0, scrollYRef.current + winY - offset);
+                  scroll.scrollTo({ y: next, animated: true });
+                }
+              });
+            }
+          },
+          () => {
+            node.measureInWindow((_x, winY) => {
+              if (typeof winY === 'number' && !isNaN(winY) && winY > 0) {
+                const next = Math.max(0, scrollYRef.current + winY - offset);
+                scroll.scrollTo({ y: next, animated: true });
+              }
+            });
+          }
+        );
+      } catch {
+        node.measureInWindow((_x, winY) => {
+          if (typeof winY === 'number' && !isNaN(winY) && winY > 0) {
+            const next = Math.max(0, scrollYRef.current + winY - offset);
+            scroll.scrollTo({ y: next, animated: true });
+          }
+        });
+      }
     },
     [isWide]
   );
@@ -250,7 +305,12 @@ export function AdvertDetailView({
         />
       </LazySection>
 
-      <View style={styles.lowerFull}>
+      <View
+        style={styles.lowerFull}
+        onLayout={(e) => {
+          lowerFullYRef.current = e.nativeEvent.layout.y;
+        }}
+      >
         <View style={{ marginBottom: Spacing.lg }}>
           <AdvertDetailBanner banner={detailBanners[0] ?? null} />
         </View>
@@ -258,8 +318,11 @@ export function AdvertDetailView({
           ref={reviewsAnchorRef}
           collapsable={false}
           nativeID="advert-reviews"
+          onLayout={(e) => {
+            sectionLayoutYRef.current['advert-reviews'] = e.nativeEvent.layout.y;
+          }}
           style={Platform.select({
-            web: { scrollMarginTop: isWide ? 24 : 16 } as any,
+            web: { scrollMarginTop: isWide ? 90 : 70 } as any,
             default: {},
           })}
         >
@@ -296,7 +359,7 @@ export function AdvertDetailView({
           ]}
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
-          removeClippedSubviews={Platform.OS !== 'web'}
+          removeClippedSubviews={false}
           onScroll={(e) => {
             const y = e.nativeEvent.contentOffset.y;
             scrollYRef.current = y;
@@ -321,7 +384,12 @@ export function AdvertDetailView({
             />
           </View>
 
-          <HomeContentContainer style={styles.mobileBody}>
+          <HomeContentContainer
+            style={styles.mobileBody}
+            onLayout={(e) => {
+              bodyOffsetYRef.current = e.nativeEvent.layout.y;
+            }}
+          >
             <View style={styles.mobileSummary}>
               <View style={styles.mobileMetaRow}>
                 <Text style={[styles.mobileCategory, { color: textMuted }]}>
@@ -396,7 +464,16 @@ export function AdvertDetailView({
               ref={specsAnchorRef}
               collapsable={false}
               nativeID="advert-specs"
-              style={{ marginTop: Spacing.xl }}
+              onLayout={(e) => {
+                sectionLayoutYRef.current['advert-specs'] = e.nativeEvent.layout.y;
+              }}
+              style={[
+                { marginTop: Spacing.xl },
+                Platform.select({
+                  web: { scrollMarginTop: isWide ? 90 : 70 } as any,
+                  default: {},
+                }),
+              ]}
             >
               <AdvertSpecs
                 groups={detail.specs}
@@ -444,7 +521,7 @@ export function AdvertDetailView({
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
-        removeClippedSubviews={Platform.OS !== 'web'}
+        removeClippedSubviews={false}
         onScroll={(e) => {
           const y = e.nativeEvent.contentOffset.y;
           scrollYRef.current = y;
@@ -521,10 +598,13 @@ export function AdvertDetailView({
             ref={specsAnchorRef}
             collapsable={false}
             nativeID="advert-specs"
+            onLayout={(e) => {
+              sectionLayoutYRef.current['advert-specs'] = e.nativeEvent.layout.y;
+            }}
             style={[
               { marginTop: Spacing['2xl'] },
               Platform.select({
-                web: { scrollMarginTop: isWide ? 24 : 16 } as any,
+                web: { scrollMarginTop: isWide ? 90 : 70 } as any,
                 default: {},
               }),
             ]}
