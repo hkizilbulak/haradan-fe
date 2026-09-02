@@ -139,9 +139,6 @@ export const AdvertStickyCta = memo(function AdvertStickyCta({
             color={favorite ? '#e11d48' : text}
           />
         </Pressable>
-        <Pressable style={[styles.iconBtn, { borderColor: border }]}>
-          <Ionicons name="git-compare-outline" size={18} color={text} />
-        </Pressable>
       </View>
     </View>
   );

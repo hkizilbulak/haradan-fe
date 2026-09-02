@@ -6,15 +6,17 @@ import { useSafeInsets } from '@/hooks/useSafeInsets';
 
 type MobileAdvertTopBarProps = {
   onBack: () => void;
-  favorite: boolean;
-  onToggleFavorite: () => void;
+  favorite?: boolean;
+  onToggleFavorite?: () => void;
+  showFavorite?: boolean;
 };
 
-/** Galeri üzerinde yüzen geri + favori. */
+/** Galeri üzerinde yüzen geri butonu. */
 export function MobileAdvertTopBar({
   onBack,
-  favorite,
+  favorite = false,
   onToggleFavorite,
+  showFavorite = false,
 }: MobileAdvertTopBarProps) {
   const insets = useSafeInsets();
 
@@ -33,19 +35,21 @@ export function MobileAdvertTopBar({
         <Ionicons name="chevron-back" size={22} color="#fff" />
       </Pressable>
 
-      <Pressable
-        onPress={onToggleFavorite}
-        accessibilityRole="button"
-        accessibilityLabel={favorite ? 'Favoriden çıkar' : 'Favoriye ekle'}
-        hitSlop={8}
-        style={({ pressed }) => [styles.btn, pressed && { opacity: 0.75 }]}
-      >
-        <Ionicons
-          name={favorite ? 'heart' : 'heart-outline'}
-          size={20}
-          color={favorite ? '#f34770' : '#fff'}
-        />
-      </Pressable>
+      {showFavorite && onToggleFavorite ? (
+        <Pressable
+          onPress={onToggleFavorite}
+          accessibilityRole="button"
+          accessibilityLabel={favorite ? 'Favoriden çıkar' : 'Favoriye ekle'}
+          hitSlop={8}
+          style={({ pressed }) => [styles.btn, pressed && { opacity: 0.75 }]}
+        >
+          <Ionicons
+            name={favorite ? 'heart' : 'heart-outline'}
+            size={20}
+            color={favorite ? '#f34770' : '#fff'}
+          />
+        </Pressable>
+      ) : null}
     </View>
   );
 }

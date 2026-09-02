@@ -23,7 +23,7 @@ type AdvertGalleryProps = {
   height?: number;
   /** Kenardan kenara — mobil detay hero. */
   fullBleed?: boolean;
-  /** Alt küçük görsel şeridi; mobilde genelde kapalı. */
+  /** Alt küçük görsel şeridi. */
   showThumbs?: boolean;
   /** Sahip önizlemesi — yayınlanmamış ilan görselleri için Bearer. */
   accessToken?: string | null;
@@ -147,10 +147,10 @@ export const AdvertGallery = memo(function AdvertGallery({
               accessibilityLabel="Sonraki görsel"
               style={[styles.bleedTap, styles.bleedTapRight]}
             />
-            <View style={styles.dots} pointerEvents="none">
+            <View style={styles.dotsOverlay} pointerEvents="none">
               {items.map((item, i) => (
                 <View
-                  key={item.assetId}
+                  key={item.assetId || i}
                   style={[
                     styles.dot,
                     i === index ? styles.dotActive : styles.dotIdle,
@@ -162,7 +162,8 @@ export const AdvertGallery = memo(function AdvertGallery({
         ) : null}
       </View>
 
-      {showThumbs && items.length > 0 ? (
+      {/* Küçük Önizleme Fotoğrafları (Thumbnails) */}
+      {showThumbs && !bleed && items.length > 0 ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -172,7 +173,7 @@ export const AdvertGallery = memo(function AdvertGallery({
             const active = i === index;
             return (
               <Pressable
-                key={item.assetId}
+                key={item.assetId || i}
                 onPress={() => setIndex(i)}
                 style={[
                   styles.thumb,
@@ -181,7 +182,7 @@ export const AdvertGallery = memo(function AdvertGallery({
                     borderWidth: active ? 2 : 1,
                     ...Platform.select({
                       web: {
-                        transition: 'border-color 180ms ease',
+                        transition: 'border-color 180ms ease, transform 180ms ease',
                         cursor: 'pointer' as const,
                       },
                       default: {},
@@ -230,6 +231,7 @@ function AuthMediaImage({
     />
   );
 }
+
 const styles = StyleSheet.create({
   wrap: { gap: Spacing.md },
   wrapBleed: { gap: 0 },
@@ -264,7 +266,11 @@ const styles = StyleSheet.create({
   },
   navLeft: { left: 12 },
   navRight: { right: 12 },
-  thumbs: { gap: 10, paddingVertical: 2 },
+  thumbs: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingVertical: 2,
+  },
   thumb: {
     width: 72,
     height: 72,
@@ -272,7 +278,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   thumbImg: { width: '100%', height: '100%' },
-  dots: {
+  dotsOverlay: {
     position: 'absolute',
     bottom: 14,
     left: 0,
@@ -286,7 +292,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   dotActive: {
-    width: 18,
+    width: 22,
     backgroundColor: '#fff',
   },
   dotIdle: {

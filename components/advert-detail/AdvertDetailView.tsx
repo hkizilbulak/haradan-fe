@@ -11,10 +11,10 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
+  AdvertActionBox,
   AdvertBundleOffer,
   AdvertBuyBox,
   AdvertDetailBanner,
-  AdvertDetailTabs,
   AdvertGallery,
   AdvertReviews,
   AdvertSpecs,
@@ -22,16 +22,13 @@ import {
   AdvertViewedRail,
   type SpecsSubTab,
 } from '@/components/advert-detail';
-import { MobileAdvertStickyBar } from '@/components/advert-detail/mobile/MobileAdvertStickyBar';
 import { MobileAdvertTopBar } from '@/components/advert-detail/mobile/MobileAdvertTopBar';
 import { LazySection } from '@/components/ui/LazySection';
 import { toast } from '@/components/ui';
-import { RatingStars } from '@/components/product/RatingStars';
 import { HomeContentContainer } from '@/components/layout';
 import { SiteFooter } from '@/components/home';
 import {
   HOME_DESKTOP_BREAKPOINT,
-  mobileDetailScrollInset,
 } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
@@ -43,9 +40,8 @@ import { usePlacementBanners } from '@/hooks/usePlacementBanners';
 import { useAdvertLocation } from '@/services/location';
 import { openPhoneCall, openWhatsApp } from '@/utils/contactLinks';
 import { formatMoney } from '@/utils/formatMoney';
-import { formatViewCount } from '@/utils/formatViewCount';
 import { prepareListingWizardEntry } from '@/services/listing';
-import type { AdvertDetail, AdvertDetailTab, CatalogProductCard } from '@/types';
+import type { AdvertDetail, CatalogProductCard } from '@/types';
 
 type AdvertDetailViewProps = {
   detail: AdvertDetail;
@@ -72,10 +68,9 @@ export function AdvertDetailView({
   const { banners: detailBanners } = usePlacementBanners('LISTING_DETAIL');
   const location = useAdvertLocation(detail);
   const safeInsets = useSafeInsets();
-  const mobileScrollInset = mobileDetailScrollInset(safeInsets.bottom);
+  const mobileScrollInset = safeInsets.bottom + Spacing.xl;
 
-  const [tab, setTab] = useState<AdvertDetailTab>('general');
-  const [specsSubTab, setSpecsSubTab] = useState<SpecsSubTab>('specs');
+  const [specsSubTab, setSpecsSubTab] = useState<SpecsSubTab>(isWide ? 'pedigree' : 'specs');
   const [showTop, setShowTop] = useState(false);
 
   const favoriteCard = useMemo((): CatalogProductCard => {
@@ -120,24 +115,11 @@ export function AdvertDetailView({
     : Math.min(Math.round(width * 0.78), 420);
 
   useEffect(() => {
-    setTab('general');
-    setSpecsSubTab('specs');
+    setSpecsSubTab(isWide ? 'pedigree' : 'specs');
     scrollYRef.current = 0;
     sectionLayoutYRef.current = {};
     scrollRef.current?.scrollTo({ y: 0, animated: false });
-  }, [detail.id]);
-
-  const tabs = useMemo(() => {
-    const list: { key: AdvertDetailTab; label: string }[] = [
-      { key: 'general', label: 'İlan' },
-      { key: 'details', label: 'Genel bilgiler' },
-      {
-        key: 'reviews',
-        label: `Yorumlar (${detail.reviewCount || detail.reviews.length})`,
-      },
-    ];
-    return list;
-  }, [detail.reviewCount, detail.reviews.length]);
+  }, [detail.id, isWide]);
 
   const phone = detail.sellerPhone ?? '';
 
@@ -255,31 +237,8 @@ export function AdvertDetailView({
   );
 
   const scrollToReviews = useCallback(() => {
-    setTab('reviews');
     scrollToAnchor(reviewsAnchorRef, 'advert-reviews');
   }, [scrollToAnchor]);
-
-  const onTabChange = useCallback(
-    (key: AdvertDetailTab) => {
-      setTab(key);
-      if (key === 'reviews') {
-        scrollToAnchor(reviewsAnchorRef, 'advert-reviews');
-      } else if (key === 'details') {
-        setSpecsSubTab('specs');
-        scrollToAnchor(specsAnchorRef, 'advert-specs');
-      } else {
-        if (Platform.OS === 'web' && typeof document !== 'undefined') {
-          const topEl = document.getElementById('advert-top');
-          if (topEl) {
-            topEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            return;
-          }
-        }
-        scrollRef.current?.scrollTo({ y: 0, animated: true });
-      }
-    },
-    [scrollToAnchor]
-  );
 
   const categoryLine =
     detail.breadcrumbs.length > 1
@@ -377,13 +336,10 @@ export function AdvertDetailView({
               items={detail.gallery}
               height={galleryHeight}
               fullBleed
-              showThumbs={false}
               accessToken={accessToken}
             />
             <MobileAdvertTopBar
               onBack={() => router.back()}
-              favorite={favorite}
-              onToggleFavorite={() => toggle(favoriteCard)}
             />
           </View>
 
@@ -406,55 +362,13 @@ export function AdvertDetailView({
               <Text style={[styles.mobileTitle, { color: text }]}>
                 {detail.title}
               </Text>
-
-              <View style={styles.mobilePriceRow}>
-                <Text style={[styles.mobilePrice, { color: text }]}>
-                  {formatMoney(detail.price)}
-                </Text>
-                {detail.oldPrice ? (
-                  <Text style={[styles.mobileOldPrice, { color: textMuted }]}>
-                    {formatMoney(detail.oldPrice)}
-                  </Text>
-                ) : null}
-              </View>
-
-              <View style={styles.mobileSubRow}>
-                <Ionicons name="location-outline" size={14} color={textMuted} />
-                <Text
-                  style={[styles.mobileSub, { color: textMuted }]}
-                  numberOfLines={1}
-                >
-                  {location}
-                </Text>
-                <View style={[styles.mobileDot, { backgroundColor: textMuted }]} />
-                <Ionicons name="eye-outline" size={14} color={textMuted} />
-                <Text style={[styles.mobileSub, { color: textMuted }]}>
-                  {formatViewCount(detail.viewCount)}
-                </Text>
-              </View>
-
-              <Pressable onPress={scrollToReviews} style={styles.mobileRating}>
-                <RatingStars
-                  value={detail.rating}
-                  count={detail.reviewCount || detail.reviews.length}
-                  size={14}
-                />
-              </Pressable>
             </View>
 
-            <AdvertDetailTabs
-              tabs={[...tabs]}
-              active={tab}
-              onChange={onTabChange}
-              variant="mobile"
-            />
-
-            <View style={styles.mobileSections}>
-              <AdvertBuyBox
+            <View style={styles.mobileActionBoxWrap}>
+              <AdvertActionBox
                 detail={detail}
                 favorite={favorite}
                 isOwner={isOwner}
-                variant="mobile"
                 onToggleFavorite={() => toggle(favoriteCard)}
                 onCall={onCall}
                 onWhatsApp={onWhatsApp}
@@ -470,7 +384,7 @@ export function AdvertDetailView({
                 sectionLayoutYRef.current['advert-specs'] = e.nativeEvent.layout.y;
               }}
               style={[
-                { marginTop: Spacing.xl },
+                { marginTop: Spacing.md },
                 Platform.select({
                   web: { scrollMarginTop: isWide ? 90 : 70 } as any,
                   default: {},
@@ -484,7 +398,6 @@ export function AdvertDetailView({
                 activeSubTab={specsSubTab}
                 onSubTabChange={(t) => {
                   setSpecsSubTab(t);
-                  setTab('details');
                 }}
               />
             </View>
@@ -492,14 +405,6 @@ export function AdvertDetailView({
             {lowerSections}
           </HomeContentContainer>
         </ScrollView>
-
-        <MobileAdvertStickyBar
-          detail={detail}
-          isOwner={isOwner}
-          onCall={onCall}
-          onWhatsApp={onWhatsApp}
-          onEdit={onEdit}
-        />
 
         {showTop ? (
           <Pressable
@@ -509,7 +414,7 @@ export function AdvertDetailView({
             style={[
               styles.topBtn,
               styles.topBtnMobile,
-              { backgroundColor: surface, borderColor: border, bottom: mobileScrollInset - 8 },
+              { backgroundColor: surface, borderColor: border, bottom: safeInsets.bottom + 16 },
             ]}
             accessibilityLabel="Yukarı"
           >
@@ -565,21 +470,6 @@ export function AdvertDetailView({
 
           <Text style={[styles.title, { color: text }]}>{detail.title}</Text>
 
-          <AdvertDetailTabs
-            tabs={[...tabs]}
-            active={tab}
-            onChange={onTabChange}
-            ratingSlot={
-              <Pressable onPress={scrollToReviews} style={styles.ratingSlot}>
-                <RatingStars
-                  value={detail.rating}
-                  count={detail.reviewCount || detail.reviews.length}
-                  size={13}
-                />
-              </Pressable>
-            }
-          />
-
           <View style={styles.hero}>
             <View style={styles.galleryCol}>
               <AdvertGallery
@@ -587,9 +477,7 @@ export function AdvertDetailView({
                 height={galleryHeight}
                 accessToken={isOwner ? accessToken : null}
               />
-            </View>
-            <View style={styles.buyCol}>
-              <AdvertBuyBox
+              <AdvertActionBox
                 detail={detail}
                 favorite={favorite}
                 isOwner={isOwner}
@@ -597,6 +485,12 @@ export function AdvertDetailView({
                 onCall={onCall}
                 onWhatsApp={onWhatsApp}
                 onEdit={onEdit}
+              />
+            </View>
+            <View style={styles.buyCol}>
+              <AdvertBuyBox
+                detail={detail}
+                variant="default"
               />
             </View>
           </View>
@@ -623,7 +517,6 @@ export function AdvertDetailView({
               activeSubTab={specsSubTab}
               onSubTabChange={(t) => {
                 setSpecsSubTab(t);
-                setTab('details');
               }}
             />
           </View>
@@ -722,22 +615,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flexShrink: 1,
   },
-  mobileDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 2,
-    opacity: 0.5,
-    marginHorizontal: 2,
-  },
-  mobileRating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 4,
+  mobileActionBoxWrap: {
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
   mobileSections: {
     gap: Spacing.xl,
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
   },
   crumbs: {
     flexDirection: 'row',
@@ -750,16 +634,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.5,
     lineHeight: 34,
-    marginBottom: Spacing.md,
+    marginBottom: 6,
   },
-  ratingSlot: { paddingBottom: 10 },
   hero: {
     flexDirection: 'row',
     gap: Spacing.xl,
-    marginTop: Spacing.xl,
+    marginTop: Spacing.sm,
     alignItems: 'flex-start',
   },
-  galleryCol: { flex: 1.15, minWidth: 0, gap: Spacing.xl },
+  galleryCol: { flex: 1.15, minWidth: 0, gap: Spacing.md },
   buyCol: { flex: 0.85, minWidth: 0, gap: Spacing.xl },
   lowerFull: {
     width: '100%',

@@ -817,20 +817,8 @@ export const AdvertPedigree = memo(function AdvertPedigree({
 
   return (
     <View style={styles.wrap}>
-      {/* Header & Title */}
+      {/* View Mode Switcher Header */}
       <View style={styles.sectionHeader}>
-        <View style={[styles.iconWrap, { backgroundColor: `${primary}15` }]}>
-          <Ionicons name="git-network" size={18} color={primary} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: text }]}>
-            Soy Ağacı & Pedigri Şeması
-          </Text>
-          <Text style={[styles.subtitle, { color: textSecondary }]}>
-            {horseName ? `${horseName} için ` : ''}TJK kayıtlı 3 kuşak tam ata ağacı
-          </Text>
-        </View>
-
         {/* View Mode Switcher */}
         <View style={[styles.viewSwitchWrap, { backgroundColor: surface, borderColor: border }]}>
           <Pressable
@@ -1078,26 +1066,10 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 10,
     flexWrap: 'wrap',
     marginBottom: 2,
-  },
-  iconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 1,
   },
   viewSwitchWrap: {
     flexDirection: 'row',

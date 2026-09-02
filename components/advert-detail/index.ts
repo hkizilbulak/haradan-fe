@@ -2,6 +2,7 @@ export { AdvertDetailView } from './AdvertDetailView';
 export { AdvertGallery } from './AdvertGallery';
 export { AdvertDetailTabs } from './AdvertDetailTabs';
 export { AdvertBuyBox } from './AdvertBuyBox';
+export { AdvertActionBox } from './AdvertActionBox';
 export { AdvertShipping } from './AdvertShipping';
 export { AdvertBundleOffer } from './AdvertBundleOffer';
 export { AdvertSpecs, type SpecsSubTab } from './AdvertSpecs';
