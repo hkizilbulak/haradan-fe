@@ -122,13 +122,7 @@ export const AdvertPedigree = memo(function AdvertPedigree({
 
   const handleBranchChange = (branch: 'all' | 'sire' | 'dam') => {
     setActiveBranch(branch);
-    if (branch === 'all') {
-      scrollToOffset(120);
-    } else if (branch === 'sire') {
-      scrollToOffset(0);
-    } else if (branch === 'dam') {
-      scrollToOffset(420);
-    }
+    scrollToOffset(0);
   };
 
   const handleScrollStep = (dir: 'left' | 'right') => {
@@ -343,146 +337,233 @@ export const AdvertPedigree = memo(function AdvertPedigree({
 
   // --- 1. GÖRÜNÜM: SOY AĞACI DİYAGRAMI (Tree Diagram) ---
   const renderTreeDiagram = () => {
+    const isFocused = activeBranch !== 'all';
+    const showSire = activeBranch === 'all' || activeBranch === 'sire';
+    const showDam = activeBranch === 'all' || activeBranch === 'dam';
+
     return (
-      <View style={[styles.treeDiagramContainer, { borderColor: border, backgroundColor: `${surface}25` }]}>
+      <View
+        style={[
+          styles.treeDiagramContainer,
+          isFocused && styles.treeDiagramContainerFocused,
+          { borderColor: border, backgroundColor: `${surface}25` },
+        ]}
+      >
         {/* 1. SEVİYE: KÖK AT (Root Node - ADAAĞASI) */}
         <View style={styles.levelRootWrap}>
           <View style={styles.rootCardContainer}>
-            {renderDiagramCard(rootNode, styles.rootCardStyle, true)}
+            {renderDiagramCard(
+              rootNode,
+              isFocused ? styles.rootCardStyleFocused : styles.rootCardStyle,
+              true
+            )}
           </View>
 
           {/* Root Downward Connector */}
-          <View style={styles.rootStemLine} />
-          <View style={styles.rootForkWrap}>
-            <View style={[styles.rootForkHorizontal, { borderColor: border }]} />
-            <View style={[styles.rootDropLeft, { borderColor: '#38bdf8' }]} />
-            <View style={[styles.rootDropRight, { borderColor: '#f472b6' }]} />
-          </View>
+          {activeBranch === 'all' ? (
+            <>
+              <View style={styles.rootStemLine} />
+              <View style={styles.rootForkWrap}>
+                <View style={[styles.rootForkHorizontal, { borderColor: border }]} />
+                <View style={[styles.rootDropLeft, { borderColor: '#38bdf8' }]} />
+                <View style={[styles.rootDropRight, { borderColor: '#f472b6' }]} />
+              </View>
+            </>
+          ) : (
+            <View
+              style={[
+                styles.rootDirectLine,
+                { backgroundColor: activeBranch === 'sire' ? '#38bdf8' : '#f472b6' },
+              ]}
+            />
+          )}
         </View>
 
         {/* 2. & 3. & 4. SEVİYELER (BABA VE ANNE AĞAÇLARI) */}
-        <View style={styles.mainBranchesRow}>
+        <View style={[styles.mainBranchesRow, isFocused && styles.mainBranchesRowFocused]}>
           {/* SOL AĞAÇ: BABA HATTI (Sire Tree) */}
-          <View style={styles.branchTreeHalf}>
-            {/* Gen 1: Baba Card */}
-            <View style={styles.treeLevelCardWrap}>
-              {renderDiagramCard(sireTree.g1, styles.cardG1Style)}
-            </View>
-
-            {/* Fork to Gen 2 */}
-            <View style={styles.forkStemWrap}>
-              <View style={[styles.forkStemVertical, { borderColor: border }]} />
-              <View style={[styles.forkBarHorizontal, { borderColor: border }]} />
-              <View style={[styles.forkDropLeft, { borderColor: border }]} />
-              <View style={[styles.forkDropRight, { borderColor: border }]} />
-            </View>
-
-            {/* Gen 2: Babanın Babası & Babanın Annesi */}
-            <View style={styles.treeLevelRowG2}>
-              {/* Gen 2 Sol (Babanın Babası) */}
-              <View style={styles.treeSubBranch}>
-                <View style={styles.treeLevelCardWrap}>
-                  {renderDiagramCard(sireTree.g2_top, styles.cardG2Style)}
-                </View>
-
-                {/* Fork to Gen 3 */}
-                <View style={styles.forkStemWrapSmall}>
-                  <View style={[styles.forkStemVerticalSmall, { borderColor: border }]} />
-                  <View style={[styles.forkBarHorizontalSmall, { borderColor: border }]} />
-                  <View style={[styles.forkDropLeftSmall, { borderColor: border }]} />
-                  <View style={[styles.forkDropRightSmall, { borderColor: border }]} />
-                </View>
-
-                {/* Gen 3 Grandparents */}
-                <View style={styles.treeLevelRowG3}>
-                  <View style={styles.g3CardWrap}>{renderDiagramCard(sireTree.g3_top1, styles.cardG3Style)}</View>
-                  <View style={styles.g3CardWrap}>{renderDiagramCard(sireTree.g3_top2, styles.cardG3Style)}</View>
-                </View>
+          {showSire && (
+            <View style={[styles.branchTreeHalf, isFocused && styles.branchTreeHalfFocused]}>
+              {/* Gen 1: Baba Card */}
+              <View style={styles.treeLevelCardWrap}>
+                {renderDiagramCard(
+                  sireTree.g1,
+                  isFocused ? styles.cardG1StyleFocused : styles.cardG1Style
+                )}
               </View>
 
-              {/* Gen 2 Sağ (Babanın Annesi) */}
-              <View style={styles.treeSubBranch}>
-                <View style={styles.treeLevelCardWrap}>
-                  {renderDiagramCard(sireTree.g2_bot, styles.cardG2Style)}
+              {/* Fork to Gen 2 */}
+              <View style={[styles.forkStemWrap, isFocused && styles.forkStemWrapFocused]}>
+                <View style={[styles.forkStemVertical, { borderColor: '#38bdf8' }]} />
+                <View style={[styles.forkBarHorizontal, { borderColor: '#38bdf8' }]} />
+                <View style={[styles.forkDropLeft, { borderColor: '#38bdf8' }]} />
+                <View style={[styles.forkDropRight, { borderColor: '#38bdf8' }]} />
+              </View>
+
+              {/* Gen 2: Babanın Babası & Babanın Annesi */}
+              <View style={[styles.treeLevelRowG2, isFocused && styles.treeLevelRowG2Focused]}>
+                {/* Gen 2 Sol (Babanın Babası) */}
+                <View style={styles.treeSubBranch}>
+                  <View style={styles.treeLevelCardWrap}>
+                    {renderDiagramCard(
+                      sireTree.g2_top,
+                      isFocused ? styles.cardG2StyleFocused : styles.cardG2Style
+                    )}
+                  </View>
+
+                  {/* Fork to Gen 3 */}
+                  <View style={[styles.forkStemWrapSmall, isFocused && styles.forkStemWrapSmallFocused]}>
+                    <View style={[styles.forkStemVerticalSmall, { borderColor: '#38bdf8' }]} />
+                    <View style={[styles.forkBarHorizontalSmall, { borderColor: '#38bdf8' }]} />
+                    <View style={[styles.forkDropLeftSmall, { borderColor: '#38bdf8' }]} />
+                    <View style={[styles.forkDropRightSmall, { borderColor: '#38bdf8' }]} />
+                  </View>
+
+                  {/* Gen 3 Grandparents */}
+                  <View style={[styles.treeLevelRowG3, isFocused && styles.treeLevelRowG3Focused]}>
+                    <View style={styles.g3CardWrap}>
+                      {renderDiagramCard(
+                        sireTree.g3_top1,
+                        isFocused ? styles.cardG3StyleFocused : styles.cardG3Style
+                      )}
+                    </View>
+                    <View style={styles.g3CardWrap}>
+                      {renderDiagramCard(
+                        sireTree.g3_top2,
+                        isFocused ? styles.cardG3StyleFocused : styles.cardG3Style
+                      )}
+                    </View>
+                  </View>
                 </View>
 
-                {/* Fork to Gen 3 */}
-                <View style={styles.forkStemWrapSmall}>
-                  <View style={[styles.forkStemVerticalSmall, { borderColor: border }]} />
-                  <View style={[styles.forkBarHorizontalSmall, { borderColor: border }]} />
-                  <View style={[styles.forkDropLeftSmall, { borderColor: border }]} />
-                  <View style={[styles.forkDropRightSmall, { borderColor: border }]} />
-                </View>
+                {/* Gen 2 Sağ (Babanın Annesi) */}
+                <View style={styles.treeSubBranch}>
+                  <View style={styles.treeLevelCardWrap}>
+                    {renderDiagramCard(
+                      sireTree.g2_bot,
+                      isFocused ? styles.cardG2StyleFocused : styles.cardG2Style
+                    )}
+                  </View>
 
-                {/* Gen 3 Grandparents */}
-                <View style={styles.treeLevelRowG3}>
-                  <View style={styles.g3CardWrap}>{renderDiagramCard(sireTree.g3_bot1, styles.cardG3Style)}</View>
-                  <View style={styles.g3CardWrap}>{renderDiagramCard(sireTree.g3_bot2, styles.cardG3Style)}</View>
+                  {/* Fork to Gen 3 */}
+                  <View style={[styles.forkStemWrapSmall, isFocused && styles.forkStemWrapSmallFocused]}>
+                    <View style={[styles.forkStemVerticalSmall, { borderColor: '#f472b6' }]} />
+                    <View style={[styles.forkBarHorizontalSmall, { borderColor: '#f472b6' }]} />
+                    <View style={[styles.forkDropLeftSmall, { borderColor: '#f472b6' }]} />
+                    <View style={[styles.forkDropRightSmall, { borderColor: '#f472b6' }]} />
+                  </View>
+
+                  {/* Gen 3 Grandparents */}
+                  <View style={[styles.treeLevelRowG3, isFocused && styles.treeLevelRowG3Focused]}>
+                    <View style={styles.g3CardWrap}>
+                      {renderDiagramCard(
+                        sireTree.g3_bot1,
+                        isFocused ? styles.cardG3StyleFocused : styles.cardG3Style
+                      )}
+                    </View>
+                    <View style={styles.g3CardWrap}>
+                      {renderDiagramCard(
+                        sireTree.g3_bot2,
+                        isFocused ? styles.cardG3StyleFocused : styles.cardG3Style
+                      )}
+                    </View>
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
+          )}
 
           {/* SAĞ AĞAÇ: ANNE HATTI (Dam Tree) */}
-          <View style={styles.branchTreeHalf}>
-            {/* Gen 1: Anne Card */}
-            <View style={styles.treeLevelCardWrap}>
-              {renderDiagramCard(damTree.g1, styles.cardG1Style)}
-            </View>
-
-            {/* Fork to Gen 2 */}
-            <View style={styles.forkStemWrap}>
-              <View style={[styles.forkStemVertical, { borderColor: border }]} />
-              <View style={[styles.forkBarHorizontal, { borderColor: border }]} />
-              <View style={[styles.forkDropLeft, { borderColor: border }]} />
-              <View style={[styles.forkDropRight, { borderColor: border }]} />
-            </View>
-
-            {/* Gen 2: Kısrak Babası & Annenin Annesi */}
-            <View style={styles.treeLevelRowG2}>
-              {/* Gen 2 Sol (Kısrak Babası) */}
-              <View style={styles.treeSubBranch}>
-                <View style={styles.treeLevelCardWrap}>
-                  {renderDiagramCard(damTree.g2_top, styles.cardG2Style)}
-                </View>
-
-                {/* Fork to Gen 3 */}
-                <View style={styles.forkStemWrapSmall}>
-                  <View style={[styles.forkStemVerticalSmall, { borderColor: border }]} />
-                  <View style={[styles.forkBarHorizontalSmall, { borderColor: border }]} />
-                  <View style={[styles.forkDropLeftSmall, { borderColor: border }]} />
-                  <View style={[styles.forkDropRightSmall, { borderColor: border }]} />
-                </View>
-
-                {/* Gen 3 Grandparents */}
-                <View style={styles.treeLevelRowG3}>
-                  <View style={styles.g3CardWrap}>{renderDiagramCard(damTree.g3_top1, styles.cardG3Style)}</View>
-                  <View style={styles.g3CardWrap}>{renderDiagramCard(damTree.g3_top2, styles.cardG3Style)}</View>
-                </View>
+          {showDam && (
+            <View style={[styles.branchTreeHalf, isFocused && styles.branchTreeHalfFocused]}>
+              {/* Gen 1: Anne Card */}
+              <View style={styles.treeLevelCardWrap}>
+                {renderDiagramCard(
+                  damTree.g1,
+                  isFocused ? styles.cardG1StyleFocused : styles.cardG1Style
+                )}
               </View>
 
-              {/* Gen 2 Sağ (Annenin Annesi) */}
-              <View style={styles.treeSubBranch}>
-                <View style={styles.treeLevelCardWrap}>
-                  {renderDiagramCard(damTree.g2_bot, styles.cardG2Style)}
+              {/* Fork to Gen 2 */}
+              <View style={[styles.forkStemWrap, isFocused && styles.forkStemWrapFocused]}>
+                <View style={[styles.forkStemVertical, { borderColor: '#f472b6' }]} />
+                <View style={[styles.forkBarHorizontal, { borderColor: '#f472b6' }]} />
+                <View style={[styles.forkDropLeft, { borderColor: '#f472b6' }]} />
+                <View style={[styles.forkDropRight, { borderColor: '#f472b6' }]} />
+              </View>
+
+              {/* Gen 2: Kısrak Babası & Annenin Annesi */}
+              <View style={[styles.treeLevelRowG2, isFocused && styles.treeLevelRowG2Focused]}>
+                {/* Gen 2 Sol (Kısrak Babası) */}
+                <View style={styles.treeSubBranch}>
+                  <View style={styles.treeLevelCardWrap}>
+                    {renderDiagramCard(
+                      damTree.g2_top,
+                      isFocused ? styles.cardG2StyleFocused : styles.cardG2Style
+                    )}
+                  </View>
+
+                  {/* Fork to Gen 3 */}
+                  <View style={[styles.forkStemWrapSmall, isFocused && styles.forkStemWrapSmallFocused]}>
+                    <View style={[styles.forkStemVerticalSmall, { borderColor: '#38bdf8' }]} />
+                    <View style={[styles.forkBarHorizontalSmall, { borderColor: '#38bdf8' }]} />
+                    <View style={[styles.forkDropLeftSmall, { borderColor: '#38bdf8' }]} />
+                    <View style={[styles.forkDropRightSmall, { borderColor: '#38bdf8' }]} />
+                  </View>
+
+                  {/* Gen 3 Grandparents */}
+                  <View style={[styles.treeLevelRowG3, isFocused && styles.treeLevelRowG3Focused]}>
+                    <View style={styles.g3CardWrap}>
+                      {renderDiagramCard(
+                        damTree.g3_top1,
+                        isFocused ? styles.cardG3StyleFocused : styles.cardG3Style
+                      )}
+                    </View>
+                    <View style={styles.g3CardWrap}>
+                      {renderDiagramCard(
+                        damTree.g3_top2,
+                        isFocused ? styles.cardG3StyleFocused : styles.cardG3Style
+                      )}
+                    </View>
+                  </View>
                 </View>
 
-                {/* Fork to Gen 3 */}
-                <View style={styles.forkStemWrapSmall}>
-                  <View style={[styles.forkStemVerticalSmall, { borderColor: border }]} />
-                  <View style={[styles.forkBarHorizontalSmall, { borderColor: border }]} />
-                  <View style={[styles.forkDropLeftSmall, { borderColor: border }]} />
-                  <View style={[styles.forkDropRightSmall, { borderColor: border }]} />
-                </View>
+                {/* Gen 2 Sağ (Annenin Annesi) */}
+                <View style={styles.treeSubBranch}>
+                  <View style={styles.treeLevelCardWrap}>
+                    {renderDiagramCard(
+                      damTree.g2_bot,
+                      isFocused ? styles.cardG2StyleFocused : styles.cardG2Style
+                    )}
+                  </View>
 
-                {/* Gen 3 Grandparents */}
-                <View style={styles.treeLevelRowG3}>
-                  <View style={styles.g3CardWrap}>{renderDiagramCard(damTree.g3_bot1, styles.cardG3Style)}</View>
-                  <View style={styles.g3CardWrap}>{renderDiagramCard(damTree.g3_bot2, styles.cardG3Style)}</View>
+                  {/* Fork to Gen 3 */}
+                  <View style={[styles.forkStemWrapSmall, isFocused && styles.forkStemWrapSmallFocused]}>
+                    <View style={[styles.forkStemVerticalSmall, { borderColor: '#f472b6' }]} />
+                    <View style={[styles.forkBarHorizontalSmall, { borderColor: '#f472b6' }]} />
+                    <View style={[styles.forkDropLeftSmall, { borderColor: '#f472b6' }]} />
+                    <View style={[styles.forkDropRightSmall, { borderColor: '#f472b6' }]} />
+                  </View>
+
+                  {/* Gen 3 Grandparents */}
+                  <View style={[styles.treeLevelRowG3, isFocused && styles.treeLevelRowG3Focused]}>
+                    <View style={styles.g3CardWrap}>
+                      {renderDiagramCard(
+                        damTree.g3_bot1,
+                        isFocused ? styles.cardG3StyleFocused : styles.cardG3Style
+                      )}
+                    </View>
+                    <View style={styles.g3CardWrap}>
+                      {renderDiagramCard(
+                        damTree.g3_bot2,
+                        isFocused ? styles.cardG3StyleFocused : styles.cardG3Style
+                      )}
+                    </View>
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
+          )}
         </View>
       </View>
     );
@@ -684,6 +765,9 @@ export const AdvertPedigree = memo(function AdvertPedigree({
   };
 
   const renderAestheticTable = () => {
+    const showSire = activeBranch === 'all' || activeBranch === 'sire';
+    const showDam = activeBranch === 'all' || activeBranch === 'dam';
+
     return (
       <View style={styles.tjkTableWrap}>
         {/* Kuşak Sütun Başlıkları */}
@@ -712,28 +796,44 @@ export const AdvertPedigree = memo(function AdvertPedigree({
         <View style={styles.tGridContainer}>
           {/* SÜTUN 1: 1. KUŞAK */}
           <View style={styles.tCol1}>
-            <View style={styles.tCellSpan4}>{renderTableCard(sireTree.g1)}</View>
-            <View style={styles.tCellSpan4}>{renderTableCard(damTree.g1)}</View>
+            {showSire && <View style={styles.tCellSpan4}>{renderTableCard(sireTree.g1)}</View>}
+            {showDam && <View style={styles.tCellSpan4}>{renderTableCard(damTree.g1)}</View>}
           </View>
 
           {/* SÜTUN 2: 2. KUŞAK */}
           <View style={styles.tCol2}>
-            <View style={styles.tCellSpan2}>{renderTableCard(sireTree.g2_top)}</View>
-            <View style={styles.tCellSpan2}>{renderTableCard(sireTree.g2_bot)}</View>
-            <View style={styles.tCellSpan2}>{renderTableCard(damTree.g2_top)}</View>
-            <View style={styles.tCellSpan2}>{renderTableCard(damTree.g2_bot)}</View>
+            {showSire && (
+              <>
+                <View style={styles.tCellSpan2}>{renderTableCard(sireTree.g2_top)}</View>
+                <View style={styles.tCellSpan2}>{renderTableCard(sireTree.g2_bot)}</View>
+              </>
+            )}
+            {showDam && (
+              <>
+                <View style={styles.tCellSpan2}>{renderTableCard(damTree.g2_top)}</View>
+                <View style={styles.tCellSpan2}>{renderTableCard(damTree.g2_bot)}</View>
+              </>
+            )}
           </View>
 
           {/* SÜTUN 3: 3. KUŞAK */}
           <View style={styles.tCol3}>
-            <View style={styles.tCellSpan1}>{renderTableCard(sireTree.g3_top1)}</View>
-            <View style={styles.tCellSpan1}>{renderTableCard(sireTree.g3_top2)}</View>
-            <View style={styles.tCellSpan1}>{renderTableCard(sireTree.g3_bot1)}</View>
-            <View style={styles.tCellSpan1}>{renderTableCard(sireTree.g3_bot2)}</View>
-            <View style={styles.tCellSpan1}>{renderTableCard(damTree.g3_top1)}</View>
-            <View style={styles.tCellSpan1}>{renderTableCard(damTree.g3_top2)}</View>
-            <View style={styles.tCellSpan1}>{renderTableCard(damTree.g3_bot1)}</View>
-            <View style={styles.tCellSpan1}>{renderTableCard(damTree.g3_bot2)}</View>
+            {showSire && (
+              <>
+                <View style={styles.tCellSpan1}>{renderTableCard(sireTree.g3_top1)}</View>
+                <View style={styles.tCellSpan1}>{renderTableCard(sireTree.g3_top2)}</View>
+                <View style={styles.tCellSpan1}>{renderTableCard(sireTree.g3_bot1)}</View>
+                <View style={styles.tCellSpan1}>{renderTableCard(sireTree.g3_bot2)}</View>
+              </>
+            )}
+            {showDam && (
+              <>
+                <View style={styles.tCellSpan1}>{renderTableCard(damTree.g3_top1)}</View>
+                <View style={styles.tCellSpan1}>{renderTableCard(damTree.g3_top2)}</View>
+                <View style={styles.tCellSpan1}>{renderTableCard(damTree.g3_bot1)}</View>
+                <View style={styles.tCellSpan1}>{renderTableCard(damTree.g3_bot2)}</View>
+              </>
+            )}
           </View>
         </View>
       </View>
@@ -856,7 +956,7 @@ export const AdvertPedigree = memo(function AdvertPedigree({
                     { color: activeBranch === 'sire' ? '#38bdf8' : textSecondary },
                   ]}
                 >
-                  ♂ Baba Hattı
+                  Baba Hattı
                 </Text>
               </Pressable>
 
@@ -881,7 +981,7 @@ export const AdvertPedigree = memo(function AdvertPedigree({
                     { color: activeBranch === 'dam' ? '#f472b6' : textSecondary },
                   ]}
                 >
-                  ♀ Anne Hattı
+                  Anne Hattı
                 </Text>
               </Pressable>
             </View>
@@ -1140,17 +1240,23 @@ const styles = StyleSheet.create({
   treeDiagramContainer: {
     borderWidth: 1,
     borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
     alignItems: 'center',
     width: '100%',
-    minWidth: 640,
+    minWidth: 980,
     alignSelf: 'stretch',
+  },
+  treeDiagramContainerFocused: {
+    minWidth: '100%',
+    maxWidth: 860,
+    paddingVertical: 20,
+    paddingHorizontal: 18,
   },
   levelRootWrap: {
     alignItems: 'center',
     width: '100%',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   rootCardContainer: {
     alignItems: 'center',
@@ -1159,16 +1265,25 @@ const styles = StyleSheet.create({
   },
   rootCardStyle: {
     width: '100%',
-    maxWidth: 220,
+    maxWidth: 260,
+  },
+  rootCardStyleFocused: {
+    width: '100%',
+    maxWidth: 300,
   },
   rootStemLine: {
     width: 1.5,
-    height: 10,
+    height: 12,
     backgroundColor: '#9ca3af',
+  },
+  rootDirectLine: {
+    width: 2,
+    height: 18,
+    borderRadius: 1,
   },
   rootForkWrap: {
     width: '50%',
-    height: 12,
+    height: 14,
     position: 'relative',
   },
   rootForkHorizontal: {
@@ -1195,13 +1310,24 @@ const styles = StyleSheet.create({
   mainBranchesRow: {
     flexDirection: 'row',
     width: '100%',
-    gap: 8,
+    gap: 16,
     justifyContent: 'space-between',
     alignItems: 'stretch',
+  },
+  mainBranchesRowFocused: {
+    justifyContent: 'center',
+    width: '100%',
+    maxWidth: 800,
+    alignSelf: 'center',
   },
   branchTreeHalf: {
     flex: 1,
     alignItems: 'center',
+  },
+  branchTreeHalfFocused: {
+    width: '100%',
+    maxWidth: 800,
+    flex: 1,
   },
   treeLevelCardWrap: {
     width: '100%',
@@ -1211,16 +1337,22 @@ const styles = StyleSheet.create({
   treeLevelRowG2: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 6,
+    gap: 10,
     width: '100%',
     alignItems: 'stretch',
+  },
+  treeLevelRowG2Focused: {
+    gap: 14,
   },
   treeLevelRowG3: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 4,
+    gap: 6,
     width: '100%',
     alignItems: 'stretch',
+  },
+  treeLevelRowG3Focused: {
+    gap: 10,
   },
   treeSubBranch: {
     flex: 1,
@@ -1232,41 +1364,53 @@ const styles = StyleSheet.create({
   },
   forkStemWrap: {
     width: '50%',
-    height: 12,
+    height: 14,
     position: 'relative',
-    marginVertical: 1,
+    marginVertical: 2,
+  },
+  forkStemWrapFocused: {
+    width: '50%',
+    height: 16,
+    position: 'relative',
+    marginVertical: 2,
   },
   forkStemWrapSmall: {
     width: '50%',
-    height: 10,
+    height: 12,
     position: 'relative',
-    marginVertical: 1,
+    marginVertical: 2,
+  },
+  forkStemWrapSmallFocused: {
+    width: '50%',
+    height: 14,
+    position: 'relative',
+    marginVertical: 2,
   },
   forkStemVertical: {
     position: 'absolute',
     top: 0,
     left: '50%',
-    height: 6,
+    height: 7,
     borderLeftWidth: 1.5,
     transform: [{ translateX: -0.75 }],
   },
   forkBarHorizontal: {
     position: 'absolute',
-    top: 6,
+    top: 7,
     left: 0,
     right: 0,
     borderTopWidth: 1.5,
   },
   forkDropLeft: {
     position: 'absolute',
-    top: 6,
+    top: 7,
     left: 0,
     bottom: 0,
     borderLeftWidth: 1.5,
   },
   forkDropRight: {
     position: 'absolute',
-    top: 6,
+    top: 7,
     right: 0,
     bottom: 0,
     borderRightWidth: 1.5,
@@ -1275,72 +1419,87 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: '50%',
-    height: 5,
+    height: 6,
     borderLeftWidth: 1.5,
     transform: [{ translateX: -0.75 }],
   },
   forkBarHorizontalSmall: {
     position: 'absolute',
-    top: 5,
+    top: 6,
     left: 0,
     right: 0,
     borderTopWidth: 1.5,
   },
   forkDropLeftSmall: {
     position: 'absolute',
-    top: 5,
+    top: 6,
     left: 0,
     bottom: 0,
     borderLeftWidth: 1.5,
   },
   forkDropRightSmall: {
     position: 'absolute',
-    top: 5,
+    top: 6,
     right: 0,
     bottom: 0,
     borderRightWidth: 1.5,
   },
   dNodeCard: {
-    borderRadius: 8,
+    borderRadius: 9,
     borderWidth: 1,
-    paddingVertical: 5,
-    paddingHorizontal: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
     justifyContent: 'center',
     width: '100%',
   },
   dCardG0: {
-    minHeight: 56,
+    minHeight: 64,
     borderWidth: 1.5,
-    borderRadius: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
   dCardG1: {
-    minHeight: 52,
+    minHeight: 60,
     width: '100%',
-    maxWidth: 190,
+    maxWidth: 240,
     alignSelf: 'center',
   },
   dCardG2: {
-    minHeight: 50,
+    minHeight: 58,
     width: '100%',
-    maxWidth: 160,
+    maxWidth: 200,
     alignSelf: 'center',
   },
   dCardG3: {
-    minHeight: 52,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
+    minHeight: 62,
+    paddingVertical: 5,
+    paddingHorizontal: 6,
   },
   cardG1Style: {
     width: '100%',
-    maxWidth: 190,
+    maxWidth: 240,
+  },
+  cardG1StyleFocused: {
+    width: '100%',
+    maxWidth: 300,
+    minHeight: 64,
   },
   cardG2Style: {
     width: '100%',
-    maxWidth: 160,
+    maxWidth: 200,
+  },
+  cardG2StyleFocused: {
+    width: '100%',
+    maxWidth: 250,
+    minHeight: 60,
   },
   cardG3Style: {},
+  cardG3StyleFocused: {
+    minHeight: 62,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
   dCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1355,16 +1514,16 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   dRoleText: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: -0.1,
   },
   dRoleTextG3: {
-    fontSize: 8.5,
+    fontSize: 9,
     fontWeight: '700',
   },
   dGenBadge: {
-    fontSize: 9,
+    fontSize: 9.5,
     fontWeight: '700',
     marginLeft: 'auto',
     marginRight: 2,
@@ -1375,22 +1534,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   dNodeNameG0: {
-    fontSize: 14.5,
-    lineHeight: 18,
+    fontSize: 15.5,
+    lineHeight: 19,
     fontWeight: '900',
     marginTop: 1,
   },
   dNodeNameG1: {
+    fontSize: 13.5,
+    lineHeight: 17,
+  },
+  dNodeNameG2: {
     fontSize: 12,
     lineHeight: 15,
   },
-  dNodeNameG2: {
+  dNodeNameG3: {
     fontSize: 11,
     lineHeight: 14,
-  },
-  dNodeNameG3: {
-    fontSize: 10.5,
-    lineHeight: 13,
   },
   dMetaRow: {
     flexDirection: 'row',
