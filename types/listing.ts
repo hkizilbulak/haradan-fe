@@ -1,4 +1,10 @@
-import type { HorseGender } from './advertDetail';
+import type {
+  HorseGender,
+  PedigreeEntry,
+  HorseSibling,
+  HorseStatistic,
+  HorseDetailProfile,
+} from './advertDetail';
 import type { Money } from './money';
 import type { AdvertId } from './advertId';
 
@@ -43,6 +49,10 @@ export type TjkHorseProfile = TjkHorseSummary & {
   breeder: string;
   trainer: string;
   handicap: number | null;
+  pedigree?: PedigreeEntry[];
+  siblings?: HorseSibling[];
+  statistics?: HorseStatistic[];
+  detailProfile?: HorseDetailProfile | null;
 };
 
 export type ListingMediaSlot = {

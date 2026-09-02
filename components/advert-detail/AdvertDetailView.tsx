@@ -20,6 +20,7 @@ import {
   AdvertSpecs,
   AdvertStickyCta,
   AdvertViewedRail,
+  type SpecsSubTab,
 } from '@/components/advert-detail';
 import { MobileAdvertStickyBar } from '@/components/advert-detail/mobile/MobileAdvertStickyBar';
 import { MobileAdvertTopBar } from '@/components/advert-detail/mobile/MobileAdvertTopBar';
@@ -34,7 +35,7 @@ import {
 } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
-import { useThemeColor } from '@/hooks/useThemeColor'
+import { useThemeColor } from '@/hooks/useThemeColor';
 import type { AdvertId } from '@/types/advertId';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -74,6 +75,7 @@ export function AdvertDetailView({
   const mobileScrollInset = mobileDetailScrollInset(safeInsets.bottom);
 
   const [tab, setTab] = useState<AdvertDetailTab>('general');
+  const [specsSubTab, setSpecsSubTab] = useState<SpecsSubTab>('specs');
   const [showTop, setShowTop] = useState(false);
 
   const favoriteCard = useMemo((): CatalogProductCard => {
@@ -119,23 +121,23 @@ export function AdvertDetailView({
 
   useEffect(() => {
     setTab('general');
+    setSpecsSubTab('specs');
     scrollYRef.current = 0;
     sectionLayoutYRef.current = {};
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [detail.id]);
 
-  const tabs = useMemo(
-    () =>
-      [
-        { key: 'general' as const, label: 'İlan' },
-        { key: 'details' as const, label: 'Genel bilgiler' },
-        {
-          key: 'reviews' as const,
-          label: `Değerlendirmeler (${detail.reviewCount || detail.reviews.length})`,
-        },
-      ] as const,
-    [detail.reviewCount, detail.reviews.length]
-  );
+  const tabs = useMemo(() => {
+    const list: { key: AdvertDetailTab; label: string }[] = [
+      { key: 'general', label: 'İlan' },
+      { key: 'details', label: 'Genel bilgiler' },
+      {
+        key: 'reviews',
+        label: `Yorumlar (${detail.reviewCount || detail.reviews.length})`,
+      },
+    ];
+    return list;
+  }, [detail.reviewCount, detail.reviews.length]);
 
   const phone = detail.sellerPhone ?? '';
 
@@ -263,6 +265,7 @@ export function AdvertDetailView({
       if (key === 'reviews') {
         scrollToAnchor(reviewsAnchorRef, 'advert-reviews');
       } else if (key === 'details') {
+        setSpecsSubTab('specs');
         scrollToAnchor(specsAnchorRef, 'advert-specs');
       } else {
         if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -479,6 +482,11 @@ export function AdvertDetailView({
                 groups={detail.specs}
                 horse={detail.horse}
                 detail={detail}
+                activeSubTab={specsSubTab}
+                onSubTabChange={(t) => {
+                  setSpecsSubTab(t);
+                  setTab('details');
+                }}
               />
             </View>
 
@@ -613,6 +621,11 @@ export function AdvertDetailView({
               groups={detail.specs}
               horse={detail.horse}
               detail={detail}
+              activeSubTab={specsSubTab}
+              onSubTabChange={(t) => {
+                setSpecsSubTab(t);
+                setTab('details');
+              }}
             />
           </View>
 

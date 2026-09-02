@@ -21,6 +21,10 @@ export type {
   HorseYearlyPerformance,
   HorseRaceRecord,
   HorseOffspring,
+  PedigreeEntry,
+  HorseSibling,
+  HorseStatistic,
+  HorseDetailProfile,
   HorseProfile,
 } from './advertDetail';
 export type {

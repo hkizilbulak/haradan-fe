@@ -1,8 +1,9 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
 import {
   Linking,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -13,11 +14,30 @@ import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { AdvertDetail, AdvertSpecGroup, HorseProfile } from '@/types';
 import { useAdvertLocation } from '@/services/location';
+import { AdvertPedigree } from './AdvertPedigree';
+import { AdvertSiblings } from './AdvertSiblings';
+import { AdvertStatistics } from './AdvertStatistics';
+
+export type SpecsSubTab = 'specs' | 'pedigree' | 'siblings' | 'statistics';
+
+export function openTjkHorseSearch(rawName: string) {
+  if (!rawName || rawName === '-') return;
+  const cleanName = rawName.replace(/\s*[\(\[].*?[\)\]]/g, '').trim();
+  // !ducky command directly redirects straight to the #1 top matching page on tjk.org
+  const directUrl = `https://duckduckgo.com/?q=%21ducky+site%3Atjk.org+${encodeURIComponent(cleanName)}`;
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    window.open(directUrl, '_blank', 'noopener,noreferrer');
+  } else {
+    void Linking.openURL(directUrl);
+  }
+}
 
 type AdvertSpecsProps = {
   groups: AdvertSpecGroup[];
   horse?: HorseProfile;
   detail?: AdvertDetail;
+  activeSubTab?: SpecsSubTab;
+  onSubTabChange?: (tab: SpecsSubTab) => void;
 };
 
 type SoftRow = {
@@ -220,6 +240,8 @@ export const AdvertSpecs = memo(function AdvertSpecs({
   groups,
   horse: propHorse,
   detail,
+  activeSubTab,
+  onSubTabChange,
 }: AdvertSpecsProps) {
   const isWide = useIsWideLayout();
 
@@ -257,7 +279,22 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       const identity: SoftRow[] = [];
       const horseName = horse.registeredName || detail?.title || '';
       if (horseName) identity.push({ icon: 'ribbon-outline', label: 'İsim', value: horseName });
-      if (horse.age != null && horse.age > 0) {
+      if (horse.tjkNumber) identity.push({ icon: 'document-text-outline', label: 'TJK No', value: horse.tjkNumber });
+      if (horse.detailProfile?.handicapPoint || (horse.handicap != null && horse.handicap > 0)) {
+        identity.push({
+          icon: 'speedometer-outline',
+          label: 'Handikap',
+          value: String(horse.detailProfile?.handicapPoint || horse.handicap),
+        });
+      }
+      if (horse.detailProfile?.ageText) {
+        identity.push({
+          icon: 'calendar-outline',
+          label: 'Yaş / Eşkal',
+          value: horse.detailProfile.ageText,
+          hint: horse.birthDate || undefined,
+        });
+      } else if (horse.age != null && horse.age > 0) {
         identity.push({
           icon: 'calendar-outline',
           label: 'Yaş / Doğum',
@@ -286,9 +323,30 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       }
 
       const pedigree: SoftRow[] = [];
-      if (horse.sire) pedigree.push({ icon: 'git-branch-outline', label: 'Baba', value: horse.sire });
-      if (horse.dam) pedigree.push({ icon: 'git-branch-outline', label: 'Anne', value: horse.dam });
-      if (horse.damsire) pedigree.push({ icon: 'git-network-outline', label: 'Kısrak Babası', value: horse.damsire });
+      if (horse.sire) {
+        pedigree.push({
+          icon: 'git-branch-outline',
+          label: 'Baba',
+          value: horse.sire,
+          onPress: () => openTjkHorseSearch(horse.sire!),
+        });
+      }
+      if (horse.dam) {
+        pedigree.push({
+          icon: 'git-branch-outline',
+          label: 'Anne',
+          value: horse.dam,
+          onPress: () => openTjkHorseSearch(horse.dam!),
+        });
+      }
+      if (horse.damsire) {
+        pedigree.push({
+          icon: 'git-network-outline',
+          label: 'Kısrak Babası',
+          value: horse.damsire,
+          onPress: () => openTjkHorseSearch(horse.damsire!),
+        });
+      }
 
       if (pedigree.length > 0) {
         list.push({
@@ -383,100 +441,273 @@ export const AdvertSpecs = memo(function AdvertSpecs({
     };
   }, [detail, groups, horse, locationCity]);
 
-  if (sections.length === 0 && !hasRaces) return null;
+  const hasPedigree = Boolean(horse?.pedigree && horse.pedigree.length > 0);
+  const hasSiblings = Boolean(horse?.siblings && horse.siblings.length > 0);
+  const hasStatistics = Boolean(
+    (horse?.statistics && horse.statistics.length > 0) ||
+    horse?.detailProfile?.handicapPoint ||
+    (horse?.handicap != null && horse.handicap > 0)
+  );
+
+  const subTabs = useMemo(() => {
+    const list: {
+      key: SpecsSubTab;
+      label: string;
+      icon: keyof typeof Ionicons.glyphMap;
+      badge?: string;
+    }[] = [
+      { key: 'specs', label: 'Genel Bilgiler', icon: 'information-circle-outline' },
+    ];
+    if (hasPedigree) {
+      list.push({ key: 'pedigree', label: 'Pedigri (Soyağacı)', icon: 'git-branch-outline' });
+    }
+    if (hasSiblings) {
+      list.push({
+        key: 'siblings',
+        label: 'Anne Kardeşleri',
+        icon: 'people-outline',
+        badge: String(horse?.siblings?.length ?? 0),
+      });
+    }
+    if (hasStatistics) {
+      list.push({ key: 'statistics', label: 'İstatistikler', icon: 'stats-chart-outline' });
+    }
+    return list;
+  }, [hasPedigree, hasSiblings, hasStatistics, horse?.siblings?.length]);
+
+  const [currentTab, setCurrentTab] = useState<SpecsSubTab>(activeSubTab ?? 'specs');
+
+  useEffect(() => {
+    if (activeSubTab) {
+      setCurrentTab(activeSubTab);
+    }
+  }, [activeSubTab]);
+
+  if (sections.length === 0 && !hasRaces && subTabs.length <= 1) return null;
 
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.pageTitle, { color: text }]}>{title}</Text>
-
-      <View style={[styles.grid, !isWide && styles.gridMobile]}>
-        {sections.map((section) => (
-          <View
-            key={section.id}
-            style={[
-              styles.sectionCard,
-              { backgroundColor: surface, borderColor: border },
-              isWide ? styles.sectionCardWide : styles.sectionCardMobile,
-            ]}
+      {/* Sub Tabs Bar */}
+      {subTabs.length > 1 ? (
+        <View style={styles.subTabBarWrap}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.subTabsContainer}
           >
-            {/* Card Header */}
-            <View style={styles.cardHeader}>
-              <View style={[styles.headerIconWrap, { backgroundColor: `${primary}15` }]}>
-                <Ionicons name={section.icon} size={16} color={primary} />
-              </View>
-              <Text style={[styles.cardTitle, { color: text }]}>{section.title}</Text>
-            </View>
-
-            {/* Card Content Grid */}
-            <View style={styles.rowsGrid}>
-              {section.rows.map((row) => (
-                <View key={`${section.id}-${row.label}`} style={styles.rowItem}>
-                  <View style={[styles.rowIconWrap, { borderColor: border }]}>
-                    <Ionicons name={row.icon} size={15} color={textSecondary} />
-                  </View>
-                  <View style={styles.rowContent}>
-                    <Text style={[styles.rowLabel, { color: textSecondary }]}>
-                      {row.label}
-                    </Text>
-                    <Text style={[styles.rowValue, { color: text }]}>
-                      {row.value}
-                    </Text>
-                    {row.hint ? (
-                      <Text style={[styles.rowHint, { color: textMuted }]}>
-                        {row.hint}
-                      </Text>
-                    ) : null}
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        ))}
-      </View>
-
-      {hasRaces && horse ? (
-        <View
-          style={[
-            styles.sectionCard,
-            styles.sectionCardMobile,
-            { backgroundColor: surface, borderColor: border },
-          ]}
-        >
-          <View style={styles.cardHeader}>
-            <View style={[styles.headerIconWrap, { backgroundColor: `${primary}15` }]}>
-              <Ionicons name="trophy-outline" size={16} color={primary} />
-            </View>
-            <Text style={[styles.cardTitle, { color: text }]}>Yarış Geçmişi</Text>
-          </View>
-
-          <View style={styles.raceList}>
-            {horse.races.slice(0, 5).map((race) => (
-              <View key={race.id} style={[styles.raceRow, { borderBottomColor: border }]}>
-                <Text style={[styles.racePlace, { color: primary }]}>
-                  {race.place}.
-                </Text>
-                <View style={styles.raceCopy}>
-                  <Text style={[styles.raceVenue, { color: text }]} numberOfLines={1}>
-                    {race.venue}
-                  </Text>
-                  <Text style={[styles.raceMeta, { color: textSecondary }]}>
-                    {race.date} · {race.distance} · {race.surface}
-                  </Text>
-                </View>
-                {race.videoUrl ? (
-                  <Pressable
-                    onPress={() => Linking.openURL(race.videoUrl!)}
-                    hitSlop={8}
-                    style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+            {subTabs.map((t) => {
+              const isActive = t.key === currentTab;
+              return (
+                <Pressable
+                  key={t.key}
+                  onPress={() => {
+                    setCurrentTab(t.key);
+                    onSubTabChange?.(t.key);
+                  }}
+                  style={[
+                    styles.subTabButton,
+                    {
+                      backgroundColor: isActive ? primary : surface,
+                      borderColor: isActive ? primary : border,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={t.icon}
+                    size={16}
+                    color={isActive ? '#ffffff' : textSecondary}
+                  />
+                  <Text
+                    style={[
+                      styles.subTabButtonText,
+                      {
+                        color: isActive ? '#ffffff' : text,
+                        fontWeight: isActive ? '700' : '600',
+                      },
+                    ]}
                   >
-                    <Ionicons name="play-circle" size={22} color={primary} />
-                  </Pressable>
-                ) : null}
+                    {t.label}
+                  </Text>
+                  {t.badge ? (
+                    <View
+                      style={[
+                        styles.subTabBadge,
+                        {
+                          backgroundColor: isActive
+                            ? 'rgba(255, 255, 255, 0.25)'
+                            : `${primary}15`,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.subTabBadgeText,
+                          { color: isActive ? '#ffffff' : primary },
+                        ]}
+                      >
+                        {t.badge}
+                      </Text>
+                    </View>
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      ) : (
+        <Text style={[styles.pageTitle, { color: text }]}>{title}</Text>
+      )}
+
+      {/* Tab: Specs (Genel Bilgiler) */}
+      {currentTab === 'specs' && (
+        <>
+          <View style={[styles.grid, !isWide && styles.gridMobile]}>
+            {sections.map((section) => (
+              <View
+                key={section.id}
+                style={[
+                  styles.sectionCard,
+                  { backgroundColor: surface, borderColor: border },
+                  isWide ? styles.sectionCardWide : styles.sectionCardMobile,
+                ]}
+              >
+                {/* Card Header */}
+                <View style={styles.cardHeader}>
+                  <View style={[styles.headerIconWrap, { backgroundColor: `${primary}15` }]}>
+                    <Ionicons name={section.icon} size={16} color={primary} />
+                  </View>
+                  <Text style={[styles.cardTitle, { color: text }]}>{section.title}</Text>
+                </View>
+
+                {/* Card Content Grid */}
+                <View style={styles.rowsGrid}>
+                  {section.rows.map((row) => {
+                    const isClickable = Boolean(row.onPress);
+                    return (
+                      <Pressable
+                        key={`${section.id}-${row.label}`}
+                        onPress={row.onPress}
+                        disabled={!isClickable}
+                        style={({ pressed }) => [
+                          styles.rowItem,
+                          isClickable && styles.rowItemClickable,
+                          pressed && isClickable && { opacity: 0.7 },
+                        ]}
+                      >
+                        <View style={[styles.rowIconWrap, { borderColor: border }]}>
+                          <Ionicons name={row.icon} size={15} color={isClickable ? primary : textSecondary} />
+                        </View>
+                        <View style={styles.rowContent}>
+                          <Text style={[styles.rowLabel, { color: textSecondary }]}>
+                            {row.label}
+                          </Text>
+                          <View style={styles.rowValueRow}>
+                            <Text
+                              style={[
+                                styles.rowValue,
+                                { color: text },
+                                isClickable && { color: primary, textDecorationLine: 'underline' },
+                              ]}
+                            >
+                              {row.value}
+                            </Text>
+                            {isClickable ? (
+                              <Ionicons
+                                name="open-outline"
+                                size={13}
+                                color={primary}
+                                style={{ marginLeft: 4, marginTop: 3 }}
+                              />
+                            ) : null}
+                          </View>
+                          {row.hint ? (
+                            <Text style={[styles.rowHint, { color: textMuted }]}>
+                              {row.hint}
+                            </Text>
+                          ) : null}
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
             ))}
           </View>
-        </View>
-      ) : null}
+
+          {hasRaces && horse ? (
+            <View
+              style={[
+                styles.sectionCard,
+                styles.sectionCardMobile,
+                { backgroundColor: surface, borderColor: border },
+              ]}
+            >
+              <View style={styles.cardHeader}>
+                <View style={[styles.headerIconWrap, { backgroundColor: `${primary}15` }]}>
+                  <Ionicons name="trophy-outline" size={16} color={primary} />
+                </View>
+                <Text style={[styles.cardTitle, { color: text }]}>Yarış Geçmişi</Text>
+              </View>
+
+              <View style={styles.raceList}>
+                {horse.races.slice(0, 5).map((race) => (
+                  <View key={race.id} style={[styles.raceRow, { borderBottomColor: border }]}>
+                    <Text style={[styles.racePlace, { color: primary }]}>
+                      {race.place}.
+                    </Text>
+                    <View style={styles.raceCopy}>
+                      <Text style={[styles.raceVenue, { color: text }]} numberOfLines={1}>
+                        {race.venue}
+                      </Text>
+                      <Text style={[styles.raceMeta, { color: textSecondary }]}>
+                        {race.date} · {race.distance} · {race.surface.toLowerCase().startsWith('sen') ? 'Sentetik' : race.surface}
+                      </Text>
+                    </View>
+                    {race.videoUrl ? (
+                      <Pressable
+                        onPress={() => Linking.openURL(race.videoUrl!)}
+                        hitSlop={8}
+                        style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+                      >
+                        <Ionicons name="play-circle" size={22} color={primary} />
+                      </Pressable>
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+        </>
+      )}
+
+      {/* Tab: Pedigree */}
+      {currentTab === 'pedigree' && (
+        <AdvertPedigree
+          pedigree={horse?.pedigree}
+          horseName={horse?.registeredName || detail?.title}
+          sireFallback={horse?.sire}
+          damFallback={horse?.dam}
+          damsireFallback={horse?.damsire}
+        />
+      )}
+
+      {/* Tab: Siblings */}
+      {currentTab === 'siblings' && (
+        <AdvertSiblings
+          siblings={horse?.siblings}
+          damName={horse?.dam}
+        />
+      )}
+
+      {/* Tab: Statistics */}
+      {currentTab === 'statistics' && (
+        <AdvertStatistics
+          statistics={horse?.statistics}
+          handicap={horse?.handicap}
+          handicapPoint={horse?.detailProfile?.handicapPoint}
+          careerEarnings={horse?.detailProfile?.earning}
+        />
+      )}
     </View>
   );
 });
@@ -490,6 +721,44 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.4,
     marginBottom: 4,
+  },
+  subTabBarWrap: {
+    marginBottom: 2,
+  },
+  subTabsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingRight: 8,
+    paddingVertical: 2,
+  },
+  subTabButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        transition: 'all 0.15s ease',
+      } as any,
+      default: {},
+    }),
+  },
+  subTabButtonText: {
+    fontSize: 13.5,
+    letterSpacing: -0.1,
+  },
+  subTabBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
+  },
+  subTabBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
   },
   grid: {
     flexDirection: 'row',
@@ -547,6 +816,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
+  },
+  rowItemClickable: {
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+      } as any,
+      default: {},
+    }),
+  },
+  rowValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
   },
   rowIconWrap: {
     width: 30,

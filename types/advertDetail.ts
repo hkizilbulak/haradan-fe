@@ -3,7 +3,10 @@ import type { PublicMediaItem } from './media';
 import type { CatalogProductCard } from './catalog';
 import type { PublishedAdvertCard } from './advert';
 
-export type AdvertDetailTab = 'general' | 'details' | 'reviews';
+export type AdvertDetailTab =
+  | 'general'
+  | 'details'
+  | 'reviews';
 
 export type AdvertSpecRow = {
   label: string;
@@ -90,7 +93,49 @@ export type HorseOffspring = {
   earnings: Money | null;
 };
 
-/** At profili — kimlik, orijin, kişiler, performans, yarış, üreme. */
+/** TJK Pedigri Soyağacı Düğümü */
+export type PedigreeEntry = {
+  father: string;
+  mother: string;
+};
+
+/** TJK Anne Kardeşleri */
+export type HorseSibling = {
+  name: string;
+  fatherName: string;
+  raceCount: string;
+  first: string;
+  second: string;
+  third: string;
+  fourth: string;
+  earning: string;
+};
+
+/** TJK Koşu ve Pist İstatistikleri */
+export type HorseStatistic = {
+  yearLabel: string;
+  raceCount: string;
+  first: string;
+  second: string;
+  third: string;
+  fourth: string;
+  fifth: string;
+  earning: string;
+};
+
+/** TJK Ek Profil Bilgileri */
+export type HorseDetailProfile = {
+  sourceName?: string;
+  ageText?: string;
+  birthDate?: string;
+  handicapPoint?: string;
+  maidenSire?: string;
+  owner?: string;
+  grower?: string;
+  earning?: string;
+};
+
+/** At profili — kimlik, orijin, kişiler, performans, yarış, üreme, TJK detayları. */
 export type HorseProfile = {
   registeredName: string;
   age: number;
@@ -111,6 +156,12 @@ export type HorseProfile = {
   handicap: number;
   races: HorseRaceRecord[];
   offspring: HorseOffspring[] | null;
+  /** TJK Zengin Verileri */
+  tjkNumber?: string;
+  pedigree?: PedigreeEntry[];
+  siblings?: HorseSibling[];
+  statistics?: HorseStatistic[];
+  detailProfile?: HorseDetailProfile | null;
 };
 
 /**

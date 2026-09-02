@@ -33,7 +33,8 @@
     "selftest:catalog": "npx --yes tsx scripts/selftest-catalog-repository.ts",
     "selftest:category-forms-and-filters": "npx --yes tsx scripts/selftest-category-forms-and-filters.ts",
     "selftest:tjk-properties": "npx --yes tsx scripts/selftest-tjk-category-properties.ts",
-    "selftest:contact-links": "npx --yes tsx scripts/selftest-contact-links.ts"
+    "selftest:contact-links": "npx --yes tsx scripts/selftest-contact-links.ts",
+    "selftest:advert-tjk-tabs": "npx --yes tsx scripts/selftest-advert-tjk-tabs.ts"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.5",

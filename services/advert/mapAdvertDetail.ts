@@ -110,12 +110,18 @@ function buildHorseFromTjkOrDto(
       breeder: tjkHorse.breeder || '',
       trainer: tjkHorse.trainer || '',
       handicap: tjkHorse.handicap ?? 0,
+      tjkNumber: tjkHorse.tjkNumber || dtoHorse?.tjkNumber || '',
+      pedigree: tjkHorse.pedigree ?? [],
+      siblings: tjkHorse.siblings ?? [],
+      statistics: tjkHorse.statistics ?? [],
+      detailProfile: tjkHorse.detailProfile ?? null,
     };
   }
   if (dtoHorse) {
     return {
       ...EMPTY_HORSE,
       registeredName: dtoHorse.originalName,
+      tjkNumber: dtoHorse.tjkNumber || '',
     };
   }
   return EMPTY_HORSE;

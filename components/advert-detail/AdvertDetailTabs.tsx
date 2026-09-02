@@ -43,9 +43,7 @@ export const AdvertDetailTabs = memo(function AdvertDetailTabs({
           ]}
           numberOfLines={1}
         >
-          {isMobile && tab.key === 'reviews'
-            ? `Yorumlar (${tab.label.match(/\((\d+)\)/)?.[1] ?? '0'})`
-            : tab.label}
+          {tab.label}
         </Text>
         <View
           style={[
