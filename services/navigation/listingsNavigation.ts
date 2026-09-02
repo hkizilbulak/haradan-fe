@@ -4,10 +4,19 @@ export type ListingsNavQuery = {
   q?: string | null;
   category?: string | null;
   breed?: string | null;
-  province?: string | null;
-  min?: string | null;
-  max?: string | null;
-  urgent?: string | null;
+  breeds?: string | string[] | null;
+  province?: string | string[] | null;
+  district?: string | string[] | null;
+  min?: string | number | null;
+  max?: string | number | null;
+  urgent?: string | boolean | null;
+  period?: string | null;
+  facilities?: string | string[] | null;
+  ages?: string | string[] | null;
+  colors?: string | string[] | null;
+  genders?: string | string[] | null;
+  features?: string | string[] | null;
+  [key: string]: unknown;
 };
 
 export type HeaderNavKey = 'home' | 'listings' | 'my-listings';
@@ -49,14 +58,31 @@ export function headerNavKeyFromPath(pathname: string): HeaderNavKey | '' {
 
 export function buildListingsHref(query: ListingsNavQuery): string {
   const params = new URLSearchParams();
-  const q = query.q?.trim();
-  if (q) params.set('q', q);
-  if (query.category) params.set('category', query.category);
-  if (query.breed) params.set('breed', query.breed);
-  if (query.province) params.set('province', query.province);
-  if (query.min) params.set('min', query.min);
-  if (query.max) params.set('max', query.max);
-  if (query.urgent === '1' || query.urgent === 'true') params.set('urgent', '1');
+  if (query.q != null && String(query.q).trim() !== '') {
+    params.set('q', String(query.q).trim());
+  }
+
+  for (const [key, rawVal] of Object.entries(query)) {
+    if (key === 'q') continue;
+    if (rawVal == null || rawVal === '') continue;
+    if (key === 'urgent') {
+      if (rawVal === '1' || rawVal === true || rawVal === 'true') {
+        params.set('urgent', '1');
+      }
+      continue;
+    }
+    if (Array.isArray(rawVal)) {
+      const filtered = rawVal.filter((v) => v != null && String(v).trim() !== '');
+      if (filtered.length > 0) {
+        params.set(key, filtered.map(String).join(','));
+      }
+      continue;
+    }
+    const strVal = String(rawVal).trim();
+    if (strVal) {
+      params.set(key, strVal);
+    }
+  }
   const qs = params.toString();
   return qs ? `/listings?${qs}` : '/listings';
 }

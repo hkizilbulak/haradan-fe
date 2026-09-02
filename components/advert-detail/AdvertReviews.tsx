@@ -423,13 +423,14 @@ function ReviewCard({
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: Spacing.lg, marginTop: Spacing.xl, paddingBottom: Spacing.xl },
+  wrap: { width: '100%', gap: Spacing.lg, marginTop: Spacing.xl, paddingBottom: Spacing.xl },
   head: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: Spacing.sm,
+    width: '100%',
   },
   titleRow: {
     flexDirection: 'row',
@@ -457,6 +458,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.lg,
     flexWrap: 'wrap',
+    width: '100%',
   },
   scoreBox: {
     width: 140,
@@ -480,6 +482,7 @@ const styles = StyleSheet.create({
   barCount: { width: 24, fontSize: 11, textAlign: 'right' },
   sectionHeader: {
     marginTop: Spacing.xs,
+    width: '100%',
   },
   sectionTitle: {
     fontSize: 16,
@@ -489,15 +492,18 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xl,
     alignItems: 'center',
     gap: Spacing.sm,
+    width: '100%',
   },
   loadingText: {
     fontSize: 13,
   },
   emptyBox: {
+    width: '100%',
     borderWidth: 1,
     borderStyle: 'dashed',
     borderRadius: Radius.card,
     padding: Spacing.xl,
+    paddingVertical: 36,
     alignItems: 'center',
     gap: Spacing.sm,
   },

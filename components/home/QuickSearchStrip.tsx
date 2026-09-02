@@ -13,10 +13,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { navigateToListings } from '@/services/navigation';
-import { DEFAULT_QUICK_LINKS, type QuickSearchLink } from './HomeSearchBar';
+import { DEFAULT_QUICK_LINKS, type QuickSearchTag } from './HomeSearchBar';
 
 type QuickSearchStripProps = {
-  links?: QuickSearchLink[];
+  links?: QuickSearchTag[];
   title?: string;
   variant?: 'default' | 'glass';
 };
@@ -40,12 +40,8 @@ export const QuickSearchStrip = memo(function QuickSearchStrip({
   const surface = useThemeColor('surface');
 
   const handlePress = useCallback(
-    (link: QuickSearchLink) => {
-      if (link.query) {
-        navigateToListings(router, { q: link.query, ...link.params });
-      } else if (link.params) {
-        navigateToListings(router, link.params);
-      }
+    (link: QuickSearchTag) => {
+      navigateToListings(router, link.params);
     },
     [router]
   );

@@ -31,25 +31,87 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-export type QuickSearchLink = {
+export interface QuickSearchTag {
   id: string;
   label: string;
-  query?: string;
-  params?: Record<string, string>;
+  params: {
+    q?: string;
+    category?: string;
+    breeds?: string | string[];
+    genders?: string | string[];
+    ages?: string | string[];
+    colors?: string | string[];
+    facilities?: string | string[];
+    urgent?: string;
+    [key: string]: unknown;
+  };
   icon?: keyof typeof Ionicons.glyphMap;
   iconColor?: string;
-};
+}
 
-export const DEFAULT_QUICK_LINKS: QuickSearchLink[] = [
-  { id: 'ingiliz', label: 'İngiliz Atı', query: 'İngiliz Atı' },
-  { id: 'arap', label: 'Arap Atı', query: 'Arap Atı' },
-  { id: 'tay', label: 'Tay', query: 'Tay' },
-  { id: 'gebe', label: 'Gebe Kısrak', query: 'Gebe Kısrak' },
-  { id: 'aygir', label: 'Aygır', query: 'Aygır' },
-  { id: 'kosar', label: 'Koşar Durumda', query: 'Koşar Durumda' },
-  { id: 'nakliye', label: 'At Nakliyesi', params: { category: 'at-nakliyesi' } },
-  { id: 'acil', label: 'Acil İlanlar', params: { urgent: '1' } },
-  { id: 'pansiyon', label: 'Pansiyon', params: { category: 'pansiyon-haralar' } },
+export type QuickSearchLink = QuickSearchTag;
+
+export const DEFAULT_QUICK_LINKS: QuickSearchTag[] = [
+  {
+    id: 'ingiliz',
+    label: 'İngiliz Atı',
+    params: { category: 'satilik-yaris-ati', breeds: 'Safkan İngiliz' },
+    icon: 'flash-outline',
+  },
+  {
+    id: 'arap',
+    label: 'Arap Atı',
+    params: { category: 'satilik-yaris-ati', breeds: 'Safkan Arap' },
+    icon: 'ribbon-outline',
+  },
+  {
+    id: 'tay',
+    label: 'Tay',
+    params: { category: 'satilik-yaris-ati', ages: '0,1,1.5,2' },
+    icon: 'sparkles-outline',
+  },
+  {
+    id: 'gebe',
+    label: 'Gebe Kısrak',
+    params: { category: 'satilik-kisrak', genders: 'Dişi' },
+    icon: 'female-outline',
+  },
+  {
+    id: 'aygir',
+    label: 'Aygır',
+    params: { category: 'satilik-aygir', genders: 'Erkek' },
+    icon: 'male-outline',
+  },
+  {
+    id: 'kosar',
+    label: 'Koşar Durumda',
+    params: { category: 'satilik-yaris-ati', q: 'Koşar' },
+    icon: 'trophy-outline',
+  },
+  {
+    id: 'nakliye',
+    label: 'At Nakliyesi',
+    params: { category: 'at-nakliyesi' },
+    icon: 'car-outline',
+  },
+  {
+    id: 'acil',
+    label: 'Acil İlanlar',
+    params: { urgent: '1' },
+    icon: 'alert-circle-outline',
+  },
+  {
+    id: 'pansiyon',
+    label: 'Pansiyon',
+    params: { category: 'pansiyon-haralar' },
+    icon: 'home-outline',
+  },
+  {
+    id: 'asim',
+    label: 'Aşım Hizmetleri',
+    params: { category: 'asim-hizmetleri' },
+    icon: 'git-network-outline',
+  },
 ];
 
 type HomeSearchBarProps = {
@@ -69,7 +131,7 @@ type HomeSearchBarProps = {
   /** Hızlı arama linklerini göster/gizle (varsayılan: !live) */
   showQuickLinks?: boolean;
   /** Özel hızlı arama linkleri */
-  quickLinks?: QuickSearchLink[];
+  quickLinks?: QuickSearchTag[];
 };
 
 const EASE = Easing.bezier(0.22, 1, 0.36, 1);
@@ -199,15 +261,14 @@ export const HomeSearchBar = memo(function HomeSearchBar({
   }, [query, live, onQueryChange, goListings, closeDropdown]);
 
   const handleQuickLinkPress = useCallback(
-    (link: QuickSearchLink) => {
+    (link: QuickSearchTag) => {
       closeDropdown();
-      if (link.query) {
-        setQuery(link.query);
-        onQueryChange?.(link.query);
-        goListings({ q: link.query, ...link.params });
-      } else if (link.params) {
-        goListings(link.params);
+      const q = link.params.q;
+      if (q) {
+        setQuery(q);
+        onQueryChange?.(q);
       }
+      goListings(link.params);
     },
     [closeDropdown, setQuery, onQueryChange, goListings]
   );

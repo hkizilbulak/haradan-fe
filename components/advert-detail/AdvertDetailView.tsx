@@ -250,37 +250,21 @@ export function AdvertDetailView({
         />
       </LazySection>
 
-      <View style={[styles.lower, !isWide && styles.lowerMobile]}>
-        <View style={styles.lowerMain}>
-          <View
-            ref={reviewsAnchorRef}
-            collapsable={false}
-            nativeID="advert-reviews"
-            style={Platform.select({
-              web: { scrollMarginTop: isWide ? 24 : 16 } as any,
-              default: {},
-            })}
-          >
-            <AdvertReviews detail={detail} accessToken={accessToken} />
-          </View>
+      <View style={styles.lowerFull}>
+        <View style={{ marginBottom: Spacing.lg }}>
+          <AdvertDetailBanner banner={detailBanners[0] ?? null} />
         </View>
-
-        {isWide ? (
-          <View style={styles.stickyCol}>
-            <View style={styles.stickyInner}>
-              <AdvertStickyCta
-                detail={detail}
-                favorite={favorite}
-                isOwner={isOwner}
-                accessToken={accessToken}
-                onCall={onCall}
-                onWhatsApp={onWhatsApp}
-                onToggleFavorite={() => toggle(favoriteCard)}
-                onEdit={onEdit}
-              />
-            </View>
-          </View>
-        ) : null}
+        <View
+          ref={reviewsAnchorRef}
+          collapsable={false}
+          nativeID="advert-reviews"
+          style={Platform.select({
+            web: { scrollMarginTop: isWide ? 24 : 16 } as any,
+            default: {},
+          })}
+        >
+          <AdvertReviews detail={detail} accessToken={accessToken} />
+        </View>
       </View>
 
       <LazySection
@@ -406,7 +390,6 @@ export function AdvertDetailView({
                 onWhatsApp={onWhatsApp}
                 onEdit={onEdit}
               />
-              <AdvertDetailBanner banner={detailBanners[0] ?? null} />
             </View>
 
             <View
@@ -520,21 +503,6 @@ export function AdvertDetailView({
                 height={galleryHeight}
                 accessToken={isOwner ? accessToken : null}
               />
-              <View
-                ref={specsAnchorRef}
-                collapsable={false}
-                nativeID="advert-specs"
-                style={Platform.select({
-                  web: { scrollMarginTop: isWide ? 24 : 16 } as any,
-                  default: {},
-                })}
-              >
-                <AdvertSpecs
-                  groups={detail.specs}
-                  horse={detail.horse}
-                  detail={detail}
-                />
-              </View>
             </View>
             <View style={styles.buyCol}>
               <AdvertBuyBox
@@ -546,8 +514,26 @@ export function AdvertDetailView({
                 onWhatsApp={onWhatsApp}
                 onEdit={onEdit}
               />
-              <AdvertDetailBanner banner={detailBanners[0] ?? null} />
             </View>
+          </View>
+
+          <View
+            ref={specsAnchorRef}
+            collapsable={false}
+            nativeID="advert-specs"
+            style={[
+              { marginTop: Spacing['2xl'] },
+              Platform.select({
+                web: { scrollMarginTop: isWide ? 24 : 16 } as any,
+                default: {},
+              }),
+            ]}
+          >
+            <AdvertSpecs
+              groups={detail.specs}
+              horse={detail.horse}
+              detail={detail}
+            />
           </View>
 
           {lowerSections}
@@ -683,24 +669,10 @@ const styles = StyleSheet.create({
   },
   galleryCol: { flex: 1.15, minWidth: 0, gap: Spacing.xl },
   buyCol: { flex: 0.85, minWidth: 0, gap: Spacing.xl },
-  lower: {
-    flexDirection: 'row',
-    gap: Spacing.xl,
+  lowerFull: {
+    width: '100%',
     marginTop: Spacing.xl,
-    alignItems: 'flex-start',
-  },
-  lowerMobile: { flexDirection: 'column' },
-  lowerMain: { flex: 1.2, minWidth: 0, gap: Spacing['2xl'] },
-  stickyCol: {
-    flex: 0.8,
-    minWidth: 260,
-    maxWidth: 320,
-  },
-  stickyInner: {
-    ...Platform.select({
-      web: { position: 'sticky' as 'relative', top: 24 },
-      default: {},
-    }),
+    gap: Spacing.xl,
   },
   topBtn: {
     position: 'absolute',

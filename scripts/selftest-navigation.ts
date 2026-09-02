@@ -96,5 +96,21 @@ assert(
   'İlanlarım href when logged out'
 );
 
+assert(
+  buildListingsHref({ category: 'satilik-yaris-ati', breeds: 'Safkan Arap' }) ===
+    '/listings?category=satilik-yaris-ati&breeds=Safkan+Arap' ||
+  buildListingsHref({ category: 'satilik-yaris-ati', breeds: 'Safkan Arap' }) ===
+    '/listings?category=satilik-yaris-ati&breeds=Safkan%20Arap',
+  'category and breeds filter href'
+);
+
+assert(
+  buildListingsHref({ category: 'satilik-yaris-ati', ages: ['0', '1', '2'] }) ===
+    '/listings?category=satilik-yaris-ati&ages=0%2C1%2C2' ||
+  buildListingsHref({ category: 'satilik-yaris-ati', ages: ['0', '1', '2'] }) ===
+    '/listings?category=satilik-yaris-ati&ages=0,1,2',
+  'category and array ages filter href'
+);
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
