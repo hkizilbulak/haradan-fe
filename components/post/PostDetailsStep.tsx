@@ -757,7 +757,8 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     padding: 2,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   switchKnob: {
     width: 24,

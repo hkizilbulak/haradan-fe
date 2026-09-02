@@ -17,7 +17,6 @@ import {
   AdvertDetailTabs,
   AdvertGallery,
   AdvertReviews,
-  AdvertShipping,
   AdvertSpecs,
   AdvertStickyCta,
   AdvertViewedRail,
@@ -407,7 +406,6 @@ export function AdvertDetailView({
                 onWhatsApp={onWhatsApp}
                 onEdit={onEdit}
               />
-              <AdvertShipping horse={detail.horse} detail={detail} />
               <AdvertDetailBanner banner={detailBanners[0] ?? null} />
             </View>
 
@@ -548,7 +546,6 @@ export function AdvertDetailView({
                 onWhatsApp={onWhatsApp}
                 onEdit={onEdit}
               />
-              <AdvertShipping horse={detail.horse} detail={detail} />
               <AdvertDetailBanner banner={detailBanners[0] ?? null} />
             </View>
           </View>

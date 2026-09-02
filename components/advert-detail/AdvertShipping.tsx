@@ -41,7 +41,7 @@ export const AdvertShipping = memo(function AdvertShipping({
   const pansiyonInfo = useMemo(() => (detail ? parsePansiyonInfo(detail) : null), [detail]);
   const transportInfo = useMemo(() => (detail ? parseTransportInfo(detail) : null), [detail]);
 
-  const { title, highlights, trustLines } = useMemo(() => {
+  const { title, highlights } = useMemo(() => {
     if (categoryKind === 'pansiyon') {
       const hl: Highlight[] = [];
       if (pansiyonInfo?.hasGrassPaddock) hl.push({ icon: 'leaf-outline', label: 'Tesis', value: 'Çim Padok' });
@@ -55,10 +55,6 @@ export const AdvertShipping = memo(function AdvertShipping({
       return {
         title: 'Tesis & Güven Standartları',
         highlights: hl,
-        trustLines: [
-          { icon: 'eye-outline' as const, title: 'Yerinde İnceleme', body: 'Hara ve padok ziyareti randevu ile gerçekleştirilebilir.' },
-          { icon: 'shield-checkmark-outline' as const, title: 'Güvenli İletişim', body: 'Haradan üzerinden ilan sahibiyle doğrudan iletişime geçebilirsiniz.' },
-        ],
       };
     }
 
@@ -70,10 +66,6 @@ export const AdvertShipping = memo(function AdvertShipping({
       return {
         title: 'Firma & Hizmet Bilgisi',
         highlights: hl,
-        trustLines: [
-          { icon: 'shield-checkmark-outline' as const, title: 'Güvenli İletişim', body: 'Sefer ve taşıma şartlarını ilan sahibiyle doğrudan görüşebilirsiniz.' },
-          { icon: 'calendar-outline' as const, title: 'Randevulu Taşıma', body: 'Belirlenen tarihte adresinizden transfer planlaması.' },
-        ],
       };
     }
 
@@ -81,10 +73,6 @@ export const AdvertShipping = memo(function AdvertShipping({
       return {
         title: 'Hizmet & Güvenlik',
         highlights: [],
-        trustLines: [
-          { icon: 'shield-checkmark-outline' as const, title: 'Güvenli İletişim', body: 'Nalbantlık hizmeti için ilan sahibiyle Haradan üzerinden veya telefonla iletişime geçebilirsiniz.' },
-          { icon: 'navigate-outline' as const, title: 'Randevu & Hizmet', body: 'Hizmet şartlarını ve randevuyu ilan sahibiyle doğrudan planlayın.' },
-        ],
       };
     }
 
@@ -98,10 +86,6 @@ export const AdvertShipping = memo(function AdvertShipping({
       return {
         title: 'Aşım & Bilgi Standartları',
         highlights: hl,
-        trustLines: [
-          { icon: 'eye-outline' as const, title: 'Yerinde İnceleme', body: 'Aygır ve hara ziyareti randevu ile gerçekleştirilebilir.' },
-          { icon: 'document-text-outline' as const, title: 'Soy Kütüğü & Belgeler', body: 'Pedigree ve sağlık evrakları aşım öncesi taraflarca incelenir.' },
-        ],
       };
     }
 
@@ -121,15 +105,14 @@ export const AdvertShipping = memo(function AdvertShipping({
     return {
       title: 'Öne çıkan bilgiler',
       highlights: hl,
-      trustLines: [
-        { icon: 'medkit-outline' as const, title: 'Sağlık & aşı kaydı', body: 'Veteriner raporu ve aşı kartı talep edilebilir.' },
-        { icon: 'document-text-outline' as const, title: 'Şecere ve kimlik', body: 'Soy ağacı ve kimlik belgeleri satış öncesi paylaşılır.' },
-        { icon: 'eye-outline' as const, title: 'Yerinde inceleme', body: 'Deneme binişi ve hara ziyareti randevu ile.' },
-      ],
     };
   }, [categoryKind, horse, pansiyonInfo, studInfo, transportInfo]);
 
   const yearly = horse && horse.yearly.length > 0 && horse.yearly[0].stats.starts > 0 ? horse.yearly[0] : null;
+
+  if (highlights.length === 0 && !yearly) {
+    return null;
+  }
 
   return (
     <View style={styles.wrap}>
@@ -168,52 +151,9 @@ export const AdvertShipping = memo(function AdvertShipping({
           </Text>
         </View>
       ) : null}
-
-      <View style={styles.trust}>
-        <Text style={[styles.trustTitle, { color: text }]}>
-          Güvence ve İnceleme
-        </Text>
-        {trustLines.map((line) => (
-          <TrustLine
-            key={line.title}
-            icon={line.icon}
-            title={line.title}
-            body={line.body}
-            text={text}
-            muted={textMuted}
-            iconColor={textSecondary}
-          />
-        ))}
-      </View>
     </View>
   );
 });
-
-function TrustLine({
-  icon,
-  title,
-  body,
-  text,
-  muted,
-  iconColor,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  body: string;
-  text: string;
-  muted: string;
-  iconColor: string;
-}) {
-  return (
-    <View style={styles.trustRow}>
-      <Ionicons name={icon} size={16} color={iconColor} />
-      <View style={styles.trustCopy}>
-        <Text style={[styles.trustItemTitle, { color: text }]}>{title}</Text>
-        <Text style={[styles.trustBody, { color: muted }]}>{body}</Text>
-      </View>
-    </View>
-  );
-}
 
 const styles = StyleSheet.create({
   wrap: { gap: 16, marginTop: Spacing.lg },
@@ -255,19 +195,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.15,
   },
-  trust: { gap: 14, marginTop: 4 },
-  trustTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  },
-  trustRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  trustCopy: { flex: 1, gap: 2, minWidth: 0 },
-  trustItemTitle: { fontSize: 13, fontWeight: '600' },
-  trustBody: { fontSize: 12, lineHeight: 17, fontWeight: '400' },
 });

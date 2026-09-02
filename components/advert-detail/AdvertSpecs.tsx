@@ -38,28 +38,97 @@ type SoftSection = {
 };
 
 function getSpecIcon(label: string): keyof typeof Ionicons.glyphMap {
-  const l = (label || '').toLowerCase();
-  if (l.includes('padok') || l.includes('paddock') || l.includes('çim') || l.includes('kum')) return 'leaf-outline';
-  if (l.includes('vet') || l.includes('sağlık') || l.includes('hekim')) return 'medkit-outline';
-  if (l.includes('nalbant') || l.includes('farrier') || l.includes('bakım')) return 'hammer-outline';
-  if (l.includes('doğum') || l.includes('barn') || l.includes('ahır') || l.includes('haras')) return 'home-outline';
-  if (l.includes('pist') || l.includes('track') || l.includes('idman') || l.includes('antren')) return 'fitness-outline';
-  if (l.includes('firma') || l.includes('şirket') || l.includes('company')) return 'business-outline';
-  if (l.includes('web') || l.includes('site') || l.includes('url')) return 'globe-outline';
-  if (l.includes('telefon') || l.includes('phone') || l.includes('iletişim')) return 'call-outline';
-  if (l.includes('konum') || l.includes('şehir') || l.includes('ilçe') || l.includes('adres')) return 'location-outline';
-  if (l.includes('aygır') || l.includes('at adı') || l.includes('isim') || l.includes('ad')) return 'ribbon-outline';
-  if (l.includes('irk') || l.includes('breed') || l.includes('cins')) return 'leaf-outline';
-  if (l.includes('yaş') || l.includes('age') || l.includes('tarih') || l.includes('doğum') || l.includes('yıl')) return 'calendar-outline';
-  if (l.includes('don') || l.includes('renk') || l.includes('coat') || l.includes('color')) return 'color-palette-outline';
+  const l = (label || '').toLowerCase().trim();
+
+  // 1. Cinsiyet / Gender (Must check before 'cins' / 'irk')
   if (l.includes('cinsiyet') || l.includes('gender')) return 'male-female-outline';
-  if (l.includes('baba') || l.includes('sire') || l.includes('anne') || l.includes('dam') || l.includes('pedigree') || l.includes('soyağac') || l.includes('orijin')) return 'git-branch-outline';
-  if (l.includes('kısrak babası') || l.includes('damsire')) return 'git-network-outline';
-  if (l.includes('sahip') || l.includes('kişi') || l.includes('person') || l.includes('yetiştirici')) return 'person-outline';
-  if (l.includes('kamera') || l.includes('video') || l.includes('güvenlik')) return 'videocam-outline';
-  if (l.includes('garanti') || l.includes('belge') || l.includes('aşım')) return 'shield-checkmark-outline';
-  if (l.includes('cidago') || l.includes('boy') || l.includes('ölçü')) return 'resize-outline';
-  if (l.includes('fiyat') || l.includes('ücret') || l.includes('ödeme')) return 'pricetag-outline';
+
+  // 2. Doğum tarihi / Yaş / Yıl / Tarih (Must check before 'doğumhane')
+  if (l.includes('tarih') || l.includes('doğum') || l.includes('dogum') || l.includes('yaş') || l.includes('yas') || l.includes('age') || l.includes('yıl') || l.includes('yil') || l.includes('year')) {
+    return 'calendar-outline';
+  }
+
+  // 3. Şecere / Kimlik / Belge / Pasaport / TJK No
+  if (l.includes('şecere') || l.includes('secere') || l.includes('kimlik') || l.includes('belge') || l.includes('evrak') || l.includes('pasaport') || l.includes('tjk')) {
+    return 'document-text-outline';
+  }
+
+  // 4. İnceleme / Ziyaret / Yerinde / Deneme
+  if (l.includes('inceleme') || l.includes('ziyaret') || l.includes('yerinde') || l.includes('deneme') || l.includes('biniş') || l.includes('binis')) {
+    return 'eye-outline';
+  }
+
+  // 5. Sağlık / Aşı / Veteriner / Rapor
+  if (l.includes('vet') || l.includes('sağlık') || l.includes('saglik') || l.includes('aşı') || l.includes('asi') || l.includes('hekim') || l.includes('tedavi') || l.includes('rapor')) {
+    return 'medkit-outline';
+  }
+
+  // 6. Pedigree / Soyağacı (Kısrak Babası, Baba, Anne)
+  if (l.includes('kısrak babası') || l.includes('kisrak babasi') || l.includes('damsire')) {
+    return 'git-network-outline';
+  }
+  if (l.includes('baba') || l.includes('sire') || l.includes('anne') || l.includes('dam') || l.includes('pedigree') || l.includes('soyağac') || l.includes('soyagac') || l.includes('orijin')) {
+    return 'git-branch-outline';
+  }
+
+  // 7. Don / Renk
+  if (l.includes('don') || l.includes('renk') || l.includes('coat') || l.includes('color')) {
+    return 'color-palette-outline';
+  }
+
+  // 8. At Adı / İsim
+  if (l.includes('at adı') || l.includes('at adi') || l.includes('isim') || l.includes('horse name') || l === 'ad' || l === 'adı' || l === 'adi') {
+    return 'star-outline';
+  }
+
+  // 9. Irk / Cins / Safkan
+  if (l.includes('irk') || l.includes('ırk') || l.includes('breed') || l.includes('cins') || l.includes('safkan')) {
+    return 'ribbon-outline';
+  }
+
+  // 10. Tesis / Padok / Ahır / Doğumhane
+  if (l.includes('doğumhane') || l.includes('dogumhane') || l.includes('barn') || l.includes('ahır') || l.includes('ahir') || l.includes('hara')) {
+    return 'home-outline';
+  }
+  if (l.includes('padok') || l.includes('paddock') || l.includes('çim') || l.includes('cim') || l.includes('kum')) {
+    return 'leaf-outline';
+  }
+  if (l.includes('nalbant') || l.includes('farrier') || l.includes('bakım') || l.includes('bakim')) {
+    return 'hammer-outline';
+  }
+  if (l.includes('pist') || l.includes('track') || l.includes('idman') || l.includes('antren') || l.includes('koşu') || l.includes('kosu') || l.includes('kariyer')) {
+    return 'trophy-outline';
+  }
+
+  // 11. Kişiler / Firma / İletişim / Konum
+  if (l.includes('sahip') || l.includes('yetiştirici') || l.includes('yetistirici') || l.includes('kişi') || l.includes('kisi') || l.includes('person') || l.includes('antrenör') || l.includes('antrenor') || l.includes('trainer')) {
+    return 'person-outline';
+  }
+  if (l.includes('firma') || l.includes('şirket') || l.includes('sirket') || l.includes('company')) {
+    return 'business-outline';
+  }
+  if (l.includes('web') || l.includes('site') || l.includes('url')) {
+    return 'globe-outline';
+  }
+  if (l.includes('telefon') || l.includes('phone') || l.includes('iletişim') || l.includes('iletisim') || l.includes('gsm')) {
+    return 'call-outline';
+  }
+  if (l.includes('konum') || l.includes('şehir') || l.includes('sehir') || l.includes('ilçe') || l.includes('ilce') || l.includes('adres')) {
+    return 'location-outline';
+  }
+  if (l.includes('kamera') || l.includes('video') || l.includes('güvenlik') || l.includes('guvenlik')) {
+    return 'videocam-outline';
+  }
+  if (l.includes('garanti') || l.includes('aşım') || l.includes('asim')) {
+    return 'shield-checkmark-outline';
+  }
+  if (l.includes('cidago') || l.includes('boy') || l.includes('ölçü') || l.includes('olcu') || l.includes('height')) {
+    return 'resize-outline';
+  }
+  if (l.includes('fiyat') || l.includes('ücret') || l.includes('ucret') || l.includes('ödeme') || l.includes('odeme') || l.includes('price')) {
+    return 'pricetag-outline';
+  }
+
   return 'information-circle-outline';
 }
 
@@ -71,6 +140,79 @@ function getSectionIcon(id: string, title: string): keyof typeof Ionicons.glyphM
   if (id === 'location-section' || l.includes('konum') || l.includes('adres')) return 'location-outline';
   if (id === 'horse-performance' || l.includes('performans')) return 'trophy-outline';
   return 'options-outline';
+}
+
+function isDuplicateHorseField(label: string): boolean {
+  const norm = (label || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9ğüşıöç]/g, '')
+    .trim();
+
+  const duplicates = new Set([
+    'atadi',
+    'atadı',
+    'isim',
+    'ad',
+    'adi',
+    'adı',
+    'horsename',
+    'atirki',
+    'atırkı',
+    'irk',
+    'ırk',
+    'breed',
+    'cins',
+    'cinsirk',
+    'cinsırk',
+    'safkan',
+    'don',
+    'donu',
+    'donurenk',
+    'renk',
+    'coatcolor',
+    'yas',
+    'yaş',
+    'age',
+    'cinsiyet',
+    'gender',
+    'dogumtarihi',
+    'doğumtarihi',
+    'dogumyili',
+    'doğumyılı',
+    'dogum',
+    'doğum',
+    'birthdate',
+    'cidago',
+    'boy',
+    'yukseklik',
+    'yükseklik',
+    'height',
+    'heightcm',
+    'baba',
+    'babaadi',
+    'babaadı',
+    'sire',
+    'anne',
+    'anneadi',
+    'anneadı',
+    'dam',
+    'kisrakbabasi',
+    'kısrakbabası',
+    'anneninbabasi',
+    'anneninbabası',
+    'damsire',
+    'sahip',
+    'owner',
+    'atsahibi',
+    'yetistirici',
+    'yetiştirici',
+    'breeder',
+    'antrenor',
+    'antrenör',
+    'trainer',
+  ]);
+
+  return duplicates.has(norm);
 }
 
 /** Genel bilgiler — kart bazlı, yüksek kontrastlı, mobil uyumlu ilan detay özellikleri. */
@@ -177,7 +319,13 @@ export const AdvertSpecs = memo(function AdvertSpecs({
     for (const g of allGroups) {
       if (g && g.rows && g.rows.length > 0) {
         const validRows: SoftRow[] = g.rows
-          .filter((r) => r.label && r.value != null && String(r.value).trim() !== '' && String(r.value) !== 'null' && String(r.value) !== 'undefined')
+          .filter((r) => {
+            if (!r.label || r.value == null) return false;
+            const valStr = String(r.value).trim();
+            if (valStr === '' || valStr === 'null' || valStr === 'undefined') return false;
+            if (hasHorseData && isDuplicateHorseField(r.label)) return false;
+            return true;
+          })
           .map((r) => ({
             icon: getSpecIcon(r.label),
             label: r.label,
