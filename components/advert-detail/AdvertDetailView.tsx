@@ -439,7 +439,6 @@ export function AdvertDetailView({
                   count={detail.reviewCount || detail.reviews.length}
                   size={14}
                 />
-                <Ionicons name="chevron-forward" size={14} color={textSecondary} />
               </Pressable>
             </View>
 

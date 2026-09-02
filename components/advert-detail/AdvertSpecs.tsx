@@ -461,6 +461,9 @@ export const AdvertSpecs = memo(function AdvertSpecs({
     if (hasPedigree) {
       list.push({ key: 'pedigree', label: 'Pedigri (Soyağacı)', icon: 'git-branch-outline' });
     }
+    if (hasStatistics) {
+      list.push({ key: 'statistics', label: 'İstatistikler', icon: 'stats-chart-outline' });
+    }
     if (hasSiblings) {
       list.push({
         key: 'siblings',
@@ -468,9 +471,6 @@ export const AdvertSpecs = memo(function AdvertSpecs({
         icon: 'people-outline',
         badge: String(horse?.siblings?.length ?? 0),
       });
-    }
-    if (hasStatistics) {
-      list.push({ key: 'statistics', label: 'İstatistikler', icon: 'stats-chart-outline' });
     }
     return list;
   }, [hasPedigree, hasSiblings, hasStatistics, horse?.siblings?.length]);
@@ -490,11 +490,7 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       {/* Sub Tabs Bar */}
       {subTabs.length > 1 ? (
         <View style={styles.subTabBarWrap}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.subTabsContainer}
-          >
+          <View style={[styles.subTabsContainer, !isWide && styles.subTabsGridMobile]}>
             {subTabs.map((t) => {
               const isActive = t.key === currentTab;
               return (
@@ -506,6 +502,7 @@ export const AdvertSpecs = memo(function AdvertSpecs({
                   }}
                   style={[
                     styles.subTabButton,
+                    !isWide && styles.subTabButtonMobile,
                     {
                       backgroundColor: isActive ? primary : surface,
                       borderColor: isActive ? primary : border,
@@ -520,11 +517,13 @@ export const AdvertSpecs = memo(function AdvertSpecs({
                   <Text
                     style={[
                       styles.subTabButtonText,
+                      !isWide && styles.subTabButtonTextMobile,
                       {
                         color: isActive ? '#ffffff' : text,
                         fontWeight: isActive ? '700' : '600',
                       },
                     ]}
+                    numberOfLines={1}
                   >
                     {t.label}
                   </Text>
@@ -552,7 +551,7 @@ export const AdvertSpecs = memo(function AdvertSpecs({
                 </Pressable>
               );
             })}
-          </ScrollView>
+          </View>
         </View>
       ) : (
         <Text style={[styles.pageTitle, { color: text }]}>{title}</Text>
@@ -731,6 +730,12 @@ const styles = StyleSheet.create({
     paddingRight: 8,
     paddingVertical: 2,
   },
+  subTabsGridMobile: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingRight: 0,
+  },
   subTabButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -747,9 +752,22 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
+  subTabButtonMobile: {
+    flexGrow: 1,
+    flexBasis: '47%',
+    minWidth: '47%',
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    justifyContent: 'center',
+    gap: 6,
+  },
   subTabButtonText: {
     fontSize: 13.5,
     letterSpacing: -0.1,
+  },
+  subTabButtonTextMobile: {
+    fontSize: 12,
+    flexShrink: 1,
   },
   subTabBadge: {
     paddingHorizontal: 6,

@@ -125,12 +125,6 @@ export const AdvertPedigree = memo(function AdvertPedigree({
     scrollToOffset(0);
   };
 
-  const handleScrollStep = (dir: 'left' | 'right') => {
-    const delta = dir === 'left' ? -220 : 220;
-    const target = currentScrollXRef.current + delta;
-    scrollToOffset(target);
-  };
-
   const p = pedigree ?? [];
 
   // 1. Kuşak (Ebeveynler)
@@ -765,9 +759,6 @@ export const AdvertPedigree = memo(function AdvertPedigree({
   };
 
   const renderAestheticTable = () => {
-    const showSire = activeBranch === 'all' || activeBranch === 'sire';
-    const showDam = activeBranch === 'all' || activeBranch === 'dam';
-
     return (
       <View style={styles.tjkTableWrap}>
         {/* Kuşak Sütun Başlıkları */}
@@ -796,44 +787,28 @@ export const AdvertPedigree = memo(function AdvertPedigree({
         <View style={styles.tGridContainer}>
           {/* SÜTUN 1: 1. KUŞAK */}
           <View style={styles.tCol1}>
-            {showSire && <View style={styles.tCellSpan4}>{renderTableCard(sireTree.g1)}</View>}
-            {showDam && <View style={styles.tCellSpan4}>{renderTableCard(damTree.g1)}</View>}
+            <View style={styles.tCellSpan4}>{renderTableCard(sireTree.g1)}</View>
+            <View style={styles.tCellSpan4}>{renderTableCard(damTree.g1)}</View>
           </View>
 
           {/* SÜTUN 2: 2. KUŞAK */}
           <View style={styles.tCol2}>
-            {showSire && (
-              <>
-                <View style={styles.tCellSpan2}>{renderTableCard(sireTree.g2_top)}</View>
-                <View style={styles.tCellSpan2}>{renderTableCard(sireTree.g2_bot)}</View>
-              </>
-            )}
-            {showDam && (
-              <>
-                <View style={styles.tCellSpan2}>{renderTableCard(damTree.g2_top)}</View>
-                <View style={styles.tCellSpan2}>{renderTableCard(damTree.g2_bot)}</View>
-              </>
-            )}
+            <View style={styles.tCellSpan2}>{renderTableCard(sireTree.g2_top)}</View>
+            <View style={styles.tCellSpan2}>{renderTableCard(sireTree.g2_bot)}</View>
+            <View style={styles.tCellSpan2}>{renderTableCard(damTree.g2_top)}</View>
+            <View style={styles.tCellSpan2}>{renderTableCard(damTree.g2_bot)}</View>
           </View>
 
           {/* SÜTUN 3: 3. KUŞAK */}
           <View style={styles.tCol3}>
-            {showSire && (
-              <>
-                <View style={styles.tCellSpan1}>{renderTableCard(sireTree.g3_top1)}</View>
-                <View style={styles.tCellSpan1}>{renderTableCard(sireTree.g3_top2)}</View>
-                <View style={styles.tCellSpan1}>{renderTableCard(sireTree.g3_bot1)}</View>
-                <View style={styles.tCellSpan1}>{renderTableCard(sireTree.g3_bot2)}</View>
-              </>
-            )}
-            {showDam && (
-              <>
-                <View style={styles.tCellSpan1}>{renderTableCard(damTree.g3_top1)}</View>
-                <View style={styles.tCellSpan1}>{renderTableCard(damTree.g3_top2)}</View>
-                <View style={styles.tCellSpan1}>{renderTableCard(damTree.g3_bot1)}</View>
-                <View style={styles.tCellSpan1}>{renderTableCard(damTree.g3_bot2)}</View>
-              </>
-            )}
+            <View style={styles.tCellSpan1}>{renderTableCard(sireTree.g3_top1)}</View>
+            <View style={styles.tCellSpan1}>{renderTableCard(sireTree.g3_top2)}</View>
+            <View style={styles.tCellSpan1}>{renderTableCard(sireTree.g3_bot1)}</View>
+            <View style={styles.tCellSpan1}>{renderTableCard(sireTree.g3_bot2)}</View>
+            <View style={styles.tCellSpan1}>{renderTableCard(damTree.g3_top1)}</View>
+            <View style={styles.tCellSpan1}>{renderTableCard(damTree.g3_top2)}</View>
+            <View style={styles.tCellSpan1}>{renderTableCard(damTree.g3_bot1)}</View>
+            <View style={styles.tCellSpan1}>{renderTableCard(damTree.g3_bot2)}</View>
           </View>
         </View>
       </View>
@@ -983,32 +958,6 @@ export const AdvertPedigree = memo(function AdvertPedigree({
                 >
                   Anne Hattı
                 </Text>
-              </Pressable>
-            </View>
-
-            {/* Slide Arrows */}
-            <View style={styles.arrowControls}>
-              <Pressable
-                onPress={() => handleScrollStep('left')}
-                style={({ pressed }) => [
-                  styles.arrowBtn,
-                  { backgroundColor: surface, borderColor: border },
-                  pressed && { opacity: 0.7 },
-                ]}
-                accessibilityLabel="Sola kaydır"
-              >
-                <Ionicons name="chevron-back" size={13} color={text} />
-              </Pressable>
-              <Pressable
-                onPress={() => handleScrollStep('right')}
-                style={({ pressed }) => [
-                  styles.arrowBtn,
-                  { backgroundColor: surface, borderColor: border },
-                  pressed && { opacity: 0.7 },
-                ]}
-                accessibilityLabel="Sağa kaydır"
-              >
-                <Ionicons name="chevron-forward" size={13} color={text} />
               </Pressable>
             </View>
           </View>
@@ -1207,24 +1156,6 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: '700',
     letterSpacing: -0.1,
-  },
-  arrowControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginLeft: 'auto',
-  },
-  arrowBtn: {
-    width: 26,
-    height: 26,
-    borderRadius: 6,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      web: { cursor: 'pointer', transition: 'all 0.15s ease' } as any,
-      default: {},
-    }),
   },
   panCanvasWrap: {
     width: '100%',
