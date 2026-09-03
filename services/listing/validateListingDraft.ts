@@ -247,7 +247,8 @@ export function detailsErrors(
         d.registeredName?.trim() ||
         d.studHorseName?.trim() ||
         d.properties?.REGISTERED_NAME ||
-        d.properties?.studHorseName
+        d.properties?.studHorseName ||
+        d.properties?.studHorse
       );
       if (!hasName) {
         e.studHorseName = 'Aygır adı zorunludur.';
@@ -371,8 +372,89 @@ export function detailsErrors(
       'images',
     ]);
 
-    function findPropertyValue(properties: Record<string, unknown> | undefined, propCode: string): unknown {
+    function getCanonicalKey(prop: { code?: string; title?: string } | null | undefined): string {
+      if (!prop) return '';
+      const code = String(prop.code || '').trim().toUpperCase().replace(/[-_]/g, '');
+      const title = String(prop.title || '').trim().toLowerCase().replace(/[^a-z0-9ğüşıöç]/g, '');
+
+      if (
+        code === 'STUDHORSE' ||
+        code === 'STUDHORSENAME' ||
+        code === 'REGISTEREDNAME' ||
+        code === 'HORSENAME' ||
+        title === 'aygiradi' ||
+        title === 'atadi' ||
+        title === 'kayitliadi'
+      ) {
+        return 'canonical_stud_name';
+      }
+      if (
+        code === 'STUDSIRE' ||
+        code === 'SIRE' ||
+        title === 'baba' ||
+        title === 'babasire'
+      ) {
+        return 'canonical_stud_sire';
+      }
+      if (
+        code === 'STUDDAM' ||
+        code === 'DAM' ||
+        title === 'anne' ||
+        title === 'annedam'
+      ) {
+        return 'canonical_stud_dam';
+      }
+      if (
+        code === 'STUDDAMSIRE' ||
+        code === 'DAMSIRE' ||
+        title === 'kisrakbabasi' ||
+        title === 'annesi' ||
+        title === 'anneninbabasi' ||
+        title === 'anneninbabasidamsire'
+      ) {
+        return 'canonical_stud_damsire';
+      }
+      if (
+        code === 'STALLIONBREED' ||
+        code === 'STUDBREED' ||
+        code === 'HORSEBREED' ||
+        code === 'BREED' ||
+        title === 'atirki'
+      ) {
+        return 'canonical_breed';
+      }
+      if (
+        code === 'COATCOLOR' ||
+        code === 'STUDCOATCOLOR' ||
+        title === 'don' ||
+        title === 'donu' ||
+        title === 'donurenk' ||
+        title === 'renk'
+      ) {
+        return 'canonical_coat_color';
+      }
+      if (
+        code === 'HORSEAGE' ||
+        code === 'STALLIONAGE' ||
+        code === 'STUDAGE' ||
+        title === 'yas' ||
+        title === 'yaş'
+      ) {
+        return 'canonical_age';
+      }
+      if (
+        code === 'HORSEGENDER' ||
+        code === 'GENDER' ||
+        title === 'cinsiyet'
+      ) {
+        return 'canonical_gender';
+      }
+      return code || title;
+    }
+
+    function findPropertyValue(properties: Record<string, unknown> | undefined, prop: { code: string; title?: string }): unknown {
       if (!properties) return undefined;
+      const propCode = prop.code;
       if (properties[propCode] !== undefined && properties[propCode] !== null && String(properties[propCode]).trim() !== '') {
         return properties[propCode];
       }
@@ -392,6 +474,34 @@ export function detailsErrors(
           }
         }
       }
+
+      // Check canonical key matches in properties
+      const canonicalKey = getCanonicalKey(prop);
+      if (canonicalKey === 'canonical_stud_name') {
+        return properties['studHorse'] || properties['studHorseName'] || properties['REGISTERED_NAME'] || properties['HORSE_NAME'];
+      }
+      if (canonicalKey === 'canonical_stud_sire') {
+        return properties['studSire'] || properties['SIRE'];
+      }
+      if (canonicalKey === 'canonical_stud_dam') {
+        return properties['studDam'] || properties['DAM'];
+      }
+      if (canonicalKey === 'canonical_stud_damsire') {
+        return properties['studDamSire'] || properties['studDamsire'] || properties['DAMSIRE'];
+      }
+      if (canonicalKey === 'canonical_breed') {
+        return properties['STALLION_BREED'] || properties['studBreed'] || properties['HORSE_BREED'] || properties['breed'];
+      }
+      if (canonicalKey === 'canonical_coat_color') {
+        return properties['COAT_COLOR'] || properties['studCoatColor'] || properties['coatColor'];
+      }
+      if (canonicalKey === 'canonical_age') {
+        return properties['STALLION_AGE'] || properties['studAge'] || properties['HORSE_AGE'] || properties['age'];
+      }
+      if (canonicalKey === 'canonical_gender') {
+        return properties['HORSE_GENDER'] || properties['gender'];
+      }
+
       return undefined;
     }
 
@@ -405,22 +515,93 @@ export function detailsErrors(
         continue;
       }
 
-      let val = findPropertyValue(d.properties, code);
-      if (val === undefined || val === null || val === '') {
+      let val = findPropertyValue(d.properties, prop);
+      if (val === undefined || val === null || val === '' || String(val).trim() === '') {
+        const canonicalKey = getCanonicalKey(prop);
         const norm = code.replace(/[-_]/g, '').toLowerCase();
-        if (norm === 'horsebreed' || norm === 'breed') val = d.breed;
-        else if (norm === 'coatcolor' || norm === 'color') val = d.coatColor;
-        else if (norm === 'horseage' || norm === 'age') val = d.age;
-        else if (norm === 'horsegender' || norm === 'gender') val = d.gender;
-        else if (norm === 'companyname') val = d.companyName;
-        else if (norm === 'websiteurl') val = d.websiteUrl;
-        else if (norm === 'stallionbreed' || norm === 'studbreed') val = d.studBreed;
-        else if (norm === 'stallionage' || norm === 'studage') val = d.studAge;
-        else if (norm === 'studhorsename') val = d.studHorseName;
-        else if (norm === 'studsire') val = d.studSire;
-        else if (norm === 'studdam') val = d.studDam;
-        else if (norm === 'studdamsire') val = d.studDamsire;
-        else if (norm === 'servicetype' || norm === 'service_type') val = (d as any).serviceType;
+        const titleNorm = String(prop.title || '').trim().toLowerCase().replace(/[^a-z0-9ğüşıöç]/g, '');
+
+        if (
+          canonicalKey === 'canonical_stud_name' ||
+          norm === 'studhorsename' ||
+          norm === 'studhorse' ||
+          norm === 'registeredname' ||
+          norm === 'horsename' ||
+          norm === 'aygiradi' ||
+          titleNorm === 'aygiradi' ||
+          titleNorm === 'atadi' ||
+          titleNorm === 'kayitliadi'
+        ) {
+          val = d.studHorseName || d.registeredName || d.title;
+        } else if (
+          canonicalKey === 'canonical_breed' ||
+          norm === 'horsebreed' ||
+          norm === 'breed' ||
+          norm === 'stallionbreed' ||
+          norm === 'studbreed' ||
+          titleNorm === 'atirki'
+        ) {
+          val = d.studBreed || d.breed;
+        } else if (
+          canonicalKey === 'canonical_coat_color' ||
+          norm === 'coatcolor' ||
+          norm === 'color' ||
+          norm === 'studcoatcolor' ||
+          titleNorm === 'donu' ||
+          titleNorm === 'donurenk' ||
+          titleNorm === 'renk'
+        ) {
+          val = d.studCoatColor || d.coatColor;
+        } else if (
+          canonicalKey === 'canonical_age' ||
+          norm === 'horseage' ||
+          norm === 'age' ||
+          norm === 'stallionage' ||
+          norm === 'studage' ||
+          titleNorm === 'yas' ||
+          titleNorm === 'yaş'
+        ) {
+          val = d.studAge || d.age;
+        } else if (
+          canonicalKey === 'canonical_gender' ||
+          norm === 'horsegender' ||
+          norm === 'gender' ||
+          titleNorm === 'cinsiyet'
+        ) {
+          val = d.gender;
+        } else if (
+          canonicalKey === 'canonical_stud_sire' ||
+          norm === 'studsire' ||
+          norm === 'sire' ||
+          titleNorm === 'baba' ||
+          titleNorm === 'babasire'
+        ) {
+          val = d.studSire || d.sire;
+        } else if (
+          canonicalKey === 'canonical_stud_dam' ||
+          norm === 'studdam' ||
+          norm === 'dam' ||
+          titleNorm === 'anne' ||
+          titleNorm === 'annedam'
+        ) {
+          val = d.studDam || d.dam;
+        } else if (
+          canonicalKey === 'canonical_stud_damsire' ||
+          norm === 'studdamsire' ||
+          norm === 'damsire' ||
+          titleNorm === 'kisrakbabasi' ||
+          titleNorm === 'annesi' ||
+          titleNorm === 'anneninbabasi' ||
+          titleNorm === 'anneninbabasidamsire'
+        ) {
+          val = d.studDamsire || d.damsire;
+        } else if (norm === 'companyname' || titleNorm === 'firmaadi') {
+          val = d.companyName;
+        } else if (norm === 'websiteurl' || titleNorm === 'websitesi') {
+          val = d.websiteUrl;
+        } else if (norm === 'servicetype' || norm === 'service_type' || titleNorm === 'hizmetturu') {
+          val = (d as any).serviceType;
+        }
       }
       if (val === undefined || val === null || val === '' || String(val).trim() === '') {
         if (!e[code]) {

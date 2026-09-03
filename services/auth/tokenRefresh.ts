@@ -1,4 +1,5 @@
 import type { FeClientContext } from '@/types';
+import { ApiError } from '../http/ApiError';
 import { authRepository } from './createAuthRepository';
 import { isAccessTokenFresh } from './mapSession';
 import {
@@ -24,6 +25,9 @@ export async function getValidAccessToken(): Promise<string | null> {
   return refreshAccessToken();
 }
 
+/**
+ * Refresh token ile yeni access token alır; storage ve user state günceller.
+ */
 export async function refreshAccessToken(): Promise<string | null> {
   if (refreshInFlight) return refreshInFlight;
   refreshInFlight = doRefresh().finally(() => {
@@ -51,7 +55,7 @@ async function doRefresh(): Promise<string | null> {
     return next.accessToken;
   } catch (err: unknown) {
     if (
-      err instanceof AuthError &&
+      err instanceof ApiError &&
       (err.status === 401 ||
         err.status === 403 ||
         err.code === 'TOKEN_INVALID' ||

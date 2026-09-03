@@ -193,18 +193,24 @@ function getCanonicalPropertyKey(p: { code?: string; title?: string } | null | u
     return 'canonical_training_track';
   }
   if (
+    code === 'STALLIONBREED' ||
+    code === 'STUDBREED'
+  ) {
+    return 'canonical_stallion_breed';
+  }
+  if (
     code === 'HORSEBREED' ||
     code === 'BREED' ||
+    code === 'HORSESBREED' ||
     title === 'atirki' ||
-    title === 'atırkı' ||
-    title === 'irk' ||
-    title === 'ırk'
+    title === 'atırkı'
   ) {
     return 'canonical_breed';
   }
   if (
     code === 'COATCOLOR' ||
     code === 'COAT' ||
+    code === 'STUDCOATCOLOR' ||
     title === 'don' ||
     title === 'donu' ||
     title === 'donurenk' ||
@@ -215,10 +221,49 @@ function getCanonicalPropertyKey(p: { code?: string; title?: string } | null | u
   if (
     code === 'HORSEAGE' ||
     code === 'AGE' ||
+    code === 'STALLIONAGE' ||
+    code === 'STUDAGE' ||
     title === 'yas' ||
     title === 'yaş'
   ) {
     return 'canonical_age';
+  }
+  if (
+    code === 'STUDHORSE' ||
+    code === 'STUDHORSENAME' ||
+    code === 'REGISTEREDNAME' ||
+    code === 'HORSENAME' ||
+    title === 'aygiradi' ||
+    title === 'atadi' ||
+    title === 'kayitliadi'
+  ) {
+    return 'canonical_stud_name';
+  }
+  if (
+    code === 'STUDSIRE' ||
+    code === 'SIRE' ||
+    title === 'baba' ||
+    title === 'babasire'
+  ) {
+    return 'canonical_stud_sire';
+  }
+  if (
+    code === 'STUDDAM' ||
+    code === 'DAM' ||
+    title === 'anne' ||
+    title === 'annedam'
+  ) {
+    return 'canonical_stud_dam';
+  }
+  if (
+    code === 'STUDDAMSIRE' ||
+    code === 'DAMSIRE' ||
+    title === 'kisrakbabasi' ||
+    title === 'annesi' ||
+    title === 'anneninbabasi' ||
+    title === 'anneninbabasidamsire'
+  ) {
+    return 'canonical_stud_damsire';
   }
   if (
     code === 'HORSEGENDER' ||
@@ -311,7 +356,9 @@ export function PostCategoryProperties({
                 ip.categoryId === catId ||
                 ip.categoryId === type?.categoryId ||
                 (catSlugClean === 'satilik-yaris-ati' && ip.categoryId === 'c1000000-0000-4000-8000-000000000011') ||
-                (catIdClean.includes('satilik-yaris-ati') && ip.categoryId === 'c1000000-0000-4000-8000-000000000011');
+                (catIdClean.includes('satilik-yaris-ati') && ip.categoryId === 'c1000000-0000-4000-8000-000000000011') ||
+                ((catSlugClean === 'arap-aygir' || catSlugClean === 'ingiliz-aygir' || catSlugClean === 'asim-hizmetleri' || catIdClean.includes('asim') || catIdClean.includes('aygir')) &&
+                  (ip.categoryId === 'c1000000-0000-4000-8000-000000000003' || ip.categoryId === 'c1000000-0000-4000-8000-000000000031' || ip.categoryId === 'c1000000-0000-4000-8000-000000000032'));
 
               const found = rawList.find(
                 (p: any) =>
@@ -322,7 +369,7 @@ export function PostCategoryProperties({
               if (!found && isMatch && ip.isActive !== false && !isExcludedProperty(ip)) {
                 rawList.push(ip);
               } else if (found) {
-                found.options = ip.options || found.options || [];
+                found.options = (ip.options && ip.options.length > (found.options?.length || 0)) ? ip.options : (found.options || ip.options || []);
                 found.dataType = ip.dataType || found.dataType;
                 found.uiMetadata = ip.uiMetadata || found.uiMetadata;
               }
@@ -422,20 +469,44 @@ export function PostCategoryProperties({
       partialUpdate.websiteUrl = String(value ?? '');
     } else if (code === 'STALLION_BREED' || code === 'studBreed') {
       partialUpdate.studBreed = String(value ?? '');
+      currentProps['STALLION_BREED'] = value;
+      currentProps['studBreed'] = value;
     } else if (code === 'STALLION_AGE' || code === 'studAge') {
       partialUpdate.studAge = String(value ?? '');
-    } else if (code === 'studHorseName' || codeUpper === 'REGISTERED_NAME' || codeUpper === 'HORSE_NAME') {
+      currentProps['STALLION_AGE'] = value;
+      currentProps['studAge'] = value;
+    } else if (code === 'COAT_COLOR' || code === 'studCoatColor') {
+      partialUpdate.studCoatColor = String(value ?? '');
+      partialUpdate.coatColor = String(value ?? '');
+      currentProps['COAT_COLOR'] = value;
+      currentProps['studCoatColor'] = value;
+    } else if (canonicalKey === 'canonical_stud_name' || code === 'studHorse' || code === 'studHorseName' || codeUpper === 'REGISTERED_NAME' || codeUpper === 'HORSE_NAME') {
       partialUpdate.studHorseName = String(value ?? '');
       partialUpdate.registeredName = String(value ?? '');
-    } else if (code === 'studSire' || codeUpper === 'SIRE') {
+      currentProps['studHorse'] = value;
+      currentProps['studHorseName'] = value;
+      currentProps['REGISTERED_NAME'] = value;
+      currentProps['HORSE_NAME'] = value;
+      currentProps[code] = value;
+    } else if (canonicalKey === 'canonical_stud_sire' || code === 'studSire' || codeUpper === 'SIRE') {
       partialUpdate.studSire = String(value ?? '');
       partialUpdate.sire = String(value ?? '');
-    } else if (code === 'studDam' || codeUpper === 'DAM') {
+      currentProps['studSire'] = value;
+      currentProps['SIRE'] = value;
+      currentProps[code] = value;
+    } else if (canonicalKey === 'canonical_stud_dam' || code === 'studDam' || codeUpper === 'DAM') {
       partialUpdate.studDam = String(value ?? '');
       partialUpdate.dam = String(value ?? '');
-    } else if (code === 'studDamsire' || codeUpper === 'DAMSIRE') {
+      currentProps['studDam'] = value;
+      currentProps['DAM'] = value;
+      currentProps[code] = value;
+    } else if (canonicalKey === 'canonical_stud_damsire' || code === 'studDamSire' || code === 'studDamsire' || codeUpper === 'DAMSIRE') {
       partialUpdate.studDamsire = String(value ?? '');
       partialUpdate.damsire = String(value ?? '');
+      currentProps['studDamSire'] = value;
+      currentProps['studDamsire'] = value;
+      currentProps['DAMSIRE'] = value;
+      currentProps[code] = value;
     } else if (codeUpper === 'HEIGHT_CM') {
       partialUpdate.heightCm = String(value ?? '');
     } else if (codeUpper === 'BIRTH_DATE') {
@@ -477,7 +548,7 @@ export function PostCategoryProperties({
     const canonicalKey = getCanonicalPropertyKey({ code });
 
     if ((canonicalKey === 'canonical_breed' || codeUpper === 'HORSE_BREED') && d.breed) return d.breed;
-    if ((canonicalKey === 'canonical_coat_color' || codeUpper === 'COAT_COLOR') && d.coatColor) return d.coatColor;
+    if ((canonicalKey === 'canonical_coat_color' || codeUpper === 'COAT_COLOR' || code === 'studCoatColor') && (d.studCoatColor || d.coatColor)) return d.studCoatColor || d.coatColor;
     if ((canonicalKey === 'canonical_age' || codeUpper === 'HORSE_AGE') && d.age) return d.age;
     if ((canonicalKey === 'canonical_gender' || codeUpper === 'HORSE_GENDER') && d.gender) return d.gender;
     if ((canonicalKey === 'canonical_in_training' || codeUpper === 'IN_TRAINING' || code === 'inTraining') && d.inTraining !== undefined) return d.inTraining;
@@ -495,12 +566,12 @@ export function PostCategoryProperties({
     }
     if ((code === 'COMPANY_NAME' || code === 'companyName') && d.companyName) return d.companyName;
     if ((code === 'WEBSITE_URL' || code === 'websiteUrl') && d.websiteUrl) return d.websiteUrl;
-    if ((code === 'STALLION_BREED' || code === 'studBreed') && d.studBreed) return d.studBreed;
-    if ((code === 'STALLION_AGE' || code === 'studAge') && d.studAge) return d.studAge;
-    if ((code === 'studHorseName' || codeUpper === 'REGISTERED_NAME' || codeUpper === 'HORSE_NAME') && (d.studHorseName || d.registeredName)) return d.studHorseName || d.registeredName;
-    if ((code === 'studSire' || codeUpper === 'SIRE') && (d.studSire || d.sire)) return d.studSire || d.sire;
-    if ((code === 'studDam' || codeUpper === 'DAM') && (d.studDam || d.dam)) return d.studDam || d.dam;
-    if ((code === 'studDamsire' || codeUpper === 'DAMSIRE') && (d.studDamsire || d.damsire)) return d.studDamsire || d.damsire;
+    if ((code === 'STALLION_BREED' || code === 'studBreed') && (d.studBreed || d.breed)) return d.studBreed || d.breed;
+    if ((code === 'STALLION_AGE' || code === 'studAge') && (d.studAge || d.age)) return d.studAge || d.age;
+    if ((canonicalKey === 'canonical_stud_name' || code === 'studHorse' || code === 'studHorseName' || codeUpper === 'REGISTERED_NAME' || codeUpper === 'HORSE_NAME') && (d.studHorseName || d.registeredName)) return d.studHorseName || d.registeredName;
+    if ((canonicalKey === 'canonical_stud_sire' || code === 'studSire' || codeUpper === 'SIRE') && (d.studSire || d.sire)) return d.studSire || d.sire;
+    if ((canonicalKey === 'canonical_stud_dam' || code === 'studDam' || codeUpper === 'DAM') && (d.studDam || d.dam)) return d.studDam || d.dam;
+    if ((canonicalKey === 'canonical_stud_damsire' || code === 'studDamSire' || code === 'studDamsire' || codeUpper === 'DAMSIRE') && (d.studDamsire || d.damsire)) return d.studDamsire || d.damsire;
     if (codeUpper === 'HEIGHT_CM' && d.heightCm) return d.heightCm;
     if (codeUpper === 'BIRTH_DATE' && d.birthDate) return d.birthDate;
     if (codeUpper === 'BREEDER' && d.breeder) return d.breeder;

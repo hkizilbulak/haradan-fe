@@ -12,6 +12,7 @@ import {
   isListingPackageStepEnabled,
   isSaleHorseListing,
   isTjkEligibleListing,
+  isStudServiceListing,
   DEFAULT_LISTING_PACKAGE_CODE,
   type IListingRepository,
   type ListingTypePhase,
@@ -148,6 +149,7 @@ export function applyTjkProfile(
     existingProps['REGISTERED_NAME'] = horse.registeredName;
     existingProps['HORSE_NAME'] = horse.registeredName;
     existingProps['studHorseName'] = horse.registeredName;
+    existingProps['studHorse'] = horse.registeredName;
   }
   if (horse.tjkNumber) {
     existingProps['TJK_NUMBER'] = horse.tjkNumber;
@@ -163,6 +165,7 @@ export function applyTjkProfile(
   if (horse.damsire) {
     existingProps['DAMSIRE'] = horse.damsire;
     existingProps['studDamsire'] = horse.damsire;
+    existingProps['studDamSire'] = horse.damsire;
   }
   if (horse.birthDate) {
     existingProps['BIRTH_DATE'] = horse.birthDate;
@@ -287,6 +290,36 @@ export function useListingWizard(deps: Deps = {}) {
     setListingWizardState((prev) => {
       const isDifferentCategory = prev.draft.type?.categoryId !== type.categoryId;
       const isHorse = isSaleHorseListing(type) || isTjkEligibleListing(type);
+
+      // Aygır ırkını kategoriye göre otomatik belirle
+      const slug = (type.categorySlug || '').toLowerCase();
+      const defaultBreed =
+        slug === 'ingiliz-aygir'
+          ? 'İngiliz'
+          : slug === 'arap-aygir'
+          ? 'Arap'
+          : '';
+      const autoStudDetails = isStudServiceListing(type) && defaultBreed
+        ? {
+            studBreed: defaultBreed,
+            properties: {
+              studBreed: defaultBreed,
+              STALLION_BREED: defaultBreed,
+            },
+          }
+        : null;
+
+      const mergeAutoStudDetails = <T extends { studBreed?: string; properties?: Record<string, unknown> }>(base: T): T =>
+        autoStudDetails
+          ? ({
+              ...base,
+              studBreed: autoStudDetails.studBreed,
+              properties: {
+                ...(base.properties || {}),
+                ...autoStudDetails.properties,
+              },
+            } as T)
+          : base;
       return {
         ...prev,
         step: 'details',
@@ -300,7 +333,7 @@ export function useListingWizard(deps: Deps = {}) {
           type,
           breed: null,
           details: isDifferentCategory
-            ? {
+            ? mergeAutoStudDetails({
                 ...prev.draft.details,
                 properties: {},
                 ...(isHorse
@@ -339,8 +372,8 @@ export function useListingWizard(deps: Deps = {}) {
                 studSire: '',
                 studDam: '',
                 studDamsire: '',
-              }
-            : prev.draft.details,
+              })
+            : mergeAutoStudDetails(prev.draft.details),
         },
       };
     });
