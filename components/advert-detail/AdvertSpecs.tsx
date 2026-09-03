@@ -591,17 +591,18 @@ export const AdvertSpecs = memo(function AdvertSpecs({
                 ]}
               >
                 {/* Card Header */}
-                <View style={styles.cardHeader}>
+                <View style={[styles.cardHeader, { borderBottomColor: border }]}>
                   <View style={[styles.headerIconWrap, { backgroundColor: `${primary}15` }]}>
                     <Ionicons name={section.icon} size={16} color={primary} />
                   </View>
                   <Text style={[styles.cardTitle, { color: text }]}>{section.title}</Text>
                 </View>
 
-                {/* Card Content Grid */}
+                {/* Card Content List */}
                 <View style={styles.rowsGrid}>
-                  {section.rows.map((row) => {
+                  {section.rows.map((row, idx) => {
                     const isClickable = Boolean(row.onPress);
+                    const isLast = idx === section.rows.length - 1;
                     return (
                       <Pressable
                         key={`${section.id}-${row.label}`}
@@ -609,17 +610,21 @@ export const AdvertSpecs = memo(function AdvertSpecs({
                         disabled={!isClickable}
                         style={({ pressed }) => [
                           styles.rowItem,
+                          !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: border },
                           isClickable && styles.rowItemClickable,
                           pressed && isClickable && { opacity: 0.7 },
                         ]}
                       >
-                        <View style={[styles.rowIconWrap, { borderColor: border }]}>
-                          <Ionicons name={row.icon} size={15} color={isClickable ? primary : textSecondary} />
-                        </View>
-                        <View style={styles.rowContent}>
-                          <Text style={[styles.rowLabel, { color: textSecondary }]}>
+                        <View style={styles.rowLeft}>
+                          <View style={[styles.rowIconWrap, { borderColor: border }]}>
+                            <Ionicons name={row.icon} size={14} color={isClickable ? primary : textSecondary} />
+                          </View>
+                          <Text style={[styles.rowLabel, { color: textSecondary }]} numberOfLines={1}>
                             {row.label}
                           </Text>
+                        </View>
+
+                        <View style={styles.rowRight}>
                           <View style={styles.rowValueRow}>
                             <Text
                               style={[
@@ -627,15 +632,16 @@ export const AdvertSpecs = memo(function AdvertSpecs({
                                 { color: text },
                                 isClickable && { color: primary, textDecorationLine: 'underline' },
                               ]}
+                              numberOfLines={1}
                             >
                               {row.value}
                             </Text>
                             {isClickable ? (
                               <Ionicons
                                 name="open-outline"
-                                size={13}
+                                size={12}
                                 color={primary}
-                                style={{ marginLeft: 4, marginTop: 3 }}
+                                style={{ marginLeft: 4 }}
                               />
                             ) : null}
                           </View>
@@ -786,10 +792,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 14,
+    marginBottom: 6,
     paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   headerIconWrap: {
     width: 32,
@@ -804,11 +809,13 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   rowsGrid: {
-    gap: 12,
+    gap: 0,
   },
   rowItem: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 9,
     gap: 12,
   },
   rowItemClickable: {
@@ -819,35 +826,43 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    flexShrink: 0,
+    maxWidth: '52%',
+  },
+  rowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    flex: 1,
+    minWidth: 0,
+  },
   rowValueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
   },
   rowIconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
+    width: 26,
+    height: 26,
+    borderRadius: 7,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
-  },
-  rowContent: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
   },
   rowLabel: {
-    fontSize: 11.5,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
     letterSpacing: -0.1,
   },
   rowValue: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '700',
     letterSpacing: -0.2,
-    lineHeight: 20,
+    textAlign: 'right',
   },
   rowHint: {
     fontSize: 11,

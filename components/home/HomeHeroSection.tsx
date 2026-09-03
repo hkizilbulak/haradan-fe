@@ -176,34 +176,38 @@ export const HomeHeroSection = memo(function HomeHeroSection({
 
         <View style={styles.heroContent}>
           {/* Animated Headline */}
-          <View style={styles.headlineWrap}>
-            <Text style={[styles.headlineText, !isWide && styles.headlineTextMobile]}>
-              Aradığın{' '}
-            </Text>
-
-            <Animated.View
-              style={[
-                styles.wordBadge,
-                {
-                  opacity: fadeAnim,
-                  transform: [{ translateY: slideAnim }],
-                },
-              ]}
-            >
-              <Text style={[styles.wordText, { color: primary }, !isWide && styles.wordTextMobile]}>
-                {DYNAMIC_WORDS[wordIndex]}
+          <View style={styles.headlineContainer}>
+            {/* Line 1: Aradığın + [Dinamik Kelime] */}
+            <View style={styles.headlineRow}>
+              <Text style={[styles.headlineText, !isWide && styles.headlineTextMobile]}>
+                Aradığın
               </Text>
-            </Animated.View>
 
-            <Text style={[styles.headlineText, !isWide && styles.headlineTextMobile]}>
-              {' '}bulmak için
-            </Text>
-          </View>
+              <Animated.View
+                style={[
+                  styles.wordBadge,
+                  !isWide && styles.wordBadgeMobile,
+                  {
+                    opacity: fadeAnim,
+                    transform: [{ translateY: slideAnim }],
+                  },
+                ]}
+              >
+                <Text style={[styles.wordText, { color: primary }, !isWide && styles.wordTextMobile]}>
+                  {DYNAMIC_WORDS[wordIndex]}
+                </Text>
+              </Animated.View>
+            </View>
 
-          <View style={styles.subHeadlineWrap}>
-            <Text style={[styles.headlineText, !isWide && styles.headlineTextMobile]}>
-              HARADAN!
-            </Text>
+            {/* Line 2: bulmak için HARADAN! */}
+            <View style={styles.headlineRow}>
+              <Text style={[styles.headlineText, !isWide && styles.headlineTextMobile]}>
+                bulmak için{' '}
+              </Text>
+              <Text style={[styles.headlineText, styles.brandHighlight, !isWide && styles.headlineTextMobile]}>
+                HARADAN!
+              </Text>
+            </View>
           </View>
 
           {/* Search Box Overlaid on Image */}
@@ -283,40 +287,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 2,
   },
-  headlineWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  subHeadlineWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  headlineContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.lg,
+    gap: 6,
+  },
+  headlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'nowrap',
   },
   headlineText: {
     color: '#ffffff',
     fontSize: 32,
     fontWeight: '800',
     letterSpacing: -0.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowColor: 'rgba(0, 0, 0, 0.45)',
     textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    textShadowRadius: 6,
   },
   headlineTextMobile: {
-    fontSize: 22,
+    fontSize: 21,
+    letterSpacing: -0.3,
+  },
+  brandHighlight: {
+    fontWeight: '900',
   },
   wordBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-    marginHorizontal: 4,
+    borderColor: 'rgba(255, 255, 255, 0.38)',
+    marginLeft: 8,
+  },
+  wordBadgeMobile: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: 6,
   },
   wordText: {
     color: '#ff6000',
@@ -325,7 +337,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   wordTextMobile: {
-    fontSize: 22,
+    fontSize: 21,
+    letterSpacing: -0.3,
   },
 
   searchBoxCard: {
