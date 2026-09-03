@@ -49,8 +49,18 @@ async function doRefresh(): Promise<string | null> {
         : current.user;
     setAuthSession({ ...next, user, email: user.email });
     return next.accessToken;
-  } catch {
-    clearAuthSession();
+  } catch (err: unknown) {
+    if (
+      err instanceof AuthError &&
+      (err.status === 401 ||
+        err.status === 403 ||
+        err.code === 'TOKEN_INVALID' ||
+        err.code === 'TOKEN_EXPIRED' ||
+        err.code === 'SESSION_REVOKED' ||
+        err.code === 'REFRESH_REPLAY_DETECTED')
+    ) {
+      clearAuthSession();
+    }
     return null;
   }
 }

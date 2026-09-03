@@ -1,5 +1,4 @@
-import { useCallback, useEffect } from 'react';
-import { useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import {
   clearAuthSession,
   getAuthSession,
@@ -14,10 +13,13 @@ export function useAuthSession() {
   const session = useSyncExternalStore(
     subscribeAuthSession,
     getAuthSession,
-    () => null
+    getAuthSession
   );
 
+  const [ready, setReady] = useState(false);
+
   useEffect(() => {
+    setReady(true);
     void hydrateFreshSession();
   }, []);
 
@@ -32,6 +34,7 @@ export function useAuthSession() {
   return {
     session,
     isLoggedIn: session != null,
+    ready,
     setSession,
     clearSession,
   };

@@ -11,7 +11,7 @@ export default function EditListingScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id: string | string[] }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
-  const { session, isLoggedIn } = useAuthSession();
+  const { session, isLoggedIn, ready } = useAuthSession();
   const scrollViewRef = useRef<ScrollView>(null);
   const [scrollTrigger, setScrollTrigger] = useState(0);
   const bg = useThemeColor('background');
@@ -19,10 +19,10 @@ export default function EditListingScreen() {
   const edit = useMyListingEdit(id, session?.accessToken ?? null);
 
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (ready && !isLoggedIn) {
       router.replace('/auth/login?next=/my-listings');
     }
-  }, [isLoggedIn, router]);
+  }, [ready, isLoggedIn, router]);
 
   const close = useCallback(() => {
     if (router.canGoBack()) router.back();

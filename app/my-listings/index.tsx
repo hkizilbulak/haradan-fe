@@ -14,13 +14,13 @@ export default function MyListingsScreen() {
   const router = useRouter();
   const bg = useThemeColor('background');
   const isWide = useIsWideLayout();
-  const { isLoggedIn, session } = useAuthSession();
+  const { isLoggedIn, session, ready } = useAuthSession();
 
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (ready && !isLoggedIn) {
       router.replace('/auth/login?next=/my-listings');
     }
-  }, [isLoggedIn, router]);
+  }, [ready, isLoggedIn, router]);
 
   const onLogin = useCallback(() => router.push('/auth/login'), [router]);
   const onSignup = useCallback(() => router.push('/auth/signup'), [router]);

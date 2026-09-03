@@ -33,19 +33,19 @@ export default function ProfileScreen() {
   const dockPad = mobileDockScrollInset(safeInsets.bottom);
   const primary = useThemeColor('primary');
   const textMuted = useThemeColor('textMuted');
-  const { session, isLoggedIn } = useAuthSession();
+  const { session, isLoggedIn, ready } = useAuthSession();
   const { logout } = useAuth();
   const [panel, setPanel] = useState<MobilePanel>('menu');
 
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (ready && !isLoggedIn) {
       router.replace('/auth/login?next=/profile');
       return;
     }
-    if (isWide) {
+    if (ready && isWide) {
       router.replace('/');
     }
-  }, [isWide, isLoggedIn, router]);
+  }, [ready, isWide, isLoggedIn, router]);
 
   const onLogout = useCallback(() => {
     void logout(session?.accessToken ?? null);

@@ -19,14 +19,14 @@ export default function FavoritesScreen() {
   const safeInsets = useSafeInsets();
   const dockPad = mobileDockScrollInset(safeInsets.bottom);
   const primary = useThemeColor('primary');
-  const { isLoggedIn } = useAuthSession();
+  const { isLoggedIn, ready } = useAuthSession();
   const { items, hydrating, remove } = useFavorites();
 
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (ready && !isLoggedIn) {
       router.replace('/auth/login?next=/favorites');
     }
-  }, [isLoggedIn, router]);
+  }, [ready, isLoggedIn, router]);
 
   const onPress = useCallback(
     (id: AdvertId) => router.push(`/advert/${id}`),
