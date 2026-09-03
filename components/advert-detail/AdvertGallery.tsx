@@ -1,7 +1,8 @@
-import React, { memo, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Animated,
-  Easing,
+  Dimensions,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Platform,
   Pressable,
   ScrollView,
@@ -9,14 +10,11 @@ import {
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
 import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
 import { useMediaImageSource } from '@/hooks/useMediaImageSource';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { PublicMediaItem } from '@/types';
-
-const EASE = Easing.bezier(0.22, 1, 0.36, 1);
 
 type AdvertGalleryProps = {
   items: PublicMediaItem[];
@@ -37,56 +35,92 @@ export const AdvertGallery = memo(function AdvertGallery({
   accessToken,
 }: AdvertGalleryProps) {
   const [index, setIndex] = useState(0);
-  const fade = useRef(new Animated.Value(1)).current;
+  const [slideWidth, setSlideWidth] = useState<number>(() => {
+    return Dimensions.get('window').width || 390;
+  });
+  const containerWidthRef = useRef<number>(slideWidth);
+  const scrollRef = useRef<ScrollView>(null);
+  const userInteractingRef = useRef<boolean>(false);
+  const pausedRef = useRef<boolean>(false);
+
   const skeleton = useThemeColor('skeleton');
   const border = useThemeColor('border');
   const header = useThemeColor('header');
   const surface = useThemeColor('surface');
 
-  const current = items[index] ?? items[0];
-  const paused = useRef(false);
-  const mainSource = useMediaImageSource(current?.publicUrl, accessToken);
+  const goToIndex = useCallback(
+    (targetIndex: number, animated = true) => {
+      const validIndex = Math.min(Math.max(targetIndex, 0), items.length - 1);
+      setIndex(validIndex);
+      const w = containerWidthRef.current || slideWidth;
+      if (w > 0) {
+        scrollRef.current?.scrollTo({ x: validIndex * w, animated });
+      }
+    },
+    [items.length, slideWidth]
+  );
 
-  useEffect(() => {
-    fade.setValue(0.35);
-    Animated.timing(fade, {
-      toValue: 1,
-      duration: 320,
-      easing: EASE,
-      useNativeDriver: Platform.OS !== 'web',
-    }).start();
-  }, [index, fade]);
+  const updateIndexFromOffset = useCallback(
+    (offsetX: number) => {
+      const w = containerWidthRef.current || slideWidth || 1;
+      if (w <= 0) return;
+      const next = Math.round(offsetX / w);
+      const clamped = Math.min(Math.max(next, 0), items.length - 1);
+      setIndex((prev) => (prev === clamped ? prev : clamped));
+    },
+    [items.length, slideWidth]
+  );
 
-  // Sırayla otomatik geçiş
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      userInteractingRef.current = true;
+      const offsetX = e.nativeEvent.contentOffset.x;
+      updateIndexFromOffset(offsetX);
+    },
+    [updateIndexFromOffset]
+  );
+
+  const onScrollEnd = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const offsetX = e.nativeEvent.contentOffset.x;
+      updateIndexFromOffset(offsetX);
+      setTimeout(() => {
+        userInteractingRef.current = false;
+      }, 2500);
+    },
+    [updateIndexFromOffset]
+  );
+
+  // Otomatik geçiş (kullanıcı manuel kaydırırken duraklar)
   useEffect(() => {
     if (items.length < 2) return;
     const timer = setInterval(() => {
-      if (paused.current) return;
-      setIndex((i) => (i + 1) % items.length);
-    }, 4500);
+      if (pausedRef.current || userInteractingRef.current) return;
+      setIndex((curr) => {
+        const next = (curr + 1) % items.length;
+        const w = containerWidthRef.current || slideWidth;
+        if (w > 0) {
+          scrollRef.current?.scrollTo({ x: next * w, animated: true });
+        }
+        return next;
+      });
+    }, 5000);
     return () => clearInterval(timer);
-  }, [items.length]);
+  }, [items.length, slideWidth]);
 
-  const go = (dir: 1 | -1) => {
-    if (items.length < 2) return;
-    setIndex((i) => (i + dir + items.length) % items.length);
-  };
-
-  if (!current) return null;
+  if (!items || items.length === 0) return null;
 
   const bleed = fullBleed;
 
   return (
-    <Pressable
+    <View
       style={[styles.wrap, bleed && styles.wrapBleed]}
-      onHoverIn={() => {
-        paused.current = true;
+      onPointerEnter={() => {
+        pausedRef.current = true;
       }}
-      onHoverOut={() => {
-        paused.current = false;
+      onPointerLeave={() => {
+        pausedRef.current = false;
       }}
-      // Hover only — dokunma galeriyi seçmesin
-      accessible={false}
     >
       <View
         style={[
@@ -94,71 +128,62 @@ export const AdvertGallery = memo(function AdvertGallery({
           { height, backgroundColor: surface },
           bleed && styles.mainBleed,
         ]}
+        onLayout={(e) => {
+          const w = e.nativeEvent.layout.width;
+          if (w > 0) {
+            containerWidthRef.current = w;
+            setSlideWidth(w);
+          }
+        }}
       >
-        <Animated.View style={[styles.mainInner, { opacity: fade }]}>
-          <Image
-            key={current.assetId || current.publicUrl || index}
-            source={mainSource}
-            style={[styles.mainImg, { backgroundColor: skeleton }]}
-            contentFit="cover"
-            transition={280}
-            priority="high"
-            cachePolicy="memory-disk"
-            recyclingKey={current.assetId}
-          />
-        </Animated.View>
-
-        {items.length > 1 && !bleed ? (
-          <>
-            <Pressable
-              onPress={() => go(-1)}
-              accessibilityLabel="Önceki görsel"
-              style={({ pressed }) => [
-                styles.nav,
-                styles.navLeft,
-                { backgroundColor: surface, opacity: pressed ? 0.85 : 1 },
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          scrollEventThrottle={16}
+          decelerationRate="fast"
+          onScroll={handleScroll}
+          onScrollBeginDrag={() => {
+            userInteractingRef.current = true;
+          }}
+          onScrollEndDrag={onScrollEnd}
+          onMomentumScrollEnd={onScrollEnd}
+          style={styles.scroller}
+          contentContainerStyle={styles.scrollerContent}
+        >
+          {items.map((item, i) => (
+            <View
+              key={item.assetId || item.publicUrl || i}
+              style={[
+                styles.slide,
+                { width: slideWidth, height: '100%' },
               ]}
             >
-              <Ionicons name="chevron-back" size={18} color={header} />
-            </Pressable>
-            <Pressable
-              onPress={() => go(1)}
-              accessibilityLabel="Sonraki görsel"
-              style={({ pressed }) => [
-                styles.nav,
-                styles.navRight,
-                { backgroundColor: surface, opacity: pressed ? 0.85 : 1 },
-              ]}
-            >
-              <Ionicons name="chevron-forward" size={18} color={header} />
-            </Pressable>
-          </>
-        ) : null}
-
-        {items.length > 1 && bleed ? (
-          <>
-            <Pressable
-              onPress={() => go(-1)}
-              accessibilityLabel="Önceki görsel"
-              style={[styles.bleedTap, styles.bleedTapLeft]}
-            />
-            <Pressable
-              onPress={() => go(1)}
-              accessibilityLabel="Sonraki görsel"
-              style={[styles.bleedTap, styles.bleedTapRight]}
-            />
-            <View style={styles.dotsOverlay} pointerEvents="none">
-              {items.map((item, i) => (
-                <View
-                  key={item.assetId || i}
-                  style={[
-                    styles.dot,
-                    i === index ? styles.dotActive : styles.dotIdle,
-                  ]}
-                />
-              ))}
+              <AuthMediaImage
+                uri={item.publicUrl}
+                accessToken={accessToken}
+                style={[styles.mainImg, { backgroundColor: skeleton }]}
+                transition={280}
+                priority={i === 0 ? 'high' : 'low'}
+              />
             </View>
-          </>
+          ))}
+        </ScrollView>
+
+        {/* Noktalar göstergesi */}
+        {items.length > 1 ? (
+          <View style={styles.dotsOverlay} pointerEvents="none">
+            {items.map((item, i) => (
+              <View
+                key={item.assetId || i}
+                style={[
+                  styles.dot,
+                  i === index ? styles.dotActive : styles.dotIdle,
+                ]}
+              />
+            ))}
+          </View>
         ) : null}
       </View>
 
@@ -174,7 +199,7 @@ export const AdvertGallery = memo(function AdvertGallery({
             return (
               <Pressable
                 key={item.assetId || i}
-                onPress={() => setIndex(i)}
+                onPress={() => goToIndex(i, true)}
                 style={[
                   styles.thumb,
                   {
@@ -202,7 +227,7 @@ export const AdvertGallery = memo(function AdvertGallery({
           })}
         </ScrollView>
       ) : null}
-    </Pressable>
+    </View>
   );
 });
 
@@ -243,29 +268,19 @@ const styles = StyleSheet.create({
   mainBleed: {
     borderRadius: 0,
   },
-  mainInner: { flex: 1 },
-  mainImg: { width: '100%', height: '100%' },
-  nav: {
-    position: 'absolute',
-    top: '50%',
-    marginTop: -18,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      web: { boxShadow: '0 4px 14px rgba(15,23,42,0.08)' },
-      default: {
-        shadowColor: '#000',
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 2,
-      },
-    }),
+  scroller: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
-  navLeft: { left: 12 },
-  navRight: { right: 12 },
+  scrollerContent: {
+    alignItems: 'stretch',
+  },
+  slide: {
+    height: '100%',
+    overflow: 'hidden',
+  },
+  mainImg: { width: '100%', height: '100%' },
   thumbs: {
     flexDirection: 'row',
     gap: 10,
@@ -286,10 +301,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 6,
+    zIndex: 5,
   },
   dot: {
     height: 6,
     borderRadius: 3,
+    ...Platform.select({
+      web: {
+        transition: 'width 220ms ease, background-color 220ms ease',
+      },
+      default: {},
+    }),
   },
   dotActive: {
     width: 22,
@@ -299,13 +321,4 @@ const styles = StyleSheet.create({
     width: 6,
     backgroundColor: 'rgba(255,255,255,0.45)',
   },
-  bleedTap: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: '34%',
-    zIndex: 2,
-  },
-  bleedTapLeft: { left: 0 },
-  bleedTapRight: { right: 0 },
 });
