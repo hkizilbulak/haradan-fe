@@ -406,14 +406,16 @@ export function PostCategoryProperties({
       partialUpdate.facilitySandPaddock = Boolean(value);
     } else if (canonicalKey === 'canonical_stallion_paddock' || code === 'stallionPaddock') {
       partialUpdate.facilityStallionPaddock = Boolean(value);
-    } else if (canonicalKey === 'canonical_vet' || code === 'vet') {
+    } else if (canonicalKey === 'canonical_vet' || code === 'vet' || code === 'veterinarian') {
       partialUpdate.facilityVeterinarian = Boolean(value);
     } else if (canonicalKey === 'canonical_farrier' || code === 'farrier') {
       partialUpdate.facilityFarrier = Boolean(value);
-    } else if (canonicalKey === 'canonical_foaling_barn' || code === 'foalingBarn') {
+    } else if (canonicalKey === 'canonical_foaling_barn' || code === 'foalingBarn' || code === 'maternity') {
       partialUpdate.facilityFoalingBarn = Boolean(value);
     } else if (canonicalKey === 'canonical_training_track' || code === 'trainingTrack' || codeUpper === 'TRAINING_TRACK') {
-      partialUpdate.facilityTrainingTrack = Boolean(value);
+      if (typeof value === 'boolean') {
+        partialUpdate.facilityTrainingTrack = value;
+      }
     } else if (code === 'COMPANY_NAME' || code === 'companyName') {
       partialUpdate.companyName = String(value ?? '');
     } else if (code === 'WEBSITE_URL' || code === 'websiteUrl') {
@@ -484,10 +486,13 @@ export function PostCategoryProperties({
     if ((canonicalKey === 'canonical_grass_paddock' || code === 'grassPaddock') && d.facilityGrassPaddock !== undefined) return d.facilityGrassPaddock;
     if ((canonicalKey === 'canonical_sand_paddock' || code === 'sandPaddock') && d.facilitySandPaddock !== undefined) return d.facilitySandPaddock;
     if ((canonicalKey === 'canonical_stallion_paddock' || code === 'stallionPaddock') && d.facilityStallionPaddock !== undefined) return d.facilityStallionPaddock;
-    if ((canonicalKey === 'canonical_vet' || code === 'vet') && d.facilityVeterinarian !== undefined) return d.facilityVeterinarian;
+    if ((canonicalKey === 'canonical_vet' || code === 'vet' || code === 'veterinarian') && d.facilityVeterinarian !== undefined) return d.facilityVeterinarian;
     if ((canonicalKey === 'canonical_farrier' || code === 'farrier') && d.facilityFarrier !== undefined) return d.facilityFarrier;
-    if ((canonicalKey === 'canonical_foaling_barn' || code === 'foalingBarn') && d.facilityFoalingBarn !== undefined) return d.facilityFoalingBarn;
-    if ((canonicalKey === 'canonical_training_track' || code === 'trainingTrack' || codeUpper === 'TRAINING_TRACK') && d.facilityTrainingTrack !== undefined) return d.facilityTrainingTrack;
+    if ((canonicalKey === 'canonical_foaling_barn' || code === 'foalingBarn' || code === 'maternity') && d.facilityFoalingBarn !== undefined) return d.facilityFoalingBarn;
+    if (canonicalKey === 'canonical_training_track' || code === 'trainingTrack' || codeUpper === 'TRAINING_TRACK') {
+      if (d.properties?.trainingTrack) return d.properties.trainingTrack;
+      if (typeof d.facilityTrainingTrack === 'string') return d.facilityTrainingTrack;
+    }
     if ((code === 'COMPANY_NAME' || code === 'companyName') && d.companyName) return d.companyName;
     if ((code === 'WEBSITE_URL' || code === 'websiteUrl') && d.websiteUrl) return d.websiteUrl;
     if ((code === 'STALLION_BREED' || code === 'studBreed') && d.studBreed) return d.studBreed;

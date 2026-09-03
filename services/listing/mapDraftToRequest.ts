@@ -132,9 +132,11 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
     ['sandPaddock', d.facilitySandPaddock ? true : undefined],
     ['stallionPaddock', d.facilityStallionPaddock ? true : undefined],
     ['vet', d.facilityVeterinarian ? true : undefined],
+    ['veterinarian', d.facilityVeterinarian ? true : undefined],
     ['farrier', d.facilityFarrier ? true : undefined],
     ['foalingBarn', d.facilityFoalingBarn ? true : undefined],
-    ['trainingTrack', d.facilityTrainingTrack ? true : undefined],
+    ['maternity', d.facilityFoalingBarn ? true : undefined],
+    ['trainingTrack', typeof d.properties?.trainingTrack === 'string' ? d.properties.trainingTrack : (d.facilityTrainingTrack ? (typeof d.facilityTrainingTrack === 'string' ? d.facilityTrainingTrack : true) : undefined)],
     ['IN_TRAINING', d.inTraining !== undefined ? Boolean(d.inTraining) : undefined],
     ['IS_FOR_RENT', d.isForRent !== undefined ? Boolean(d.isForRent) : undefined],
     ['IS_RACE_READY', d.isRaceReady !== undefined ? Boolean(d.isRaceReady) : undefined],
@@ -190,6 +192,8 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
     'facilityVeterinarian',
     'facilityFarrier',
     'facilityFoalingBarn',
+    'facilityTrainingTrack',
+    'facility_training_track',
   ]);
 
   const cleaned: Record<string, unknown> = {};
