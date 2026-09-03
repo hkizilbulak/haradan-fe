@@ -272,10 +272,11 @@ export function useListingWizard(deps: Deps = {}) {
   }, []);
 
   const selectRoot = useCallback((root: ListingTypeSelection) => {
+    const isClearing = !root.categorySlug;
     setListingWizardState((prev) => ({
       ...prev,
-      typePhase: 'category',
-      selectedRootSlug: root.categorySlug,
+      typePhase: isClearing ? 'root' : 'category',
+      selectedRootSlug: isClearing ? null : root.categorySlug,
       submittedDraftId: null,
       submittedStatus: null,
       draft: { ...prev.draft, type: null, breed: null },
@@ -447,6 +448,7 @@ export function useListingWizard(deps: Deps = {}) {
         return {
           ...prev,
           typePhase: 'root',
+          selectedRootSlug: null,
           draft: { ...prev.draft, type: null, breed: null },
         };
       }
@@ -457,6 +459,10 @@ export function useListingWizard(deps: Deps = {}) {
       return {
         ...prev,
         step: prevStep,
+        selectedRootSlug:
+          prevStep === 'type' && !prev.draft.type
+            ? null
+            : prev.selectedRootSlug,
         typePhase:
           prevStep === 'type'
             ? prev.draft.type

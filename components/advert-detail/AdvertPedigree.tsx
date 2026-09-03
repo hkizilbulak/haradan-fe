@@ -965,7 +965,7 @@ export const AdvertPedigree = memo(function AdvertPedigree({
         <View style={styles.legendItem}>
           <Ionicons name="open-outline" size={12} color={textMuted} />
           <Text style={[styles.legendText, { color: textSecondary }]}>
-            Atlardan herhangi birine tıklayarak TJK resmi yarışlarını ve yavru kayıtlarını açabilirsiniz
+            TJK kaydı için ata dokunun
           </Text>
         </View>
       </View>
@@ -1642,5 +1642,6 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 10.5,
     fontWeight: '500',
+    flexShrink: 1,
   },
 });

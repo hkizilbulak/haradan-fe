@@ -23,6 +23,7 @@ import {
   detailsErrors,
   isListingPackageStepEnabled,
   isPaytrCheckoutEnabled,
+  resetListingWizard,
 } from '@/services/listing';
 import { parseInternationalPhone } from '@/services/phone';
 import { Spacing } from '@/constants/Spacing';
@@ -141,6 +142,7 @@ export function PostWizardView() {
   }, [session?.user.phone, sellerPhone, updateDetails]);
 
   const close = useCallback(() => {
+    resetListingWizard();
     unwindAndExit(() => {
       if (router.canGoBack()) router.back();
       else router.replace('/');
@@ -280,6 +282,7 @@ export function PostWizardView() {
           error={catalogError}
           onSelectRoot={wizard.selectRoot}
           onSelectType={wizard.selectType}
+          onBack={back}
         />
       ) : null}
       {wizard.step === 'details' ? (

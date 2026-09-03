@@ -117,6 +117,8 @@ export function useListingWizardBack({
           ...prev,
           step: restored.step,
           typePhase: restored.typePhase,
+          selectedRootSlug:
+            restored.typePhase === 'root' ? null : prev.selectedRootSlug,
         }));
         return;
       }
@@ -151,14 +153,6 @@ export function useListingWizardBack({
   }, []);
 
   const unwindAndExit = useCallback((exit: () => void) => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const d = depth(snapshotRef.current.step, snapshotRef.current.typePhase);
-      if (d > 0) {
-        window.history.go(-d);
-        setTimeout(exit, 0);
-        return;
-      }
-    }
     exit();
   }, []);
 

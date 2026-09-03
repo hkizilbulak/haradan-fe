@@ -30,6 +30,7 @@ type PostTypeStepProps = {
   error?: string | null;
   onSelectRoot: (root: ListingTypeSelection) => void;
   onSelectType: (type: ListingTypeSelection) => void;
+  onBack?: () => void;
 };
 
 function toSelection(
@@ -54,6 +55,7 @@ export function PostTypeStep({
   error = null,
   onSelectRoot,
   onSelectType,
+  onBack,
 }: PostTypeStepProps) {
   const text = useThemeColor('text');
   const secondary = useThemeColor('textSecondary');
@@ -62,13 +64,13 @@ export function PostTypeStep({
   const [activeParentNode, setActiveParentNode] = useState<CategoryTreeNode | null>(null);
 
   useEffect(() => {
-    if (!selectedRootSlug) {
+    if (!selectedRootSlug || phase === 'root') {
       setActiveParentNode(null);
       return;
     }
     const found = findCategoryBySlug(categoryTree, selectedRootSlug);
     setActiveParentNode(found);
-  }, [selectedRootSlug, categoryTree]);
+  }, [selectedRootSlug, phase, categoryTree]);
 
   const roots = useMemo(() => pickRoots(categoryTree), [categoryTree]);
 
@@ -77,24 +79,31 @@ export function PostTypeStep({
     return activeParentNode.children ?? [];
   }, [activeParentNode, roots]);
 
-  if (phase === 'category' || (activeParentNode != null && selectedRootSlug)) {
+  const isCategoryPhase =
+    phase === 'category' && Boolean(selectedRootSlug || activeParentNode);
+
+  if (isCategoryPhase) {
     const parentName = activeParentNode?.name ?? 'Kategori';
     return (
       <View style={styles.wrap}>
         <View style={styles.navRow}>
           <Pressable
             onPress={() => {
-              if (activeParentNode && activeParentNode.slug !== selectedRootSlug) {
+              if (activeParentNode && selectedRootSlug && activeParentNode.slug !== selectedRootSlug) {
                 const parent = findCategoryParent(categoryTree, activeParentNode.id);
                 setActiveParentNode(parent);
               } else {
                 setActiveParentNode(null);
-                onSelectRoot({
-                  categoryId: '',
-                  categorySlug: '',
-                  categoryName: '',
-                  parentSlug: null,
-                });
+                if (onBack) {
+                  onBack();
+                } else {
+                  onSelectRoot({
+                    categoryId: '',
+                    categorySlug: '',
+                    categoryName: '',
+                    parentSlug: null,
+                  });
+                }
               }
             }}
             style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
