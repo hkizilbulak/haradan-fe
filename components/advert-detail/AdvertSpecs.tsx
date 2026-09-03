@@ -420,16 +420,10 @@ export const AdvertSpecs = memo(function AdvertSpecs({
 
     const list: SoftSection[] = [
       {
-        id: 'general-specs-1',
+        id: 'general-specs',
         title: 'Genel Bilgiler',
         icon: 'information-circle-outline',
-        rows: rows.slice(0, 7),
-      },
-      {
-        id: 'general-specs-2',
-        title: 'Özellikler ve Durum',
-        icon: 'options-outline',
-        rows: rows.slice(7),
+        rows,
       },
     ];
 
@@ -590,13 +584,15 @@ export const AdvertSpecs = memo(function AdvertSpecs({
                   isWide ? styles.sectionCardWide : styles.sectionCardMobile,
                 ]}
               >
-                {/* Card Header */}
-                <View style={[styles.cardHeader, { borderBottomColor: border }]}>
-                  <View style={[styles.headerIconWrap, { backgroundColor: `${primary}15` }]}>
-                    <Ionicons name={section.icon} size={16} color={primary} />
+                {/* Card Header (sadece geniş ekranda gösterilir, mobilde sekme başlığı zaten mevcuttur) */}
+                {isWide ? (
+                  <View style={[styles.cardHeader, { borderBottomColor: border }]}>
+                    <View style={[styles.headerIconWrap, { backgroundColor: `${primary}15` }]}>
+                      <Ionicons name={section.icon} size={16} color={primary} />
+                    </View>
+                    <Text style={[styles.cardTitle, { color: text }]}>{section.title}</Text>
                   </View>
-                  <Text style={[styles.cardTitle, { color: text }]}>{section.title}</Text>
-                </View>
+                ) : null}
 
                 {/* Card Content List */}
                 <View style={styles.rowsGrid}>
@@ -782,8 +778,7 @@ const styles = StyleSheet.create({
     }),
   },
   sectionCardWide: {
-    width: '48.5%',
-    flexGrow: 1,
+    width: '100%',
   },
   sectionCardMobile: {
     width: '100%',

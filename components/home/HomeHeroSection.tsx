@@ -16,6 +16,7 @@ import { HomeSearchBar } from './HomeSearchBar';
 import { navigateToListings } from '@/services/navigation';
 import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
+import { homeContentPadding } from '@/constants/Layout';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
@@ -160,10 +161,10 @@ export const HomeHeroSection = memo(function HomeHeroSection({
   const primary = useThemeColor('primary');
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, !isWide && styles.containerMobile]}>
       {/* Hero Banner Box */}
-      <View style={[styles.heroCard, { minHeight: isWide ? 440 : 380 }]}>
-        <View style={styles.heroBackground}>
+      <View style={[styles.heroCard, { minHeight: isWide ? 440 : 390 }, !isWide && styles.heroCardMobile]}>
+        <View style={[styles.heroBackground, !isWide && styles.heroBackgroundMobile]}>
           <Image
             source={{ uri: HERO_BG_IMAGE }}
             style={StyleSheet.absoluteFillObject}
@@ -218,7 +219,7 @@ export const HomeHeroSection = memo(function HomeHeroSection({
       </View>
 
       {/* Hızlı Erişim Linkleri (Hepsiemlak Pill Chips Style) */}
-      <View style={styles.quickAccessSection}>
+      <View style={[styles.quickAccessSection, !isWide && styles.quickAccessSectionMobile]}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -258,6 +259,11 @@ const styles = StyleSheet.create({
     position: 'relative',
     zIndex: 100,
   },
+  containerMobile: {
+    marginHorizontal: -homeContentPadding(false),
+    marginTop: 0,
+    marginBottom: Spacing.lg,
+  },
   heroCard: {
     position: 'relative',
     justifyContent: 'center',
@@ -265,6 +271,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.xl,
     zIndex: 100,
+  },
+  heroCardMobile: {
+    paddingHorizontal: Spacing.md,
+    paddingTop: 36,
+    paddingBottom: Spacing.xl,
   },
   heroBackground: {
     ...StyleSheet.absoluteFillObject,
@@ -276,6 +287,9 @@ const styles = StyleSheet.create({
       },
       default: {},
     }),
+  },
+  heroBackgroundMobile: {
+    borderRadius: 0,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -352,6 +366,9 @@ const styles = StyleSheet.create({
     marginTop: Spacing.lg,
     width: '100%',
     overflow: 'hidden',
+  },
+  quickAccessSectionMobile: {
+    paddingHorizontal: homeContentPadding(false),
   },
   quickAccessTitle: {
     fontSize: 12,

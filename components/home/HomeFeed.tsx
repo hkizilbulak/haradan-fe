@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   contentMobile: {
-    paddingTop: Spacing.sm,
+    paddingTop: 0,
   },
   topBtn: {
     position: 'absolute',
