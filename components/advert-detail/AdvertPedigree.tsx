@@ -210,7 +210,7 @@ export const AdvertPedigree = memo(function AdvertPedigree({
 
     return (
       <Pressable
-        onPress={() => isValid && !isRoot && openTjkHorseSearch(node.raw || node.name)}
+        onPress={() => isValid && !isRoot && openTjkHorseSearch(node.name || node.raw)}
         disabled={!isValid || isRoot}
         accessibilityRole="button"
         accessibilityLabel={`${node.role}: ${node.name}`}
@@ -575,7 +575,7 @@ export const AdvertPedigree = memo(function AdvertPedigree({
     if (isGen3) {
       return (
         <Pressable
-          onPress={() => isValid && openTjkHorseSearch(node.raw || node.name)}
+          onPress={() => isValid && openTjkHorseSearch(node.name || node.raw)}
           disabled={!isValid}
           accessibilityRole="button"
           accessibilityLabel={`${node.role}: ${node.name}`}
@@ -666,7 +666,7 @@ export const AdvertPedigree = memo(function AdvertPedigree({
 
     return (
       <Pressable
-        onPress={() => isValid && openTjkHorseSearch(node.raw || node.name)}
+        onPress={() => isValid && openTjkHorseSearch(node.name || node.raw)}
         disabled={!isValid}
         accessibilityRole="button"
         accessibilityLabel={`${node.role}: ${node.name}`}

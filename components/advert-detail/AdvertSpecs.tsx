@@ -18,19 +18,10 @@ import { AdvertPedigree } from './AdvertPedigree';
 import { AdvertSiblings } from './AdvertSiblings';
 import { AdvertStatistics } from './AdvertStatistics';
 
-export type SpecsSubTab = 'specs' | 'pedigree' | 'siblings' | 'statistics';
+import { getTjkHorseUrl, openTjkHorseSearch } from '@/utils/tjkLinks';
+export { getTjkHorseUrl, openTjkHorseSearch };
 
-export function openTjkHorseSearch(rawName: string) {
-  if (!rawName || rawName === '-') return;
-  const cleanName = rawName.replace(/\s*[\(\[].*?[\)\]]/g, '').trim();
-  // !ducky command directly redirects straight to the #1 top matching page on tjk.org
-  const directUrl = `https://duckduckgo.com/?q=%21ducky+site%3Atjk.org+${encodeURIComponent(cleanName)}`;
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    window.open(directUrl, '_blank', 'noopener,noreferrer');
-  } else {
-    void Linking.openURL(directUrl);
-  }
-}
+export type SpecsSubTab = 'specs' | 'pedigree' | 'siblings' | 'statistics';
 
 type AdvertSpecsProps = {
   groups: AdvertSpecGroup[];

@@ -196,4 +196,27 @@ assert.equal(mappedAdvert.horse.detailProfile?.owner, 'HÜSEYİN KÖKLÜ (%100)'
 
 console.log('✓ mapPublishedDetailToAdvert populated AdvertDetail.horse with rich TJK data.');
 
+// 4. Test getTjkHorseUrl for direct TJK querying
+import { getTjkHorseUrl } from '../utils/tjkLinks';
+
+assert.equal(
+  getTjkHorseUrl('SRI PEKAN'),
+  'https://www.tjk.org/TR/YarisSever/Query/Page/Atlar?1=1&QueryParameter_AtIsmi=SRI%20PEKAN'
+);
+assert.equal(
+  getTjkHorseUrl('SRI PEKAN (USA) d a (1992)'),
+  'https://www.tjk.org/TR/YarisSever/Query/Page/Atlar?1=1&QueryParameter_AtIsmi=SRI%20PEKAN'
+);
+assert.equal(
+  getTjkHorseUrl('AĞA KARACA k a (1995)'),
+  'https://www.tjk.org/TR/YarisSever/Query/Page/Atlar?1=1&QueryParameter_AtIsmi=A%C4%9EA%20KARACA'
+);
+assert.equal(
+  getTjkHorseUrl('ADAGÜLÜ kk (2004)'),
+  'https://www.tjk.org/TR/YarisSever/Query/Page/Atlar?1=1&QueryParameter_AtIsmi=ADAG%C3%9CL%C3%9C'
+);
+assert.equal(getTjkHorseUrl('-'), null);
+assert.equal(getTjkHorseUrl(''), null);
+console.log('✓ getTjkHorseUrl correctly cleans names and generates official TJK query URLs.');
+
 console.log('\nAll TJK data mapping and synchronization tests PASSED! 🎉');
