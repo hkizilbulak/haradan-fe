@@ -71,6 +71,188 @@ function ToggleItem({ label, value, onToggle }: ToggleItemProps) {
   );
 }
 
+const EXCLUDED_CODES = new Set([
+  'ADDRESS',
+  'DESCRIPTION',
+  'PRICE',
+  'LOCATION',
+  'PHONE',
+  'TITLE',
+  'MEDIA',
+  'IMAGES',
+  'HEALTH_VACCINATION',
+  'PEDIGREE_IDENTITY',
+  'ONSITE_INSPECTION',
+  'BREEDER',
+  'TRAINER',
+]);
+
+function isExcludedProperty(p: any): boolean {
+  if (!p) return true;
+  if (p.isFormVisible === false) return true;
+  const rawCode = String(p.code || '').trim().toUpperCase();
+  const codeNormalized = rawCode.replace(/[-_]/g, '');
+  if (
+    EXCLUDED_CODES.has(rawCode) ||
+    codeNormalized === 'HEALTHVACCINATION' ||
+    codeNormalized === 'PEDIGREEIDENTITY' ||
+    codeNormalized === 'ONSITEINSPECTION' ||
+    codeNormalized === 'BREEDER' ||
+    codeNormalized === 'TRAINER'
+  ) {
+    return true;
+  }
+  if ((p.uiMetadata as any)?.displayGroup === 'highlight') {
+    return true;
+  }
+  const titleLower = String(p.title || '').trim().toLowerCase();
+  if (
+    titleLower === 'sağlık & aşı kaydı' ||
+    titleLower === 'sağlık ve aşı kaydı' ||
+    titleLower === 'şecere ve kimlik' ||
+    titleLower === 'yerinde inceleme' ||
+    titleLower === 'yetiştirici' ||
+    titleLower === 'yetistirici' ||
+    titleLower === 'antrenör' ||
+    titleLower === 'antrenor'
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function getCanonicalPropertyKey(p: { code?: string; title?: string } | null | undefined): string {
+  if (!p) return '';
+  const code = String(p.code || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[-_]/g, '');
+  const title = String(p.title || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9ğüşıöç]/g, '');
+
+  if (
+    code === 'VET' ||
+    code === 'VETERINARY' ||
+    code === 'VETERINARIAN' ||
+    code === 'FACILITYVETERINARIAN' ||
+    title === 'veteriner' ||
+    title === 'veterinerhekim' ||
+    title === 'veterinerhekimhizmeti'
+  ) {
+    return 'canonical_vet';
+  }
+  if (
+    code === 'FOALINGBARN' ||
+    code === 'FOALING' ||
+    code === 'FACILITYFOALINGBARN' ||
+    title === 'dogumhane' ||
+    title === 'doğumhane'
+  ) {
+    return 'canonical_foaling_barn';
+  }
+  if (
+    code === 'FARRIER' ||
+    code === 'FACILITYFARRIER' ||
+    title === 'nalbant' ||
+    title === 'nalbanthizmeti'
+  ) {
+    return 'canonical_farrier';
+  }
+  if (
+    code === 'GRASSPADDOCK' ||
+    code === 'GRASS' ||
+    code === 'FACILITYGRASSPADDOCK' ||
+    title === 'cimpadok' ||
+    title === 'çimpadok'
+  ) {
+    return 'canonical_grass_paddock';
+  }
+  if (
+    code === 'SANDPADDOCK' ||
+    code === 'SAND' ||
+    code === 'FACILITYSANDPADDOCK' ||
+    title === 'kumpadok'
+  ) {
+    return 'canonical_sand_paddock';
+  }
+  if (
+    code === 'STALLIONPADDOCK' ||
+    code === 'FACILITYSTALLIONPADDOCK' ||
+    title === 'aygirpadogu' ||
+    title === 'aygırpadoğu'
+  ) {
+    return 'canonical_stallion_paddock';
+  }
+  if (
+    code === 'TRAININGTRACK' ||
+    code === 'TRACK' ||
+    title === 'idmanpisti'
+  ) {
+    return 'canonical_training_track';
+  }
+  if (
+    code === 'HORSEBREED' ||
+    code === 'BREED' ||
+    title === 'atirki' ||
+    title === 'atırkı' ||
+    title === 'irk' ||
+    title === 'ırk'
+  ) {
+    return 'canonical_breed';
+  }
+  if (
+    code === 'COATCOLOR' ||
+    code === 'COAT' ||
+    title === 'don' ||
+    title === 'donu' ||
+    title === 'donurenk' ||
+    title === 'renk'
+  ) {
+    return 'canonical_coat_color';
+  }
+  if (
+    code === 'HORSEAGE' ||
+    code === 'AGE' ||
+    title === 'yas' ||
+    title === 'yaş'
+  ) {
+    return 'canonical_age';
+  }
+  if (
+    code === 'HORSEGENDER' ||
+    code === 'GENDER' ||
+    title === 'cinsiyet'
+  ) {
+    return 'canonical_gender';
+  }
+  if (
+    code === 'INTRAINING' ||
+    title === 'idmandami' ||
+    title === 'idmandamı'
+  ) {
+    return 'canonical_in_training';
+  }
+  if (
+    code === 'ISFORRENT' ||
+    title === 'kiralikmi' ||
+    title === 'kiralıkmı'
+  ) {
+    return 'canonical_is_for_rent';
+  }
+  if (
+    code === 'ISRACEREADY' ||
+    code === 'RACEREADY' ||
+    title === 'kosardurumdami' ||
+    title === 'koşardurumdamı'
+  ) {
+    return 'canonical_is_race_ready';
+  }
+
+  return code || title;
+}
+
 export function PostCategoryProperties({
   draft,
   onUpdate,
@@ -107,17 +289,6 @@ export function PostCategoryProperties({
     }
     let cancelled = false;
 
-    const GLOBAL_CODES = new Set([
-      'ADDRESS',
-      'DESCRIPTION',
-      'PRICE',
-      'LOCATION',
-      'PHONE',
-      'TITLE',
-      'MEDIA',
-      'IMAGES',
-    ]);
-
     const loadProps = () => {
       catalogRepository
         .getCategoryFormDefinition(catId, {
@@ -127,10 +298,10 @@ export function PostCategoryProperties({
         .then((def) => {
           if (cancelled) return;
           if (def && Array.isArray(def.properties)) {
-            const filtered = def.properties.filter(
+            const rawList = def.properties.filter(
               (p: any) =>
                 p.isActive !== false &&
-                !GLOBAL_CODES.has(String(p.code || '').toUpperCase())
+                !isExcludedProperty(p)
             );
             const initialProps = (CATALOG_DATA.categoryProperties || []) as any[];
             const catIdClean = String(catId || '').toLowerCase();
@@ -142,19 +313,35 @@ export function PostCategoryProperties({
                 (catSlugClean === 'satilik-yaris-ati' && ip.categoryId === 'c1000000-0000-4000-8000-000000000011') ||
                 (catIdClean.includes('satilik-yaris-ati') && ip.categoryId === 'c1000000-0000-4000-8000-000000000011');
 
-              const found = filtered.find((p: any) => p.code === ip.code);
-              if (!found && isMatch && ip.isActive !== false && !GLOBAL_CODES.has(String(ip.code || '').toUpperCase())) {
-                filtered.push(ip);
+              const found = rawList.find(
+                (p: any) =>
+                  p.code === ip.code ||
+                  String(p.code || '').toUpperCase() === String(ip.code || '').toUpperCase() ||
+                  getCanonicalPropertyKey(p) === getCanonicalPropertyKey(ip)
+              );
+              if (!found && isMatch && ip.isActive !== false && !isExcludedProperty(ip)) {
+                rawList.push(ip);
               } else if (found) {
-                found.options = ip.options || [];
-                found.dataType = ip.dataType;
-                found.uiMetadata = ip.uiMetadata;
+                found.options = ip.options || found.options || [];
+                found.dataType = ip.dataType || found.dataType;
+                found.uiMetadata = ip.uiMetadata || found.uiMetadata;
               }
             }
-            filtered.sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-            setCategoryProperties(filtered);
-            setListingWizardState({ categoryProperties: filtered });
-            onPropertiesLoadedRef.current?.(filtered);
+
+            const seenKeys = new Set<string>();
+            const deduplicated: CategoryPropertyPublic[] = [];
+            for (const p of rawList) {
+              const key = getCanonicalPropertyKey(p);
+              if (!seenKeys.has(key)) {
+                seenKeys.add(key);
+                deduplicated.push(p);
+              }
+            }
+
+            deduplicated.sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+            setCategoryProperties(deduplicated);
+            setListingWizardState({ categoryProperties: deduplicated });
+            onPropertiesLoadedRef.current?.(deduplicated);
           } else {
             setCategoryProperties([]);
             setListingWizardState({ categoryProperties: [] });
@@ -196,6 +383,7 @@ export function PostCategoryProperties({
     // Clean up any potential duplicate casing keys
     const codeUpper = code.toUpperCase();
     const codeLower = code.toLowerCase();
+    const canonicalKey = getCanonicalPropertyKey({ code });
     if (codeUpper !== code) delete currentProps[codeUpper];
     if (codeLower !== code) delete currentProps[codeLower];
 
@@ -204,26 +392,28 @@ export function PostCategoryProperties({
     };
 
     // Keep legacy / top-level details fields in sync if applicable
-    if (codeUpper === 'HORSE_BREED' || codeUpper === 'BREED') {
+    if (canonicalKey === 'canonical_breed' || codeUpper === 'HORSE_BREED' || codeUpper === 'BREED') {
       partialUpdate.breed = String(value ?? '');
-    } else if (codeUpper === 'COAT_COLOR' || codeUpper === 'COATCOLOR') {
+    } else if (canonicalKey === 'canonical_coat_color' || codeUpper === 'COAT_COLOR' || codeUpper === 'COATCOLOR') {
       partialUpdate.coatColor = String(value ?? '');
-    } else if (codeUpper === 'HORSE_AGE' || codeUpper === 'AGE') {
+    } else if (canonicalKey === 'canonical_age' || codeUpper === 'HORSE_AGE' || codeUpper === 'AGE') {
       partialUpdate.age = String(value ?? '');
-    } else if (codeUpper === 'HORSE_GENDER' || codeUpper === 'GENDER') {
+    } else if (canonicalKey === 'canonical_gender' || codeUpper === 'HORSE_GENDER' || codeUpper === 'GENDER') {
       partialUpdate.gender = value as any;
-    } else if (code === 'grassPaddock') {
+    } else if (canonicalKey === 'canonical_grass_paddock' || code === 'grassPaddock') {
       partialUpdate.facilityGrassPaddock = Boolean(value);
-    } else if (code === 'sandPaddock') {
+    } else if (canonicalKey === 'canonical_sand_paddock' || code === 'sandPaddock') {
       partialUpdate.facilitySandPaddock = Boolean(value);
-    } else if (code === 'stallionPaddock') {
+    } else if (canonicalKey === 'canonical_stallion_paddock' || code === 'stallionPaddock') {
       partialUpdate.facilityStallionPaddock = Boolean(value);
-    } else if (code === 'vet') {
+    } else if (canonicalKey === 'canonical_vet' || code === 'vet') {
       partialUpdate.facilityVeterinarian = Boolean(value);
-    } else if (code === 'farrier') {
+    } else if (canonicalKey === 'canonical_farrier' || code === 'farrier') {
       partialUpdate.facilityFarrier = Boolean(value);
-    } else if (code === 'foalingBarn') {
+    } else if (canonicalKey === 'canonical_foaling_barn' || code === 'foalingBarn') {
       partialUpdate.facilityFoalingBarn = Boolean(value);
+    } else if (canonicalKey === 'canonical_training_track' || code === 'trainingTrack' || codeUpper === 'TRAINING_TRACK') {
+      partialUpdate.facilityTrainingTrack = Boolean(value);
     } else if (code === 'COMPANY_NAME' || code === 'companyName') {
       partialUpdate.companyName = String(value ?? '');
     } else if (code === 'WEBSITE_URL' || code === 'websiteUrl') {
@@ -256,11 +446,11 @@ export function PostCategoryProperties({
       partialUpdate.tjkNumber = String(value ?? '');
     } else if (codeUpper === 'OWNER') {
       partialUpdate.ownersText = String(value ?? '');
-    } else if (codeUpper === 'IN_TRAINING' || code === 'inTraining') {
+    } else if (canonicalKey === 'canonical_in_training' || codeUpper === 'IN_TRAINING' || code === 'inTraining') {
       partialUpdate.inTraining = Boolean(value);
-    } else if (codeUpper === 'IS_FOR_RENT' || code === 'isForRent') {
+    } else if (canonicalKey === 'canonical_is_for_rent' || codeUpper === 'IS_FOR_RENT' || code === 'isForRent') {
       partialUpdate.isForRent = Boolean(value);
-    } else if (codeUpper === 'IS_RACE_READY' || code === 'isRaceReady') {
+    } else if (canonicalKey === 'canonical_is_race_ready' || codeUpper === 'IS_RACE_READY' || code === 'isRaceReady') {
       partialUpdate.isRaceReady = Boolean(value);
     } else if (code === 'serviceType' || code === 'service_type' || codeUpper === 'SERVICE_TYPE') {
       (partialUpdate as any).serviceType = String(value ?? '');
@@ -282,19 +472,22 @@ export function PostCategoryProperties({
       }
     }
     const codeUpper = code.toUpperCase();
-    if (codeUpper === 'HORSE_BREED' && d.breed) return d.breed;
-    if (codeUpper === 'COAT_COLOR' && d.coatColor) return d.coatColor;
-    if (codeUpper === 'HORSE_AGE' && d.age) return d.age;
-    if (codeUpper === 'HORSE_GENDER' && d.gender) return d.gender;
-    if ((codeUpper === 'IN_TRAINING' || code === 'inTraining') && d.inTraining !== undefined) return d.inTraining;
-    if ((codeUpper === 'IS_FOR_RENT' || code === 'isForRent') && d.isForRent !== undefined) return d.isForRent;
-    if ((codeUpper === 'IS_RACE_READY' || code === 'isRaceReady') && d.isRaceReady !== undefined) return d.isRaceReady;
-    if (code === 'grassPaddock' && d.facilityGrassPaddock !== undefined) return d.facilityGrassPaddock;
-    if (code === 'sandPaddock' && d.facilitySandPaddock !== undefined) return d.facilitySandPaddock;
-    if (code === 'stallionPaddock' && d.facilityStallionPaddock !== undefined) return d.facilityStallionPaddock;
-    if (code === 'vet' && d.facilityVeterinarian !== undefined) return d.facilityVeterinarian;
-    if (code === 'farrier' && d.facilityFarrier !== undefined) return d.facilityFarrier;
-    if (code === 'foalingBarn' && d.facilityFoalingBarn !== undefined) return d.facilityFoalingBarn;
+    const canonicalKey = getCanonicalPropertyKey({ code });
+
+    if ((canonicalKey === 'canonical_breed' || codeUpper === 'HORSE_BREED') && d.breed) return d.breed;
+    if ((canonicalKey === 'canonical_coat_color' || codeUpper === 'COAT_COLOR') && d.coatColor) return d.coatColor;
+    if ((canonicalKey === 'canonical_age' || codeUpper === 'HORSE_AGE') && d.age) return d.age;
+    if ((canonicalKey === 'canonical_gender' || codeUpper === 'HORSE_GENDER') && d.gender) return d.gender;
+    if ((canonicalKey === 'canonical_in_training' || codeUpper === 'IN_TRAINING' || code === 'inTraining') && d.inTraining !== undefined) return d.inTraining;
+    if ((canonicalKey === 'canonical_is_for_rent' || codeUpper === 'IS_FOR_RENT' || code === 'isForRent') && d.isForRent !== undefined) return d.isForRent;
+    if ((canonicalKey === 'canonical_is_race_ready' || codeUpper === 'IS_RACE_READY' || code === 'isRaceReady') && d.isRaceReady !== undefined) return d.isRaceReady;
+    if ((canonicalKey === 'canonical_grass_paddock' || code === 'grassPaddock') && d.facilityGrassPaddock !== undefined) return d.facilityGrassPaddock;
+    if ((canonicalKey === 'canonical_sand_paddock' || code === 'sandPaddock') && d.facilitySandPaddock !== undefined) return d.facilitySandPaddock;
+    if ((canonicalKey === 'canonical_stallion_paddock' || code === 'stallionPaddock') && d.facilityStallionPaddock !== undefined) return d.facilityStallionPaddock;
+    if ((canonicalKey === 'canonical_vet' || code === 'vet') && d.facilityVeterinarian !== undefined) return d.facilityVeterinarian;
+    if ((canonicalKey === 'canonical_farrier' || code === 'farrier') && d.facilityFarrier !== undefined) return d.facilityFarrier;
+    if ((canonicalKey === 'canonical_foaling_barn' || code === 'foalingBarn') && d.facilityFoalingBarn !== undefined) return d.facilityFoalingBarn;
+    if ((canonicalKey === 'canonical_training_track' || code === 'trainingTrack' || codeUpper === 'TRAINING_TRACK') && d.facilityTrainingTrack !== undefined) return d.facilityTrainingTrack;
     if ((code === 'COMPANY_NAME' || code === 'companyName') && d.companyName) return d.companyName;
     if ((code === 'WEBSITE_URL' || code === 'websiteUrl') && d.websiteUrl) return d.websiteUrl;
     if ((code === 'STALLION_BREED' || code === 'studBreed') && d.studBreed) return d.studBreed;
@@ -318,18 +511,34 @@ export function PostCategoryProperties({
     const toggles: CategoryPropertyPublic[] = [];
     const others: CategoryPropertyPublic[] = [];
 
+    const seenStatusKeys = new Set<string>();
+    const seenToggleKeys = new Set<string>();
+    const seenOtherKeys = new Set<string>();
+
     const STATUS_CODES = new Set(['IN_TRAINING', 'IS_FOR_RENT', 'IS_RACE_READY']);
 
     for (const prop of categoryProperties) {
+      if (isExcludedProperty(prop)) continue;
+      const canonicalKey = getCanonicalPropertyKey(prop);
+
       if (prop.dataType === 'BOOLEAN') {
         const codeUpper = String(prop.code || '').toUpperCase();
         if (STATUS_CODES.has(codeUpper) || (prop.uiMetadata as any)?.displayGroup === 'raceStatus') {
-          status.push(prop);
+          if (!seenStatusKeys.has(canonicalKey)) {
+            seenStatusKeys.add(canonicalKey);
+            status.push(prop);
+          }
         } else {
-          toggles.push(prop);
+          if (!seenToggleKeys.has(canonicalKey)) {
+            seenToggleKeys.add(canonicalKey);
+            toggles.push(prop);
+          }
         }
       } else {
-        others.push(prop);
+        if (!seenOtherKeys.has(canonicalKey)) {
+          seenOtherKeys.add(canonicalKey);
+          others.push(prop);
+        }
       }
     }
 
@@ -376,11 +585,11 @@ export function PostCategoryProperties({
                   const optVal = opt.value || opt.label;
                   const on =
                     String(val ?? '').toLocaleLowerCase('tr') ===
-                      optVal.toLocaleLowerCase('tr') ||
+                    optVal.toLocaleLowerCase('tr') ||
                     String(val ?? '').toLocaleLowerCase('tr') ===
-                      (opt.value || '').toLocaleLowerCase('tr') ||
+                    (opt.value || '').toLocaleLowerCase('tr') ||
                     String(val ?? '').toLocaleLowerCase('tr') ===
-                      (opt.label || '').toLocaleLowerCase('tr');
+                    (opt.label || '').toLocaleLowerCase('tr');
 
                   return (
                     <Pressable

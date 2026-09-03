@@ -75,10 +75,7 @@ export function mapOwnerToListingDraft(
       facilityGrassPaddock: Boolean(props.facilityGrassPaddock),
       facilitySandPaddock: Boolean(props.facilitySandPaddock),
       facilityStallionPaddock: Boolean(props.facilityStallionPaddock),
-      facilityTrainingTrack:
-        typeof props.facilityTrainingTrack === 'string'
-          ? props.facilityTrainingTrack
-          : '',
+      facilityTrainingTrack: Boolean(props.facilityTrainingTrack ?? props.trainingTrack),
       facilityVeterinarian: Boolean(props.facilityVeterinarian),
       facilityFarrier: Boolean(props.facilityFarrier),
       facilityFoalingBarn: Boolean(props.facilityFoalingBarn),

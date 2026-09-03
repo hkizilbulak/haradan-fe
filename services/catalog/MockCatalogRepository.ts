@@ -298,10 +298,12 @@ export class MockCatalogRepository implements ICatalogRepository {
     // Merge parent properties with direct properties (direct overrides parent with same code)
     const merged = new Map<string, RawProperty>();
     for (const p of parentProps) {
-      merged.set(p.code, p);
+      const k = String(p.code || '').toUpperCase();
+      merged.set(k, p);
     }
     for (const p of directProps) {
-      merged.set(p.code, p);
+      const k = String(p.code || '').toUpperCase();
+      merged.set(k, p);
     }
 
     const props = Array.from(merged.values());

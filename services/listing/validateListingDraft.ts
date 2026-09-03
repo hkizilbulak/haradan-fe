@@ -230,7 +230,7 @@ export function detailsErrors(
         d.facilityVeterinarian ||
         d.facilityFarrier ||
         d.facilityFoalingBarn ||
-        d.facilityTrainingTrack?.trim() ||
+        d.facilityTrainingTrack ||
         d.properties?.grassPaddock ||
         d.properties?.sandPaddock ||
         d.properties?.vet

@@ -56,7 +56,7 @@ export function createEmptyDetails(): ListingDraftDetails {
     facilityGrassPaddock: false,
     facilitySandPaddock: false,
     facilityStallionPaddock: false,
-    facilityTrainingTrack: '',
+    facilityTrainingTrack: false,
     facilityVeterinarian: false,
     facilityFarrier: false,
     facilityFoalingBarn: false,

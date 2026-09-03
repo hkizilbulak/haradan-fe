@@ -326,7 +326,7 @@ export function useListingWizard(deps: Deps = {}) {
                 facilityGrassPaddock: false,
                 facilitySandPaddock: false,
                 facilityStallionPaddock: false,
-                facilityTrainingTrack: '',
+                facilityTrainingTrack: false,
                 facilityVeterinarian: false,
                 facilityFarrier: false,
                 facilityFoalingBarn: false,

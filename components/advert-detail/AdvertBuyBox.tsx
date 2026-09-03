@@ -162,9 +162,7 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
       list.push({ label: 'Doğumhane', value: pansiyonInfo.hasFoalingBarn ? 'Evet' : 'Hayır', icon: 'home-outline', isBoolean: true });
       list.push({ label: 'Nalbant', value: pansiyonInfo.hasFarrier ? 'Evet' : 'Hayır', icon: 'hammer-outline', isBoolean: true });
       list.push({ label: 'Veteriner Hekim', value: pansiyonInfo.hasVeterinarian ? 'Evet' : 'Hayır', icon: 'medkit-outline', isBoolean: true });
-      if (pansiyonInfo.trainingTrack) {
-        list.push({ label: 'İdman Pisti', value: pansiyonInfo.trainingTrack, icon: 'fitness-outline' });
-      }
+      list.push({ label: 'İdman Pisti', value: (pansiyonInfo.hasTrainingTrack || !!pansiyonInfo.trainingTrack) ? 'Evet' : 'Hayır', icon: 'fitness-outline', isBoolean: true });
     } else if (categoryKind === 'transport') {
       const transportInfo = parseTransportInfo(detail);
       if (transportInfo.companyName) {

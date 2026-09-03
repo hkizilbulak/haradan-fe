@@ -43,7 +43,7 @@ const DEFAULT_GLOBAL_CONFIGS: GlobalPropertiesMap = {
   },
   LOCATION: {
     code: 'LOCATION',
-    title: 'İl ve İlçe (Konum)',
+    title: 'İl',
     isActive: true,
     isRequired: true,
     isFormVisible: true,

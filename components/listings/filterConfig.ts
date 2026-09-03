@@ -69,7 +69,8 @@ export type PansiyonFacilityKey =
   | 'stallionPaddock'
   | 'vet'
   | 'farrier'
-  | 'foalingBarn';
+  | 'foalingBarn'
+  | 'trainingTrack';
 
 export const PANSIYON_FACILITY_OPTIONS: { key: PansiyonFacilityKey; label: string }[] = [
   { key: 'grassPaddock', label: 'Çim Padok' },
@@ -78,6 +79,7 @@ export const PANSIYON_FACILITY_OPTIONS: { key: PansiyonFacilityKey; label: strin
   { key: 'vet', label: 'Veteriner' },
   { key: 'farrier', label: 'Nalbant' },
   { key: 'foalingBarn', label: 'Doğumhane' },
+  { key: 'trainingTrack', label: 'İdman Pisti' },
 ];
 
 export const STUD_BREED_OPTIONS = ['Arap', 'İngiliz'];

@@ -50,7 +50,7 @@ export const AdvertShipping = memo(function AdvertShipping({
       if (pansiyonInfo?.hasVeterinarian) hl.push({ icon: 'medkit-outline', label: 'Sağlık', value: 'Veteriner Hekim' });
       if (pansiyonInfo?.hasFarrier) hl.push({ icon: 'hammer-outline', label: 'Bakım', value: 'Nalbant' });
       if (pansiyonInfo?.hasFoalingBarn) hl.push({ icon: 'home-outline', label: 'Tesis', value: 'Doğumhane' });
-      if (pansiyonInfo?.trainingTrack) hl.push({ icon: 'fitness-outline', label: 'İdman', value: pansiyonInfo.trainingTrack });
+      if (pansiyonInfo?.hasTrainingTrack || pansiyonInfo?.trainingTrack) hl.push({ icon: 'fitness-outline', label: 'İdman', value: 'İdman Pisti' });
 
       return {
         title: 'Tesis & Güven Standartları',

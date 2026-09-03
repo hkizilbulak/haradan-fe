@@ -94,7 +94,7 @@ export type ListingDraftDetails = {
   facilityGrassPaddock?: boolean;
   facilitySandPaddock?: boolean;
   facilityStallionPaddock?: boolean;
-  facilityTrainingTrack?: string;
+  facilityTrainingTrack?: boolean;
   facilityVeterinarian?: boolean;
   facilityFarrier?: boolean;
   facilityFoalingBarn?: boolean;

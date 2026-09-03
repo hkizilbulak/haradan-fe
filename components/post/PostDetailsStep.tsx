@@ -361,7 +361,7 @@ export function PostDetailsStep({
               onLayout={(e) => updateFieldY('provinceId', e.nativeEvent.layout.y)}
             >
               <Text style={[styles.fieldLabel, { color: secondary }]}>
-                {locationConfig.title}
+                İl
                 {locationConfig.isRequired ? (
                   <Text style={{ color: errorColor }}> *</Text>
                 ) : null}

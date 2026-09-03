@@ -144,7 +144,7 @@ const draftPansiyon = createBaseValidDraft();
 draftPansiyon.type = pansiyonType;
 draftPansiyon.details.facilityGrassPaddock = true;
 draftPansiyon.details.facilityVeterinarian = true;
-draftPansiyon.details.facilityTrainingTrack = '1200m Kum Pist';
+draftPansiyon.details.facilityTrainingTrack = true;
 
 assert(detailsStepComplete(draftPansiyon), 'Pansiyon Haralar formu geçerli');
 const reqPansiyon = mapDraftToCreateAdvert(draftPansiyon);
@@ -152,7 +152,7 @@ assert(Boolean(reqPansiyon.categoryId), 'Pansiyon categoryId aktarıldı');
 const propsPansiyon = buildDraftProperties(draftPansiyon);
 assert(propsPansiyon.grassPaddock === true, 'Çim padok property aktarıldı');
 assert(propsPansiyon.vet === true, 'Veteriner property aktarıldı');
-assertEqual(propsPansiyon.trainingTrack, '1200m Kum Pist', 'İdman pisti property aktarıldı');
+assert(propsPansiyon.trainingTrack === true, 'İdman pisti property aktarıldı');
 
 // B. At Nakliyesi Formu (Fotoğraf, Başlık*, Firma Adı*, Web Sitesi, Fiyat*, Açıklama, Adres*)
 const draftTransport = createBaseValidDraft();
@@ -222,14 +222,15 @@ assert(Boolean(studErrs.studDamsire), 'Aşımda annesinin babası zorunludur');
 // -------------------------------------------------------------
 console.log('\n--- 3. Kategori Filtreleme Testleri ---');
 
-// A. Pansiyon Haralar Filtreleri (6 Tesis Özelliği: Çim Padok, Kum Padok, Aygır Padoğu, Veteriner, Nalbant, Doğumhane)
-assertEqual(PANSIYON_FACILITY_OPTIONS.length, 6, 'Pansiyon filtrelerinde tam 6 tesis switch seçeneği mevcut');
+// A. Pansiyon Haralar Filtreleri (7 Tesis Özelliği: Çim Padok, Kum Padok, Aygır Padoğu, Veteriner, Nalbant, Doğumhane, İdman Pisti)
+assertEqual(PANSIYON_FACILITY_OPTIONS.length, 7, 'Pansiyon filtrelerinde tam 7 tesis switch seçeneği mevcut');
 assertEqual(PANSIYON_FACILITY_OPTIONS[0].label, 'Çim Padok', '1. Tesis: Çim Padok');
 assertEqual(PANSIYON_FACILITY_OPTIONS[1].label, 'Kum Padok', '2. Tesis: Kum Padok');
 assertEqual(PANSIYON_FACILITY_OPTIONS[2].label, 'Aygır Padoğu', '3. Tesis: Aygır Padoğu');
 assertEqual(PANSIYON_FACILITY_OPTIONS[3].label, 'Veteriner', '4. Tesis: Veteriner');
 assertEqual(PANSIYON_FACILITY_OPTIONS[4].label, 'Nalbant', '5. Tesis: Nalbant');
 assertEqual(PANSIYON_FACILITY_OPTIONS[5].label, 'Doğumhane', '6. Tesis: Doğumhane');
+assertEqual(PANSIYON_FACILITY_OPTIONS[6].label, 'İdman Pisti', '7. Tesis: İdman Pisti');
 
 // B. Aşım Hizmetleri Filtreleri (At Irkı: Arap, İngiliz; Yaş: 0, 1, 1.5, 2, 3, 4, 5+; Don: Doru, Al, Kır, Beyaz, Yağız, Kula, Boz)
 assertEqual(STUD_BREED_OPTIONS.length, 2, 'Aşım ırk filtreleri 2 seçenek');

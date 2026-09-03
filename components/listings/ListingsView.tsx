@@ -116,6 +116,7 @@ function parseFacilities(raw: string | null | undefined): PansiyonFacilityFilter
     vet: 'vet',
     farrier: 'farrier',
     foalingBarn: 'foalingBarn',
+    trainingTrack: 'trainingTrack',
   };
   keys.forEach((k) => {
     if (validKeys[k]) {

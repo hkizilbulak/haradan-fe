@@ -122,6 +122,7 @@ export type ParsedPansiyonInfo = {
   hasVeterinarian: boolean;
   hasFarrier: boolean;
   hasFoalingBarn: boolean;
+  hasTrainingTrack: boolean;
   trainingTrack: string;
 };
 
@@ -181,15 +182,19 @@ export function parsePansiyonInfo(detail: AdvertDetail): ParsedPansiyonInfo {
       text.includes('doğumhane') ||
       text.includes('dogumhane') ||
       text.includes('doğum'),
+    hasTrainingTrack:
+      isSpecTrue('idman pisti') ||
+      isSpecTrue('idmanpisti') ||
+      isSpecTrue('trainingtrack') ||
+      isSpecTrue('facilitytrainingtrack') ||
+      Boolean(specMap['idman pisti'] || specMap['trainingtrack'] || specMap['facilitytrainingtrack']) ||
+      text.includes('idman pisti') ||
+      text.includes('kum pist'),
     trainingTrack:
       specMap['idman pisti'] ||
       specMap['trainingtrack'] ||
       specMap['facilitytrainingtrack'] ||
-      (text.includes('1200m')
-        ? '1200m Kum İdman Pisti'
-        : text.includes('kum pist')
-        ? 'Kum İdman Pisti'
-        : ''),
+      '',
   };
 }
 
