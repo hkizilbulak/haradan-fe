@@ -37,14 +37,25 @@ export const AdvertSiblings = memo(function AdvertSiblings({
   const summary = useMemo(() => {
     let totalRaces = 0;
     let totalWins = 0;
+    let totalPlacements = 0;
     list.forEach((s) => {
       totalRaces += parseInt(s.raceCount || '0', 10) || 0;
-      totalWins += parseInt(s.first || '0', 10) || 0;
+      const f1 = parseInt(s.first || '0', 10) || 0;
+      const f2 = parseInt(s.second || '0', 10) || 0;
+      const f3 = parseInt(s.third || '0', 10) || 0;
+      const f4 = parseInt(s.fourth || '0', 10) || 0;
+      totalWins += f1;
+      totalPlacements += f1 + f2 + f3 + f4;
     });
+    const winRate = totalRaces > 0 ? `%${Math.round((totalWins / totalRaces) * 100)}` : '%0';
+    const placementRate = totalRaces > 0 ? `%${Math.round((totalPlacements / totalRaces) * 100)}` : '%0';
     return {
       count: list.length,
       totalRaces,
       totalWins,
+      totalPlacements,
+      winRate,
+      placementRate,
     };
   }, [list]);
 
@@ -78,7 +89,15 @@ export const AdvertSiblings = memo(function AdvertSiblings({
         </View>
         <View style={[styles.chip, { backgroundColor: surface, borderColor: border }]}>
           <Text style={[styles.chipLabel, { color: textSecondary }]}>Kazanılan Yarış</Text>
-          <Text style={[styles.chipValue, { color: text }]}>{summary.totalWins}</Text>
+          <Text style={[styles.chipValue, { color: text }]}>
+            {summary.totalWins} ({summary.winRate})
+          </Text>
+        </View>
+        <View style={[styles.chip, { backgroundColor: surface, borderColor: border }]}>
+          <Text style={[styles.chipLabel, { color: textSecondary }]}>Toplam Derece</Text>
+          <Text style={[styles.chipValue, { color: text }]}>
+            {summary.totalPlacements} ({summary.placementRate})
+          </Text>
         </View>
       </View>
 

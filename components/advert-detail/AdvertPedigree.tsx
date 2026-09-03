@@ -946,6 +946,30 @@ export const AdvertPedigree = memo(function AdvertPedigree({
         ) : null}
       </View>
 
+      {/* Top Info & Legend */}
+      <View style={styles.topLegendRow}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendIndicator, { backgroundColor: '#38bdf8' }]} />
+          <Text style={[styles.legendText, { color: textSecondary }]}>
+            ♂ Erkek Hat (Aygır)
+          </Text>
+        </View>
+
+        <View style={styles.legendItem}>
+          <View style={[styles.legendIndicator, { backgroundColor: '#f472b6' }]} />
+          <Text style={[styles.legendText, { color: textSecondary }]}>
+            ♀ Dişi Hat (Kısrak)
+          </Text>
+        </View>
+
+        <View style={styles.legendItem}>
+          <Ionicons name="open-outline" size={12} color={textMuted} />
+          <Text style={[styles.legendText, { color: textSecondary }]}>
+            Atlardan herhangi birine tıklayarak TJK resmi yarışlarını ve yavru kayıtlarını açabilirsiniz
+          </Text>
+        </View>
+      </View>
+
       {/* Render Selected View Mode */}
       {viewMode === 'diagram' ? (
         <View style={styles.diagramViewportWrap}>
@@ -963,27 +987,27 @@ export const AdvertPedigree = memo(function AdvertPedigree({
             ]}
             {...(Platform.OS === 'web'
               ? {
-                  onMouseDown: (e: any) => {
-                    isDraggingRef.current = true;
-                    startXRef.current = e.pageX;
-                    scrollLeftRef.current = currentScrollXRef.current;
-                    if (e.currentTarget) e.currentTarget.style.cursor = 'grabbing';
-                  },
-                  onMouseMove: (e: any) => {
-                    if (!isDraggingRef.current) return;
-                    const walk = (e.pageX - startXRef.current) * 1.5;
-                    const target = scrollLeftRef.current - walk;
-                    scrollRef.current?.scrollTo({ x: Math.max(0, target), animated: false });
-                  },
-                  onMouseUp: (e: any) => {
-                    isDraggingRef.current = false;
-                    if (e.currentTarget) e.currentTarget.style.cursor = 'grab';
-                  },
-                  onMouseLeave: (e: any) => {
-                    isDraggingRef.current = false;
-                    if (e.currentTarget) e.currentTarget.style.cursor = 'grab';
-                  },
-                }
+                onMouseDown: (e: any) => {
+                  isDraggingRef.current = true;
+                  startXRef.current = e.pageX;
+                  scrollLeftRef.current = currentScrollXRef.current;
+                  if (e.currentTarget) e.currentTarget.style.cursor = 'grabbing';
+                },
+                onMouseMove: (e: any) => {
+                  if (!isDraggingRef.current) return;
+                  const walk = (e.pageX - startXRef.current) * 1.5;
+                  const target = scrollLeftRef.current - walk;
+                  scrollRef.current?.scrollTo({ x: Math.max(0, target), animated: false });
+                },
+                onMouseUp: (e: any) => {
+                  isDraggingRef.current = false;
+                  if (e.currentTarget) e.currentTarget.style.cursor = 'grab';
+                },
+                onMouseLeave: (e: any) => {
+                  isDraggingRef.current = false;
+                  if (e.currentTarget) e.currentTarget.style.cursor = 'grab';
+                },
+              }
               : {})}
           >
             <ScrollView
@@ -1029,30 +1053,6 @@ export const AdvertPedigree = memo(function AdvertPedigree({
           {renderAestheticTable()}
         </ScrollView>
       )}
-
-      {/* Footer Info & Legend */}
-      <View style={[styles.footerLegend, { borderColor: border }]}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendIndicator, { backgroundColor: '#38bdf8' }]} />
-          <Text style={[styles.legendText, { color: textSecondary }]}>
-            ♂ Erkek Hat (Aygır)
-          </Text>
-        </View>
-
-        <View style={styles.legendItem}>
-          <View style={[styles.legendIndicator, { backgroundColor: '#f472b6' }]} />
-          <Text style={[styles.legendText, { color: textSecondary }]}>
-            ♀ Dişi Hat (Kısrak)
-          </Text>
-        </View>
-
-        <View style={styles.legendItem}>
-          <Ionicons name="open-outline" size={12} color={textMuted} />
-          <Text style={[styles.legendText, { color: textSecondary }]}>
-            Atlardan herhangi birine tıklayarak TJK resmi yarışlarını ve yavru kayıtlarını açabilirsiniz
-          </Text>
-        </View>
-      </View>
     </View>
   );
 });
@@ -1619,14 +1619,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Footer Legend
-  footerLegend: {
+  // Top Info & Legend
+  topLegendRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 14,
-    paddingTop: 8,
-    borderTopWidth: 1,
+    paddingVertical: 4,
+    marginBottom: 4,
     width: '100%',
   },
   legendItem: {

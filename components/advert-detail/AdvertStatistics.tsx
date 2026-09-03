@@ -57,10 +57,19 @@ export const AdvertStatistics = memo(function AdvertStatistics({
     return list.find((s) => s.yearLabel.toUpperCase().includes('TOPLAM')) ?? list[0];
   }, [list]);
 
-  const totalEarnings = formatTjkEarning(topRow?.earning || careerEarnings);
   const totalRaces = topRow?.raceCount || '0';
   const totalWins = topRow?.first || '0';
   const displayHandicap = handicapPoint || (handicap ? String(handicap) : null);
+
+  const totalPlacements = useMemo(() => {
+    const parseNum = (v?: string | null) => parseInt(v || '0', 10) || 0;
+    if (topRow && topRow.yearLabel.toUpperCase().includes('TOPLAM')) {
+      return parseNum(topRow.first) + parseNum(topRow.second) + parseNum(topRow.third) + parseNum(topRow.fourth);
+    }
+    return list.reduce((acc, item) => {
+      return acc + parseNum(item.first) + parseNum(item.second) + parseNum(item.third) + parseNum(item.fourth);
+    }, 0);
+  }, [topRow, list]);
 
   const winRate = useMemo(() => {
     const r = parseInt(totalRaces, 10);
@@ -68,6 +77,12 @@ export const AdvertStatistics = memo(function AdvertStatistics({
     if (!r || r <= 0) return '0%';
     return `%${Math.round((w / r) * 100)}`;
   }, [totalRaces, totalWins]);
+
+  const placementRate = useMemo(() => {
+    const r = parseInt(totalRaces, 10);
+    if (!r || r <= 0) return '0%';
+    return `%${Math.round((totalPlacements / r) * 100)}`;
+  }, [totalRaces, totalPlacements]);
 
   if (list.length === 0 && !displayHandicap) {
     return (
@@ -97,13 +112,6 @@ export const AdvertStatistics = memo(function AdvertStatistics({
         ) : null}
 
         <View style={[styles.kpiCard, { backgroundColor: surface, borderColor: border }]}>
-          <Text style={[styles.kpiLabel, { color: textSecondary }]}>Toplam Kazanç</Text>
-          <Text style={[styles.kpiValue, { color: text }]} numberOfLines={1}>
-            {totalEarnings}
-          </Text>
-        </View>
-
-        <View style={[styles.kpiCard, { backgroundColor: surface, borderColor: border }]}>
           <Text style={[styles.kpiLabel, { color: textSecondary }]}>Toplam Koşu</Text>
           <Text style={[styles.kpiValue, { color: text }]}>{totalRaces} Koşu</Text>
         </View>
@@ -112,6 +120,13 @@ export const AdvertStatistics = memo(function AdvertStatistics({
           <Text style={[styles.kpiLabel, { color: textSecondary }]}>1.lik / Kazanma</Text>
           <Text style={[styles.kpiValue, { color: text }]}>
             {totalWins} ({winRate})
+          </Text>
+        </View>
+
+        <View style={[styles.kpiCard, { backgroundColor: surface, borderColor: border }]}>
+          <Text style={[styles.kpiLabel, { color: textSecondary }]}>Toplam Derece</Text>
+          <Text style={[styles.kpiValue, { color: text }]}>
+            {totalPlacements} ({placementRate})
           </Text>
         </View>
       </View>
