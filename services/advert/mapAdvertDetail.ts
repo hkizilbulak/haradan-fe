@@ -205,10 +205,14 @@ function buildHorseFromTjkOrDto(
     baseHorse.coatColor ||
     getPropValue(propMap, ['COAT_COLOR', 'studCoatColor', 'coatColor', 'donu', 'don', 'donurenk']) ||
     '';
+  const isStud =
+    Boolean(getPropValue(propMap, ['studBreed', 'STALLION_BREED', 'studHorse', 'studHorseName', 'studSire', 'studDam', 'studAge', 'studCoatColor', 'studDamsire'])) ||
+    Boolean((propMap as any)['__isStud']);
+
   const gender =
     baseHorse.gender ||
     (getPropValue(propMap, ['HORSE_GENDER', 'gender', 'cinsiyet']) as HorseGender) ||
-    ('' as HorseGender);
+    (isStud ? ('Erkek' as HorseGender) : ('' as HorseGender));
 
   const rawAge =
     baseHorse.age != null && baseHorse.age !== 0 && baseHorse.age !== ''
@@ -352,6 +356,16 @@ export function mapPublishedDetailToAdvert(
   const cover =
     gallery.find((m) => m.isCover) ?? gallery[0] ?? null;
   const catText = `${dto.category?.name || ''} ${dto.category?.slug || ''} ${(dto as any).categoryId || ''}`.toLowerCase();
+  const isStudCat =
+    catText.includes('asim') ||
+    catText.includes('aşım') ||
+    catText.includes('aygir') ||
+    catText.includes('aygır') ||
+    catText.includes('stallion') ||
+    catText.includes('stud');
+  if (isStudCat) {
+    (propMap as any)['__isStud'] = true;
+  }
   const isNonHorse =
     catText.includes('nalbant') ||
     catText.includes('pansiyon') ||

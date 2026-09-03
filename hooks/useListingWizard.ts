@@ -299,21 +299,24 @@ export function useListingWizard(deps: Deps = {}) {
           : slug === 'arap-aygir'
           ? 'Arap'
           : '';
-      const autoStudDetails = isStudServiceListing(type) && defaultBreed
+      const autoStudDetails = isStudServiceListing(type)
         ? {
-            studBreed: defaultBreed,
+            studBreed: defaultBreed || undefined,
+            gender: 'Erkek' as const,
             properties: {
-              studBreed: defaultBreed,
-              STALLION_BREED: defaultBreed,
+              ...(defaultBreed ? { studBreed: defaultBreed, STALLION_BREED: defaultBreed } : {}),
+              HORSE_GENDER: 'Erkek',
+              gender: 'Erkek',
             },
           }
         : null;
 
-      const mergeAutoStudDetails = <T extends { studBreed?: string; properties?: Record<string, unknown> }>(base: T): T =>
+      const mergeAutoStudDetails = <T extends { studBreed?: string; gender?: any; properties?: Record<string, unknown> }>(base: T): T =>
         autoStudDetails
           ? ({
               ...base,
-              studBreed: autoStudDetails.studBreed,
+              ...(autoStudDetails.studBreed ? { studBreed: autoStudDetails.studBreed } : {}),
+              gender: 'Erkek',
               properties: {
                 ...(base.properties || {}),
                 ...autoStudDetails.properties,

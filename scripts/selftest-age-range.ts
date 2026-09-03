@@ -23,6 +23,8 @@ assert(formatHorseAge('4 Yaş') === '4 Yaş', 'formatHorseAge(4 Yaş) -> 4 Yaş'
 const mockAdvert45: BePublishedAdvertDetail = {
   id: 45,
   title: 'binek at',
+  isFavorite: false,
+  isUrgent: false,
   description: 'hobi amaçlı binek atı',
   publishedAt: '2026-09-03T19:35:53.858559+03:00',
   viewCount: 3,

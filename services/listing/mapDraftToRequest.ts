@@ -1,5 +1,6 @@
 import type { CreateAdvertDraftRequest, ListingDraft } from '@/types/listing';
 import type { Money } from '@/types/money';
+import { isStudServiceListing } from './validateListingDraft';
 import CATALOG_DATA from '@/data/catalog.json';
 
 
@@ -148,6 +149,12 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
     if (val !== undefined && val !== null && String(val).trim() !== '' && !props[code]) {
       props[code] = typeof val === 'string' ? val.trim() : val;
     }
+  }
+
+  // If stud service listing, stallion is always male
+  if (isStudServiceListing(draft.type)) {
+    if (!props['HORSE_GENDER']) props['HORSE_GENDER'] = 'Erkek';
+    if (!props['gender']) props['gender'] = 'Erkek';
   }
 
   // If HORSE_AGE exists in props, ensure it's normalized to the select option string

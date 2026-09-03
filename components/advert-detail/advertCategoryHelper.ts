@@ -34,9 +34,15 @@ export function getAdvertCategoryKind(detail: AdvertDetail): AdvertCategoryKind 
   if (
     text.includes('asim') ||
     text.includes('aşım') ||
+    text.includes('aygir') ||
+    text.includes('aygır') ||
     text.includes('cat-asim') ||
     text.includes('cat-arap-aygir') ||
-    text.includes('cat-ingiliz-aygir')
+    text.includes('cat-ingiliz-aygir') ||
+    text.includes('arap-aygir') ||
+    text.includes('ingiliz-aygir') ||
+    text.includes('stallion') ||
+    text.includes('stud')
   ) {
     return 'stud';
   }
@@ -151,10 +157,15 @@ export function parseHorseInfo(detail: AdvertDetail): ParsedHorseInfo {
     getProp(['atirki', 'irk', 'ırk', 'safkan', 'breed', 'horsebreed', 'studbreed', 'stallionbreed']) ||
     'İngiliz';
 
+  const categoryKind = getAdvertCategoryKind(detail);
+  const isStud =
+    categoryKind === 'stud' ||
+    Boolean(getProp(['studbreed', 'stallionbreed', 'studhorse', 'studhorsename', 'studsire', 'studdam', 'studage', 'studcoatcolor']));
+
   const gender =
     (horse?.gender && (horse.gender as string) !== '-' ? horse.gender : '') ||
     getProp(['cinsiyet', 'gender', 'horsegender']) ||
-    '-';
+    (isStud ? 'Erkek' : '-');
 
   const coatColor =
     (horse?.coatColor && horse.coatColor !== 'Bilinmiyor' && horse.coatColor !== '-' ? horse.coatColor : '') ||
@@ -175,6 +186,7 @@ export type ParsedStudInfo = {
   name: string;
   breed: string;
   age: string;
+  gender: string;
   coatColor: string;
   sire: string;
   dam: string;
@@ -248,7 +260,7 @@ export function parseStudInfo(detail: AdvertDetail): ParsedStudInfo {
     specMap['studdamsire'] ||
     (horse.damsire && horse.damsire !== 'Bilinmiyor' ? horse.damsire : '');
 
-  return { name, breed, age, coatColor, sire, dam, damsire };
+  return { name, breed, age, gender: 'Erkek', coatColor, sire, dam, damsire };
 }
 
 export type ParsedPansiyonInfo = {

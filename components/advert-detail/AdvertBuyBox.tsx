@@ -178,6 +178,7 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
       if (studInfo.name) list.push({ label: 'Aygır Adı', value: studInfo.name, icon: 'star-outline' });
       if (studInfo.breed) list.push({ label: 'At Irkı', value: studInfo.breed, icon: 'ribbon-outline' });
       if (studInfo.age) list.push({ label: 'Yaş', value: studInfo.age, icon: 'time-outline' });
+      list.push({ label: 'Cinsiyet', value: studInfo.gender || 'Erkek', icon: 'male-female-outline' });
       if (studInfo.coatColor) list.push({ label: 'Donu', value: studInfo.coatColor, icon: 'color-palette-outline' });
       if (studInfo.sire) {
         list.push({

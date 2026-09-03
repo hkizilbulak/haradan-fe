@@ -442,6 +442,7 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       if (studInfo.name) rows.push({ icon: 'star-outline', label: 'Aygır Adı', value: studInfo.name });
       if (studInfo.breed) rows.push({ icon: 'ribbon-outline', label: 'At Irkı', value: studInfo.breed });
       if (studInfo.age) rows.push({ icon: 'hourglass-outline', label: 'Yaş', value: studInfo.age });
+      rows.push({ icon: 'male-female-outline', label: 'Cinsiyet', value: studInfo.gender || 'Erkek' });
       if (studInfo.coatColor) rows.push({ icon: 'color-palette-outline', label: 'Donu', value: studInfo.coatColor });
       if (studInfo.sire) {
         rows.push({
