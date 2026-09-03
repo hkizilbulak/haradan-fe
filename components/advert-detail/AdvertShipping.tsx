@@ -79,7 +79,7 @@ export const AdvertShipping = memo(function AdvertShipping({
     if (categoryKind === 'stud') {
       const hl: Highlight[] = [];
       if (studInfo?.breed) hl.push({ icon: 'ribbon-outline', label: 'Irk', value: studInfo.breed });
-      if (studInfo?.age) hl.push({ icon: 'calendar-outline', label: 'Yaş', value: studInfo.age.includes('ya') || studInfo.age.includes('Ya') ? studInfo.age : `${studInfo.age} Yaş` });
+      if (studInfo?.age) hl.push({ icon: 'calendar-outline', label: 'Yaş', value: studInfo.age });
       if (studInfo?.coatColor) hl.push({ icon: 'color-palette-outline', label: 'Don', value: studInfo.coatColor });
       if (studInfo?.sire) hl.push({ icon: 'git-branch-outline', label: 'Baba', value: studInfo.sire });
 

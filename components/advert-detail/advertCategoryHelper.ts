@@ -8,8 +8,13 @@ export function getAdvertCategoryKind(detail: AdvertDetail): AdvertCategoryKind 
     .filter((b) => b.href !== '/' && b.href !== '/my-listings' && b.label !== detail.title)
     .map((b) => b.label.toLowerCase())
     .join(' ');
+  const catName = (
+    (detail as any).category?.name ||
+    (detail as any).category?.slug ||
+    ''
+  ).toLowerCase();
 
-  const text = `${catId} ${categoryCrumbs}`.trim();
+  const text = `${catId} ${catName} ${categoryCrumbs}`.trim();
 
   if (text.includes('pansiyon') || text.includes('haralar') || text.includes('cat-pansiyon')) {
     return 'pansiyon';
@@ -36,6 +41,134 @@ export function getAdvertCategoryKind(detail: AdvertDetail): AdvertCategoryKind 
     return 'stud';
   }
   return 'horse';
+}
+
+export type ParsedHorseInfo = {
+  name: string;
+  breed: string;
+  age: string;
+  coatColor: string;
+  gender: string;
+  sire: string;
+  dam: string;
+  damsire: string;
+};
+
+export function formatHorseAge(rawAge: unknown): string {
+  if (rawAge == null || rawAge === '') return '';
+  const str = String(rawAge).trim();
+  if (!str) return '';
+
+  const lower = str.toLowerCase();
+
+  // Guard against legacy corrupted "1015" from parseInt(replace(/\D/g, ''))
+  if (lower === '1015' || lower === '1015 yaş' || lower === '1015 yas') {
+    return '10-15 Yaş arası';
+  }
+
+  // Range: 10-15 or 10-15 arası
+  if (lower.includes('10-15') || lower.includes('10 - 15')) {
+    return '10-15 Yaş arası';
+  }
+
+  // 15 üzeri
+  if (lower.includes('15') && (lower.includes('üzeri') || lower.includes('uzeri') || lower.includes('+'))) {
+    return '15 Yaş üzeri';
+  }
+
+  // If already contains 'yaş' or 'yas'
+  if (lower.includes('yaş') || lower.includes('yas')) {
+    return str;
+  }
+
+  // Other "arası" or "üzeri"
+  if (lower.includes('arası') || lower.includes('üzeri')) {
+    return str;
+  }
+
+  return `${str} Yaş`;
+}
+
+export function parseHorseInfo(detail: AdvertDetail): ParsedHorseInfo {
+  const horse = detail.horse;
+  const title = detail.title;
+
+  const specMap: Record<string, string> = {};
+  (detail.specs ?? []).forEach((g) => {
+    g.rows.forEach((r) => {
+      const key = (r.label || '').toLowerCase().replace(/[-_\s\(\)]/g, '');
+      specMap[key] = String(r.value || '');
+    });
+  });
+
+  const rawProps = (detail as any).properties || (detail as any).rawProperties || {};
+  const getProp = (keys: string[]): string => {
+    for (const k of keys) {
+      const normK = k.toLowerCase().replace(/[-_\s\(\)]/g, '');
+      if (specMap[normK]) return specMap[normK];
+      for (const [pk, pv] of Object.entries(rawProps)) {
+        if (pk.toLowerCase().replace(/[-_\s\(\)]/g, '') === normK && pv != null && pv !== '') {
+          return String(pv);
+        }
+      }
+    }
+    return '';
+  };
+
+  const name =
+    (horse?.registeredName && horse.registeredName !== 'Başlıksız ilan' && horse.registeredName !== '-'
+      ? horse.registeredName
+      : '') ||
+    getProp(['atadi', 'aygiradi', 'isim', 'registeredname', 'horsename', 'studhorsename', 'studhorse']) ||
+    title ||
+    '-';
+
+  const sire =
+    (horse?.sire && horse.sire !== '-' ? horse.sire : '') ||
+    getProp(['baba', 'sire', 'babaadi', 'babasire', 'studsire']) ||
+    '-';
+
+  const dam =
+    (horse?.dam && horse.dam !== '-' ? horse.dam : '') ||
+    getProp(['anne', 'dam', 'anneadi', 'annedam', 'studdam']) ||
+    '-';
+
+  const damsire =
+    (horse?.damsire && horse.damsire !== '-' ? horse.damsire : '') ||
+    getProp([
+      'annesininbabasi',
+      'kisrakbabasi',
+      'damsire',
+      'studdamsire',
+      'studdamsire',
+      'anneninbabasidamsire',
+      'anneninbabasi',
+    ]) ||
+    '-';
+
+  const breed =
+    (horse?.breed && horse.breed !== 'Bilinmiyor' && horse.breed !== '-' ? horse.breed : '') ||
+    getProp(['atirki', 'irk', 'ırk', 'safkan', 'breed', 'horsebreed', 'studbreed', 'stallionbreed']) ||
+    'İngiliz';
+
+  const gender =
+    (horse?.gender && (horse.gender as string) !== '-' ? horse.gender : '') ||
+    getProp(['cinsiyet', 'gender', 'horsegender']) ||
+    '-';
+
+  const coatColor =
+    (horse?.coatColor && horse.coatColor !== 'Bilinmiyor' && horse.coatColor !== '-' ? horse.coatColor : '') ||
+    getProp(['donu', 'don', 'donurenk', 'coatcolor', 'studcoatcolor']) ||
+    '-';
+
+  const rawPropAge = getProp(['yas', 'yaş', 'age', 'horseage', 'studage', 'stallionage']);
+  const rawAge =
+    (rawPropAge && rawPropAge !== '1015' && rawPropAge !== '1015 Yaş' ? rawPropAge : '') ||
+    (horse?.age != null && horse.age !== 0 && horse.age !== '' ? String(horse.age) : '') ||
+    rawPropAge;
+  const age = formatHorseAge(rawAge);
+
+  return { name, breed, age, coatColor, gender, sire, dam, damsire };
 }
 
 export type ParsedStudInfo = {
@@ -80,10 +213,13 @@ export function parseStudInfo(detail: AdvertDetail): ParsedStudInfo {
       ? 'İngiliz'
       : '');
 
-  const age =
+  const rawStudAge =
     specMap['yaş'] ||
     specMap['studage'] ||
-    (horse.age > 0 ? `${horse.age} Yaş` : '');
+    specMap['stallionage'] ||
+    (horse?.age != null && horse.age !== 0 && horse.age !== '' ? String(horse.age) : '');
+
+  const age = formatHorseAge(rawStudAge);
 
   const coatColor =
     specMap['donu (renk)'] ||

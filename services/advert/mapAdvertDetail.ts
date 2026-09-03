@@ -89,42 +89,180 @@ const EMPTY_HORSE: HorseProfile = {
   offspring: null,
 };
 
+function buildPropertiesMap(
+  props: BePublishedAdvertDetail['properties'] | Record<string, unknown> | undefined | null
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  if (!props) return result;
+
+  if (Array.isArray(props)) {
+    for (const p of props) {
+      if (!p) continue;
+      const val = p.displayValue?.trim() || p.value;
+      if (val !== undefined && val !== null && val !== '') {
+        result[p.code] = val;
+        if (p.title) {
+          result[p.title] = val;
+        }
+      }
+    }
+  } else if (typeof props === 'object') {
+    for (const [k, v] of Object.entries(props)) {
+      if (v !== undefined && v !== null && v !== '') {
+        result[k] = v;
+      }
+    }
+  }
+
+  return result;
+}
+
+function getPropValue(
+  map: Record<string, unknown>,
+  keys: string[]
+): string | undefined {
+  const norm = (s: string) => s.toLowerCase().replace(/[-_\s\(\)]/g, '');
+  const targetNorms = keys.map(norm);
+
+  for (const [k, v] of Object.entries(map)) {
+    const kNorm = norm(k);
+    if (targetNorms.includes(kNorm)) {
+      if (typeof v === 'boolean') return v ? 'Evet' : 'Hayır';
+      if (v != null && String(v).trim() !== '' && String(v) !== 'null' && String(v) !== 'undefined') {
+        return String(v).trim();
+      }
+    }
+  }
+  return undefined;
+}
+
 function buildHorseFromTjkOrDto(
   dtoHorse: BePublishedAdvertDetail['horse'],
-  tjkHorse?: TjkHorseProfile | null
+  tjkHorse?: TjkHorseProfile | null,
+  propMap: Record<string, unknown> = {},
+  isHorseCategory: boolean = true
 ): HorseProfile {
-  if (tjkHorse) {
-    return {
-      ...EMPTY_HORSE,
-      registeredName: tjkHorse.registeredName || dtoHorse?.originalName || '',
-      gender: (tjkHorse.gender as HorseGender) || ('' as HorseGender),
-      breed: tjkHorse.breed || '',
-      coatColor: tjkHorse.coatColor || '',
-      birthDate: tjkHorse.birthDate || '',
-      age: tjkHorse.age || 0,
-      heightCm: tjkHorse.heightCm ?? null,
-      sire: tjkHorse.sire || '',
-      dam: tjkHorse.dam || '',
-      damsire: tjkHorse.damsire || '',
-      owners: tjkHorse.owners ?? [],
-      breeder: tjkHorse.breeder || '',
-      trainer: tjkHorse.trainer || '',
-      handicap: tjkHorse.handicap ?? 0,
-      tjkNumber: tjkHorse.tjkNumber || dtoHorse?.tjkNumber || '',
-      pedigree: tjkHorse.pedigree ?? [],
-      siblings: tjkHorse.siblings ?? [],
-      statistics: tjkHorse.statistics ?? [],
-      detailProfile: tjkHorse.detailProfile ?? null,
-    };
+  if (!isHorseCategory && !dtoHorse && !tjkHorse) {
+    return EMPTY_HORSE;
   }
-  if (dtoHorse) {
-    return {
-      ...EMPTY_HORSE,
-      registeredName: dtoHorse.originalName,
-      tjkNumber: dtoHorse.tjkNumber || '',
-    };
-  }
-  return EMPTY_HORSE;
+  const baseHorse: HorseProfile = tjkHorse
+    ? {
+        ...EMPTY_HORSE,
+        registeredName: tjkHorse.registeredName || dtoHorse?.originalName || '',
+        gender: (tjkHorse.gender as HorseGender) || ('' as HorseGender),
+        breed: tjkHorse.breed || '',
+        coatColor: tjkHorse.coatColor || '',
+        birthDate: tjkHorse.birthDate || '',
+        age: tjkHorse.age || 0,
+        heightCm: tjkHorse.heightCm ?? null,
+        sire: tjkHorse.sire || '',
+        dam: tjkHorse.dam || '',
+        damsire: tjkHorse.damsire || '',
+        owners: tjkHorse.owners ?? [],
+        breeder: tjkHorse.breeder || '',
+        trainer: tjkHorse.trainer || '',
+        handicap: tjkHorse.handicap ?? 0,
+        tjkNumber: tjkHorse.tjkNumber || dtoHorse?.tjkNumber || '',
+        pedigree: tjkHorse.pedigree ?? [],
+        siblings: tjkHorse.siblings ?? [],
+        statistics: tjkHorse.statistics ?? [],
+        detailProfile: tjkHorse.detailProfile ?? null,
+      }
+    : dtoHorse
+    ? {
+        ...EMPTY_HORSE,
+        registeredName: dtoHorse.originalName,
+        tjkNumber: dtoHorse.tjkNumber || '',
+      }
+    : { ...EMPTY_HORSE };
+
+  // Enrich missing / empty fields from manual category properties
+  const sire =
+    baseHorse.sire ||
+    getPropValue(propMap, ['SIRE', 'studSire', 'baba', 'babasire', 'babaadi']) ||
+    '';
+  const dam =
+    baseHorse.dam ||
+    getPropValue(propMap, ['DAM', 'studDam', 'anne', 'annedam', 'anneadi']) ||
+    '';
+  const damsire =
+    baseHorse.damsire ||
+    getPropValue(propMap, [
+      'DAMSIRE',
+      'studDamSire',
+      'studDamsire',
+      'annesininbabasi',
+      'kisrakbabasi',
+      'anneninbabasidamsire',
+      'anneninbabasi',
+    ]) ||
+    '';
+  const breed =
+    baseHorse.breed ||
+    getPropValue(propMap, ['HORSE_BREED', 'STALLION_BREED', 'breed', 'studBreed', 'atirki', 'irk']) ||
+    '';
+  const coatColor =
+    baseHorse.coatColor ||
+    getPropValue(propMap, ['COAT_COLOR', 'studCoatColor', 'coatColor', 'donu', 'don', 'donurenk']) ||
+    '';
+  const gender =
+    baseHorse.gender ||
+    (getPropValue(propMap, ['HORSE_GENDER', 'gender', 'cinsiyet']) as HorseGender) ||
+    ('' as HorseGender);
+
+  const rawAge =
+    baseHorse.age != null && baseHorse.age !== 0 && baseHorse.age !== ''
+      ? baseHorse.age
+      : getPropValue(propMap, ['HORSE_AGE', 'STALLION_AGE', 'age', 'studAge', 'yas', 'yaş']);
+  const parseSafeHorseAge = (raw: unknown): number | string => {
+    if (raw == null || raw === '') return 0;
+    if (typeof raw === 'number') return raw;
+    const str = String(raw).trim();
+    if (str.includes('-') || str.includes('arası') || str.includes('üzeri') || str.includes('+')) {
+      return str;
+    }
+    const parsed = parseFloat(str.replace(',', '.'));
+    if (!isNaN(parsed)) return parsed;
+    return str;
+  };
+  const age = parseSafeHorseAge(rawAge);
+
+  const registeredName =
+    baseHorse.registeredName ||
+    getPropValue(propMap, ['REGISTERED_NAME', 'HORSE_NAME', 'studHorseName', 'studHorse', 'atadi', 'aygiradi']) ||
+    '';
+  const heightCmRaw =
+    baseHorse.heightCm ??
+    getPropValue(propMap, ['HEIGHT_CM', 'heightCm', 'cidago']);
+  const heightCm = heightCmRaw ? parseInt(String(heightCmRaw), 10) : null;
+  const birthDate =
+    baseHorse.birthDate ||
+    getPropValue(propMap, ['BIRTH_DATE', 'birthDate', 'dogumtarihi']) ||
+    '';
+  const breeder =
+    baseHorse.breeder ||
+    getPropValue(propMap, ['BREEDER', 'breeder', 'yetistirici']) ||
+    '';
+  const trainer =
+    baseHorse.trainer ||
+    getPropValue(propMap, ['TRAINER', 'trainer', 'antrenor']) ||
+    '';
+
+  return {
+    ...baseHorse,
+    sire,
+    dam,
+    damsire,
+    breed,
+    coatColor,
+    gender,
+    age,
+    registeredName,
+    heightCm: isNaN(Number(heightCm)) ? null : heightCm,
+    birthDate,
+    breeder,
+    trainer,
+  };
 }
 
 function absolutizeMedia(
@@ -172,13 +310,18 @@ function emptyDetailShell(
     | 'provinceName'
     | 'districtName'
     | 'locationName'
-  >
+  > & {
+    properties?: Record<string, unknown>;
+    rawProperties?: Record<string, unknown>;
+  }
 ): AdvertDetail {
   return {
     provinceName: null,
     districtName: null,
     locationName: null,
     ...partial,
+    properties: partial.properties ?? {},
+    rawProperties: partial.rawProperties ?? partial.properties ?? {},
     slug: String(partial.id),
     rating: 0,
     reviewCount: 0,
@@ -204,10 +347,17 @@ export function mapPublishedDetailToAdvert(
   sellerId?: string | null,
   tjkHorse?: TjkHorseProfile | null
 ): AdvertDetail {
+  const propMap = buildPropertiesMap(dto.properties);
   const gallery = absolutizeMedia(dto.media ?? [], apiBase);
   const cover =
     gallery.find((m) => m.isCover) ?? gallery[0] ?? null;
-  const horse: HorseProfile = buildHorseFromTjkOrDto(dto.horse, tjkHorse);
+  const catText = `${dto.category?.name || ''} ${dto.category?.slug || ''} ${(dto as any).categoryId || ''}`.toLowerCase();
+  const isNonHorse =
+    catText.includes('nalbant') ||
+    catText.includes('pansiyon') ||
+    catText.includes('nakliye') ||
+    catText.includes('transport');
+  const horse: HorseProfile = buildHorseFromTjkOrDto(dto.horse, tjkHorse, propMap, !isNonHorse);
 
   const propRows = (dto.properties ?? [])
     .map((p) => {
@@ -316,9 +466,18 @@ export function mapOwnerToAdvertDetail(
   const districtId = dto.districtId ?? '';
   const provinceId = dto.provinceId ?? '';
   const locationName = formatAdvertLocation({ districtId, provinceId });
+  const propMap = buildPropertiesMap(dto.properties);
+  const catText = `${dto.categoryId || ''}`.toLowerCase();
+  const isNonHorse =
+    catText.includes('nalbant') ||
+    catText.includes('pansiyon') ||
+    catText.includes('nakliye') ||
+    catText.includes('transport');
   const horse: HorseProfile = buildHorseFromTjkOrDto(
     dto.horseId ? { id: dto.horseId, originalName: '', tjkNumber: '' } : null,
-    tjkHorse
+    tjkHorse,
+    propMap,
+    !isNonHorse
   );
 
   return emptyDetailShell({
@@ -343,6 +502,8 @@ export function mapOwnerToAdvertDetail(
     isUrgent: false,
     urgentActivatedAt: null,
     sellerId,
+    properties: propMap,
+    rawProperties: propMap,
     sellerPhone:
       (typeof dto.properties?.sellerPhone === 'string'
         ? dto.properties.sellerPhone

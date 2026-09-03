@@ -21,6 +21,15 @@ export function mapAdvertToListingDraft(
   const parent = node ? findCategoryParent(tree, node.id) : null;
   const horse = detail.horse;
 
+  const rawProps = (detail as any).properties || (detail as any).rawProperties || {};
+  const propAge =
+    rawProps.HORSE_AGE ||
+    rawProps.STALLION_AGE ||
+    rawProps.studAge ||
+    rawProps.age ||
+    rawProps['Yaş'] ||
+    (horse?.age ? String(horse.age) : '');
+
   return {
     ...draft,
     type: node
@@ -48,7 +57,7 @@ export function mapAdvertToListingDraft(
       address: detail.address?.trim() ?? '',
       gender: horse.gender,
       birthDate: horse.birthDate,
-      age: String(horse.age),
+      age: propAge ? String(propAge) : (horse.age ? String(horse.age) : ''),
       coatColor: horse.coatColor,
       heightCm: horse.heightCm != null ? String(horse.heightCm) : '',
       sire: horse.sire,

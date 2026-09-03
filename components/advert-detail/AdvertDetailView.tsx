@@ -144,7 +144,7 @@ export function AdvertDetailView({
       horse.sire ||
       horse.dam ||
       horse.damsire ||
-      (horse.age != null && horse.age > 0) ||
+      (horse.age != null && Boolean(horse.age) && horse.age !== 0) ||
       horse.gender ||
       horse.coatColor ||
       horse.breed ||

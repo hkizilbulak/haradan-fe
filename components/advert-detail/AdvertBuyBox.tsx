@@ -15,6 +15,7 @@ import { useAdvertLocation } from '@/services/location';
 import { WHATSAPP_GREEN } from '@/utils/contactLinks';
 import {
   getAdvertCategoryKind,
+  parseHorseInfo,
   parsePansiyonInfo,
   parseStudInfo,
   parseTransportInfo,
@@ -176,7 +177,7 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
       const studInfo = parseStudInfo(detail);
       if (studInfo.name) list.push({ label: 'Aygır Adı', value: studInfo.name, icon: 'star-outline' });
       if (studInfo.breed) list.push({ label: 'At Irkı', value: studInfo.breed, icon: 'ribbon-outline' });
-      if (studInfo.age) list.push({ label: 'Yaş', value: studInfo.age.includes('ya') || studInfo.age.includes('Ya') ? studInfo.age : `${studInfo.age} Yaş`, icon: 'time-outline' });
+      if (studInfo.age) list.push({ label: 'Yaş', value: studInfo.age, icon: 'time-outline' });
       if (studInfo.coatColor) list.push({ label: 'Donu', value: studInfo.coatColor, icon: 'color-palette-outline' });
       if (studInfo.sire) {
         list.push({
@@ -202,19 +203,58 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
           onPress: studInfo.damsire !== '-' ? () => openTjkHorseSearch(studInfo.damsire) : undefined,
         });
       }
+    } else if (categoryKind === 'farrier') {
+      // Nalbantlar (Farrier): Render only farrier dynamic properties
+      const seenLabels = new Set<string>();
+      for (const group of detail.specs ?? []) {
+        for (const row of group.rows ?? []) {
+          const l = row.label.trim();
+          const lower = l.toLowerCase();
+          if (lower === 'telefon' || lower === 'sellerphone' || lower === 'phone') continue;
+          const v = String(row.value).trim();
+          const isBool = v.toLowerCase() === 'evet' || v.toLowerCase() === 'hayır' || v.toLowerCase() === 'true' || v.toLowerCase() === 'false';
+          const formattedVal = v.toLowerCase() === 'true' ? 'Evet' : v.toLowerCase() === 'false' ? 'Hayır' : v;
+          list.push({
+            label: l.charAt(0).toLocaleUpperCase('tr-TR') + l.slice(1),
+            value: formattedVal,
+            icon: getRowIcon(l),
+            isBoolean: isBool,
+          });
+          seenLabels.add(lower);
+          seenLabels.add(lower.replace(/[-_\s]/g, ''));
+        }
+      }
+
+      const rawProps = (detail as any)?.properties || (detail as any)?.rawProperties || {};
+      for (const [k, v] of Object.entries(rawProps)) {
+        if (v == null || v === '' || v === 'null' || v === 'undefined') continue;
+        const normK = k.toLowerCase().replace(/[-_\s]/g, '');
+        if (normK === 'sellerphone' || normK === 'phone') continue;
+        if (seenLabels.has(k.toLowerCase()) || seenLabels.has(normK)) continue;
+        const isBool = typeof v === 'boolean' || String(v).toLowerCase() === 'true' || String(v).toLowerCase() === 'false';
+        const displayVal = typeof v === 'boolean' ? (v ? 'Evet' : 'Hayır') : String(v);
+        list.push({
+          label: k.charAt(0).toLocaleUpperCase('tr-TR') + k.slice(1),
+          value: displayVal,
+          icon: getRowIcon(k),
+          isBoolean: isBool,
+        });
+        seenLabels.add(k.toLowerCase());
+        seenLabels.add(normK);
+      }
     } else {
       // Horse advert
-      const horse = detail.horse;
+      const horseInfo = parseHorseInfo(detail);
 
       // At Adı
       list.push({
         label: 'At Adı',
-        value: horse?.registeredName || detail.title || '-',
+        value: horseInfo.name,
         icon: 'star-outline',
       });
 
       // Baba Adı
-      const sireName = horse?.sire || '-';
+      const sireName = horseInfo.sire;
       list.push({
         label: 'Baba Adı',
         value: sireName,
@@ -223,7 +263,7 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
       });
 
       // Anne Adı
-      const damName = horse?.dam || '-';
+      const damName = horseInfo.dam;
       list.push({
         label: 'Anne Adı',
         value: damName,
@@ -232,7 +272,7 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
       });
 
       // Annesinin Baba Adı
-      const damsireName = horse?.damsire || '-';
+      const damsireName = horseInfo.damsire;
       list.push({
         label: 'Annesinin Baba Adı',
         value: damsireName,
@@ -241,41 +281,38 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
       });
 
       // At Irkı
-      const breed = horse?.breed || (detail as any)?.properties?.breed || (detail as any)?.horse?.breed || 'İngiliz';
       list.push({
         label: 'At Irkı',
-        value: breed,
+        value: horseInfo.breed,
         icon: 'ribbon-outline',
       });
 
       // Yaş
-      if (horse?.age && horse.age > 0) {
+      if (horseInfo.age) {
         list.push({
           label: 'Yaş',
-          value: `${horse.age} Yaş`,
+          value: horseInfo.age,
           icon: 'time-outline',
         });
       }
 
       // Cinsiyet
-      const gender = horse?.gender || (detail as any)?.properties?.gender || (detail as any)?.properties?.cinsiyet || '-';
       list.push({
         label: 'Cinsiyet',
-        value: gender,
+        value: horseInfo.gender,
         icon: 'male-female-outline',
       });
 
       // Donu
-      const coat = horse?.coatColor || (detail as any)?.properties?.coatColor || (detail as any)?.properties?.don || '-';
       list.push({
         label: 'Donu',
-        value: coat,
+        value: horseInfo.coatColor,
         icon: 'color-palette-outline',
       });
 
       // Helper to find boolean / string properties
       const findProp = (codes: string[], defaultVal: boolean): string => {
-        const rawProps = (detail as any)?.properties || {};
+        const rawProps = (detail as any)?.properties || (detail as any)?.rawProperties || {};
         for (const c of codes) {
           const val = rawProps[c] ?? rawProps[c.toLowerCase()] ?? rawProps[c.toUpperCase()];
           if (val != null) {

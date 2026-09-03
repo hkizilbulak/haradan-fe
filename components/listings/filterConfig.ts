@@ -477,6 +477,7 @@ export function matchHorseAge(
       ? parseFloat(String(rawPropAge).replace(',', '.'))
       : null;
 
+  const rawPropAgeStr = rawPropAge != null ? String(rawPropAge).toLocaleLowerCase('tr') : '';
   const text = (card.title ?? '').toLocaleLowerCase('tr');
 
   // Extract age number from title if exists: e.g. "3 yaş", "5 yaş", "7 yaşlı", "1.5 yaş"
@@ -491,6 +492,7 @@ export function matchHorseAge(
       if (parsedAge != null && parsedAge >= 10 && parsedAge <= 15) return true;
       return (
         text.includes('10-15') ||
+        rawPropAgeStr.includes('10-15') ||
         /\b(?:10|11|12|13|14|15)\s*(?:yaş|yas|ya)\b/i.test(text)
       );
     }
@@ -500,6 +502,7 @@ export function matchHorseAge(
       if (parsedAge != null && parsedAge >= 15) return true;
       return (
         text.includes('15 üzeri') ||
+        (rawPropAgeStr.includes('15') && (rawPropAgeStr.includes('üzeri') || rawPropAgeStr.includes('uzeri') || rawPropAgeStr.includes('+'))) ||
         /\b(?:15|16|17|18|19|20|21|22|23|24|25)\s*(?:yaş|yas|ya)\b/i.test(text)
       );
     }

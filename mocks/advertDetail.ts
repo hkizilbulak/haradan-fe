@@ -363,6 +363,7 @@ function buildDetail(base: CatalogProductCard): AdvertDetail {
 
   return {
     ...base,
+    properties: base.properties || undefined,
     slug: String(base.id),
     rating: base.rating || 4.5,
     reviewCount: reviews.length,

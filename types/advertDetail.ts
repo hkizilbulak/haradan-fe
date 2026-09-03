@@ -138,7 +138,7 @@ export type HorseDetailProfile = {
 /** At profili — kimlik, orijin, kişiler, performans, yarış, üreme, TJK detayları. */
 export type HorseProfile = {
   registeredName: string;
-  age: number;
+  age: number | string;
   birthDate: string;
   gender: HorseGender;
   coatColor: string;
@@ -195,4 +195,6 @@ export type AdvertDetail = PublishedAdvertCard & {
   ratingBreakdown: AdvertRatingBreakdown[];
   viewed: CatalogProductCard[];
   related: CatalogProductCard[];
+  properties?: Record<string, unknown>;
+  rawProperties?: Record<string, unknown>;
 };

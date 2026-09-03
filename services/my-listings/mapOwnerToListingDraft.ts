@@ -90,9 +90,11 @@ export function mapOwnerToListingDraft(
       studAge:
         typeof props.studAge === 'string'
           ? props.studAge
-          : props.age != null
-            ? String(props.age)
-            : '',
+          : typeof props.STALLION_AGE === 'string'
+            ? props.STALLION_AGE
+            : props.age != null
+              ? String(props.age)
+              : '',
       studCoatColor:
         typeof props.studCoatColor === 'string'
           ? props.studCoatColor
@@ -129,7 +131,11 @@ export function mapOwnerToListingDraft(
       birthDate:
         typeof props.birthDate === 'string' ? props.birthDate : draft.details.birthDate,
       age:
-        props.age != null ? String(props.age) : draft.details.age,
+        props.HORSE_AGE != null
+          ? String(props.HORSE_AGE)
+          : props.age != null
+            ? String(props.age)
+            : draft.details.age,
       coatColor:
         typeof props.coatColor === 'string' ? props.coatColor : draft.details.coatColor,
       heightCm:
