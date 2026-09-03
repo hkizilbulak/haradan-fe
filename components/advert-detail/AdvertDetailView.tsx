@@ -16,10 +16,14 @@ import {
   AdvertBuyBox,
   AdvertDetailBanner,
   AdvertGallery,
+  AdvertPedigree,
   AdvertReviews,
+  AdvertSiblings,
   AdvertSpecs,
+  AdvertStatistics,
   AdvertStickyCta,
   AdvertViewedRail,
+  MobileAdvertStickyBar,
   type SpecsSubTab,
 } from '@/components/advert-detail';
 import { MobileAdvertTopBar } from '@/components/advert-detail/mobile/MobileAdvertTopBar';
@@ -29,6 +33,8 @@ import { HomeContentContainer } from '@/components/layout';
 import { SiteFooter } from '@/components/home';
 import {
   HOME_DESKTOP_BREAKPOINT,
+  MOBILE_DETAIL_STICKY_BAR_HEIGHT,
+  MOBILE_DOCK_BAR_HEIGHT,
 } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
@@ -38,7 +44,7 @@ import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useFavorites } from '@/hooks/useFavorites';
 import { usePlacementBanners } from '@/hooks/usePlacementBanners';
 import { useAdvertLocation } from '@/services/location';
-import { openPhoneCall, openWhatsApp } from '@/utils/contactLinks';
+import { openPhoneCall, openWhatsApp, WHATSAPP_GREEN } from '@/utils/contactLinks';
 import { formatMoney } from '@/utils/formatMoney';
 import { prepareListingWizardEntry } from '@/services/listing';
 import type { AdvertDetail, CatalogProductCard } from '@/types';
@@ -68,9 +74,13 @@ export function AdvertDetailView({
   const { banners: detailBanners } = usePlacementBanners('LISTING_DETAIL');
   const location = useAdvertLocation(detail);
   const safeInsets = useSafeInsets();
-  const mobileScrollInset = safeInsets.bottom + Spacing.xl;
+  const mobileScrollInset =
+    MOBILE_DETAIL_STICKY_BAR_HEIGHT +
+    MOBILE_DOCK_BAR_HEIGHT +
+    Math.max(safeInsets.bottom, 8) +
+    24;
 
-  const [specsSubTab, setSpecsSubTab] = useState<SpecsSubTab>(isWide ? 'pedigree' : 'specs');
+  const [specsSubTab, setSpecsSubTab] = useState<SpecsSubTab>('specs');
   const [showTop, setShowTop] = useState(false);
 
   const favoriteCard = useMemo((): CatalogProductCard => {
@@ -108,14 +118,70 @@ export function AdvertDetailView({
   const textSecondary = useThemeColor('textSecondary');
   const surface = useThemeColor('surface');
   const border = useThemeColor('border');
+  const primary = useThemeColor('primary');
+  const header = useThemeColor('header');
   const bg = useThemeColor('background');
+
+  const isSold = detail.backendStatus === 'SOLD';
 
   const galleryHeight = isWide
     ? 440
     : Math.min(Math.round(width * 0.78), 420);
 
+  const horse = detail.horse;
+
+  const hasPedigree = Boolean(horse?.pedigree && horse.pedigree.length > 0);
+  const hasSiblings = Boolean(horse?.siblings && horse.siblings.length > 0);
+  const hasStatistics = Boolean(
+    (horse?.statistics && horse.statistics.length > 0) ||
+    horse?.detailProfile?.handicapPoint ||
+    (horse?.handicap != null && horse.handicap > 0)
+  );
+
+  const hasHorseData = Boolean(
+    horse && (
+      (horse.registeredName && horse.registeredName !== 'Başlıksız ilan' && horse.registeredName.trim() !== '') ||
+      horse.sire ||
+      horse.dam ||
+      horse.damsire ||
+      (horse.age != null && horse.age > 0) ||
+      horse.gender ||
+      horse.coatColor ||
+      horse.breed ||
+      (horse.career && horse.career.starts > 0) ||
+      (horse.races && horse.races.length > 0)
+    )
+  );
+
+  const subTabs = useMemo(() => {
+    const list: {
+      key: SpecsSubTab;
+      label: string;
+      icon: keyof typeof Ionicons.glyphMap;
+      badge?: string;
+    }[] = [];
+
+    list.push({ key: 'specs', label: 'Genel Bilgiler', icon: 'information-circle-outline' });
+
+    if (hasPedigree || (hasHorseData && (horse?.sire || horse?.dam))) {
+      list.push({ key: 'pedigree', label: 'Pedigri (Soyağacı)', icon: 'git-branch-outline' });
+    }
+    if (hasStatistics || hasHorseData) {
+      list.push({ key: 'statistics', label: 'İstatistikler', icon: 'stats-chart-outline' });
+    }
+    if (hasHorseData || hasSiblings) {
+      list.push({
+        key: 'siblings',
+        label: 'Anne Kardeşleri',
+        icon: 'people-outline',
+        badge: horse?.siblings && horse.siblings.length > 0 ? String(horse.siblings.length) : undefined,
+      });
+    }
+    return list;
+  }, [hasPedigree, hasStatistics, hasHorseData, hasSiblings, horse?.sire, horse?.dam, horse?.siblings]);
+
   useEffect(() => {
-    setSpecsSubTab(isWide ? 'pedigree' : 'specs');
+    setSpecsSubTab('specs');
     scrollYRef.current = 0;
     sectionLayoutYRef.current = {};
     scrollRef.current?.scrollTo({ y: 0, animated: false });
@@ -267,28 +333,30 @@ export function AdvertDetailView({
         />
       </LazySection>
 
-      <View
-        style={styles.lowerFull}
-        onLayout={(e) => {
-          lowerFullYRef.current = e.nativeEvent.layout.y;
-        }}
-      >
-        <AdvertDetailBanner banner={detailBanners[0] ?? null} />
+      {!isWide && (
         <View
-          ref={reviewsAnchorRef}
-          collapsable={false}
-          nativeID="advert-reviews"
+          style={styles.lowerFull}
           onLayout={(e) => {
-            sectionLayoutYRef.current['advert-reviews'] = e.nativeEvent.layout.y;
+            lowerFullYRef.current = e.nativeEvent.layout.y;
           }}
-          style={Platform.select({
-            web: { scrollMarginTop: isWide ? 90 : 70 } as any,
-            default: {},
-          })}
         >
-          <AdvertReviews detail={detail} accessToken={accessToken} />
+          <AdvertDetailBanner banner={detailBanners[0] ?? null} />
+          <View
+            ref={reviewsAnchorRef}
+            collapsable={false}
+            nativeID="advert-reviews"
+            onLayout={(e) => {
+              sectionLayoutYRef.current['advert-reviews'] = e.nativeEvent.layout.y;
+            }}
+            style={Platform.select({
+              web: { scrollMarginTop: isWide ? 90 : 70 } as any,
+              default: {},
+            })}
+          >
+            <AdvertReviews detail={detail} accessToken={accessToken} />
+          </View>
         </View>
-      </View>
+      )}
 
       <LazySection
         fallback={
@@ -338,6 +406,9 @@ export function AdvertDetailView({
             />
             <MobileAdvertTopBar
               onBack={() => router.back()}
+              showFavorite
+              favorite={favorite}
+              onToggleFavorite={() => toggle(favoriteCard)}
             />
           </View>
 
@@ -348,30 +419,27 @@ export function AdvertDetailView({
             }}
           >
             <View style={styles.mobileSummary}>
-              <View style={styles.mobileMetaRow}>
-                <Text style={[styles.mobileCategory, { color: textMuted }]}>
-                  {categoryLine}
-                </Text>
-                {detail.isUrgent ? (
-                  <Text style={styles.mobileUrgent}>ACİL</Text>
-                ) : null}
-              </View>
-
               <Text style={[styles.mobileTitle, { color: text }]}>
                 {detail.title}
               </Text>
-            </View>
 
-            <View style={styles.mobileActionBoxWrap}>
-              <AdvertActionBox
-                detail={detail}
-                favorite={favorite}
-                isOwner={isOwner}
-                onToggleFavorite={() => toggle(favoriteCard)}
-                onCall={onCall}
-                onWhatsApp={onWhatsApp}
-                onEdit={onEdit}
-              />
+              {/* Fiyat ve Konum (Title altında: Sol Konum, Sağ Fiyat) */}
+              <View style={styles.mobilePriceLocationWrap}>
+                <View style={styles.mobileLocationRow}>
+                  {location && location !== '-' && location.trim() !== '' ? (
+                    <>
+                      <Ionicons name="location-outline" size={15} color={primary} />
+                      <Text style={[styles.mobileLocationText, { color: textSecondary }]} numberOfLines={1}>
+                        {location}
+                      </Text>
+                    </>
+                  ) : null}
+                </View>
+
+                <Text style={[styles.mobilePrice, { color: text }]}>
+                  {formatMoney(detail.price)}
+                </Text>
+              </View>
             </View>
 
             <View
@@ -403,6 +471,15 @@ export function AdvertDetailView({
             {lowerSections}
           </HomeContentContainer>
         </ScrollView>
+
+        {/* Sabit Alt İletişim Çubuğu (Ara & WhatsApp) */}
+        <MobileAdvertStickyBar
+          detail={detail}
+          isOwner={isOwner}
+          onCall={onCall}
+          onWhatsApp={onWhatsApp}
+          onEdit={onEdit}
+        />
 
         {showTop ? (
           <Pressable
@@ -468,56 +545,229 @@ export function AdvertDetailView({
 
           <Text style={[styles.title, { color: text }]}>{detail.title}</Text>
 
-          <View style={styles.hero}>
-            <View style={styles.galleryCol}>
-              <AdvertGallery
-                items={detail.gallery}
-                height={galleryHeight}
-                accessToken={isOwner ? accessToken : null}
-              />
-              <AdvertActionBox
-                detail={detail}
-                favorite={favorite}
-                isOwner={isOwner}
-                onToggleFavorite={() => toggle(favoriteCard)}
-                onCall={onCall}
-                onWhatsApp={onWhatsApp}
-                onEdit={onEdit}
-              />
+          {/* Sub Tabs & Desktop Action Bar (Üst Bar - Kolon Hizalı) */}
+          <View style={styles.desktopTopNavRow}>
+            {/* Sol: Sekmeler (Galeri Kolonu Hizası) */}
+            <View style={styles.desktopTopTabsCol}>
+              <View style={styles.subTabsContainer}>
+                {subTabs.map((t) => {
+                  const isActive = t.key === specsSubTab;
+                  return (
+                    <Pressable
+                      key={t.key}
+                      onPress={() => setSpecsSubTab(t.key)}
+                      style={[
+                        styles.subTabButton,
+                        {
+                          backgroundColor: isActive ? primary : surface,
+                          borderColor: isActive ? primary : border,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={t.icon}
+                        size={16}
+                        color={isActive ? '#ffffff' : textSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.subTabButtonText,
+                          {
+                            color: isActive ? '#ffffff' : text,
+                            fontWeight: isActive ? '700' : '600',
+                          },
+                        ]}
+                      >
+                        {t.label}
+                      </Text>
+                      {t.badge ? (
+                        <View
+                          style={[
+                            styles.subTabBadge,
+                            {
+                              backgroundColor: isActive
+                                ? 'rgba(255, 255, 255, 0.25)'
+                                : `${primary}15`,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.subTabBadgeText,
+                              { color: isActive ? '#ffffff' : primary },
+                            ]}
+                          >
+                            {t.badge}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
             </View>
-            <View style={styles.buyCol}>
-              <AdvertBuyBox
-                detail={detail}
-                variant="default"
-              />
+
+            {/* Sağ: Ara & WhatsApp & Favori Butonları (Detay Kolonu Hizası) */}
+            <View style={styles.desktopTopActionsCol}>
+              {isOwner ? (
+                <Pressable
+                  onPress={onEdit}
+                  style={({ pressed }) => [
+                    styles.desktopTopEditBtn,
+                    { borderColor: border, backgroundColor: surface },
+                    pressed && { opacity: 0.88 },
+                  ]}
+                >
+                  <Ionicons name="create-outline" size={16} color={text} />
+                  <Text style={[styles.desktopTopEditText, { color: text }]}>İlanı Düzenle</Text>
+                </Pressable>
+              ) : (
+                <>
+                  <Pressable
+                    onPress={isSold ? undefined : onCall}
+                    disabled={isSold}
+                    style={({ pressed }) => [
+                      styles.desktopTopCtaCall,
+                      { backgroundColor: isSold ? '#9ca3af' : header },
+                      pressed && { opacity: 0.88 },
+                    ]}
+                  >
+                    <Ionicons name="call" size={16} color="#fff" />
+                    <Text style={styles.desktopTopCtaText}>{isSold ? 'Satıldı' : 'Ara'}</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={isSold ? undefined : onWhatsApp}
+                    disabled={isSold}
+                    style={({ pressed }) => [
+                      styles.desktopTopCtaWhatsApp,
+                      { backgroundColor: isSold ? '#9ca3af' : WHATSAPP_GREEN },
+                      pressed && { opacity: 0.88 },
+                    ]}
+                  >
+                    <Ionicons name="logo-whatsapp" size={17} color="#fff" />
+                    <Text style={styles.desktopTopCtaText}>WhatsApp</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => toggle(favoriteCard)}
+                    style={({ pressed }) => [
+                      styles.desktopTopFavBtn,
+                      { borderColor: border, backgroundColor: surface },
+                      pressed && { opacity: 0.8 },
+                    ]}
+                    accessibilityLabel={favorite ? 'Favorilerden çıkar' : 'Favorilere ekle'}
+                  >
+                    <Ionicons
+                      name={favorite ? 'heart' : 'heart-outline'}
+                      size={19}
+                      color={favorite ? '#ef4444' : textSecondary}
+                    />
+                  </Pressable>
+                </>
+              )}
             </View>
           </View>
 
-          <View
-            ref={specsAnchorRef}
-            collapsable={false}
-            nativeID="advert-specs"
-            onLayout={(e) => {
-              sectionLayoutYRef.current['advert-specs'] = e.nativeEvent.layout.y;
-            }}
-            style={[
-              { marginTop: Spacing['2xl'] },
-              Platform.select({
-                web: { scrollMarginTop: isWide ? 90 : 70 } as any,
-                default: {},
-              }),
-            ]}
-          >
-            <AdvertSpecs
-              groups={detail.specs}
-              horse={detail.horse}
-              detail={detail}
-              activeSubTab={specsSubTab}
-              onSubTabChange={(t) => {
-                setSpecsSubTab(t);
-              }}
-            />
-          </View>
+          {/* Tab Content: Genel Bilgiler */}
+          {specsSubTab === 'specs' && (
+            <View style={styles.hero}>
+              <View style={styles.galleryCol}>
+                <AdvertGallery
+                  items={detail.gallery}
+                  height={galleryHeight}
+                  accessToken={isOwner ? accessToken : null}
+                />
+                <View
+                  ref={reviewsAnchorRef}
+                  collapsable={false}
+                  nativeID="advert-reviews"
+                  onLayout={(e) => {
+                    sectionLayoutYRef.current['advert-reviews'] = e.nativeEvent.layout.y;
+                  }}
+                  style={Platform.select({
+                    web: { scrollMarginTop: 90 } as any,
+                    default: {},
+                  })}
+                >
+                  <AdvertReviews detail={detail} accessToken={accessToken} />
+                </View>
+              </View>
+              <View style={styles.buyCol}>
+                <AdvertBuyBox
+                  detail={detail}
+                  variant="default"
+                  favorite={favorite}
+                  isOwner={isOwner}
+                  onToggleFavorite={() => toggle(favoriteCard)}
+                  onCall={onCall}
+                  onWhatsApp={onWhatsApp}
+                  onEdit={onEdit}
+                />
+                <AdvertDetailBanner banner={detailBanners[0] ?? null} />
+              </View>
+            </View>
+          )}
+
+          {/* Tab Content: Pedigree */}
+          {specsSubTab === 'pedigree' && (
+            <View style={styles.tabContentCard}>
+              <AdvertPedigree
+                pedigree={horse?.pedigree}
+                horseName={horse?.registeredName || detail?.title}
+                sireFallback={horse?.sire}
+                damFallback={horse?.dam}
+                damsireFallback={horse?.damsire}
+              />
+            </View>
+          )}
+
+          {/* Tab Content: Statistics */}
+          {specsSubTab === 'statistics' && (
+            <View style={styles.tabContentCard}>
+              <AdvertStatistics
+                statistics={horse?.statistics}
+                handicap={horse?.handicap}
+                handicapPoint={horse?.detailProfile?.handicapPoint}
+                careerEarnings={horse?.detailProfile?.earning}
+              />
+            </View>
+          )}
+
+          {/* Tab Content: Siblings */}
+          {specsSubTab === 'siblings' && (
+            <View style={styles.tabContentCard}>
+              <AdvertSiblings
+                siblings={horse?.siblings}
+                damName={horse?.dam}
+              />
+            </View>
+          )}
+
+          {/* Sekmeler değiştiğinde de Yorumlar (sol) ve Banner (sağ) 2 kolonlu sabit boyutunu korur */}
+          {specsSubTab !== 'specs' && (
+            <View style={[styles.hero, { marginTop: Spacing.lg }]}>
+              <View style={styles.galleryCol}>
+                <View
+                  ref={reviewsAnchorRef}
+                  collapsable={false}
+                  nativeID="advert-reviews"
+                  onLayout={(e) => {
+                    sectionLayoutYRef.current['advert-reviews'] = e.nativeEvent.layout.y;
+                  }}
+                  style={Platform.select({
+                    web: { scrollMarginTop: 90 } as any,
+                    default: {},
+                  })}
+                >
+                  <AdvertReviews detail={detail} accessToken={accessToken} />
+                </View>
+              </View>
+              <View style={styles.buyCol}>
+                <AdvertDetailBanner banner={detailBanners[0] ?? null} />
+              </View>
+            </View>
+          )}
 
           {lowerSections}
         </HomeContentContainer>
@@ -588,34 +838,29 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
     lineHeight: 28,
   },
-  mobilePriceRow: {
+  mobilePriceLocationWrap: {
+    marginTop: 8,
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  mobilePrice: {
-    fontSize: 26,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-  },
-  mobileOldPrice: {
-    fontSize: 14,
-    textDecorationLine: 'line-through',
-  },
-  mobileSubRow: {
+  mobileLocationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
+    flex: 1,
+    minWidth: 0,
   },
-  mobileSub: {
-    fontSize: 12,
+  mobileLocationText: {
+    fontSize: 13.5,
     fontWeight: '500',
-    flexShrink: 1,
   },
-  mobileActionBoxWrap: {
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.sm,
+  mobilePrice: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    textAlign: 'right',
   },
   mobileSections: {
     gap: Spacing.xl,
@@ -633,6 +878,128 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     lineHeight: 34,
     marginBottom: 6,
+  },
+  desktopTopNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xl,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  desktopTopTabsCol: {
+    flex: 1.15,
+    minWidth: 0,
+  },
+  desktopTopActionsCol: {
+    flex: 0.85,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  desktopTopCtaCall: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    ...Platform.select({
+      web: { cursor: 'pointer', transition: 'all 0.15s ease' } as any,
+      default: {},
+    }),
+  },
+  desktopTopCtaWhatsApp: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    ...Platform.select({
+      web: { cursor: 'pointer', transition: 'all 0.15s ease' } as any,
+      default: {},
+    }),
+  },
+  desktopTopFavBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      web: { cursor: 'pointer', transition: 'all 0.15s ease' } as any,
+      default: {},
+    }),
+  },
+  desktopTopCtaText: {
+    color: '#ffffff',
+    fontSize: 14.5,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  desktopTopEditBtn: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    ...Platform.select({
+      web: { cursor: 'pointer', transition: 'all 0.15s ease' } as any,
+      default: {},
+    }),
+  },
+  desktopTopEditText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  subTabsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  subTabButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderWidth: 1,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        transition: 'all 0.15s ease',
+      } as any,
+      default: {},
+    }),
+  },
+  subTabButtonText: {
+    fontSize: 13.5,
+    letterSpacing: -0.1,
+  },
+  subTabBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
+  },
+  subTabBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  tabContentCard: {
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xl,
   },
   hero: {
     flexDirection: 'row',

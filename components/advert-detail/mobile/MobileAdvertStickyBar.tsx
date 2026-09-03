@@ -17,7 +17,7 @@ type MobileAdvertStickyBarProps = {
   onEdit?: () => void;
 };
 
-/** Dock üstünde sabit fiyat + iletişim CTA. */
+/** Dock üstünde sıfır boşlukla oturan sabit iletişim CTA çubuğu (Ara & WhatsApp). */
 export const MobileAdvertStickyBar = memo(function MobileAdvertStickyBar({
   detail,
   isOwner = false,
@@ -26,14 +26,13 @@ export const MobileAdvertStickyBar = memo(function MobileAdvertStickyBar({
   onEdit,
 }: MobileAdvertStickyBarProps) {
   const insets = useSafeInsets();
-  const text = useThemeColor('text');
   const header = useThemeColor('header');
   const surface = useThemeColor('surface');
   const border = useThemeColor('border');
 
   const isSold = detail.backendStatus === 'SOLD';
-  /** Dock yüksekliği + cihaz alt safe area — sabit inset yerine dinamik. */
-  const bottom = MOBILE_DOCK_BAR_HEIGHT + Math.max(insets.bottom, 8) + 8;
+  /** Dock ile arasında 0 boşluk olacak şekilde tam dock üstüne oturur */
+  const bottom = MOBILE_DOCK_BAR_HEIGHT + (insets.bottom || 0);
 
   return (
     <View
@@ -43,19 +42,10 @@ export const MobileAdvertStickyBar = memo(function MobileAdvertStickyBar({
           bottom,
           backgroundColor: surface,
           borderTopColor: border,
-          minHeight: MOBILE_DETAIL_STICKY_BAR_HEIGHT,
+          minHeight: 60,
         },
       ]}
     >
-      <View style={styles.priceCol}>
-        <Text style={[styles.price, { color: text }]} numberOfLines={1}>
-          {formatMoney(detail.price)}
-        </Text>
-        {detail.available && !isSold ? (
-          <Text style={styles.open}>İlana açık</Text>
-        ) : null}
-      </View>
-
       {isOwner ? (
         <Pressable
           onPress={onEdit}
@@ -68,7 +58,7 @@ export const MobileAdvertStickyBar = memo(function MobileAdvertStickyBar({
           ]}
         >
           <Ionicons name="create-outline" size={16} color={header} />
-          <Text style={[styles.editText, { color: header }]}>Düzenle</Text>
+          <Text style={[styles.editText, { color: header }]}>İlanı Düzenle</Text>
         </Pressable>
       ) : (
         <View style={styles.actions}>
@@ -115,39 +105,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
-    paddingVertical: 10,
-    gap: 12,
+    paddingVertical: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
+        shadowOffset: { width: 0, height: -3 },
         shadowOpacity: 0.08,
-        shadowRadius: 12,
+        shadowRadius: 10,
       },
-      android: { elevation: 12 },
+      android: { elevation: 10 },
+      web: {
+        boxShadow: '0 -3px 12px rgba(0, 0, 0, 0.12)',
+      },
       default: {},
     }),
-  },
-  priceCol: {
-    minWidth: 88,
-    maxWidth: 120,
-    gap: 2,
-  },
-  price: {
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  open: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#42d697',
   },
   actions: {
     flex: 1,
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    gap: 10,
   },
   cta: {
     flex: 1,
@@ -156,12 +134,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 7,
   },
   ctaText: {
     color: '#fff',
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 14,
+    letterSpacing: -0.1,
   },
   editBtn: {
     flex: 1,
@@ -175,6 +154,6 @@ const styles = StyleSheet.create({
   },
   editText: {
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 14,
   },
 });

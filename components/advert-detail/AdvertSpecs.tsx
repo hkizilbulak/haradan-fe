@@ -14,6 +14,7 @@ import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { AdvertDetail, AdvertSpecGroup, HorseProfile } from '@/types';
 import { useAdvertLocation } from '@/services/location';
+import { formatMoney } from '@/utils/formatMoney';
 import { AdvertPedigree } from './AdvertPedigree';
 import { AdvertSiblings } from './AdvertSiblings';
 import { AdvertStatistics } from './AdvertStatistics';
@@ -263,6 +264,7 @@ export const AdvertSpecs = memo(function AdvertSpecs({
   const border = useThemeColor('border');
   const primary = useThemeColor('primary');
 
+  const location = useAdvertLocation(detail);
   const horse = detail?.horse ?? propHorse;
 
   const { title, sections } = useMemo(() => {
@@ -404,18 +406,18 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       value: findProp(['IN_TRAINING', 'inTraining', 'idmanda'], true),
     });
 
-    // 12. Kiralık mı
-    rows.push({
-      icon: 'key-outline',
-      label: 'Kiralık mı',
-      value: findProp(['IS_FOR_RENT', 'isForRent', 'kiralik', 'kiralık'], false),
-    });
-
-    // 13. Koşar durumda mı
+    // 12. Koşar durumda mı
     rows.push({
       icon: 'flash-outline',
       label: 'Koşar durumda mı',
       value: findProp(['IS_RACE_READY', 'isRaceReady', 'kosar', 'koşar'], true),
+    });
+
+    // 13. Kiralık mı
+    rows.push({
+      icon: 'key-outline',
+      label: 'Kiralık mı',
+      value: findProp(['IS_FOR_RENT', 'isForRent', 'kiralik', 'kiralık'], false),
     });
 
     const list: SoftSection[] = [
@@ -431,7 +433,7 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       title: 'Genel Bilgiler',
       sections: list,
     };
-  }, [detail, horse]);
+  }, [detail, horse, location]);
 
   const hasPedigree = Boolean(horse?.pedigree && horse.pedigree.length > 0);
   const hasSiblings = Boolean(horse?.siblings && horse.siblings.length > 0);
@@ -464,10 +466,7 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       badge?: string;
     }[] = [];
 
-    // Web'de (geniş ekranda) Genel Bilgiler sağ kolonda yer aldığı için sekme sadece mobilde gösterilir.
-    if (!isWide) {
-      list.push({ key: 'specs', label: 'Genel Bilgiler', icon: 'information-circle-outline' });
-    }
+    list.push({ key: 'specs', label: 'Genel Bilgiler', icon: 'information-circle-outline' });
 
     if (hasPedigree || (hasHorseData && (horse?.sire || horse?.dam))) {
       list.push({ key: 'pedigree', label: 'Pedigri (Soyağacı)', icon: 'git-branch-outline' });
@@ -587,9 +586,6 @@ export const AdvertSpecs = memo(function AdvertSpecs({
                 {/* Card Header (sadece geniş ekranda gösterilir, mobilde sekme başlığı zaten mevcuttur) */}
                 {isWide ? (
                   <View style={[styles.cardHeader, { borderBottomColor: border }]}>
-                    <View style={[styles.headerIconWrap, { backgroundColor: `${primary}15` }]}>
-                      <Ionicons name={section.icon} size={16} color={primary} />
-                    </View>
                     <Text style={[styles.cardTitle, { color: text }]}>{section.title}</Text>
                   </View>
                 ) : null}
@@ -612,9 +608,6 @@ export const AdvertSpecs = memo(function AdvertSpecs({
                         ]}
                       >
                         <View style={styles.rowLeft}>
-                          <View style={[styles.rowIconWrap, { borderColor: border }]}>
-                            <Ionicons name={row.icon} size={14} color={isClickable ? primary : textSecondary} />
-                          </View>
                           <Text style={[styles.rowLabel, { color: textSecondary }]} numberOfLines={1}>
                             {row.label}
                           </Text>

@@ -10,6 +10,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { Radius } from '@/constants/Radius';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { AdvertDetail } from '@/types';
+import { formatMoney } from '@/utils/formatMoney';
+import { useAdvertLocation } from '@/services/location';
+import { WHATSAPP_GREEN } from '@/utils/contactLinks';
 import {
   getAdvertCategoryKind,
   parsePansiyonInfo,
@@ -42,100 +45,67 @@ function normalizeLabel(raw: string): string {
     .toLocaleLowerCase('tr-TR')
     .replace(/['’`"]/g, '')
     .trim();
-
-  if (
-    norm.includes('adın') ||
-    norm.includes('adin') ||
-    norm === 'adinda' ||
-    norm === 'adında' ||
-    norm.includes('at adi') ||
-    norm.includes('at adı') ||
-    norm.includes('isim') ||
-    norm === 'ad' ||
-    norm === 'adı' ||
-    norm === 'adi'
-  ) {
-    return 'At Adı';
-  }
-  if (
-    norm.includes('irk') ||
-    norm.includes('ırk') ||
-    norm.includes('breed') ||
-    norm.includes('cins') ||
-    norm.includes('safkan')
-  ) {
-    return 'At Irkı';
-  }
-  if (norm.includes('cinsiyet') || norm.includes('gender')) {
-    return 'Cinsiyet';
-  }
-  if (norm.includes('don') || norm.includes('renk') || norm.includes('coat')) {
-    return 'Donu';
-  }
-  if (norm.includes('yaş') || norm.includes('yas') || norm.includes('age')) {
-    return 'Yaş';
-  }
-  if (
-    norm.includes('kısrak babası') ||
-    norm.includes('kisrak babasi') ||
-    norm.includes('annesinin baba') ||
-    norm.includes('damsire')
-  ) {
-    return 'Annesinin Baba Adı';
-  }
-  if (norm.includes('baba') || norm.includes('sire')) {
-    return 'Baba Adı';
-  }
-  if (norm.includes('anne') || norm.includes('dam')) {
-    return 'Anne Adı';
-  }
-  if (norm.includes('idman') || norm.includes('intraining')) {
-    return 'İdmanda mı';
-  }
-  if (norm.includes('kira') || norm.includes('isforrent')) {
-    return 'Kiralık mı';
-  }
-  if (norm.includes('kosar') || norm.includes('koşar') || norm.includes('israceready')) {
-    return 'Koşar durumda mı';
-  }
+  if (norm.startsWith('cinsiyet')) return 'Cinsiyet';
+  if (norm.startsWith('cins')) return 'At Irkı';
+  if (norm.startsWith('irk') || norm.startsWith('ırk')) return 'At Irkı';
+  if (norm.startsWith('yas') || norm.startsWith('yaş')) return 'Yaş';
+  if (norm.startsWith('don') || norm.startsWith('donu')) return 'Donu';
+  if (norm.startsWith('baba adi') || norm.startsWith('baba adı') || norm === 'baba') return 'Baba Adı';
+  if (norm.startsWith('anne adi') || norm.startsWith('anne adı') || norm === 'anne') return 'Anne Adı';
+  if (norm.includes('annesinin baba') || norm.includes('anne baba')) return 'Annesinin Baba Adı';
+  if (norm.startsWith('at adi') || norm.startsWith('at adı') || norm.startsWith('isim')) return 'At Adı';
   return raw;
 }
 
 function getRowIcon(label: string): keyof typeof Ionicons.glyphMap {
-  const l = (label || '').toLowerCase();
-  if (l.includes('ilan no') || l.includes('no')) return 'pricetag-outline';
+  const l = label.toLowerCase();
+  if (l.includes('ilan no')) return 'pricetag-outline';
   if (l.includes('tarih')) return 'calendar-outline';
+  if (l.includes('fiyat')) return 'cash-outline';
+  if (l.includes('konum')) return 'location-outline';
   if (l.includes('kategori')) return 'grid-outline';
-  if (l.includes('at adı') || l.includes('ad')) return 'star-outline';
-  if (l.includes('annesinin baba') || l.includes('kısrak babası')) return 'git-network-outline';
-  if (l.includes('baba') || l.includes('anne')) return 'git-branch-outline';
-  if (l.includes('irk') || l.includes('ırk')) return 'ribbon-outline';
-  if (l.includes('yaş') || l.includes('yas')) return 'time-outline';
+  if (l.includes('at adı') || l.includes('isim')) return 'ribbon-outline';
+  if (l.includes('baba')) return 'git-branch-outline';
+  if (l.includes('anne')) return 'heart-outline';
+  if (l.includes('ırk') || l.includes('cins')) return 'color-palette-outline';
+  if (l.includes('yaş') || l.includes('dogum') || l.includes('doğum')) return 'hourglass-outline';
   if (l.includes('cinsiyet')) return 'male-female-outline';
-  if (l.includes('don')) return 'color-palette-outline';
+  if (l.includes('don')) return 'brush-outline';
   if (l.includes('idman')) return 'fitness-outline';
-  if (l.includes('kira')) return 'key-outline';
+  if (l.includes('kiralık') || l.includes('kiralik')) return 'key-outline';
   if (l.includes('koşar') || l.includes('kosar')) return 'flash-outline';
-  if (l.includes('padok') || l.includes('çim') || l.includes('kum')) return 'leaf-outline';
-  if (l.includes('doğum')) return 'home-outline';
+  if (l.includes('padok')) return 'leaf-outline';
+  if (l.includes('doğumhane') || l.includes('pansiyon')) return 'home-outline';
   if (l.includes('nalbant')) return 'hammer-outline';
-  if (l.includes('vet') || l.includes('sağlık')) return 'medkit-outline';
-  if (l.includes('firma')) return 'business-outline';
-  if (l.includes('web')) return 'globe-outline';
-  return 'information-circle-outline';
+  if (l.includes('veteriner')) return 'medkit-outline';
+  if (l.includes('aşım') || l.includes('aygır')) return 'trophy-outline';
+  if (l.includes('kapasite') || l.includes('araç')) return 'car-outline';
+  return 'ellipse-outline';
 }
 
-/** Sağ kolon — Yüksek kaliteli Genel Bilgiler tablosu ve ilan açıklaması. */
+/** Sağ kolon — Yüksek kaliteli Genel Bilgiler tablosu, iletişim aksiyonları ve ilan açıklaması. */
 export const AdvertBuyBox = memo(function AdvertBuyBox({
   detail,
   variant = 'default',
+  favorite = false,
+  isOwner = false,
+  onToggleFavorite,
+  onCall,
+  onWhatsApp,
+  onEdit,
 }: AdvertBuyBoxProps) {
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
   const textSecondary = useThemeColor('textSecondary');
   const primary = useThemeColor('primary');
+  const header = useThemeColor('header');
   const surface = useThemeColor('surface');
   const border = useThemeColor('border');
+
+  const isSold = detail.backendStatus === 'SOLD';
+  const showActions = Boolean(onCall || onWhatsApp || onEdit || onToggleFavorite);
+
+  const location = useAdvertLocation(detail);
 
   const categoryName = useMemo(() => {
     return (
@@ -344,16 +314,16 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
       });
 
       list.push({
-        label: 'Kiralık mı',
-        value: findProp(['IS_FOR_RENT', 'isForRent', 'kiralik', 'kiralık'], false),
-        icon: 'key-outline',
+        label: 'Koşar durumda mı',
+        value: findProp(['IS_RACE_READY', 'isRaceReady', 'kosar', 'koşar'], true),
+        icon: 'flash-outline',
         isBoolean: true,
       });
 
       list.push({
-        label: 'Koşar durumda mı',
-        value: findProp(['IS_RACE_READY', 'isRaceReady', 'kosar', 'koşar'], true),
-        icon: 'flash-outline',
+        label: 'Kiralık mı',
+        value: findProp(['IS_FOR_RENT', 'isForRent', 'kiralik', 'kiralık'], false),
+        icon: 'key-outline',
         isBoolean: true,
       });
     }
@@ -370,17 +340,15 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
       {/* Genel Bilgiler Tablosu */}
       <View style={[styles.infoTableCard, { backgroundColor: surface, borderColor: border }]}>
         <View style={[styles.infoTableHeader, { borderBottomColor: border }]}>
-          <View style={styles.headerLeft}>
-            <View style={[styles.headerIconBox, { backgroundColor: `${primary}20` }]}>
-              <Ionicons name="information-circle" size={18} color={primary} />
-            </View>
-            <Text style={[styles.infoTableTitle, { color: text }]}>Genel Bilgiler</Text>
-          </View>
-          <View style={[styles.categoryBadge, { backgroundColor: `${primary}14`, borderColor: `${primary}30` }]}>
-            <Text style={[styles.categoryBadgeText, { color: primary }]} numberOfLines={1}>
-              {categoryName}
+          <View style={styles.headerLocationWrap}>
+            <Ionicons name="location-outline" size={16} color={primary} />
+            <Text style={[styles.headerLocationText, { color: textSecondary }]} numberOfLines={1}>
+              {location && location !== '-' && location.trim() !== '' ? location : 'Konum Belirtilmedi'}
             </Text>
           </View>
+          <Text style={[styles.headerPriceText, { color: text }]}>
+            {formatMoney(detail.price)}
+          </Text>
         </View>
 
         <View style={styles.infoTableBody}>
@@ -396,9 +364,6 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
                 ]}
               >
                 <View style={styles.rowLabelWrap}>
-                  <View style={[styles.rowIconWrap, { borderColor: border }]}>
-                    <Ionicons name={row.icon} size={14} color={textMuted} />
-                  </View>
                   <Text style={[styles.infoRowLabel, { color: textSecondary }]}>{row.label}</Text>
                 </View>
 
@@ -491,37 +456,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    gap: 10,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 12,
   },
-  headerLeft: {
+  headerLocationWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 6,
+    flex: 1,
+    minWidth: 0,
   },
-  headerIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
+  headerLocationText: {
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
-  infoTableTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  categoryBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    maxWidth: '45%',
-  },
-  categoryBadgeText: {
-    fontSize: 11.5,
-    fontWeight: '700',
+  headerPriceText: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.4,
   },
   infoTableBody: {
     paddingVertical: 4,
@@ -624,5 +578,71 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     lineHeight: 22,
     fontWeight: '400',
+  },
+  actionRow: {
+    width: '100%',
+  },
+  actionsInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  cta: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        transition: 'all 0.15s ease',
+      } as any,
+      default: {},
+    }),
+  },
+  ctaText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14.5,
+    letterSpacing: -0.1,
+  },
+  favBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        transition: 'all 0.15s ease',
+      } as any,
+      default: {},
+    }),
+  },
+  editBtn: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        transition: 'all 0.15s ease',
+      } as any,
+      default: {},
+    }),
+  },
+  editText: {
+    fontWeight: '700',
+    fontSize: 14.5,
   },
 });
