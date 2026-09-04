@@ -15,7 +15,9 @@ import type { AuthUser } from '@/types';
 export type ProfileDrawerAction =
   | 'listings'
   | 'favorites'
-  | 'settings';
+  | 'settings'
+  | 'post'
+  | 'support';
 
 type ProfileDrawerProps = {
   user: AuthUser | null;
@@ -39,71 +41,74 @@ function initialsFromEmail(email: string): string {
   return name.slice(0, 2).toLocaleUpperCase('tr') || 'H';
 }
 
-const NAV: {
-  key: ProfileDrawerAction;
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-}[] = [
-  { key: 'listings', label: 'İlanlarım', icon: 'grid-outline' },
-  { key: 'favorites', label: 'Favoriler', icon: 'heart-outline' },
-  { key: 'settings', label: 'Ayarlar', icon: 'settings-outline' },
-];
-
-type RowProps = {
+type MenuItemProps = {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
-  muted?: boolean;
-  chevron?: boolean;
+  hasDivider?: boolean;
+  destructive?: boolean;
   text: string;
   textMuted: string;
+  border: string;
 };
 
-function ProfileRow({
+function MenuItem({
   icon,
   label,
   onPress,
-  muted,
-  chevron = true,
+  hasDivider = false,
+  destructive = false,
   text,
   textMuted,
-}: RowProps) {
+  border,
+}: MenuItemProps) {
   const [hovered, setHovered] = useState(false);
-  const color = muted ? textMuted : text;
+  const iconColor = destructive ? '#f43f5e' : text;
+  const labelColor = destructive ? '#f43f5e' : text;
 
   return (
-    <Pressable
-      onPress={onPress}
-      onHoverIn={() => setHovered(true)}
-      onHoverOut={() => setHovered(false)}
-      accessibilityRole="menuitem"
-      accessibilityLabel={label}
-      style={({ pressed }) => [
-        styles.row,
-        {
-          backgroundColor:
-            hovered || pressed ? 'rgba(12,12,14,0.035)' : 'transparent',
-          opacity: pressed ? 0.88 : 1,
-          ...Platform.select({
-            web: {
-              cursor: 'pointer' as const,
-              transition: 'background-color 220ms cubic-bezier(0.22,1,0.36,1)',
-            },
-            default: {},
-          }),
-        },
-      ]}
-    >
-      <Ionicons name={icon} size={18} color={color} />
-      <Text style={[styles.rowLabel, { color }]}>{label}</Text>
-      {chevron ? (
-        <Ionicons name="chevron-forward" size={14} color={textMuted} />
+    <View style={styles.itemWrapper}>
+      <Pressable
+        onPress={onPress}
+        onHoverIn={() => setHovered(true)}
+        onHoverOut={() => setHovered(false)}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={({ pressed }) => [
+          styles.row,
+          {
+            backgroundColor:
+              hovered || pressed ? 'rgba(255,255,255,0.035)' : 'transparent',
+            opacity: pressed ? 0.8 : 1,
+            ...Platform.select({
+              web: {
+                cursor: 'pointer' as const,
+                transition: 'background-color 150ms ease',
+              },
+              default: {},
+            }),
+          },
+        ]}
+      >
+        <View style={styles.iconSlot}>
+          <Ionicons name={icon} size={20} color={iconColor} />
+        </View>
+        <Text style={[styles.rowLabel, { color: labelColor }]}>{label}</Text>
+        <Ionicons
+          name="chevron-forward"
+          size={16}
+          color={destructive ? '#f43f5e' : textMuted}
+          style={styles.chevron}
+        />
+      </Pressable>
+      {hasDivider ? (
+        <View style={[styles.divider, { backgroundColor: border }]} />
       ) : null}
-    </Pressable>
+    </View>
   );
 }
 
-/** Profil çekmece içeriği — kabuk SideDrawer. */
+/** Profil içeriği — sade, minimalist ve estetik görünüm */
 export const ProfileDrawer = memo(function ProfileDrawer({
   user,
   onNavigate,
@@ -111,7 +116,7 @@ export const ProfileDrawer = memo(function ProfileDrawer({
 }: ProfileDrawerProps) {
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
-  const header = useThemeColor('header');
+  const surface = useThemeColor('surface');
   const border = useThemeColor('border');
 
   const identity = useMemo(() => {
@@ -121,112 +126,171 @@ export const ProfileDrawer = memo(function ProfileDrawer({
     const full = `${user.firstName} ${user.lastName}`.trim();
     const name = full || nameFromEmail(user.email);
     const initials = full
-      ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toLocaleUpperCase(
-          'tr'
-        )
+      ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toLocaleUpperCase('tr')
       : initialsFromEmail(user.email);
     return { name, initials: initials || 'H', email: user.email };
   }, [user]);
 
   return (
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.body}
-      >
-        <View style={styles.identity}>
-          <View style={[styles.avatar, { backgroundColor: header }]}>
-            <Text style={styles.avatarText}>{identity.initials}</Text>
-          </View>
-          <View style={styles.identityText}>
-            <Text style={[styles.name, { color: text }]} numberOfLines={1}>
-              {identity.name}
-            </Text>
-            {identity.email ? (
-              <Text style={[styles.email, { color: textMuted }]} numberOfLines={1}>
-                {identity.email}
-              </Text>
-            ) : null}
-          </View>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.body}
+    >
+      {/* ─── Minimalist Profil Başlığı ─── */}
+      <View style={styles.profileHeader}>
+        <View style={[styles.avatar, { backgroundColor: surface, borderColor: border }]}>
+          <Text style={[styles.avatarText, { color: text }]}>{identity.initials}</Text>
         </View>
+        <Text style={[styles.name, { color: text }]} numberOfLines={1}>
+          {identity.name}
+        </Text>
+        {identity.email ? (
+          <Text style={[styles.email, { color: textMuted }]} numberOfLines={1}>
+            {identity.email}
+          </Text>
+        ) : null}
+      </View>
 
-        <View style={styles.nav}>
-          {NAV.map((item) => (
-            <ProfileRow
-              key={item.key}
-              icon={item.icon}
-              label={item.label}
-              onPress={() => onNavigate?.(item.key)}
-              text={text}
-              textMuted={textMuted}
-            />
-          ))}
-        </View>
-
-        <View style={[styles.rule, { backgroundColor: border }]} />
-
-        <ProfileRow
-          icon="log-out-outline"
-          label="Çıkış yap"
-          onPress={() => onLogout?.()}
-          muted
-          chevron={false}
+      {/* ─── Grup 1: İlan & Favoriler ─── */}
+      <View style={[styles.card, { backgroundColor: surface, borderColor: border }]}>
+        <MenuItem
+          icon="grid-outline"
+          label="İlanlarım"
+          onPress={() => onNavigate?.('listings')}
+          hasDivider
           text={text}
           textMuted={textMuted}
+          border={border}
         />
-      </ScrollView>
+        <MenuItem
+          icon="heart-outline"
+          label="Favoriler"
+          onPress={() => onNavigate?.('favorites')}
+          hasDivider
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        />
+        <MenuItem
+          icon="add-circle-outline"
+          label="Yeni İlan Ver"
+          onPress={() => onNavigate?.('post')}
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        />
+      </View>
+
+      {/* ─── Grup 2: Ayarlar ─── */}
+      <View style={[styles.card, { backgroundColor: surface, borderColor: border }]}>
+        <MenuItem
+          icon="settings-outline"
+          label="Ayarlar"
+          onPress={() => onNavigate?.('settings')}
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        />
+      </View>
+
+      {/* ─── Grup 3: Çıkış ─── */}
+      <View style={[styles.card, { backgroundColor: surface, borderColor: border }]}>
+        <MenuItem
+          icon="log-out-outline"
+          label="Çıkış Yap"
+          onPress={() => onLogout?.()}
+          destructive
+          text={text}
+          textMuted={textMuted}
+          border={border}
+        />
+      </View>
+    </ScrollView>
   );
 });
 
 const styles = StyleSheet.create({
   body: {
-    paddingTop: 20,
-    paddingBottom: Spacing.xl,
-    paddingHorizontal: 4,
+    paddingTop: 10,
+    paddingBottom: Spacing.xl + 24,
+    paddingHorizontal: 16,
+    gap: 16,
   },
-  identity: {
-    flexDirection: 'row',
+  // Profil Başlığı
+  profileHeader: {
     alignItems: 'center',
-    gap: 14,
-    paddingHorizontal: 8,
-    paddingBottom: 24,
+    paddingVertical: 14,
+    gap: 6,
   },
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 10,
+      },
+      android: { elevation: 3 },
+      web: { boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)' },
+      default: {},
+    }),
   },
   avatarText: {
-    color: '#fff',
-    fontSize: 16,
+    fontSize: 22,
     fontWeight: '700',
-    letterSpacing: 0.4,
-  },
-  identityText: {
-    flex: 1,
-    minWidth: 0,
-    gap: 3,
+    letterSpacing: 0.5,
   },
   name: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 19,
+    fontWeight: '700',
     letterSpacing: -0.3,
+    textAlign: 'center',
   },
   email: {
     fontSize: 13,
     fontWeight: '400',
+    textAlign: 'center',
   },
-  nav: {
-    gap: 2,
+
+  // Kart Grubu (Apple Inset Card Style)
+  card: {
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+      },
+      android: { elevation: 1 },
+      web: { boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)' },
+      default: {},
+    }),
+  },
+  itemWrapper: {
+    width: '100%',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    minHeight: 52,
     gap: 14,
-    minHeight: 48,
-    paddingHorizontal: 10,
-    borderRadius: 14,
+  },
+  iconSlot: {
+    width: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   rowLabel: {
     flex: 1,
@@ -234,9 +298,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: -0.15,
   },
-  rule: {
+  chevron: {
+    opacity: 0.6,
+  },
+  divider: {
     height: StyleSheet.hairlineWidth,
-    marginVertical: 16,
-    marginHorizontal: 10,
+    marginLeft: 54, // İkon genişliği kadar içeriden başlayan şık bölücü çizgi
   },
 });

@@ -35,6 +35,7 @@ import {
   HOME_DESKTOP_BREAKPOINT,
   MOBILE_DETAIL_STICKY_BAR_HEIGHT,
   MOBILE_DOCK_BAR_HEIGHT,
+  mobileDetailScrollInset,
 } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
@@ -74,11 +75,8 @@ export function AdvertDetailView({
   const { banners: detailBanners } = usePlacementBanners('LISTING_DETAIL');
   const location = useAdvertLocation(detail);
   const safeInsets = useSafeInsets();
-  const mobileScrollInset =
-    MOBILE_DETAIL_STICKY_BAR_HEIGHT +
-    MOBILE_DOCK_BAR_HEIGHT +
-    Math.max(safeInsets.bottom, 8) +
-    24;
+  // Mobil görünümde yüzen CTA çubuğu + dock için dinamik scroll alt payı (variant="mobile")
+  const mobileScrollInset = mobileDetailScrollInset(safeInsets.bottom);
 
   const [specsSubTab, setSpecsSubTab] = useState<SpecsSubTab>('specs');
   const [showTop, setShowTop] = useState(false);

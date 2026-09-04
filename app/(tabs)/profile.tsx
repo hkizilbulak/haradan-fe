@@ -64,6 +64,11 @@ export default function ProfileScreen() {
       }
       if (action === 'listings') {
         router.push('/my-listings');
+        return;
+      }
+      if (action === 'post') {
+        router.push('/post');
+        return;
       }
     },
     [router]
@@ -81,7 +86,7 @@ export default function ProfileScreen() {
   const subtitle =
     panel === 'settings'
       ? 'Hesap ayarları'
-      : user?.email ?? undefined;
+      : undefined;
 
   return (
     <View style={styles.root}>
