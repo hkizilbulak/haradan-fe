@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
+import React, { memo, useCallback, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -108,8 +108,16 @@ function FeaturedListingCardComponent({
   const isRejected =
     (product as { backendStatus?: string }).backendStatus === 'REJECTED' ||
     (product as { status?: string }).status === 'rejected';
+  const isDraft =
+    (product as { backendStatus?: string }).backendStatus === 'DRAFT' ||
+    (product as { backendStatus?: string }).backendStatus === 'CHANGES_REQUESTED' ||
+    (product as { backendStatus?: string }).backendStatus === 'SUSPENDED' ||
+    (product as { backendStatus?: string }).backendStatus === 'ARCHIVED' ||
+    (product as { status?: string }).status === 'draft';
   const shouldShowFavorite =
-    !isRejected && (showFavorite !== undefined ? showFavorite : Boolean(onToggleFavorite));
+    !isRejected &&
+    !isDraft &&
+    (showFavorite !== undefined ? showFavorite : Boolean(onToggleFavorite));
   const hasActions = Boolean(onRemove || onMarkSold || shouldShowFavorite);
 
   const animateHover = useCallback(
@@ -127,15 +135,11 @@ function FeaturedListingCardComponent({
 
   const lift = hover.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -6],
-  });
-  const cardScale = hover.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.02],
+    outputRange: [0, -4],
   });
   const imgScale = hover.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.05],
+    outputRange: [1, 1.04],
   });
 
   return (
@@ -157,6 +161,7 @@ function FeaturedListingCardComponent({
           ...Platform.select({
             web: {
               cursor: 'pointer' as const,
+              userSelect: 'none' as const,
             },
             default: {},
           }),
@@ -168,18 +173,7 @@ function FeaturedListingCardComponent({
           styles.motion,
           compact && styles.motionCompact,
           {
-            transform: [{ translateY: lift }, { scale: cardScale }],
-            backgroundColor: hovered ? '#fff' : 'transparent',
-            ...Platform.select({
-              web: {
-                boxShadow: hovered
-                  ? '0 22px 48px rgba(12,12,14,0.10), 0 2px 8px rgba(12,12,14,0.04)'
-                  : '0 0 0 rgba(0,0,0,0)',
-                transition:
-                  'box-shadow 320ms cubic-bezier(0.22,1,0.36,1), background-color 320ms cubic-bezier(0.22,1,0.36,1)',
-              },
-              default: {},
-            }),
+            transform: [{ translateY: lift }],
           },
         ]}
       >
@@ -279,15 +273,9 @@ const styles = StyleSheet.create({
   cardCompact: {},
   motion: {
     gap: 12,
-    borderRadius: 36,
-    padding: 8,
-    margin: -8,
   },
   motionCompact: {
     gap: 8,
-    borderRadius: 18,
-    padding: 4,
-    margin: -4,
   },
   imageWrap: {
     width: '100%',

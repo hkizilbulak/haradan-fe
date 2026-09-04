@@ -16,6 +16,7 @@ export type ListingWizardState = {
   step: ListingWizardStep;
   typePhase: ListingTypePhase;
   selectedRootSlug: string | null;
+  draftAdvertId: AdvertId | null;
   draft: ListingDraft;
   categoryProperties: CategoryPropertyPublic[] | null;
   tjkPromptSeen: boolean;
@@ -75,6 +76,7 @@ export function createEmptyDetails(): ListingDraftDetails {
 
 export function createEmptyDraft(): ListingDraft {
   return {
+    advertId: null,
     type: null,
     breed: null,
     details: createEmptyDetails(),
@@ -88,6 +90,7 @@ function createInitialState(): ListingWizardState {
     step: 'type',
     typePhase: 'root',
     selectedRootSlug: null,
+    draftAdvertId: null,
     draft: createEmptyDraft(),
     categoryProperties: null,
     tjkPromptSeen: false,
@@ -143,11 +146,14 @@ function hydrate(): ListingWizardState {
       (typeof (details as { tjkId?: string }).tjkId === 'string'
         ? (details as { tjkId?: string }).tjkId ?? null
         : null);
+    const draftAdvertId =
+      parsed.draftAdvertId ?? parsed.draft.advertId ?? null;
     return {
       ...createInitialState(),
       ...parsed,
       step: normalizeStep(parsed.step),
       selectedRootSlug,
+      draftAdvertId,
       categoryProperties: parsed.categoryProperties ?? null,
       typePhase:
         typePhase === 'category' && !selectedRootSlug && !parsed.draft.type
@@ -161,6 +167,7 @@ function hydrate(): ListingWizardState {
       draft: {
         ...createEmptyDraft(),
         ...parsed.draft,
+        advertId: draftAdvertId,
         details: {
           ...createEmptyDetails(),
           ...details,
@@ -225,6 +232,23 @@ export function isListingWizardComplete(
  */
 export function prepareListingWizardEntry(): void {
   resetListingWizard();
+}
+
+/**
+ * Mevcut taslağı sihirbaza aktarır.
+ */
+export function loadDraftIntoWizard(draft: ListingDraft, advertId: AdvertId): void {
+  emit({
+    ...createInitialState(),
+    step: 'details',
+    typePhase: 'category',
+    selectedRootSlug: draft.type?.parentSlug ?? null,
+    draftAdvertId: advertId,
+    draft: {
+      ...draft,
+      advertId,
+    },
+  });
 }
 
 export function subscribeListingWizard(listener: () => void): () => void {

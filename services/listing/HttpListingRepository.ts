@@ -45,7 +45,7 @@ export class HttpListingRepository implements IListingRepository {
     return this.cached;
   }
 
-  /** Creates draft + media only (no package assign, no submit). */
+  /** Creates or updates draft + media only (no package assign, no submit). */
   async createDraft(
     draft: ListingDraft,
     accessToken: string
@@ -65,14 +65,92 @@ export class HttpListingRepository implements IListingRepository {
       })
     );
 
-    const created = await this.http.request<OwnerAdvertResponse>(
-      '/v1/me/adverts',
-      {
-        method: 'POST',
-        accessToken,
-        body: JSON.stringify(mapDraftToCreateAdvert(draft)),
+    let created: OwnerAdvertResponse | null = null;
+
+    // 1. If draft already has an advertId, fetch and update it
+    if (draft.advertId) {
+      try {
+        created = await this.http.request<OwnerAdvertResponse>(
+          `/v1/me/adverts/${encodeURIComponent(String(draft.advertId))}`,
+          { method: 'GET', accessToken }
+        );
+      } catch {
+        created = null;
       }
-    );
+    }
+
+    // 2. If no valid advertId, check if an in-progress draft already exists with the same title
+    if (!created && draft.details.title.trim()) {
+      try {
+        const list = await this.http.request<{ items: OwnerAdvertResponse[] }>(
+          `/v1/me/adverts?status=DRAFT&limit=50`,
+          { method: 'GET', accessToken }
+        );
+        const normTitle = draft.details.title.trim().toLowerCase();
+        const match = (list.items || []).find(
+          (it) => (it.title || '').trim().toLowerCase() === normTitle
+        );
+        if (match) {
+          created = match;
+          draft.advertId = match.id;
+        }
+      } catch {}
+    }
+
+    // 3. If still no draft, create a new one
+    if (!created) {
+      created = await this.http.request<OwnerAdvertResponse>(
+        '/v1/me/adverts',
+        {
+          method: 'POST',
+          accessToken,
+          body: JSON.stringify(mapDraftToCreateAdvert(draft)),
+        }
+      );
+      draft.advertId = created.id;
+    } else {
+      // If category changed, update category
+      if (draft.type?.categoryId && created.categoryId !== draft.type.categoryId) {
+        try {
+          const catRes = await this.http.request<OwnerAdvertResponse>(
+            `/v1/me/adverts/${created.id}/category`,
+            {
+              method: 'PUT',
+              accessToken,
+              body: JSON.stringify({
+                expectedVersion: created.version,
+                categoryId: draft.type.categoryId,
+              }),
+            }
+          );
+          if (catRes?.version) created.version = catRes.version;
+        } catch {}
+      }
+
+      // Update core details
+      try {
+        const rawDigits = draft.details.priceTl.replace(/\D/g, '');
+        const parsedPrice = rawDigits ? Number(rawDigits) : null;
+        const patchBody: Record<string, unknown> = {
+          expectedVersion: created.version,
+          title: draft.details.title.trim() || null,
+          description: draft.details.description.trim() || null,
+          address: draft.details.address?.trim() || 'Merkez',
+          districtId: draft.details.districtId || null,
+          horseId: draft.details.horseId || null,
+          price: parsedPrice != null ? { amountMinor: Math.round(parsedPrice * 100), currency: 'TRY' } : null,
+        };
+        const patchRes = await this.http.request<OwnerAdvertResponse>(
+          `/v1/me/adverts/${created.id}`,
+          {
+            method: 'PATCH',
+            accessToken,
+            body: JSON.stringify(patchBody),
+          }
+        );
+        if (patchRes?.version) created.version = patchRes.version;
+      } catch {}
+    }
 
     let mediaVersion = created.mediaVersion;
     const ordered = [
@@ -195,6 +273,7 @@ export class HttpListingRepository implements IListingRepository {
     accessToken: string
   ): Promise<PublishListingResult> {
     const created = await this.createDraft(draft, accessToken);
+    draft.advertId = created.advertId;
     const packageCode = draft.packageCode?.trim();
     if (packageCode) {
       await this.http.request(`/v1/me/adverts/${created.advertId}/package`, {

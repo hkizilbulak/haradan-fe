@@ -30,9 +30,9 @@ import { useMyListings } from '@/hooks/useMyListings';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { AdvertId } from '@/types/advertId';
-import { prepareListingWizardEntry } from '@/services/listing';
+import { prepareListingWizardEntry, loadDraftIntoWizard } from '@/services/listing';
 import { locationLookup } from '@/services/location';
-import { MY_LISTING_TABS } from '@/services/my-listings';
+import { MY_LISTING_TABS, myListingsRepository } from '@/services/my-listings';
 import { ApiError } from '@/services/http';
 import type { MyListingCard, MyListingStatus } from '@/types';
 
@@ -272,25 +272,59 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
         ? `${activeItems.length} ilan · ${activeTabLabel}`
         : activeTabLabel;
 
-  const isRejectedTab = status === 'rejected';
+  const handleCardPress = useCallback(
+    async (id: AdvertId) => {
+      if (status === 'draft') {
+        try {
+          const payload = await myListingsRepository.getEditDraft(id, accessToken);
+          if (payload?.draft) {
+            loadDraftIntoWizard(payload.draft, id);
+            router.push('/post');
+            return;
+          }
+        } catch {
+          // fallback to detail
+        }
+      }
+      router.push(`/advert/${id}`);
+    },
+    [status, accessToken, router]
+  );
 
-  const listingCards = activeItems.map((item) => (
-    <FeaturedListingCard
-      key={`${item.id}-${locationTick}`}
-      product={item}
-      width={colWidth}
-      compact={!isWide}
-      badge={item.isUrgent && item.status !== 'sold' ? 'urgent' : 'auto'}
-      onPress={(id) => router.push(`/advert/${id}`)}
-      onToggleFavorite={isRejectedTab || item.status === 'rejected' ? undefined : toggle}
-      showFavorite={!isRejectedTab && item.status !== 'rejected' && item.backendStatus !== 'REJECTED'}
-      onRemove={status === 'draft' ? requestRemoveItem : undefined}
-      removing={deleting && pendingDelete?.id === item.id}
-      onMarkSold={status === 'published' ? requestMarkSold : undefined}
-      markingSold={markingSoldId === item.id}
-      accessToken={accessToken}
-    />
-  ));
+  const isRejectedTab = status === 'rejected';
+  const isDraftTab = status === 'draft';
+
+  const listingCards = activeItems.map((item) => {
+    const isDraft =
+      isDraftTab ||
+      item.status === 'draft' ||
+      item.backendStatus === 'DRAFT' ||
+      item.backendStatus === 'CHANGES_REQUESTED' ||
+      item.backendStatus === 'SUSPENDED' ||
+      item.backendStatus === 'ARCHIVED';
+    const isRejected =
+      isRejectedTab ||
+      item.status === 'rejected' ||
+      item.backendStatus === 'REJECTED';
+
+    return (
+      <FeaturedListingCard
+        key={`${item.id}-${locationTick}`}
+        product={item}
+        width={colWidth}
+        compact={!isWide}
+        badge={item.isUrgent && item.status !== 'sold' ? 'urgent' : 'auto'}
+        onPress={handleCardPress}
+        onToggleFavorite={isRejected || isDraft ? undefined : toggle}
+        showFavorite={!isRejected && !isDraft}
+        onRemove={status === 'draft' ? requestRemoveItem : undefined}
+        removing={deleting && pendingDelete?.id === item.id}
+        onMarkSold={status === 'published' ? requestMarkSold : undefined}
+        markingSold={markingSoldId === item.id}
+        accessToken={accessToken}
+      />
+    );
+  });
 
 
   const statusErrors = (

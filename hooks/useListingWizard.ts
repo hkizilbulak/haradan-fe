@@ -14,11 +14,14 @@ import {
   isTjkEligibleListing,
   isStudServiceListing,
   DEFAULT_LISTING_PACKAGE_CODE,
+  loadDraftIntoWizard,
   type IListingRepository,
   type ListingTypePhase,
 } from '@/services/listing';
 import { tjkRepository, type ITjkRepository } from '@/services/tjk';
+import type { AdvertId } from '@/types/advertId';
 import type {
+  ListingDraft,
   ListingDraftDetails,
   ListingMediaSlot,
   ListingPackageCode,
@@ -229,6 +232,7 @@ export function useListingWizard(deps: Deps = {}) {
     step,
     typePhase,
     selectedRootSlug,
+    draftAdvertId,
     tjkPromptSeen,
     detailsAttempted,
     submittedDraftId,
@@ -526,6 +530,7 @@ export function useListingWizard(deps: Deps = {}) {
       const created = await listingRepo.publish(draft, accessToken);
       setListingWizardState((prev) => ({
         ...prev,
+        draftAdvertId: created.advertId,
         submittedDraftId: created.advertId,
         submittedStatus: created.status,
         step: 'review',
@@ -552,6 +557,11 @@ export function useListingWizard(deps: Deps = {}) {
         return publishListing(accessToken);
       }
       const draft = await listingRepo.createDraft(current.draft, accessToken);
+      setListingWizardState((prev) => ({
+        ...prev,
+        draftAdvertId: draft.advertId,
+        draft: { ...prev.draft, advertId: draft.advertId },
+      }));
       try {
         const checkout = await listingRepo.startPaytrCheckout(
           draft.advertId,
@@ -560,6 +570,7 @@ export function useListingWizard(deps: Deps = {}) {
         );
         setListingWizardState((prev) => ({
           ...prev,
+          draftAdvertId: draft.advertId,
           submittedDraftId: draft.advertId,
           submittedStatus: draft.status,
           paytrMerchantOid: checkout.merchantOid,
@@ -575,6 +586,7 @@ export function useListingWizard(deps: Deps = {}) {
           const published = await listingRepo.publish(current.draft, accessToken);
           setListingWizardState((prev) => ({
             ...prev,
+            draftAdvertId: published.advertId,
             submittedDraftId: published.advertId,
             submittedStatus: published.status,
             step: 'review',
@@ -597,12 +609,17 @@ export function useListingWizard(deps: Deps = {}) {
     }));
   }, []);
 
+  const loadDraft = useCallback((loadedDraft: ListingDraft, advertId: AdvertId) => {
+    loadDraftIntoWizard(loadedDraft, advertId);
+  }, []);
+
   return {
     draft,
     categoryProperties,
     step,
     typePhase,
     selectedRootSlug,
+    draftAdvertId,
     tjkPromptSeen,
     detailsAttempted,
     submittedDraftId,
@@ -627,5 +644,6 @@ export function useListingWizard(deps: Deps = {}) {
     publishListing,
     startPaidCheckout,
     markPaymentSucceeded,
+    loadDraft,
   };
 }

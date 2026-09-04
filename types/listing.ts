@@ -138,6 +138,7 @@ export type ListingPackage = {
 };
 
 export type ListingDraft = {
+  advertId?: AdvertId | null;
   type: ListingTypeSelection | null;
   breed: ListingBreedSelection | null;
   details: ListingDraftDetails;
