@@ -61,6 +61,10 @@ function AdvertCardComponent({
 
   const railWidth = Math.min(168, width * 0.42);
   const isFavorite = advert.isFavorite === true;
+  const isRejected =
+    (advert as { backendStatus?: string }).backendStatus === 'REJECTED' ||
+    (advert as { status?: string }).status === 'rejected';
+
 
   if (variant === 'compact') {
     return (
@@ -137,9 +141,12 @@ function AdvertCardComponent({
             <Badge label={advert.packageBadgeText} tone="info" />
           ) : null}
         </View>
-        <View style={styles.wishWrap}>
-          <WishlistButton active={isFavorite} onPress={handleFav} />
-        </View>
+        {!isRejected ? (
+          <View style={styles.wishWrap}>
+            <WishlistButton active={isFavorite} onPress={handleFav} />
+          </View>
+        ) : null}
+
       </View>
 
       <View style={styles.body}>

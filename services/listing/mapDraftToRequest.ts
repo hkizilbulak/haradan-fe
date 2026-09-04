@@ -1,5 +1,6 @@
 import type { CreateAdvertDraftRequest, ListingDraft } from '@/types/listing';
 import type { Money } from '@/types/money';
+import { composeInternationalPhone } from '@/services/phone';
 import { isStudServiceListing } from './validateListingDraft';
 import CATALOG_DATA from '@/data/catalog.json';
 
@@ -18,6 +19,16 @@ function tlToMinor(tl: number): number {
 export function buildDraftProperties(draft: ListingDraft): Record<string, unknown> {
   const d = draft.details;
   const props: Record<string, unknown> = {};
+
+  if (d.sellerPhone && d.sellerPhone.trim()) {
+    const fullPhone =
+      composeInternationalPhone(
+        d.phoneCountryIso || 'TR',
+        d.sellerPhone
+      ) ?? d.sellerPhone.trim();
+    props.sellerPhone = fullPhone;
+    props.phone = fullPhone;
+  }
 
   // 1. Direct properties from dynamic form state (canonical property.code)
   if (d.properties) {
@@ -169,9 +180,6 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
   const EXCLUDED_KEYS = new Set([
     'address',
     'ADDRESS',
-    'sellerPhone',
-    'phone',
-    'PHONE',
     'title',
     'TITLE',
     'description',

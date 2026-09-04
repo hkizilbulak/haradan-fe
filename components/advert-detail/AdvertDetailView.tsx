@@ -214,8 +214,13 @@ export function AdvertDetailView({
   );
 
   const onEdit = useCallback(() => {
+    if (detail.sellerPhone && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('haradan.lastSellerPhone', detail.sellerPhone);
+      } catch {}
+    }
     router.push(`/my-listings/edit/${detail.id}`);
-  }, [router, detail.id]);
+  }, [router, detail.id, detail.sellerPhone]);
 
   const scrollToAnchor = useCallback(
     (anchor: React.RefObject<View | null>, nativeId: string, attempt = 0) => {
@@ -404,7 +409,7 @@ export function AdvertDetailView({
             />
             <MobileAdvertTopBar
               onBack={() => router.back()}
-              showFavorite
+              showFavorite={detail.backendStatus !== 'REJECTED' && !isOwner}
               favorite={favorite}
               onToggleFavorite={() => toggle(favoriteCard)}
             />

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { applyTjkProfile } from '@/hooks/useListingWizard';
 import { detailsErrors, detailsStepComplete } from '@/services/listing';
 import {
+  isListingDraftDirty,
   mapDraftToUpdate,
   myListingsRepository,
   type IMyListingsRepository,
@@ -19,6 +20,7 @@ export function useMyListingEdit(
 ) {
   const id = parseAdvertId(rawId) ?? undefined;
   const [draft, setDraft] = useState<ListingDraft | null>(null);
+  const [initialDraft, setInitialDraft] = useState<ListingDraft | null>(null);
   const [version, setVersion] = useState(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -38,6 +40,7 @@ export function useMyListingEdit(
         const next = await repo.getEditDraft(id, accessToken);
         if (cancelled) return;
         setDraft(next.draft);
+        setInitialDraft(JSON.parse(JSON.stringify(next.draft)));
         setVersion(next.version);
         setError(null);
       } catch (err) {
@@ -51,6 +54,14 @@ export function useMyListingEdit(
       cancelled = true;
     };
   }, [id, accessToken, repo]);
+
+  const isDirty = useMemo(() => {
+    return isListingDraftDirty(draft, initialDraft);
+  }, [draft, initialDraft]);
+
+  const markClean = useCallback((newDraft?: ListingDraft) => {
+    setInitialDraft(JSON.parse(JSON.stringify(newDraft ?? draft)));
+  }, [draft]);
 
   const updateDetails = useCallback((partial: Partial<ListingDraftDetails>) => {
     setDraft((prev) =>
@@ -97,6 +108,7 @@ export function useMyListingEdit(
 
   const save = useCallback(async () => {
     if (!id || !accessToken || !draft) return false;
+    if (!isDirty) return false;
     if (!detailsStepComplete(draft)) {
       setAttempted(true);
       return false;
@@ -110,6 +122,7 @@ export function useMyListingEdit(
         accessToken
       );
       setVersion((v) => v + 1);
+      setInitialDraft(JSON.parse(JSON.stringify(draft)));
       void updated;
       return true;
     } catch (err) {
@@ -118,15 +131,18 @@ export function useMyListingEdit(
     } finally {
       setSaving(false);
     }
-  }, [id, accessToken, draft, repo, version]);
+  }, [id, accessToken, draft, repo, version, isDirty]);
 
   return {
     draft,
+    initialDraft,
     loading,
     saving,
     error,
     fieldErrors: draft && attempted ? detailsErrors(draft) : {},
-    canSave: Boolean(draft),
+    canSave: Boolean(draft && !saving && isDirty),
+    isDirty,
+    markClean,
     updateDetails,
     setMedia,
     setCover,
@@ -134,3 +150,4 @@ export function useMyListingEdit(
     save,
   };
 }
+

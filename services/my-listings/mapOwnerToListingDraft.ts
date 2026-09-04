@@ -27,12 +27,25 @@ export function mapOwnerToListingDraft(
 
   const props = dto.properties || {};
 
-  // Telefon numarasını properties.sellerPhone -> properties.phone -> session user phone sırasıyla çözümle
+  // Telefon numarasını properties.sellerPhone -> properties.phone -> DTO sellerPhone -> session user phone -> localStorage sırasıyla çözümle
   const rawPhone =
     (typeof props.sellerPhone === 'string' && props.sellerPhone.trim()) ||
     (typeof props.phone === 'string' && props.phone.trim()) ||
+    (typeof props.seller_phone === 'string' && props.seller_phone.trim()) ||
+    (typeof props.contactPhone === 'string' && props.contactPhone.trim()) ||
+    (typeof (dto as Record<string, unknown>).sellerPhone === 'string' &&
+      ((dto as Record<string, unknown>).sellerPhone as string).trim()) ||
     getAuthSession()?.user?.phone ||
+    (typeof localStorage !== 'undefined'
+      ? localStorage.getItem('haradan.lastSellerPhone')
+      : null) ||
     '';
+
+  if (rawPhone && typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('haradan.lastSellerPhone', rawPhone);
+    } catch {}
+  }
 
   const parsedPhone = rawPhone
     ? parseInternationalPhone(rawPhone)

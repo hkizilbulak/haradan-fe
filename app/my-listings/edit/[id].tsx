@@ -3,6 +3,7 @@ import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import { PostDetailsStep, PostFormShell } from '@/components/post';
+import { parseInternationalPhone } from '@/services/phone';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useMyListingEdit } from '@/hooks/useMyListingEdit';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -23,6 +24,37 @@ export default function EditListingScreen() {
       router.replace('/auth/login?next=/my-listings');
     }
   }, [ready, isLoggedIn, router]);
+
+  // Telefon alanı boş geldiyse kullanıcı profilinden veya son kullanılan numaradan otomatik doldur
+  useEffect(() => {
+    if (edit.draft && !edit.draft.details.sellerPhone?.trim()) {
+      const fallback =
+        session?.user?.phone ||
+        (typeof localStorage !== 'undefined'
+          ? localStorage.getItem('haradan.lastSellerPhone')
+          : null);
+      if (fallback) {
+        const parsed = parseInternationalPhone(fallback);
+        if (parsed.national) {
+          const newPhone = parsed.national;
+          const newIso = parsed.iso || 'TR';
+          edit.updateDetails({
+            phoneCountryIso: newIso,
+            sellerPhone: newPhone,
+          });
+          edit.markClean({
+            ...edit.draft,
+            details: {
+              ...edit.draft.details,
+              phoneCountryIso: newIso,
+              sellerPhone: newPhone,
+            },
+          });
+        }
+      }
+    }
+  }, [edit.draft, session?.user?.phone, edit.updateDetails, edit.markClean]);
+
 
   const close = useCallback(() => {
     if (router.canGoBack()) router.back();

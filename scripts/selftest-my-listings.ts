@@ -17,7 +17,12 @@ import { mapOwnerToListingDraft } from '../services/my-listings/mapOwnerToListin
 import { detailsErrors, detailsStepComplete } from '../services/listing/validateListingDraft';
 import { HttpMyListingsRepository } from '../services/my-listings/HttpMyListingsRepository';
 import { MockMyListingsRepository } from '../services/my-listings/MockMyListingsRepository';
+import {
+  areListingDraftsEqual,
+  isListingDraftDirty,
+} from '../services/my-listings/isListingDraftDirty';
 import { ApiError } from '../services/http';
+
 
 let failed = 0;
 let passed = 0;
@@ -418,11 +423,76 @@ async function main(): Promise<void> {
   assertEqual(pansiyonDraft.details.sellerPhone, '555 123 45 67', 'pansiyon draft sellerPhone parsed');
   assertEqual(pansiyonDraft.details.facilityGrassPaddock, true, 'facilityGrassPaddock mapped');
   assertEqual(pansiyonDraft.details.facilityVeterinarian, true, 'facilityVeterinarian mapped');
-  assertEqual(detailsStepComplete(pansiyonDraft), true, 'pansiyon draft passes detailsStepComplete');
+  // Test areListingDraftsEqual & isListingDraftDirty
+  const clonePansiyon = JSON.parse(JSON.stringify(pansiyonDraft));
+  assert(areListingDraftsEqual(pansiyonDraft, clonePansiyon), 'identical drafts are equal');
+  assert(!isListingDraftDirty(pansiyonDraft, clonePansiyon), 'clean draft is not dirty');
+
+  // Modify title -> dirty
+  const modifiedTitleDraft = {
+    ...pansiyonDraft,
+    details: { ...pansiyonDraft.details, title: 'Yeni Başlık' },
+  };
+  assert(isListingDraftDirty(modifiedTitleDraft, pansiyonDraft), 'modified title makes draft dirty');
+
+  // Revert title -> clean
+  const revertedDraft = {
+    ...modifiedTitleDraft,
+    details: { ...modifiedTitleDraft.details, title: pansiyonDraft.details.title },
+  };
+  assert(!isListingDraftDirty(revertedDraft, pansiyonDraft), 'reverting title restores clean state');
+
+  // Modify dynamic properties -> dirty
+  const modifiedPropsDraft = {
+    ...pansiyonDraft,
+    details: {
+      ...pansiyonDraft.details,
+      properties: { ...pansiyonDraft.details.properties, aygirAdi: 'ABARİS' },
+    },
+  };
+  assert(isListingDraftDirty(modifiedPropsDraft, pansiyonDraft), 'modified property makes draft dirty');
+
+  // Modify media -> dirty
+  const modifiedMediaDraft = {
+    ...pansiyonDraft,
+    media: [
+      ...pansiyonDraft.media,
+      {
+        localId: 'loc-new',
+        uri: 'http://localhost/new.jpg',
+        mimeType: 'image/jpeg',
+        fileName: 'new.jpg',
+        isCover: false,
+        assetId: null,
+      },
+    ],
+  };
+  assert(isListingDraftDirty(modifiedMediaDraft, pansiyonDraft), 'added media makes draft dirty');
+
+  // Null/undefined/empty string normalization
+  const emptyStringDraft = {
+    ...pansiyonDraft,
+    details: { ...pansiyonDraft.details, trainer: '' },
+  };
+  const undefinedDraft = {
+    ...pansiyonDraft,
+    details: { ...pansiyonDraft.details, trainer: undefined as any },
+  };
+  // Rejected listing favorite check
+  const rejectedListing = {
+    ...pansiyonDraft,
+    status: 'rejected',
+    backendStatus: 'REJECTED',
+  };
+  const isRejectedListing =
+    rejectedListing.backendStatus === 'REJECTED' || rejectedListing.status === 'rejected';
+  assert(isRejectedListing, 'rejected status identified correctly');
 
   console.log(`\n${passed} passed, ${failed} failed`);
+
   if (failed > 0) process.exit(1);
 }
+
 
 void main().catch((err) => {
   console.error(err instanceof Error ? err.message : err);

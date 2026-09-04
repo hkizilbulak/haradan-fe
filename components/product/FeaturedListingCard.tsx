@@ -41,6 +41,7 @@ type FeaturedListingCardProps = {
   accessToken?: string | null;
   onPress?: (id: AdvertId) => void;
   onToggleFavorite?: (product: CatalogProductCard) => void;
+  showFavorite?: boolean;
   /** Taslak sekmesi — favori yanındaki kırmızı eksi. */
   onRemove?: (id: AdvertId) => void;
   removing?: boolean;
@@ -57,6 +58,7 @@ function FeaturedListingCardComponent({
   accessToken,
   onPress,
   onToggleFavorite,
+  showFavorite,
   onRemove,
   removing = false,
   onMarkSold,
@@ -103,6 +105,12 @@ function FeaturedListingCardComponent({
   }, [onMarkSold, product.id]);
 
   const isSold = (product as { backendStatus?: string }).backendStatus === 'SOLD';
+  const isRejected =
+    (product as { backendStatus?: string }).backendStatus === 'REJECTED' ||
+    (product as { status?: string }).status === 'rejected';
+  const shouldShowFavorite =
+    !isRejected && (showFavorite !== undefined ? showFavorite : Boolean(onToggleFavorite));
+  const hasActions = Boolean(onRemove || onMarkSold || shouldShowFavorite);
 
   const animateHover = useCallback(
     (to: number) => {
@@ -209,24 +217,29 @@ function FeaturedListingCardComponent({
               </Text>
             </View>
           ) : null}
-          <View style={styles.wishWrap}>
-            {onRemove ? (
-              <RemoveDraftButton
-                disabled={removing}
-                onPress={handleRemove}
-              />
-            ) : null}
-            {onMarkSold ? (
-              <MarkSoldButton
-                disabled={markingSold || isSold}
-                onPress={handleMarkSold}
-              />
-            ) : null}
-            <WishlistButton
-              active={product.isFavorite === true}
-              onPress={handleFavorite}
-            />
-          </View>
+          {hasActions ? (
+            <View style={styles.wishWrap}>
+              {onRemove ? (
+                <RemoveDraftButton
+                  disabled={removing}
+                  onPress={handleRemove}
+                />
+              ) : null}
+              {onMarkSold ? (
+                <MarkSoldButton
+                  disabled={markingSold || isSold}
+                  onPress={handleMarkSold}
+                />
+              ) : null}
+              {shouldShowFavorite ? (
+                <WishlistButton
+                  active={product.isFavorite === true}
+                  onPress={handleFavorite}
+                />
+              ) : null}
+            </View>
+          ) : null}
+
         </View>
 
         <View style={[styles.body, compact && styles.bodyCompact]}>

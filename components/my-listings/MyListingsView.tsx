@@ -272,6 +272,8 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
         ? `${activeItems.length} ilan · ${activeTabLabel}`
         : activeTabLabel;
 
+  const isRejectedTab = status === 'rejected';
+
   const listingCards = activeItems.map((item) => (
     <FeaturedListingCard
       key={`${item.id}-${locationTick}`}
@@ -280,7 +282,8 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
       compact={!isWide}
       badge={item.isUrgent && item.status !== 'sold' ? 'urgent' : 'auto'}
       onPress={(id) => router.push(`/advert/${id}`)}
-      onToggleFavorite={toggle}
+      onToggleFavorite={isRejectedTab || item.status === 'rejected' ? undefined : toggle}
+      showFavorite={!isRejectedTab && item.status !== 'rejected' && item.backendStatus !== 'REJECTED'}
       onRemove={status === 'draft' ? requestRemoveItem : undefined}
       removing={deleting && pendingDelete?.id === item.id}
       onMarkSold={status === 'published' ? requestMarkSold : undefined}
@@ -288,6 +291,7 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
       accessToken={accessToken}
     />
   ));
+
 
   const statusErrors = (
     <>

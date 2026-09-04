@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -91,8 +92,15 @@ export function Button({
         {
           backgroundColor: pressed ? palette.pressedBg : palette.bg,
           borderColor: palette.border,
-          opacity: isDisabled ? 0.5 : 1,
+          opacity: isDisabled ? 0.38 : 1,
         },
+        Platform.select({
+          web: {
+            cursor: isDisabled ? 'not-allowed' : 'pointer',
+            transition: 'opacity 0.2s ease, background-color 0.2s ease, border-color 0.2s ease',
+          } as any,
+          default: {},
+        }),
         style,
       ]}
     >
