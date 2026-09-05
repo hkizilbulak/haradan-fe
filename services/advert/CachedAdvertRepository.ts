@@ -11,6 +11,16 @@ export function createCachedAdvertRepository(
 
   return {
     getCached: (id) => cache.get(advertKey(id)) ?? null,
+    invalidate: (id) => {
+      if (id !== undefined) {
+        const key = advertKey(id);
+        cache.delete(key);
+        inflight.delete(key);
+      } else {
+        cache.clear();
+        inflight.clear();
+      }
+    },
     async getById(id, options) {
       const key = advertKey(id);
       const fresh = options?.fresh === true;
@@ -22,7 +32,7 @@ export function createCachedAdvertRepository(
       }
 
       const run = inner
-        .getById(id, { fresh: true })
+        .getById(id, { ...options, fresh: true })
         .then((data) => {
           cache.set(key, data);
           return data;
@@ -36,3 +46,4 @@ export function createCachedAdvertRepository(
     },
   };
 }
+

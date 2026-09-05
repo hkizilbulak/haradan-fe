@@ -10,6 +10,11 @@ export class MockAdvertRepository implements IAdvertRepository {
     return null;
   }
 
+  invalidate(_id?: AdvertId): void {
+    // No-op for mock repository
+  }
+
+
   async getById(id: AdvertId, _options?: AdvertQueryOptions): Promise<AdvertDetail> {
     await delay(MOCK_LATENCY_MS);
     return getMockAdvertDetail(id);

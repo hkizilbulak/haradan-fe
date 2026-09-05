@@ -1,3 +1,4 @@
+import { advertRepository } from '@/services/advert';
 import { HttpClient, ApiError } from '@/services/http';
 import { catalogRepository, type ICatalogRepository } from '@/services/catalog';
 import { getAuthSession } from '@/services/auth/sessionStore';
@@ -82,7 +83,8 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
     );
     const tree = await this.catalog.getCategoryTree();
     const draft = mapOwnerToListingDraft(dto, tree, this.baseUrl);
-    if (dto.horseId) {
+    const propsCount = Object.keys(dto.properties || {}).length;
+    if (dto.horseId && propsCount === 0) {
       try {
         const horse = await this.tjkRepo.getById(dto.horseId);
         if (horse) {
@@ -109,6 +111,7 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
       title: payload.title,
       description: payload.description,
     };
+    if (payload.provinceId) body.provinceId = payload.provinceId;
     if (payload.address !== undefined) body.address = payload.address;
     if (payload.districtId) body.districtId = payload.districtId;
     if (payload.horseId) body.horseId = payload.horseId;
@@ -147,12 +150,15 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
       }
     }
 
+    advertRepository.invalidate(id);
+
     const sellerId = getAuthSession()?.user.id ?? '';
     return mapOwnerAdvertToCard(dto, {
       apiBase: this.baseUrl,
       sellerId,
     });
   }
+
 
   async removeDraft(
     id: AdvertId,

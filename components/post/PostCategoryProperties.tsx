@@ -439,14 +439,58 @@ export function PostCategoryProperties({
     };
 
     // Keep legacy / top-level details fields in sync if applicable
-    if (canonicalKey === 'canonical_breed' || codeUpper === 'HORSE_BREED' || codeUpper === 'BREED') {
-      partialUpdate.breed = String(value ?? '');
-    } else if (canonicalKey === 'canonical_coat_color' || codeUpper === 'COAT_COLOR' || codeUpper === 'COATCOLOR') {
-      partialUpdate.coatColor = String(value ?? '');
-    } else if (canonicalKey === 'canonical_age' || codeUpper === 'HORSE_AGE' || codeUpper === 'AGE') {
-      partialUpdate.age = String(value ?? '');
+    if (canonicalKey === 'canonical_breed' || codeUpper === 'HORSE_BREED' || codeUpper === 'BREED' || code === 'studBreed' || code === 'STALLION_BREED') {
+      const v = value ? String(value) : '';
+      partialUpdate.breed = v;
+      partialUpdate.studBreed = v;
+      if (value) {
+        currentProps['HORSE_BREED'] = value;
+        currentProps['breed'] = value;
+        currentProps['STALLION_BREED'] = value;
+        currentProps['studBreed'] = value;
+      } else {
+        delete currentProps['HORSE_BREED'];
+        delete currentProps['breed'];
+        delete currentProps['STALLION_BREED'];
+        delete currentProps['studBreed'];
+      }
+    } else if (canonicalKey === 'canonical_coat_color' || codeUpper === 'COAT_COLOR' || codeUpper === 'COATCOLOR' || code === 'studCoatColor') {
+      const v = value ? String(value) : '';
+      partialUpdate.coatColor = v;
+      partialUpdate.studCoatColor = v;
+      if (value) {
+        currentProps['COAT_COLOR'] = value;
+        currentProps['coatColor'] = value;
+        currentProps['studCoatColor'] = value;
+      } else {
+        delete currentProps['COAT_COLOR'];
+        delete currentProps['coatColor'];
+        delete currentProps['studCoatColor'];
+      }
+    } else if (canonicalKey === 'canonical_age' || codeUpper === 'HORSE_AGE' || codeUpper === 'AGE' || code === 'studAge' || code === 'STALLION_AGE') {
+      const v = value ? String(value) : '';
+      partialUpdate.age = v;
+      partialUpdate.studAge = v;
+      if (value) {
+        currentProps['HORSE_AGE'] = value;
+        currentProps['age'] = value;
+        currentProps['STALLION_AGE'] = value;
+        currentProps['studAge'] = value;
+      } else {
+        delete currentProps['HORSE_AGE'];
+        delete currentProps['age'];
+        delete currentProps['STALLION_AGE'];
+        delete currentProps['studAge'];
+      }
     } else if (canonicalKey === 'canonical_gender' || codeUpper === 'HORSE_GENDER' || codeUpper === 'GENDER') {
       partialUpdate.gender = value as any;
+      if (value) {
+        currentProps['HORSE_GENDER'] = value;
+        currentProps['gender'] = value;
+      } else {
+        delete currentProps['HORSE_GENDER'];
+        delete currentProps['gender'];
+      }
     } else if (canonicalKey === 'canonical_grass_paddock' || code === 'grassPaddock') {
       partialUpdate.facilityGrassPaddock = Boolean(value);
     } else if (canonicalKey === 'canonical_sand_paddock' || code === 'sandPaddock') {
@@ -467,46 +511,56 @@ export function PostCategoryProperties({
       partialUpdate.companyName = String(value ?? '');
     } else if (code === 'WEBSITE_URL' || code === 'websiteUrl') {
       partialUpdate.websiteUrl = String(value ?? '');
-    } else if (code === 'STALLION_BREED' || code === 'studBreed') {
-      partialUpdate.studBreed = String(value ?? '');
-      currentProps['STALLION_BREED'] = value;
-      currentProps['studBreed'] = value;
-    } else if (code === 'STALLION_AGE' || code === 'studAge') {
-      partialUpdate.studAge = String(value ?? '');
-      currentProps['STALLION_AGE'] = value;
-      currentProps['studAge'] = value;
-    } else if (code === 'COAT_COLOR' || code === 'studCoatColor') {
-      partialUpdate.studCoatColor = String(value ?? '');
-      partialUpdate.coatColor = String(value ?? '');
-      currentProps['COAT_COLOR'] = value;
-      currentProps['studCoatColor'] = value;
     } else if (canonicalKey === 'canonical_stud_name' || code === 'studHorse' || code === 'studHorseName' || codeUpper === 'REGISTERED_NAME' || codeUpper === 'HORSE_NAME') {
-      partialUpdate.studHorseName = String(value ?? '');
-      partialUpdate.registeredName = String(value ?? '');
-      currentProps['studHorse'] = value;
-      currentProps['studHorseName'] = value;
-      currentProps['REGISTERED_NAME'] = value;
-      currentProps['HORSE_NAME'] = value;
-      currentProps[code] = value;
+      const v = value ? String(value) : '';
+      partialUpdate.studHorseName = v;
+      partialUpdate.registeredName = v;
+      if (value) {
+        currentProps['studHorse'] = value;
+        currentProps['studHorseName'] = value;
+        currentProps['REGISTERED_NAME'] = value;
+        currentProps['HORSE_NAME'] = value;
+      } else {
+        delete currentProps['studHorse'];
+        delete currentProps['studHorseName'];
+        delete currentProps['REGISTERED_NAME'];
+        delete currentProps['HORSE_NAME'];
+      }
     } else if (canonicalKey === 'canonical_stud_sire' || code === 'studSire' || codeUpper === 'SIRE') {
-      partialUpdate.studSire = String(value ?? '');
-      partialUpdate.sire = String(value ?? '');
-      currentProps['studSire'] = value;
-      currentProps['SIRE'] = value;
-      currentProps[code] = value;
+      const v = value ? String(value) : '';
+      partialUpdate.studSire = v;
+      partialUpdate.sire = v;
+      if (value) {
+        currentProps['studSire'] = value;
+        currentProps['SIRE'] = value;
+      } else {
+        delete currentProps['studSire'];
+        delete currentProps['SIRE'];
+      }
     } else if (canonicalKey === 'canonical_stud_dam' || code === 'studDam' || codeUpper === 'DAM') {
-      partialUpdate.studDam = String(value ?? '');
-      partialUpdate.dam = String(value ?? '');
-      currentProps['studDam'] = value;
-      currentProps['DAM'] = value;
-      currentProps[code] = value;
+      const v = value ? String(value) : '';
+      partialUpdate.studDam = v;
+      partialUpdate.dam = v;
+      if (value) {
+        currentProps['studDam'] = value;
+        currentProps['DAM'] = value;
+      } else {
+        delete currentProps['studDam'];
+        delete currentProps['DAM'];
+      }
     } else if (canonicalKey === 'canonical_stud_damsire' || code === 'studDamSire' || code === 'studDamsire' || codeUpper === 'DAMSIRE') {
-      partialUpdate.studDamsire = String(value ?? '');
-      partialUpdate.damsire = String(value ?? '');
-      currentProps['studDamSire'] = value;
-      currentProps['studDamsire'] = value;
-      currentProps['DAMSIRE'] = value;
-      currentProps[code] = value;
+      const v = value ? String(value) : '';
+      partialUpdate.studDamsire = v;
+      partialUpdate.damsire = v;
+      if (value) {
+        currentProps['studDamSire'] = value;
+        currentProps['studDamsire'] = value;
+        currentProps['DAMSIRE'] = value;
+      } else {
+        delete currentProps['studDamSire'];
+        delete currentProps['studDamsire'];
+        delete currentProps['DAMSIRE'];
+      }
     } else if (codeUpper === 'HEIGHT_CM') {
       partialUpdate.heightCm = String(value ?? '');
     } else if (codeUpper === 'BIRTH_DATE') {
@@ -659,13 +713,20 @@ export function PostCategoryProperties({
               <View style={styles.chips}>
                 {prop.options.map((opt) => {
                   const optVal = opt.value || opt.label;
+                  const strVal = String(val ?? '').toLocaleLowerCase('tr').trim();
+                  const strOptVal = optVal.toLocaleLowerCase('tr').trim();
+                  const strOptValue = (opt.value || '').toLocaleLowerCase('tr').trim();
+                  const strOptLabel = (opt.label || '').toLocaleLowerCase('tr').trim();
+
                   const on =
-                    String(val ?? '').toLocaleLowerCase('tr') ===
-                    optVal.toLocaleLowerCase('tr') ||
-                    String(val ?? '').toLocaleLowerCase('tr') ===
-                    (opt.value || '').toLocaleLowerCase('tr') ||
-                    String(val ?? '').toLocaleLowerCase('tr') ===
-                    (opt.label || '').toLocaleLowerCase('tr');
+                    strVal === strOptVal ||
+                    strVal === strOptValue ||
+                    strVal === strOptLabel ||
+                    (strVal !== '' && (
+                      (strVal.includes('ingiliz') && strOptVal.includes('ingiliz')) ||
+                      (strVal.includes('arap') && strOptVal.includes('arap'))
+                    ));
+
 
                   return (
                     <Pressable

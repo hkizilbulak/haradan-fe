@@ -176,17 +176,16 @@ function buildHorseFromTjkOrDto(
       }
     : { ...EMPTY_HORSE };
 
-  // Enrich missing / empty fields from manual category properties
+  // Enrich fields: User-saved properties in propMap take precedence, with TJK profile as fallback
   const sire =
-    baseHorse.sire ||
     getPropValue(propMap, ['SIRE', 'studSire', 'baba', 'babasire', 'babaadi']) ||
+    baseHorse.sire ||
     '';
   const dam =
-    baseHorse.dam ||
     getPropValue(propMap, ['DAM', 'studDam', 'anne', 'annedam', 'anneadi']) ||
+    baseHorse.dam ||
     '';
   const damsire =
-    baseHorse.damsire ||
     getPropValue(propMap, [
       'DAMSIRE',
       'studDamSire',
@@ -196,28 +195,32 @@ function buildHorseFromTjkOrDto(
       'anneninbabasidamsire',
       'anneninbabasi',
     ]) ||
+    baseHorse.damsire ||
     '';
   const breed =
-    baseHorse.breed ||
     getPropValue(propMap, ['HORSE_BREED', 'STALLION_BREED', 'breed', 'studBreed', 'atirki', 'irk']) ||
+    baseHorse.breed ||
     '';
   const coatColor =
-    baseHorse.coatColor ||
     getPropValue(propMap, ['COAT_COLOR', 'studCoatColor', 'coatColor', 'donu', 'don', 'donurenk']) ||
+    baseHorse.coatColor ||
     '';
   const isStud =
     Boolean(getPropValue(propMap, ['studBreed', 'STALLION_BREED', 'studHorse', 'studHorseName', 'studSire', 'studDam', 'studAge', 'studCoatColor', 'studDamsire'])) ||
     Boolean((propMap as any)['__isStud']);
 
   const gender =
-    baseHorse.gender ||
     (getPropValue(propMap, ['HORSE_GENDER', 'gender', 'cinsiyet']) as HorseGender) ||
+    baseHorse.gender ||
     (isStud ? ('Erkek' as HorseGender) : ('' as HorseGender));
 
+  const propAge = getPropValue(propMap, ['HORSE_AGE', 'STALLION_AGE', 'age', 'studAge', 'yas', 'yaş']);
   const rawAge =
-    baseHorse.age != null && baseHorse.age !== 0 && baseHorse.age !== ''
-      ? baseHorse.age
-      : getPropValue(propMap, ['HORSE_AGE', 'STALLION_AGE', 'age', 'studAge', 'yas', 'yaş']);
+    propAge != null && propAge !== ''
+      ? propAge
+      : (baseHorse.age ? baseHorse.age : '');
+
+
   const parseSafeHorseAge = (raw: unknown): number | string => {
     if (raw == null || raw === '') return 0;
     if (typeof raw === 'number') return raw;
@@ -232,25 +235,26 @@ function buildHorseFromTjkOrDto(
   const age = parseSafeHorseAge(rawAge);
 
   const registeredName =
-    baseHorse.registeredName ||
     getPropValue(propMap, ['REGISTERED_NAME', 'HORSE_NAME', 'studHorseName', 'studHorse', 'atadi', 'aygiradi']) ||
+    baseHorse.registeredName ||
     '';
   const heightCmRaw =
-    baseHorse.heightCm ??
-    getPropValue(propMap, ['HEIGHT_CM', 'heightCm', 'cidago']);
+    getPropValue(propMap, ['HEIGHT_CM', 'heightCm', 'cidago']) ??
+    baseHorse.heightCm;
   const heightCm = heightCmRaw ? parseInt(String(heightCmRaw), 10) : null;
   const birthDate =
-    baseHorse.birthDate ||
     getPropValue(propMap, ['BIRTH_DATE', 'birthDate', 'dogumtarihi']) ||
+    baseHorse.birthDate ||
     '';
   const breeder =
-    baseHorse.breeder ||
     getPropValue(propMap, ['BREEDER', 'breeder', 'yetistirici']) ||
+    baseHorse.breeder ||
     '';
   const trainer =
-    baseHorse.trainer ||
     getPropValue(propMap, ['TRAINER', 'trainer', 'antrenor']) ||
+    baseHorse.trainer ||
     '';
+
 
   return {
     ...baseHorse,

@@ -10,4 +10,6 @@ export type AdvertQueryOptions = {
 export interface IAdvertRepository {
   getById(id: AdvertId, options?: AdvertQueryOptions): Promise<AdvertDetail>;
   getCached(id: AdvertId): AdvertDetail | null;
+  invalidate(id?: AdvertId): void;
 }
+

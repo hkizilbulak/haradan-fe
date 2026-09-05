@@ -156,16 +156,58 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
     ['IS_RACE_READY', d.isRaceReady !== undefined ? Boolean(d.isRaceReady) : undefined],
   ];
 
+  const isStud = isStudServiceListing(draft.type);
+
   for (const [code, val] of TOP_LEVEL_INJECTIONS) {
-    if (val !== undefined && val !== null && String(val).trim() !== '' && !props[code]) {
+    if (val !== undefined && val !== null && String(val).trim() !== '') {
+      // User's top-level form state always takes precedence over stale properties loaded from previous versions
       props[code] = typeof val === 'string' ? val.trim() : val;
     }
   }
 
-  // If stud service listing, stallion is always male
-  if (isStudServiceListing(draft.type)) {
+  // Keep canonical keys and aliases in sync so there is never an old conflicting alias
+  if (isStud) {
     if (!props['HORSE_GENDER']) props['HORSE_GENDER'] = 'Erkek';
     if (!props['gender']) props['gender'] = 'Erkek';
+    if (props['STALLION_BREED']) {
+      props['studBreed'] = props['STALLION_BREED'];
+    }
+    if (props['STALLION_AGE'] != null) {
+      props['studAge'] = props['STALLION_AGE'];
+    }
+    if (props['studHorseName'] || props['studHorse']) {
+      const name = props['studHorseName'] || props['studHorse'];
+      props['studHorseName'] = name;
+      props['studHorse'] = name;
+    }
+  } else {
+    // When editing non-stud listings, align all aliases with the primary horse properties
+    if (props['REGISTERED_NAME']) {
+      props['HORSE_NAME'] = props['REGISTERED_NAME'];
+      if (props['studHorse']) props['studHorse'] = props['REGISTERED_NAME'];
+      if (props['studHorseName']) props['studHorseName'] = props['REGISTERED_NAME'];
+    }
+    if (props['HORSE_BREED']) {
+      props['STALLION_BREED'] = normStudBreed(props['HORSE_BREED']);
+      props['studBreed'] = normStudBreed(props['HORSE_BREED']);
+    }
+    if (props['COAT_COLOR']) {
+      props['studCoatColor'] = props['COAT_COLOR'];
+    }
+    if (props['HORSE_AGE'] != null) {
+      props['STALLION_AGE'] = normStudAge(props['HORSE_AGE']);
+      props['studAge'] = normStudAge(props['HORSE_AGE']);
+    }
+    if (props['SIRE']) {
+      props['studSire'] = props['SIRE'];
+    }
+    if (props['DAM']) {
+      props['studDam'] = props['DAM'];
+    }
+    if (props['DAMSIRE']) {
+      props['studDamSire'] = props['DAMSIRE'];
+      props['studDamsire'] = props['DAMSIRE'];
+    }
   }
 
   // If HORSE_AGE exists in props, ensure it's normalized to the select option string

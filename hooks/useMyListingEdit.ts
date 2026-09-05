@@ -121,9 +121,8 @@ export function useMyListingEdit(
         mapDraftToUpdate(draft, version),
         accessToken
       );
-      setVersion((v) => v + 1);
+      setVersion(typeof updated?.version === 'number' ? updated.version : (v) => v + 1);
       setInitialDraft(JSON.parse(JSON.stringify(draft)));
-      void updated;
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kayıt başarısız.');

@@ -32,6 +32,10 @@ export class HttpAdvertRepository implements IAdvertRepository {
     return null;
   }
 
+  invalidate(_id?: AdvertId): void {
+    // No-op for direct HTTP repository
+  }
+
   async getById(
     id: AdvertId,
     options?: AdvertQueryOptions

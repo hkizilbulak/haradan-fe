@@ -51,10 +51,23 @@ export function mapOwnerToListingDraft(
     ? parseInternationalPhone(rawPhone)
     : { iso: 'TR', national: '' };
 
+  const rawGender =
+    (typeof props.HORSE_GENDER === 'string' && props.HORSE_GENDER.trim()) ||
+    (typeof props.gender === 'string' && props.gender.trim()) ||
+    (typeof props.cinsiyet === 'string' && props.cinsiyet.trim()) ||
+    '';
+
   const parsedGender =
-    props.gender === 'Erkek' || props.gender === 'Dişi' || props.gender === 'İğdiş'
-      ? (props.gender as HorseGender)
-      : null;
+    rawGender === 'Erkek' || rawGender === 'Dişi' || rawGender === 'İğdiş'
+      ? (rawGender as HorseGender)
+      : rawGender.toLowerCase().startsWith('e')
+        ? ('Erkek' as HorseGender)
+        : rawGender.toLowerCase().startsWith('d')
+          ? ('Dişi' as HorseGender)
+          : rawGender.toLowerCase().startsWith('i') || rawGender.toLowerCase().startsWith('ı')
+            ? ('İğdiş' as HorseGender)
+            : null;
+
 
   return {
     ...draft,
@@ -141,37 +154,80 @@ export function mapOwnerToListingDraft(
 
       // TJK dışı / ek at özellikleri
       gender: parsedGender,
+      breed:
+        (typeof props.HORSE_BREED === 'string' && props.HORSE_BREED) ||
+        (typeof props.STALLION_BREED === 'string' && props.STALLION_BREED) ||
+        (typeof props.breed === 'string' && props.breed) ||
+        (typeof props.studBreed === 'string' && props.studBreed) ||
+        draft.details.breed,
       birthDate:
-        typeof props.birthDate === 'string' ? props.birthDate : draft.details.birthDate,
+        (typeof props.BIRTH_DATE === 'string' && props.BIRTH_DATE) ||
+        (typeof props.birthDate === 'string' && props.birthDate) ||
+        draft.details.birthDate,
       age:
         props.HORSE_AGE != null
           ? String(props.HORSE_AGE)
-          : props.age != null
-            ? String(props.age)
-            : draft.details.age,
+          : props.STALLION_AGE != null
+            ? String(props.STALLION_AGE)
+            : props.age != null
+              ? String(props.age)
+              : props.studAge != null
+                ? String(props.studAge)
+                : draft.details.age,
       coatColor:
-        typeof props.coatColor === 'string' ? props.coatColor : draft.details.coatColor,
+        (typeof props.COAT_COLOR === 'string' && props.COAT_COLOR) ||
+        (typeof props.studCoatColor === 'string' && props.studCoatColor) ||
+        (typeof props.coatColor === 'string' && props.coatColor) ||
+        draft.details.coatColor,
       heightCm:
-        props.heightCm != null ? String(props.heightCm) : draft.details.heightCm,
-      sire: typeof props.sire === 'string' ? props.sire : draft.details.sire,
-      dam: typeof props.dam === 'string' ? props.dam : draft.details.dam,
+        props.HEIGHT_CM != null
+          ? String(props.HEIGHT_CM)
+          : props.heightCm != null
+            ? String(props.heightCm)
+            : draft.details.heightCm,
+      sire:
+        (typeof props.SIRE === 'string' && props.SIRE) ||
+        (typeof props.studSire === 'string' && props.studSire) ||
+        (typeof props.sire === 'string' && props.sire) ||
+        draft.details.sire,
+      dam:
+        (typeof props.DAM === 'string' && props.DAM) ||
+        (typeof props.studDam === 'string' && props.studDam) ||
+        (typeof props.dam === 'string' && props.dam) ||
+        draft.details.dam,
       damsire:
-        typeof props.damsire === 'string' ? props.damsire : draft.details.damsire,
+        (typeof props.DAMSIRE === 'string' && props.DAMSIRE) ||
+        (typeof props.studDamSire === 'string' && props.studDamSire) ||
+        (typeof props.studDamsire === 'string' && props.studDamsire) ||
+        (typeof props.damsire === 'string' && props.damsire) ||
+        draft.details.damsire,
       registeredName:
-        typeof props.registeredName === 'string'
-          ? props.registeredName
-          : draft.details.registeredName,
+        (typeof props.REGISTERED_NAME === 'string' && props.REGISTERED_NAME) ||
+        (typeof props.HORSE_NAME === 'string' && props.HORSE_NAME) ||
+        (typeof props.studHorseName === 'string' && props.studHorseName) ||
+        (typeof props.studHorse === 'string' && props.studHorse) ||
+        (typeof props.registeredName === 'string' && props.registeredName) ||
+        draft.details.registeredName,
       ownersText:
-        typeof props.ownersText === 'string'
-          ? props.ownersText
-          : draft.details.ownersText,
+        (typeof props.OWNER === 'string' && props.OWNER) ||
+        (typeof props.ownersText === 'string' && props.ownersText) ||
+        draft.details.ownersText,
       breeder:
-        typeof props.breeder === 'string' ? props.breeder : draft.details.breeder,
+        (typeof props.BREEDER === 'string' && props.BREEDER) ||
+        (typeof props.breeder === 'string' && props.breeder) ||
+        draft.details.breeder,
       trainer:
-        typeof props.trainer === 'string' ? props.trainer : draft.details.trainer,
+        (typeof props.TRAINER === 'string' && props.TRAINER) ||
+        (typeof props.trainer === 'string' && props.trainer) ||
+        draft.details.trainer,
+      tjkNumber:
+        (typeof props.TJK_NUMBER === 'string' && props.TJK_NUMBER) ||
+        (typeof props.tjkNumber === 'string' && props.tjkNumber) ||
+        draft.details.tjkNumber,
 
       properties: { ...props },
     },
+
     media: media.map((m, index) => ({
       localId: m.assetId,
       uri: mediaDeliveryUrl(m.assetId, 'DETAIL', apiBase),

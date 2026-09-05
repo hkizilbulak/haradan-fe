@@ -34,6 +34,7 @@ export class HttpClient {
       res = await fetch(url, {
         ...rest,
         method: rest.method ?? 'GET',
+        cache: 'no-store',
         body,
         credentials: 'omit',
         mode: 'cors',
