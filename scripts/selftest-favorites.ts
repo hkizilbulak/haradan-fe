@@ -140,6 +140,46 @@ async function main(): Promise<void> {
   const auth = new Headers(calls[0]?.init.headers);
   assertEqual(auth.get('Authorization'), 'Bearer tok', 'list sends Bearer');
 
+  // Shared hydrate dedupe
+  const { ensureFavoritesHydrated, resetFavoritesHydration } = await import(
+    '../services/favorites/ensureFavoritesHydrated'
+  );
+  resetFavoritesHydration();
+  clearFavorites();
+  calls.length = 0;
+
+  let listCalls = 0;
+  const countingRepo = {
+    list: async (token: string) => {
+      listCalls += 1;
+      return repo.list(token);
+    },
+    add: (id: number, token: string) => repo.add(id, token),
+    remove: (id: number, token: string) => repo.remove(id, token),
+  };
+
+  await Promise.all([
+    ensureFavoritesHydrated('tok', {
+      repo: countingRepo,
+      getToken: async () => 'tok',
+    }),
+    ensureFavoritesHydrated('tok', {
+      repo: countingRepo,
+      getToken: async () => 'tok',
+    }),
+    ensureFavoritesHydrated('tok', {
+      repo: countingRepo,
+      getToken: async () => 'tok',
+    }),
+  ]);
+  assertEqual(listCalls, 1, 'parallel ensureFavoritesHydrated = 1 list call');
+
+  await ensureFavoritesHydrated('tok', {
+    repo: countingRepo,
+    getToken: async () => 'tok',
+  });
+  assertEqual(listCalls, 1, 'TTL skip second hydrate');
+
   console.log(`\n${passed} passed, ${failed} failed`);
   if (failed > 0) process.exit(1);
 }

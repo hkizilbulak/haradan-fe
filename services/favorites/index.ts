@@ -21,3 +21,7 @@ export {
   toggleFavorite,
   toggleFavoriteLocal,
 } from './favoriteStore';
+export {
+  ensureFavoritesHydrated,
+  resetFavoritesHydration,
+} from './ensureFavoritesHydrated';
