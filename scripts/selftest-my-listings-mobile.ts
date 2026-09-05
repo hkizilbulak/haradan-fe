@@ -55,6 +55,7 @@ assert(viewSrc.includes('!isWide'), 'mobile branch guard');
 
 console.log('\n── dock visibility ──');
 assert(shouldShowMobileDock('/my-listings'), 'dock visible on my-listings');
+assert(!shouldShowMobileDock('/my-listings/edit/adv-123'), 'dock hidden on edit screen');
 
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

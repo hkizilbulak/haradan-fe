@@ -37,15 +37,17 @@ export function mobileDetailScrollInset(bottomInset = 0): number {
   return dock + MOBILE_DETAIL_STICKY_BAR_HEIGHT + 12;
 }
 
-/** Dock'un gizleneceği rota önekleri (auth, ilan sihirbazı). */
+/** Dock'un gizleneceği rota önekleri (auth, ilan sihirbazı, ilan düzenleme). */
 export const MOBILE_DOCK_HIDDEN_PREFIXES = [
   '/auth',
   '/post',
+  '/my-listings/edit',
   '/verify-email',
 ] as const;
 
 export function shouldShowMobileDock(pathname: string): boolean {
-  const path = pathname.split('?')[0] ?? pathname;
+  const raw = pathname.split('?')[0] ?? pathname;
+  const path = raw.replace(/\/\(tabs\)/g, '') || '/';
   return !MOBILE_DOCK_HIDDEN_PREFIXES.some(
     (prefix) => path === prefix || path.startsWith(`${prefix}/`)
   );

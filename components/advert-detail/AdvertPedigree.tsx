@@ -975,14 +975,14 @@ export const AdvertPedigree = memo(function AdvertPedigree({
         <View style={styles.legendItem}>
           <View style={[styles.legendIndicator, { backgroundColor: '#38bdf8' }]} />
           <Text style={[styles.legendText, { color: textSecondary }]}>
-            Erkek Hat (Aygır)
+            Aygır
           </Text>
         </View>
 
         <View style={styles.legendItem}>
           <View style={[styles.legendIndicator, { backgroundColor: '#f472b6' }]} />
           <Text style={[styles.legendText, { color: textSecondary }]}>
-            Dişi Hat (Kısrak)
+            Kısrak
           </Text>
         </View>
 
