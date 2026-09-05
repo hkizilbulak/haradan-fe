@@ -870,19 +870,27 @@ export const AdvertPedigree = memo(function AdvertPedigree({
           <View style={styles.branchFilterGroup}>
             <Pressable
               onPress={() => handleBranchChange('all')}
-              style={[
+              accessibilityRole="button"
+              accessibilityLabel="Tüm Ağaç"
+              style={({ pressed, hovered }: any) => [
                 styles.branchFilterBtn,
-                activeBranch === 'all' && {
-                  backgroundColor: `${primary}18`,
-                  borderColor: primary,
+                {
+                  backgroundColor:
+                    activeBranch === 'all'
+                      ? `${primary}18`
+                      : hovered
+                        ? `${primary}0c`
+                        : surface,
+                  borderColor:
+                    activeBranch === 'all'
+                      ? primary
+                      : hovered
+                        ? primary
+                        : border,
                 },
+                pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] },
               ]}
             >
-              <Ionicons
-                name="git-network-outline"
-                size={12}
-                color={activeBranch === 'all' ? primary : textSecondary}
-              />
               <Text
                 style={[
                   styles.branchFilterText,
@@ -895,19 +903,27 @@ export const AdvertPedigree = memo(function AdvertPedigree({
 
             <Pressable
               onPress={() => handleBranchChange('sire')}
-              style={[
+              accessibilityRole="button"
+              accessibilityLabel="Baba Hattı"
+              style={({ pressed, hovered }: any) => [
                 styles.branchFilterBtn,
-                activeBranch === 'sire' && {
-                  backgroundColor: 'rgba(56, 189, 248, 0.16)',
-                  borderColor: '#38bdf8',
+                {
+                  backgroundColor:
+                    activeBranch === 'sire'
+                      ? 'rgba(56, 189, 248, 0.16)'
+                      : hovered
+                        ? 'rgba(56, 189, 248, 0.08)'
+                        : surface,
+                  borderColor:
+                    activeBranch === 'sire'
+                      ? '#38bdf8'
+                      : hovered
+                        ? '#38bdf880'
+                        : border,
                 },
+                pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] },
               ]}
             >
-              <Ionicons
-                name="male"
-                size={12}
-                color={activeBranch === 'sire' ? '#38bdf8' : textSecondary}
-              />
               <Text
                 style={[
                   styles.branchFilterText,
@@ -920,19 +936,27 @@ export const AdvertPedigree = memo(function AdvertPedigree({
 
             <Pressable
               onPress={() => handleBranchChange('dam')}
-              style={[
+              accessibilityRole="button"
+              accessibilityLabel="Anne Hattı"
+              style={({ pressed, hovered }: any) => [
                 styles.branchFilterBtn,
-                activeBranch === 'dam' && {
-                  backgroundColor: 'rgba(244, 114, 182, 0.16)',
-                  borderColor: '#f472b6',
+                {
+                  backgroundColor:
+                    activeBranch === 'dam'
+                      ? 'rgba(244, 114, 182, 0.16)'
+                      : hovered
+                        ? 'rgba(244, 114, 182, 0.08)'
+                        : surface,
+                  borderColor:
+                    activeBranch === 'dam'
+                      ? '#f472b6'
+                      : hovered
+                        ? '#f472b680'
+                        : border,
                 },
+                pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] },
               ]}
             >
-              <Ionicons
-                name="female"
-                size={12}
-                color={activeBranch === 'dam' ? '#f472b6' : textSecondary}
-              />
               <Text
                 style={[
                   styles.branchFilterText,
@@ -951,14 +975,14 @@ export const AdvertPedigree = memo(function AdvertPedigree({
         <View style={styles.legendItem}>
           <View style={[styles.legendIndicator, { backgroundColor: '#38bdf8' }]} />
           <Text style={[styles.legendText, { color: textSecondary }]}>
-            ♂ Erkek Hat (Aygır)
+            Erkek Hat (Aygır)
           </Text>
         </View>
 
         <View style={styles.legendItem}>
           <View style={[styles.legendIndicator, { backgroundColor: '#f472b6' }]} />
           <Text style={[styles.legendText, { color: textSecondary }]}>
-            ♀ Dişi Hat (Kısrak)
+            Dişi Hat (Kısrak)
           </Text>
         </View>
 
@@ -1114,12 +1138,11 @@ const styles = StyleSheet.create({
   branchFilterBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 4.5,
+    justifyContent: 'center',
+    paddingHorizontal: 11,
+    paddingVertical: 5.5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'transparent',
     ...Platform.select({
       web: { cursor: 'pointer', transition: 'all 0.15s ease' } as any,
       default: {},
