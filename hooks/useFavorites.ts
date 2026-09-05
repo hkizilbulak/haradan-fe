@@ -1,25 +1,26 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'expo-router';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { getValidAccessToken } from '@/services/auth';
 import {
   clearFavorites,
+  ensureFavoritesHydrated,
   favoritesRepository,
   getFavoriteItems,
   getFavoriteOverrides,
   rememberFavoriteCards,
   removeFavoriteLocal,
-  replaceFavoritesFromServer,
+  resetFavoritesHydration,
   subscribeFavoriteOverrides,
   toggleFavoriteLocal,
 } from '@/services/favorites';
 import { applyFavoriteOverrides } from '@/utils/applyFavoriteOverrides';
-import type { CatalogProductCard } from '@/types'
+import type { CatalogProductCard } from '@/types';
 import type { AdvertId } from '@/types/advertId';
 
 /**
  * Favoriler: login zorunlu, kaynak BE /v1/me/favorites.
- * Logout → yerel cache temizlenir; login → DB listesi hydrate edilir.
+ * Hydrate modül düzeyinde tekilleştirilir — birden fazla mount tek HTTP çağrısı yapar.
  */
 export function useFavorites() {
   const router = useRouter();
@@ -27,7 +28,6 @@ export function useFavorites() {
   const { isLoggedIn, session } = useAuthSession();
   const [tick, setTick] = useState(0);
   const [hydrating, setHydrating] = useState(false);
-  const hydrateGen = useRef(0);
 
   useEffect(
     () => subscribeFavoriteOverrides(() => setTick((n) => n + 1)),
@@ -37,29 +37,24 @@ export function useFavorites() {
   useEffect(() => {
     if (!isLoggedIn) {
       clearFavorites();
+      resetFavoritesHydration();
+      setHydrating(false);
       return;
     }
-    const repo = favoritesRepository;
-    if (!repo) return;
 
-    const gen = ++hydrateGen.current;
+    let cancelled = false;
     setHydrating(true);
-    void (async () => {
-      try {
-        const token =
-          (await getValidAccessToken()) ?? session?.accessToken ?? null;
-        if (!token || gen !== hydrateGen.current) return;
-        const result = await repo.list(token);
-        if (gen !== hydrateGen.current) return;
-        replaceFavoritesFromServer(result.items);
-      } catch {
-        if (gen === hydrateGen.current) {
-          // Keep empty / previous optimistic state; next open can retry.
-        }
-      } finally {
-        if (gen === hydrateGen.current) setHydrating(false);
-      }
-    })();
+    void ensureFavoritesHydrated(session?.accessToken ?? null)
+      .catch(() => {
+        // Keep empty / previous optimistic state; next open can retry.
+      })
+      .finally(() => {
+        if (!cancelled) setHydrating(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [isLoggedIn, session?.accessToken]);
 
   const overrides = useMemo(() => getFavoriteOverrides(), [tick]);
