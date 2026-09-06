@@ -49,6 +49,110 @@ export function getAdvertCategoryKind(detail: AdvertDetail): AdvertCategoryKind 
   return 'horse';
 }
 
+export const CATEGORY_NAMES_BY_ID_OR_SLUG: Record<string, string> = {
+  'c1000000-0000-4000-8000-000000000011': 'Satılık Yarış Atı',
+  'satilik-yaris-ati': 'Satılık Yarış Atı',
+  'cat-satilik-yaris-ati': 'Satılık Yarış Atı',
+  'c-satilik-yaris': 'Satılık Yarış Atı',
+  'c1000000-0000-4000-8000-000000000012': 'Satılık Kısrak',
+  'satilik-kisrak': 'Satılık Kısrak',
+  'c-satilik-kisrak': 'Satılık Kısrak',
+  'c1000000-0000-4000-8000-000000000013': 'Satılık Aygır',
+  'satilik-aygir': 'Satılık Aygır',
+  'c-satilik-aygir': 'Satılık Aygır',
+  'c1000000-0000-4000-8000-000000000014': 'Satılık Binek Atı',
+  'satilik-binek-ati': 'Satılık Binek Atı',
+  'c-satilik-binek': 'Satılık Binek Atı',
+  'c1000000-0000-4000-8000-000000000015': 'Satılık Pony',
+  'satilik-pony': 'Satılık Pony',
+  'c-satilik-pony': 'Satılık Pony',
+  'c1000000-0000-4000-8000-000000000021': 'Pansiyon Haralar',
+  'pansiyon-haralar': 'Pansiyon Haralar',
+  'c1000000-0000-4000-8000-000000000022': 'At Nakliyesi',
+  'at-nakliyesi': 'At Nakliyesi',
+  'c1000000-0000-4000-8000-000000000023': 'Nalbantlar',
+  'nalbantlar': 'Nalbantlar',
+};
+
+export function getAdvertCategoryName(detail?: AdvertDetail | null): string {
+  if (!detail) return '';
+  const rawCatId = (detail.categoryId ?? '').trim();
+  const knownName =
+    CATEGORY_NAMES_BY_ID_OR_SLUG[rawCatId] ||
+    CATEGORY_NAMES_BY_ID_OR_SLUG[rawCatId.toLowerCase()];
+
+  return (
+    (detail.breadcrumbs && detail.breadcrumbs.length > 1
+      ? detail.breadcrumbs[detail.breadcrumbs.length - 2]?.label
+      : '') ||
+    (detail as any)?.category?.name ||
+    knownName ||
+    detail.horse?.breed ||
+    (getAdvertCategoryKind(detail) === 'farrier' ? 'Nalbantlar' : 'Satılık Yarış Atı')
+  );
+}
+
+export function isRaceHorseAdvert(
+  detail?: AdvertDetail | null,
+  resolvedCategoryName?: string
+): boolean {
+  if (!detail) return false;
+  if (getAdvertCategoryKind(detail) !== 'horse') return false;
+
+  const catId = (detail.categoryId ?? '').toLowerCase().trim();
+  const catObj = (detail as any).category;
+  const catSlug = (catObj?.slug || (detail as any).categorySlug || '').toLowerCase();
+  const catName = (catObj?.name || '').toLowerCase();
+  const resolved = (resolvedCategoryName || '').toLowerCase();
+
+  // If explicitly a non-race category (kısrak, binek, pony, aygır), return false
+  const nonRaceTerms = ['kisrak', 'kısrak', 'binek', 'pony', 'aygir', 'aygır'];
+  const isNonRace = nonRaceTerms.some(
+    (t) =>
+      catId.includes(t) ||
+      catSlug.includes(t) ||
+      catName.includes(t) ||
+      resolved.includes(t)
+  );
+  if (isNonRace) return false;
+
+  // Check breadcrumbs for non-race category
+  const crumbs = (detail.breadcrumbs ?? [])
+    .filter((b) => b.href !== '/' && b.href !== '/my-listings' && b.label !== detail.title);
+  for (const b of crumbs) {
+    const l = b.label.toLowerCase();
+    if (nonRaceTerms.some((t) => l.includes(t))) {
+      return false;
+    }
+  }
+
+  // Check if explicitly race horse
+  const isExplicitRace =
+    catId === 'c1000000-0000-4000-8000-000000000011' ||
+    catId === 'satilik-yaris-ati' ||
+    catId === 'cat-satilik-yaris-ati' ||
+    catId === 'c-satilik-yaris' ||
+    catId.includes('yaris') ||
+    catId.includes('yarış') ||
+    catSlug.includes('yaris') ||
+    catSlug.includes('yarış') ||
+    catName.includes('yaris') ||
+    catName.includes('yarış') ||
+    resolved.includes('yaris') ||
+    resolved.includes('yarış');
+
+  if (isExplicitRace) return true;
+
+  for (const b of crumbs) {
+    const l = b.label.toLowerCase();
+    if (l.includes('yaris') || l.includes('yarış')) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export type ParsedHorseInfo = {
   name: string;
   breed: string;

@@ -457,6 +457,8 @@ export function mapPublishedDetailToAdvert(
     specs: propRows.length
       ? [{ id: 'props', title: 'Özellikler', rows: propRows }]
       : [],
+    properties: propMap,
+    rawProperties: propMap,
   });
 }
 

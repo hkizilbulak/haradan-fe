@@ -20,6 +20,8 @@ import { AdvertSiblings } from './AdvertSiblings';
 import { AdvertStatistics } from './AdvertStatistics';
 import {
   getAdvertCategoryKind,
+  getAdvertCategoryName,
+  isRaceHorseAdvert,
   parseHorseInfo,
   parsePansiyonInfo,
   parseStudInfo,
@@ -304,18 +306,24 @@ export const AdvertSpecs = memo(function AdvertSpecs({
     });
 
     // 3. Kategori
-    const categoryName =
-      (detail?.breadcrumbs && detail.breadcrumbs.length > 1
-        ? detail.breadcrumbs[detail.breadcrumbs.length - 2]?.label
-        : '') ||
-      (detail as any)?.category?.name ||
-      detail?.horse?.breed ||
-      (categoryKind === 'farrier' ? 'Nalbantlar' : 'Satılık Yarış Atı');
+    const categoryName = getAdvertCategoryName(detail);
     rows.push({
       icon: 'grid-outline',
       label: 'Kategori',
       value: categoryName,
     });
+
+    const normText = (s: string) =>
+      (s || '')
+        .toLowerCase()
+        .replace(/['’`"]/g, '')
+        .replace(/[-_\s\(\)]/g, '')
+        .replace(/ı/g, 'i')
+        .replace(/ğ/g, 'g')
+        .replace(/ü/g, 'u')
+        .replace(/ş/g, 's')
+        .replace(/ö/g, 'o')
+        .replace(/ç/g, 'c');
 
     // Helper to find boolean / string properties
     const findProp = (codes: string[], defaultVal: boolean | string | null = null): string | null => {
@@ -326,25 +334,43 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       const rawProps = (detail as any)?.properties || (detail as any)?.rawProperties || {};
       for (const c of codes) {
         const val = rawProps[c] ?? rawProps[c.toLowerCase()] ?? rawProps[c.toUpperCase()];
-        if (val != null) {
+        if (val != null && val !== '' && val !== 'null' && val !== 'undefined') {
           if (typeof val === 'boolean') return val ? 'Evet' : 'Hayır';
           if (typeof val === 'string') {
             const lower = val.toLowerCase().trim();
             if (lower === 'true' || lower === 'evet') return 'Evet';
             if (lower === 'false' || lower === 'hayır' || lower === 'hayir') return 'Hayır';
-            return val;
+            return val.trim();
+          }
+          return String(val).trim();
+        }
+      }
+      const normCodes = codes.map(normText);
+      for (const [k, val] of Object.entries(rawProps)) {
+        if (val != null && val !== '' && val !== 'null' && val !== 'undefined') {
+          const kNorm = normText(k);
+          if (normCodes.some((c) => kNorm === c || kNorm.includes(c) || c.includes(kNorm))) {
+            if (typeof val === 'boolean') return val ? 'Evet' : 'Hayır';
+            if (typeof val === 'string') {
+              const lower = val.toLowerCase().trim();
+              if (lower === 'true' || lower === 'evet') return 'Evet';
+              if (lower === 'false' || lower === 'hayır' || lower === 'hayir') return 'Hayır';
+              return val.trim();
+            }
+            return String(val).trim();
           }
         }
       }
       for (const g of detail.specs ?? []) {
         for (const r of g.rows ?? []) {
-          const l = (r.label || '').toLowerCase();
-          for (const c of codes) {
-            if (l.includes(c.toLowerCase()) || normalizeSpecLabel(r.label).toLowerCase().includes(c.toLowerCase())) {
-              const v = String(r.value).toLowerCase().trim();
-              if (v === 'true' || v === 'evet') return 'Evet';
-              if (v === 'false' || v === 'hayır' || v === 'hayir') return 'Hayır';
-              return String(r.value);
+          if (r.value != null && r.value !== '' && r.value !== 'null' && r.value !== 'undefined') {
+            const lNorm = normText(r.label || '');
+            if (normCodes.some((c) => lNorm === c || lNorm.includes(c) || c.includes(lNorm))) {
+              const v = String(r.value).trim();
+              const lower = v.toLowerCase();
+              if (lower === 'true' || lower === 'evet') return 'Evet';
+              if (lower === 'false' || lower === 'hayır' || lower === 'hayir') return 'Hayır';
+              return v;
             }
           }
         }
@@ -421,29 +447,32 @@ export const AdvertSpecs = memo(function AdvertSpecs({
         value: horseInfo.coatColor,
       });
 
-      // İdmanda mı
-      rows.push({
-        icon: 'fitness-outline',
-        label: 'İdmanda mı',
-        value: findProp(['IN_TRAINING', 'inTraining', 'idmanda'], true) ?? 'Evet',
-      });
+      const isRaceHorse = isRaceHorseAdvert(detail, categoryName);
+      if (isRaceHorse) {
+        // İdmanda mı
+        rows.push({
+          icon: 'fitness-outline',
+          label: 'İdmanda mı',
+          value: findProp(['IN_TRAINING', 'inTraining', 'idmanda'], true) ?? 'Evet',
+        });
 
-      // Koşar durumda mı
-      rows.push({
-        icon: 'flash-outline',
-        label: 'Koşar durumda mı',
-        value: findProp(['IS_RACE_READY', 'isRaceReady', 'kosar', 'koşar'], true) ?? 'Evet',
-      });
+        // Koşar durumda mı
+        rows.push({
+          icon: 'flash-outline',
+          label: 'Koşar durumda mı',
+          value: findProp(['IS_RACE_READY', 'isRaceReady', 'kosar', 'koşar'], true) ?? 'Evet',
+        });
 
-      // Kiralık mı
-      rows.push({
-        icon: 'key-outline',
-        label: 'Kiralık mı',
-        value: findProp(['IS_FOR_RENT', 'isForRent', 'kiralik', 'kiralık'], false) ?? 'Hayır',
-      });
+        // Kiralık mı
+        rows.push({
+          icon: 'key-outline',
+          label: 'Kiralık mı',
+          value: findProp(['IS_FOR_RENT', 'isForRent', 'kiralik', 'kiralık'], false) ?? 'Hayır',
+        });
+      }
 
       // Kısrak Gebelik Durumu
-      const isPregnant = findProp(['IS_PREGNANT', 'isPregnant', 'gebe'], null);
+      const isPregnant = findProp(['IS_PREGNANT', 'isPregnant', 'gebe', 'gebemi', 'gebe mi'], null);
       if (isPregnant != null) {
         rows.push({
           icon: 'heart-outline',
@@ -451,18 +480,28 @@ export const AdvertSpecs = memo(function AdvertSpecs({
           value: isPregnant,
         });
 
-        const isPregBool = isPregnant === 'Evet' || isPregnant === 'true';
+        const isPregBool = isPregnant === 'Evet' || isPregnant === 'true' || isPregnant === '1';
         if (isPregBool) {
-          const coveringStallion = findProp(['COVERING_STALLION', 'coveringStallion', 'gebeOlduguAygir', 'aygir'], '');
+          const coveringStallion = findProp(
+            ['COVERING_STALLION', 'coveringStallion', 'gebeOlduguAygir', 'gebe oldugu aygir', 'gebe olduğu aygır', 'aygir', 'aygır'],
+            ''
+          );
           if (coveringStallion) {
             rows.push({
               icon: 'flame-outline',
               label: 'Gebe Olduğu Aygır',
               value: coveringStallion,
+              onPress:
+                coveringStallion && coveringStallion !== '-'
+                  ? () => openTjkHorseSearch(coveringStallion)
+                  : undefined,
             });
           }
 
-          const stage = findProp(['PREGNANCY_STAGE', 'pregnancyStage', 'gebelikDurumu'], '');
+          const stage = findProp(
+            ['PREGNANCY_STAGE', 'pregnancyStage', 'gebelikDurumu', 'gebelik durumu', 'gebelik', 'evre'],
+            ''
+          );
           if (stage) {
             rows.push({
               icon: 'ribbon-outline',
@@ -471,7 +510,10 @@ export const AdvertSpecs = memo(function AdvertSpecs({
             });
           }
 
-          const coveringDate = findProp(['LAST_COVERING_DATE', 'lastCoveringDate', 'sonAsimTarihi', 'coveringDate'], '');
+          const coveringDate = findProp(
+            ['LAST_COVERING_DATE', 'lastCoveringDate', 'sonAsimTarihi', 'son aşım tarihi', 'son asim tarihi', 'aşım tarihi', 'asim tarihi', 'coveringDate'],
+            ''
+          );
           if (coveringDate) {
             rows.push({
               icon: 'calendar-outline',
@@ -529,6 +571,18 @@ export const AdvertSpecs = memo(function AdvertSpecs({
     }
 
     // Append dynamic category properties from specs / properties (skip fields already added above)
+    const isRaceHorse = isRaceHorseAdvert(detail, categoryName);
+    const RACE_ONLY_CODES = new Set([
+      'intraining',
+      'idmandami',
+      'idmanda',
+      'israceready',
+      'kosardurumdami',
+      'kosardurumda',
+      'isforrent',
+      'kiralikmi',
+      'kiralik',
+    ]);
     const seenLabels = new Set(rows.map(r => r.label.toLowerCase().replace(/[-_\s]/g, '')));
     const allGroups = detail?.specs?.length ? detail.specs : groups;
     for (const group of allGroups ?? []) {
@@ -537,6 +591,7 @@ export const AdvertSpecs = memo(function AdvertSpecs({
         const norm = l.toLowerCase().replace(/[-_\s]/g, '');
         if (seenLabels.has(norm)) continue;
         if (norm === 'telefon' || norm === 'sellerphone' || norm === 'phone') continue;
+        if (!isRaceHorse && RACE_ONLY_CODES.has(norm)) continue;
         const v = String(row.value).trim();
         const formattedVal = v.toLowerCase() === 'true' ? 'Evet' : v.toLowerCase() === 'false' ? 'Hayır' : v;
         rows.push({
@@ -554,6 +609,7 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       const normK = k.toLowerCase().replace(/[-_\s]/g, '');
       if (normK === 'sellerphone' || normK === 'phone') continue;
       if (seenLabels.has(normK)) continue;
+      if (!isRaceHorse && RACE_ONLY_CODES.has(normK)) continue;
       const displayVal = typeof v === 'boolean' ? (v ? 'Evet' : 'Hayır') : String(v);
       rows.push({
         icon: getSpecIcon(k),

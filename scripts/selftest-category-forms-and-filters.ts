@@ -39,6 +39,11 @@ import {
   matchHorseColor,
   matchHorsePregnant,
 } from '../components/listings/filterConfig';
+import {
+  isRaceHorseAdvert,
+  getAdvertCategoryName,
+} from '../components/advert-detail/advertCategoryHelper';
+import { mapPublishedDetailToAdvert } from '../services/advert/mapAdvertDetail';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { ListingDraft } from '../types/listing';
@@ -886,6 +891,66 @@ assert(!matchHorsePregnant({ properties: {} }, true), 'Boş özellikler gebe fil
 // Anasayfa Hızlı Arama Linki (Gebe Kısrak)
 const homeSearchSrc = readFileSync(resolve(import.meta.dirname, '../components/home/HomeSearchBar.tsx'), 'utf8');
 assert(homeSearchSrc.includes("params: { category: 'satilik-kisrak', pregnant: '1' }"), 'HomeSearchBar gebe hızlı linki pregnant: "1" parametresine sahip');
+
+// --- 12. Yarış Atı Detay Durum Alanları (Sadece Satılık Yarış Atı'nda Görünürlük) Testleri ---
+console.log('\n--- 12. Yarış Atı Detay Durum Alanları Testleri ---');
+
+const binekAdvert: any = {
+  id: 45,
+  title: 'inci',
+  categoryId: 'c1000000-0000-4000-8000-000000000014',
+  category: { id: 'c1000000-0000-4000-8000-000000000014', name: 'Satılık Binek Atı', slug: 'satilik-binek-ati' },
+  breadcrumbs: [{ label: 'Ana sayfa', href: '/' }, { label: 'Satılık Binek Atı' }, { label: 'inci' }],
+};
+assertEqual(getAdvertCategoryName(binekAdvert), 'Satılık Binek Atı', 'Binek atı kategori adı doğru');
+assert(!isRaceHorseAdvert(binekAdvert), 'Binek atı yarış atı olarak değerlendirilmedi');
+
+const kisrakAdvert: any = {
+  id: 89,
+  title: 'ADA CEYLANI',
+  categoryId: 'c1000000-0000-4000-8000-000000000012',
+  category: { id: 'c1000000-0000-4000-8000-000000000012', name: 'Satılık Kısrak', slug: 'satilik-kisrak' },
+  breadcrumbs: [{ label: 'Ana sayfa', href: '/' }, { label: 'Satılık Kısrak' }, { label: 'ADA CEYLANI' }],
+};
+assertEqual(getAdvertCategoryName(kisrakAdvert), 'Satılık Kısrak', 'Kısrak kategori adı doğru');
+assert(!isRaceHorseAdvert(kisrakAdvert), 'Kısrak yarış atı olarak değerlendirilmedi');
+
+const yarisAdvert: any = {
+  id: 12,
+  title: 'BOLD PILOT',
+  categoryId: 'c1000000-0000-4000-8000-000000000011',
+  category: { id: 'c1000000-0000-4000-8000-000000000011', name: 'Satılık Yarış Atı', slug: 'satilik-yaris-ati' },
+  breadcrumbs: [{ label: 'Ana sayfa', href: '/' }, { label: 'Satılık Yarış Atı' }, { label: 'BOLD PILOT' }],
+};
+assertEqual(getAdvertCategoryName(yarisAdvert), 'Satılık Yarış Atı', 'Yarış atı kategori adı doğru');
+assert(isRaceHorseAdvert(yarisAdvert), 'Satılık Yarış Atı yarış atı olarak doğrulandı');
+
+const buyBoxSrc = readFileSync(resolve(import.meta.dirname, '../components/advert-detail/AdvertBuyBox.tsx'), 'utf8');
+assert(buyBoxSrc.includes('isRaceHorseAdvert(detail, categoryName)'), 'AdvertBuyBox isRaceHorseAdvert kontrolü yapıyor');
+assert(buyBoxSrc.includes('if (isRaceHorse)'), 'AdvertBuyBox idmanda/koşar/kiralık satırlarını isRaceHorse koşuluna bağladı');
+
+const specsSrc = readFileSync(resolve(import.meta.dirname, '../components/advert-detail/AdvertSpecs.tsx'), 'utf8');
+assert(specsSrc.includes('isRaceHorseAdvert(detail, categoryName)'), 'AdvertSpecs isRaceHorseAdvert kontrolü yapıyor');
+assert(specsSrc.includes('if (isRaceHorse)'), 'AdvertSpecs idmanda/koşar/kiralık satırlarını isRaceHorse koşuluna bağladı');
+assert(specsSrc.includes('!isRaceHorse && RACE_ONLY_CODES.has'), 'AdvertSpecs dinamik alanlarda yarış durum özelliklerini yarış atı dışındakilerde engelliyor');
+
+// Gebe kısrak detay özellikleri testi (İlan 89 gibi)
+const mockBePublished89: any = {
+  id: 89,
+  title: 'ADA CEYLANI',
+  category: { id: 'c1000000-0000-4000-8000-000000000012', name: 'Satılık Kısrak', slug: 'satilik-kisrak' },
+  properties: [
+    { code: 'IS_PREGNANT', title: 'Gebe mi', value: true, displayValue: 'Evet' },
+    { code: 'COVERING_STALLION', title: 'Gebe Olduğu Aygır', value: 'adabeyi' },
+    { code: 'PREGNANCY_STAGE', title: 'Gebelik Durumu', value: 'K2', displayValue: 'K2' },
+    { code: 'LAST_COVERING_DATE', title: 'Son Aşım Tarihi', value: '12.7.2026' },
+  ],
+};
+const mapped89 = mapPublishedDetailToAdvert(mockBePublished89, 'http://localhost:8080');
+assertEqual(mapped89.properties?.['IS_PREGNANT'], 'Evet', 'IS_PREGNANT maplendi');
+assertEqual(mapped89.properties?.['COVERING_STALLION'], 'adabeyi', 'COVERING_STALLION maplendi');
+assertEqual(mapped89.properties?.['PREGNANCY_STAGE'], 'K2', 'PREGNANCY_STAGE maplendi');
+assertEqual(mapped89.properties?.['LAST_COVERING_DATE'], '12.7.2026', 'LAST_COVERING_DATE maplendi');
 
 console.log(`\nÖzet: ${passed} geçti, ${failed} kaldı.`);
 if (failed > 0) {

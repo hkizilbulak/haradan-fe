@@ -15,6 +15,8 @@ import { useAdvertLocation } from '@/services/location';
 import { WHATSAPP_GREEN } from '@/utils/contactLinks';
 import {
   getAdvertCategoryKind,
+  getAdvertCategoryName,
+  isRaceHorseAdvert,
   parseHorseInfo,
   parsePansiyonInfo,
   parseStudInfo,
@@ -109,14 +111,7 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
   const location = useAdvertLocation(detail);
 
   const categoryName = useMemo(() => {
-    return (
-      (detail.breadcrumbs && detail.breadcrumbs.length > 1
-        ? detail.breadcrumbs[detail.breadcrumbs.length - 2]?.label
-        : '') ||
-      (detail as any)?.category?.name ||
-      detail.horse?.breed ||
-      'Satılık Yarış Atı'
-    );
+    return getAdvertCategoryName(detail);
   }, [detail]);
 
   const infoRows = useMemo(() => {
@@ -311,30 +306,60 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
         icon: 'color-palette-outline',
       });
 
+      const normText = (s: string) =>
+        (s || '')
+          .toLowerCase()
+          .replace(/['’`"]/g, '')
+          .replace(/[-_\s\(\)]/g, '')
+          .replace(/ı/g, 'i')
+          .replace(/ğ/g, 'g')
+          .replace(/ü/g, 'u')
+          .replace(/ş/g, 's')
+          .replace(/ö/g, 'o')
+          .replace(/ç/g, 'c');
+
       // Helper to find boolean / string properties
       const findProp = (codes: string[], defaultVal: boolean | string | null = null): string | null => {
         const rawProps = (detail as any)?.properties || (detail as any)?.rawProperties || {};
         for (const c of codes) {
           const val = rawProps[c] ?? rawProps[c.toLowerCase()] ?? rawProps[c.toUpperCase()];
-          if (val != null) {
+          if (val != null && val !== '' && val !== 'null' && val !== 'undefined') {
             if (typeof val === 'boolean') return val ? 'Evet' : 'Hayır';
             if (typeof val === 'string') {
               const lower = val.toLowerCase().trim();
               if (lower === 'true' || lower === 'evet') return 'Evet';
               if (lower === 'false' || lower === 'hayır' || lower === 'hayir') return 'Hayır';
-              return val;
+              return val.trim();
+            }
+            return String(val).trim();
+          }
+        }
+        const normCodes = codes.map(normText);
+        for (const [k, val] of Object.entries(rawProps)) {
+          if (val != null && val !== '' && val !== 'null' && val !== 'undefined') {
+            const kNorm = normText(k);
+            if (normCodes.some((c) => kNorm === c || kNorm.includes(c) || c.includes(kNorm))) {
+              if (typeof val === 'boolean') return val ? 'Evet' : 'Hayır';
+              if (typeof val === 'string') {
+                const lower = val.toLowerCase().trim();
+                if (lower === 'true' || lower === 'evet') return 'Evet';
+                if (lower === 'false' || lower === 'hayır' || lower === 'hayir') return 'Hayır';
+                return val.trim();
+              }
+              return String(val).trim();
             }
           }
         }
         for (const g of detail.specs ?? []) {
           for (const r of g.rows ?? []) {
-            const l = (r.label || '').toLowerCase();
-            for (const c of codes) {
-              if (l.includes(c.toLowerCase())) {
-                const v = String(r.value).toLowerCase().trim();
-                if (v === 'true' || v === 'evet') return 'Evet';
-                if (v === 'false' || v === 'hayır' || v === 'hayir') return 'Hayır';
-                return String(r.value);
+            if (r.value != null && r.value !== '' && r.value !== 'null' && r.value !== 'undefined') {
+              const lNorm = normText(r.label || '');
+              if (normCodes.some((c) => lNorm === c || lNorm.includes(c) || c.includes(lNorm))) {
+                const v = String(r.value).trim();
+                const lower = v.toLowerCase();
+                if (lower === 'true' || lower === 'evet') return 'Evet';
+                if (lower === 'false' || lower === 'hayır' || lower === 'hayir') return 'Hayır';
+                return v;
               }
             }
           }
@@ -343,29 +368,32 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
         return defaultVal;
       };
 
-      list.push({
-        label: 'İdmanda mı',
-        value: findProp(['IN_TRAINING', 'inTraining', 'idmanda'], true) ?? 'Evet',
-        icon: 'fitness-outline',
-        isBoolean: true,
-      });
+      const isRaceHorse = isRaceHorseAdvert(detail, categoryName);
+      if (isRaceHorse) {
+        list.push({
+          label: 'İdmanda mı',
+          value: findProp(['IN_TRAINING', 'inTraining', 'idmanda'], true) ?? 'Evet',
+          icon: 'fitness-outline',
+          isBoolean: true,
+        });
 
-      list.push({
-        label: 'Koşar durumda mı',
-        value: findProp(['IS_RACE_READY', 'isRaceReady', 'kosar', 'koşar'], true) ?? 'Evet',
-        icon: 'flash-outline',
-        isBoolean: true,
-      });
+        list.push({
+          label: 'Koşar durumda mı',
+          value: findProp(['IS_RACE_READY', 'isRaceReady', 'kosar', 'koşar'], true) ?? 'Evet',
+          icon: 'flash-outline',
+          isBoolean: true,
+        });
 
-      list.push({
-        label: 'Kiralık mı',
-        value: findProp(['IS_FOR_RENT', 'isForRent', 'kiralik', 'kiralık'], false) ?? 'Hayır',
-        icon: 'key-outline',
-        isBoolean: true,
-      });
+        list.push({
+          label: 'Kiralık mı',
+          value: findProp(['IS_FOR_RENT', 'isForRent', 'kiralik', 'kiralık'], false) ?? 'Hayır',
+          icon: 'key-outline',
+          isBoolean: true,
+        });
+      }
 
       // Kısrak Gebelik Durumu
-      const isPregnant = findProp(['IS_PREGNANT', 'isPregnant', 'gebe'], null);
+      const isPregnant = findProp(['IS_PREGNANT', 'isPregnant', 'gebe', 'gebemi', 'gebe mi'], null);
       if (isPregnant != null) {
         list.push({
           label: 'Gebe mi',
@@ -374,18 +402,28 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
           isBoolean: true,
         });
 
-        const isPregBool = isPregnant === 'Evet' || isPregnant === 'true';
+        const isPregBool = isPregnant === 'Evet' || isPregnant === 'true' || isPregnant === '1';
         if (isPregBool) {
-          const coveringStallion = findProp(['COVERING_STALLION', 'coveringStallion', 'gebeOlduguAygir', 'aygir'], '');
+          const coveringStallion = findProp(
+            ['COVERING_STALLION', 'coveringStallion', 'gebeOlduguAygir', 'gebe oldugu aygir', 'gebe olduğu aygır', 'aygir', 'aygır'],
+            ''
+          );
           if (coveringStallion) {
             list.push({
               label: 'Gebe Olduğu Aygır',
               value: coveringStallion,
               icon: 'flame-outline',
+              onPress:
+                coveringStallion && coveringStallion !== '-'
+                  ? () => openTjkHorseSearch(coveringStallion)
+                  : undefined,
             });
           }
 
-          const stage = findProp(['PREGNANCY_STAGE', 'pregnancyStage', 'gebelikDurumu'], '');
+          const stage = findProp(
+            ['PREGNANCY_STAGE', 'pregnancyStage', 'gebelikDurumu', 'gebelik durumu', 'gebelik', 'evre'],
+            ''
+          );
           if (stage) {
             list.push({
               label: 'Gebelik Durumu',
@@ -394,7 +432,10 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
             });
           }
 
-          const coveringDate = findProp(['LAST_COVERING_DATE', 'lastCoveringDate', 'sonAsimTarihi', 'coveringDate'], '');
+          const coveringDate = findProp(
+            ['LAST_COVERING_DATE', 'lastCoveringDate', 'sonAsimTarihi', 'son aşım tarihi', 'son asim tarihi', 'aşım tarihi', 'asim tarihi', 'coveringDate'],
+            ''
+          );
           if (coveringDate) {
             list.push({
               label: 'Son Aşım Tarihi',
@@ -409,7 +450,7 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
     return list.map((item) => ({
       ...item,
       label: normalizeLabel(item.label),
-      icon: getRowIcon(item.label),
+      icon: item.icon || getRowIcon(item.label),
     }));
   }, [detail, categoryName]);
 
