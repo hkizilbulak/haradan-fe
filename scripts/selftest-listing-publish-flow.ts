@@ -66,7 +66,7 @@ function phasedTotals(imageCount: number): {
   ctaCriticalPath: number;
 } {
   const detailsToPackage = 2; // POST create + PUT properties (address in create)
-  const backgroundMedia = imageCount * 3 + imageCount + 1; // upload*3 + attach + cover
+  const backgroundMedia = imageCount * 3 + imageCount; // upload*3 + attach (cover-first ⇒ no cover PUT)
   const packageCta = 2; // PUT package + POST submit
   return {
     detailsToPackage,
@@ -195,9 +195,9 @@ async function main(): Promise<void> {
   const neu = phasedTotals(n);
   assertEqual(oldTotal, 19, 'legacy 3-image waterfall = 19 requests');
   assertEqual(neu.detailsToPackage, 2, 'details→package = create + properties');
-  assertEqual(neu.backgroundMedia, 13, 'background media = 9 upload + 3 attach + cover');
+  assertEqual(neu.backgroundMedia, 12, 'background media = 9 upload + 3 attach (cover-first)');
   assertEqual(neu.packageCta, 2, 'package CTA = package + submit');
-  assertEqual(neu.total, 17, 'phased total = 17 (drops draft lookup + address PATCH)');
+  assertEqual(neu.total, 16, 'phased total = 16 (no draft lookup, address PATCH, or cover PUT)');
   assertEqual(neu.ctaCriticalPath, 2, 'CTA critical path = 2 when media already ready');
   assert(neu.total < oldTotal, 'phased total below legacy');
   assert(neu.ctaCriticalPath < oldTotal, 'CTA no longer carries full waterfall');
@@ -375,7 +375,7 @@ async function main(): Promise<void> {
   assertEqual(uploadInits, 3, 'background: 3 upload initiates');
   assertEqual(confirms, 3, 'background: 3 confirms');
   assertEqual(attaches, 3, 'background: 3 attaches');
-  assertEqual(covers, 1, 'background: 1 cover');
+  assertEqual(covers, 0, 'background: cover PUT skipped when cover attached first');
   assert(
     !afterMedia.some((c) => c.includes('status=DRAFT')),
     'no GET drafts lookup'

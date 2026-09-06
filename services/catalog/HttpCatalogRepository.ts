@@ -36,10 +36,6 @@ function filterDisplayTree(nodes: CategoryTreeNode[]): CategoryTreeNode[] {
   return (nodes || []).filter((node) => !isHiddenGlobalCategory(node));
 }
 
-function findGlobalCategory(nodes: CategoryTreeNode[]): CategoryTreeNode | undefined {
-  return (nodes || []).find((c) => isHiddenGlobalCategory(c));
-}
-
 /** CATALOG-01 — GET /v1/categories, CATALOG-02 — GET /v1/categories/{categoryId}/form */
 export class HttpCatalogRepository implements ICatalogRepository {
   private readonly http: HttpClient;
@@ -53,6 +49,7 @@ export class HttpCatalogRepository implements ICatalogRepository {
   private treeFetchedAt: number = 0;
   private treeInflight: Promise<CategoryTreeNode[]> | null = null;
   private formCache = new Map<string, CategoryFormDefinitionResponse>();
+  private formInflight = new Map<string, Promise<CategoryFormDefinitionResponse | null>>();
 
   constructor(baseUrl: string) {
     this.http = new HttpClient(baseUrl);
@@ -75,6 +72,7 @@ export class HttpCatalogRepository implements ICatalogRepository {
     this.treeFetchedAt = 0;
     this.treeInflight = null;
     this.formCache.clear();
+    this.formInflight.clear();
     this.fallback.invalidate();
   }
 
@@ -127,33 +125,88 @@ export class HttpCatalogRepository implements ICatalogRepository {
 
   async getCategoryFormDefinition(
     categoryId: string,
-    options?: CatalogQueryOptions & { categorySlug?: string }
+    options?: CatalogQueryOptions & { categorySlug?: string; localOnly?: boolean }
   ): Promise<CategoryFormDefinitionResponse | null> {
     if (!categoryId && !options?.categorySlug) return null;
 
     const targetId = categoryId || options?.categorySlug || '';
     const targetSlug = options?.categorySlug || categoryId || '';
+    const isGlobalCategory =
+      targetId === 'ortak-alanlar' ||
+      targetSlug === 'ortak-alanlar' ||
+      targetId === GLOBAL_CATEGORY_ID ||
+      targetId === 'cat-ortak-alanlar';
 
-    if (options?.fresh) {
-      this.formCache.delete(targetId);
-      this.formCache.delete(targetSlug);
-    } else if (this.formCache.has(targetId)) {
-      return this.formCache.get(targetId) ?? null;
-    } else if (this.formCache.has(targetSlug)) {
-      return this.formCache.get(targetSlug) ?? null;
+    // BE has no ortak-alanlar leaf form — never hit the network for globals.
+    if (isGlobalCategory || options?.localOnly) {
+      return this.loadFormFromFallback(categoryId || targetSlug, options);
     }
 
+    const cacheKeys = [targetId, targetSlug].filter(Boolean);
+    if (options?.fresh) {
+      for (const k of cacheKeys) {
+        this.formCache.delete(k);
+        this.formInflight.delete(k);
+      }
+    } else {
+      for (const k of cacheKeys) {
+        if (this.formCache.has(k)) return this.formCache.get(k) ?? null;
+      }
+      for (const k of cacheKeys) {
+        const inflight = this.formInflight.get(k);
+        if (inflight) return inflight;
+      }
+    }
+
+    const promise = this.fetchCategoryFormDefinition(targetId, targetSlug, options);
+    for (const k of cacheKeys) {
+      this.formInflight.set(k, promise);
+    }
+    try {
+      return await promise;
+    } finally {
+      for (const k of cacheKeys) {
+        this.formInflight.delete(k);
+      }
+    }
+  }
+
+  private async loadFormFromFallback(
+    categoryId: string,
+    options?: CatalogQueryOptions & { categorySlug?: string }
+  ): Promise<CategoryFormDefinitionResponse | null> {
+    const fallbackDef = await this.fallback.getCategoryFormDefinition(categoryId, options);
+    if (!fallbackDef || !Array.isArray(fallbackDef.properties)) return null;
+    return this.finalizeFormResponse(fallbackDef, categoryId, options?.categorySlug);
+  }
+
+  private async fetchCategoryFormDefinition(
+    targetId: string,
+    targetSlug: string,
+    options?: CatalogQueryOptions & { categorySlug?: string }
+  ): Promise<CategoryFormDefinitionResponse | null> {
     // Form refresh must not force a second/third GET /v1/categories — reuse tree
-    // cache (inflight-deduped). fresh only invalidates the form cache above.
+    // cache (inflight-deduped).
     await this.getCategoryTree();
     const lookupTree = this.rawTree ?? this.tree ?? [];
 
     let targetNode: CategoryTreeNode | null = null;
     let resolvedUUID: string | null = null;
 
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)) {
-      resolvedUUID = targetId;
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        targetId
+      );
+
+    if (isUuid) {
       targetNode = findCategoryById(lookupTree, targetId);
+      // Stale seed UUID (catalog.json) vs live tree: prefer slug when UUID missing.
+      if (!targetNode && targetSlug && targetSlug !== targetId) {
+        targetNode =
+          findCategoryBySlug(lookupTree, targetSlug) ||
+          findCategoryBySlug(lookupTree, targetSlug.replace(/^cat-/, ''));
+      }
+      resolvedUUID = targetNode?.id ?? null;
     } else {
       targetNode =
         findCategoryBySlug(lookupTree, targetSlug) ||
@@ -163,34 +216,18 @@ export class HttpCatalogRepository implements ICatalogRepository {
       resolvedUUID = targetNode?.id ?? null;
     }
 
+    // Cache hit by resolved live UUID (dedupe seed id vs live id).
+    if (resolvedUUID && this.formCache.has(resolvedUUID)) {
+      const cached = this.formCache.get(resolvedUUID)!;
+      this.aliasFormCache(cached, targetId, targetSlug, resolvedUUID);
+      return cached;
+    }
+
     let responseSlug = targetNode?.slug || targetSlug;
     let responseName = targetNode?.name || '';
     let responseCategoryId = resolvedUUID || targetId;
-    let responseAllowTjk = typeof targetNode?.allowTjk === 'boolean' ? targetNode.allowTjk : false;
-
-    const isGlobalCategory =
-      targetId === 'ortak-alanlar' ||
-      targetSlug === 'ortak-alanlar' ||
-      targetId === GLOBAL_CATEGORY_ID ||
-      targetId === 'cat-ortak-alanlar';
-
-    if (isGlobalCategory && !resolvedUUID) {
-      const globalNode = findGlobalCategory(lookupTree);
-      if (globalNode) {
-        resolvedUUID = globalNode.id;
-        responseSlug = globalNode.slug;
-        responseName = globalNode.name;
-        responseCategoryId = globalNode.id;
-        if (typeof globalNode.allowTjk === 'boolean') {
-          responseAllowTjk = globalNode.allowTjk;
-        }
-      } else {
-        // Stable seeded id — avoids an extra /v1/categories round-trip.
-        resolvedUUID = GLOBAL_CATEGORY_ID;
-        responseCategoryId = GLOBAL_CATEGORY_ID;
-        responseSlug = 'ortak-alanlar';
-      }
-    }
+    let responseAllowTjk =
+      typeof targetNode?.allowTjk === 'boolean' ? targetNode.allowTjk : false;
 
     let directProps: CategoryPropertyPublic[] = [];
     let apiSucceeded = false;
@@ -216,12 +253,17 @@ export class HttpCatalogRepository implements ICatalogRepository {
     }
 
     if (!apiSucceeded) {
-      const fallbackDef = await this.fallback.getCategoryFormDefinition(categoryId, options);
+      const fallbackDef = await this.fallback.getCategoryFormDefinition(
+        targetId,
+        options
+      );
       if (fallbackDef && Array.isArray(fallbackDef.properties)) {
         directProps = fallbackDef.properties;
         if (!responseName && fallbackDef.name) responseName = fallbackDef.name;
         if (!responseSlug && fallbackDef.slug) responseSlug = fallbackDef.slug;
-        if (typeof fallbackDef.allowTjk === 'boolean') responseAllowTjk = fallbackDef.allowTjk;
+        if (typeof fallbackDef.allowTjk === 'boolean') {
+          responseAllowTjk = fallbackDef.allowTjk;
+        }
       }
     }
 
@@ -229,6 +271,26 @@ export class HttpCatalogRepository implements ICatalogRepository {
       return null;
     }
 
+    const response = this.finalizeFormResponse(
+      {
+        categoryId: responseCategoryId,
+        slug: responseSlug,
+        name: responseName,
+        allowTjk: responseAllowTjk,
+        properties: directProps,
+      },
+      targetId,
+      targetSlug
+    );
+    return response;
+  }
+
+  private finalizeFormResponse(
+    def: CategoryFormDefinitionResponse,
+    targetId: string,
+    targetSlug?: string
+  ): CategoryFormDefinitionResponse {
+    const directProps = [...(def.properties ?? [])];
     const initialProps = (CATALOG_DATA.categoryProperties || []) as any[];
     for (const ip of initialProps) {
       const found = directProps.find((p) => p.code === ip.code);
@@ -238,17 +300,29 @@ export class HttpCatalogRepository implements ICatalogRepository {
     }
 
     const sortedProperties = [...directProps].sort(
-      (a, b) => (a.sortOrder || 1) - (b.sortOrder || 1) || a.title.localeCompare(b.title, 'tr')
+      (a, b) =>
+        (a.sortOrder || 1) - (b.sortOrder || 1) ||
+        a.title.localeCompare(b.title, 'tr')
     );
 
     const response: CategoryFormDefinitionResponse = {
-      categoryId: responseCategoryId,
-      slug: responseSlug,
-      name: responseName,
-      allowTjk: responseAllowTjk,
+      categoryId: def.categoryId,
+      slug: def.slug,
+      name: def.name,
+      allowTjk: def.allowTjk,
       properties: sortedProperties,
     };
 
+    this.aliasFormCache(response, targetId, targetSlug, def.categoryId);
+    return response;
+  }
+
+  private aliasFormCache(
+    response: CategoryFormDefinitionResponse,
+    targetId: string,
+    targetSlug: string | undefined,
+    resolvedUUID: string | undefined
+  ): void {
     this.formCache.set(targetId, response);
     if (targetSlug && targetSlug !== targetId) {
       this.formCache.set(targetSlug, response);
@@ -256,8 +330,9 @@ export class HttpCatalogRepository implements ICatalogRepository {
     if (resolvedUUID && resolvedUUID !== targetId) {
       this.formCache.set(resolvedUUID, response);
     }
-
-    return response;
+    if (response.slug && response.slug !== targetId) {
+      this.formCache.set(response.slug, response);
+    }
   }
 
   async getFacets(options?: CatalogQueryOptions): Promise<CatalogFacets> {

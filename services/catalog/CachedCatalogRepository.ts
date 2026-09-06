@@ -88,6 +88,19 @@ export function createCachedCatalogRepository(
     async getCategoryFormDefinition(categoryId: string, options?: CatalogQueryOptions) {
       if (!categoryId && !options?.categorySlug) return null;
       const targetKey = categoryId || options?.categorySlug || '';
+      // Global / local-only forms never share network inflight with leaf forms.
+      if (
+        options?.localOnly ||
+        targetKey === 'ortak-alanlar' ||
+        targetKey === 'cat-ortak-alanlar' ||
+        targetKey === 'c1000000-0000-4000-8000-000000000000' ||
+        options?.categorySlug === 'ortak-alanlar'
+      ) {
+        return inner.getCategoryFormDefinition(categoryId, {
+          ...options,
+          localOnly: true,
+        });
+      }
       if (options?.fresh) {
         formCache.delete(categoryId);
         if (options?.categorySlug) {
@@ -106,19 +119,29 @@ export function createCachedCatalogRepository(
       if (formInflight.has(targetKey)) {
         return formInflight.get(targetKey)!;
       }
+      // Prefer slug as shared inflight key so seed UUID + slug race as one GET.
+      const inflightKey =
+        options?.categorySlug && options.categorySlug !== targetKey
+          ? options.categorySlug
+          : targetKey;
+      if (formInflight.has(inflightKey)) {
+        return formInflight.get(inflightKey)!;
+      }
       const promise = inner
         .getCategoryFormDefinition(categoryId, {
           ...options,
-          // Form refresh must not bust the shared tree / inflight — Http clears
-          // only its form cache when fresh is set.
         })
         .then((res) => {
-        formCache.set(targetKey, res);
-        if (categoryId && categoryId !== targetKey) formCache.set(categoryId, res);
-        if (options?.categorySlug && options.categorySlug !== targetKey) formCache.set(options.categorySlug, res);
-        formInflight.delete(targetKey);
-        return res;
-      });
+          formCache.set(targetKey, res);
+          if (categoryId && categoryId !== targetKey) formCache.set(categoryId, res);
+          if (options?.categorySlug) formCache.set(options.categorySlug, res);
+          if (res?.categoryId) formCache.set(res.categoryId, res);
+          if (res?.slug) formCache.set(res.slug, res);
+          formInflight.delete(inflightKey);
+          formInflight.delete(targetKey);
+          return res;
+        });
+      formInflight.set(inflightKey, promise);
       formInflight.set(targetKey, promise);
       return promise;
     },

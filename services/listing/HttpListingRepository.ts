@@ -34,6 +34,8 @@ type MediaPipeline = {
   promise: Promise<{ version: number; mediaVersion: number }>;
 };
 
+const PACKAGES_TTL_MS = 10 * 60 * 1000;
+
 /**
  * Phased listing persist:
  * 1) persistDraftShell — create/update + properties (details → package)
@@ -43,6 +45,8 @@ type MediaPipeline = {
 export class HttpListingRepository implements IListingRepository {
   private readonly http: HttpClient;
   private cached: ListingPackage[] | null = null;
+  private packagesFetchedAt = 0;
+  private packagesInflight: Promise<ListingPackage[]> | null = null;
   private readonly media: IMediaUploader;
   private mediaPipeline: MediaPipeline | null = null;
 
@@ -56,11 +60,31 @@ export class HttpListingRepository implements IListingRepository {
   }
 
   async getPackages(): Promise<ListingPackage[]> {
+    const now = Date.now();
+    if (
+      this.cached &&
+      this.cached.length > 0 &&
+      this.packagesFetchedAt > 0 &&
+      now - this.packagesFetchedAt < PACKAGES_TTL_MS
+    ) {
+      return this.cached;
+    }
+    if (this.packagesInflight) {
+      return this.packagesInflight;
+    }
+    this.packagesInflight = this.fetchPackages().finally(() => {
+      this.packagesInflight = null;
+    });
+    return this.packagesInflight;
+  }
+
+  private async fetchPackages(): Promise<ListingPackage[]> {
     const res = await this.http.request<PublicPackageListResponse>(
       '/v1/packages',
       { method: 'GET' }
     );
     this.cached = (res.items ?? []).map(mapPublicPackage);
+    this.packagesFetchedAt = Date.now();
     return this.cached;
   }
 
@@ -308,6 +332,9 @@ export class HttpListingRepository implements IListingRepository {
       ...uploaded.filter((m) => !m.isCover),
     ];
     const coverSlot = uploaded.find((m) => m.isCover) ?? uploaded[0];
+    // Cover-first order: first attach becomes cover on BE — skip redundant cover PUT.
+    const coverIsFirst =
+      Boolean(coverSlot?.assetId) && ordered[0]?.assetId === coverSlot?.assetId;
 
     for (const slot of ordered) {
       if (!slot.assetId || alreadyAttached.has(slot.assetId)) continue;
@@ -326,7 +353,7 @@ export class HttpListingRepository implements IListingRepository {
       alreadyAttached.add(slot.assetId);
     }
 
-    if (coverSlot?.assetId) {
+    if (coverSlot?.assetId && !coverIsFirst) {
       const covered = await this.http.request<AdvertMediaCollectionResponse>(
         `/v1/me/adverts/${shell.advertId}/media/cover`,
         {

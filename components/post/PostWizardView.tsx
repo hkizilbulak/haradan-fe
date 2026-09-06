@@ -41,8 +41,13 @@ export function PostWizardView() {
   const [customGlobalProperties, setCustomGlobalProperties] = useState<CategoryPropertyPublic[]>([]);
   const { session, isLoggedIn } = useAuthSession();
   const { categoryTree, error: catalogError, loading: catalogLoading } = useCatalogFacets();
-  const { packages, error: packageError } = useListingPackages();
   const wizard = useListingWizard();
+  const { packages, error: packageError } = useListingPackages(undefined, {
+    enabled:
+      wizard.step === 'package' ||
+      wizard.step === 'payment' ||
+      wizard.step === 'review',
+  });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const packageStepEnabled = isListingPackageStepEnabled();
@@ -63,7 +68,10 @@ export function PostWizardView() {
     const refresh = () => setGlobalConfigs(getGlobalPropertiesConfig());
 
     void catalogRepository
-      .getCategoryFormDefinition('ortak-alanlar', { categorySlug: 'ortak-alanlar' })
+      .getCategoryFormDefinition('ortak-alanlar', {
+        categorySlug: 'ortak-alanlar',
+        localOnly: true,
+      })
       .then((def) => {
         if (!cancelled && def && Array.isArray(def.properties)) {
           const map = getGlobalPropertiesConfig();
