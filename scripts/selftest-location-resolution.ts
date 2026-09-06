@@ -181,6 +181,52 @@ async function runTests() {
   assertEqual(catalogCard.locationName, 'Kadıköy, İstanbul', 'CatalogProductCard locationName mapped');
   assertEqual(formatAdvertLocation(catalogCard), 'Kadıköy, İstanbul', 'formatAdvertLocation(catalogCard)');
 
+  console.log('\n=== TEST: Province & District UUID Resolution ===');
+  assertEqual(
+    staticGeo.resolveProvinceUuid?.('prov-02'),
+    'fa368f15-052c-58bd-8c22-af7643521553',
+    'resolveProvinceUuid prov-02 -> Adıyaman UUID'
+  );
+  assertEqual(
+    staticGeo.resolveProvinceUuid?.('prov-34'),
+    'c029c5bf-570e-5eb2-9d0f-0437fa131ff1',
+    'resolveProvinceUuid prov-34 -> İstanbul UUID'
+  );
+  assertEqual(
+    staticGeo.resolveProvinceUuid?.('02'),
+    'fa368f15-052c-58bd-8c22-af7643521553',
+    'resolveProvinceUuid plate 02 -> Adıyaman UUID'
+  );
+  assertEqual(
+    staticGeo.resolveProvinceUuid?.('Adıyaman'),
+    'fa368f15-052c-58bd-8c22-af7643521553',
+    'resolveProvinceUuid name Adıyaman -> UUID'
+  );
+  assertEqual(
+    staticGeo.resolveProvinceUuid?.('fa368f15-052c-58bd-8c22-af7643521553'),
+    'fa368f15-052c-58bd-8c22-af7643521553',
+    'resolveProvinceUuid already UUID preserved'
+  );
+
+  const staticProvinces = await staticGeo.listProvinces();
+  const adiyamanStatic = staticProvinces.find((p) => p.name === 'Adıyaman');
+  assertEqual(
+    adiyamanStatic?.id,
+    'fa368f15-052c-58bd-8c22-af7643521553',
+    'static listProvinces returns official BE UUID'
+  );
+
+  // Live BE resolution with prov-02
+  const httpLiveGeo = new HttpLocationLookup('http://localhost:8080/api');
+  const adiyamanDistricts = await httpLiveGeo.listDistricts('prov-02');
+  assert(adiyamanDistricts.length >= 8, `Adıyaman districts loaded via prov-02 (${adiyamanDistricts.length})`);
+  const merkezDistrict = adiyamanDistricts.find((d) => d.name === 'Merkez');
+  assert(Boolean(merkezDistrict), 'Adıyaman Merkez found');
+  assert(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(merkezDistrict?.id || ''),
+    'Merkez district has genuine UUID'
+  );
+
   console.log(`\nResults: ${passed} passed, ${failed} failed.`);
   if (failed > 0) process.exit(1);
 }

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -35,6 +35,18 @@ export function PostCountrySheet({
   const border = useThemeColor('border');
   const success = useThemeColor('success');
   const [q, setQ] = useState('');
+  const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (visible) {
+      setQ('');
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
+
   const countries = useMemo(() => phoneCountryCatalog.list(), []);
   const filtered = useMemo(() => {
     const needle = q.trim().toLocaleLowerCase('tr');
@@ -48,7 +60,15 @@ export function PostCountrySheet({
   }, [countries, q]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      onShow={() => {
+        inputRef.current?.focus();
+      }}
+    >
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={[styles.sheet, { backgroundColor: surface }]}>
@@ -56,6 +76,8 @@ export function PostCountrySheet({
           <View style={[styles.search, { borderColor: border }]}>
             <Ionicons name="search-outline" size={18} color={muted} />
             <TextInput
+              ref={inputRef}
+              autoFocus
               value={q}
               onChangeText={setQ}
               placeholder="Ülke veya kod ara"

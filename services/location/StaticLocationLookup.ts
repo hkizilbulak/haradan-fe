@@ -173,6 +173,51 @@ const PROVINCES_BY_UUID: Record<string, string> = {
   '921ebfc0-8b4c-5204-a3bc-bc5d8ba86e8f': 'Düzce',
 };
 
+export const PROVINCE_CODE_TO_UUID: Record<string, string> = {};
+export const PROVINCE_UUID_TO_CODE: Record<string, string> = {};
+
+for (const [uuid, name] of Object.entries(PROVINCES_BY_UUID)) {
+  for (const [code, cName] of Object.entries(PROVINCES_BY_CODE)) {
+    if (name.toLowerCase() === cName.toLowerCase()) {
+      PROVINCE_CODE_TO_UUID[code] = uuid;
+      PROVINCE_UUID_TO_CODE[uuid] = code;
+      const plate = code.replace('prov-', '');
+      PROVINCE_CODE_TO_UUID[plate] = uuid;
+      PROVINCE_CODE_TO_UUID[String(parseInt(plate, 10))] = uuid;
+      break;
+    }
+  }
+}
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function resolveProvinceUuid(rawId: string | null | undefined): string | null {
+  if (!rawId) return null;
+  const key = String(rawId).trim();
+  if (!key) return null;
+
+  if (UUID_REGEX.test(key)) {
+    return key;
+  }
+
+  if (PROVINCE_CODE_TO_UUID[key]) return PROVINCE_CODE_TO_UUID[key];
+  if (PROVINCE_CODE_TO_UUID[key.toLowerCase()]) return PROVINCE_CODE_TO_UUID[key.toLowerCase()];
+
+  const plateNum = parseInt(key, 10);
+  if (!isNaN(plateNum) && plateNum >= 1 && plateNum <= 81) {
+    const code = `prov-${String(plateNum).padStart(2, '0')}`;
+    if (PROVINCE_CODE_TO_UUID[code]) return PROVINCE_CODE_TO_UUID[code];
+  }
+
+  for (const [uuid, name] of Object.entries(PROVINCES_BY_UUID)) {
+    if (name.localeCompare(key, 'tr', { sensitivity: 'accent' }) === 0) {
+      return uuid;
+    }
+  }
+
+  return null;
+}
+
 const DISTRICTS: Record<string, { name: string; provinceId: string }> = {
   // 01 Adana
   'dist-01-sey': { name: 'Seyhan', provinceId: 'prov-01' },
@@ -517,24 +562,31 @@ export class StaticLocationLookup implements ILocationLookup {
     return '';
   }
 
+  resolveProvinceUuid(provinceId?: string | null): string | null {
+    return resolveProvinceUuid(provinceId);
+  }
+
   async listProvinces(): Promise<ProvinceOption[]> {
-    return Object.entries(PROVINCES_BY_CODE)
+    return Object.entries(PROVINCES_BY_UUID)
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name, 'tr'));
   }
 
   async listDistricts(provinceId: string): Promise<DistrictOption[]> {
     const cleanId = (provinceId || '').trim();
+    const resolvedProvUuid = resolveProvinceUuid(cleanId);
+    const provCode = cleanId.startsWith('prov-') ? cleanId : (PROVINCE_UUID_TO_CODE[cleanId] || cleanId);
+    const targetProvId = resolvedProvUuid || cleanId;
     const list = Object.entries(DISTRICTS)
-      .filter(([, d]) => d.provinceId === cleanId || this.getProvinceName(d.provinceId) === this.getProvinceName(cleanId))
-      .map(([id, d]) => ({ id, provinceId: d.provinceId, name: d.name }))
+      .filter(([, d]) => d.provinceId === provCode || d.provinceId === cleanId || this.getProvinceName(d.provinceId) === this.getProvinceName(cleanId))
+      .map(([id, d]) => ({ id, provinceId: targetProvId, name: d.name }))
       .sort((a, b) => a.name.localeCompare(b.name, 'tr'));
 
     if (list.length > 0) return list;
 
     const provinceName = this.getProvinceName(cleanId);
     if (provinceName) {
-      return [{ id: `dist-${cleanId}-merkez`, provinceId: cleanId, name: `${provinceName} Merkez` }];
+      return [{ id: `dist-${cleanId}-merkez`, provinceId: targetProvId, name: `${provinceName} Merkez` }];
     }
     return [];
   }

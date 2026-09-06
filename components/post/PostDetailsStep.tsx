@@ -158,6 +158,32 @@ export function PostDetailsStep({
   const { items: districts, loading: districtsLoading, error: districtsError, retry: retryDistricts } =
     useDistricts(d.provinceId);
 
+  useEffect(() => {
+    if (d.provinceId) {
+      const resolved = locationLookup.resolveProvinceUuid?.(d.provinceId);
+      if (resolved && resolved !== d.provinceId) {
+        onUpdate({ provinceId: resolved });
+      }
+    }
+  }, [d.provinceId, onUpdate]);
+
+  useEffect(() => {
+    if (d.districtId && districts.length > 0) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(d.districtId);
+      if (!isUuid) {
+        const legacyName = locationLookup.getDistrictName(d.districtId);
+        const matched = districts.find(
+          (dist) =>
+            dist.name.toLowerCase() === legacyName.toLowerCase() ||
+            (legacyName.toLowerCase().includes('merkez') && dist.name.toLowerCase().includes('merkez'))
+        );
+        if (matched) {
+          onUpdate({ districtId: matched.id });
+        }
+      }
+    }
+  }, [d.districtId, districts, onUpdate]);
+
   const card1Y = useRef(0);
   const cardPhoneY = useRef(0);
   const cardHorseY = useRef(0);

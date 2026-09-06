@@ -18,6 +18,7 @@ import {
   type IListingRepository,
   type ListingTypePhase,
 } from '@/services/listing';
+import { locationLookup } from '@/services/location';
 import { tjkRepository, type ITjkRepository } from '@/services/tjk';
 import type { AdvertId } from '@/types/advertId';
 import type {
@@ -515,18 +516,52 @@ export function useListingWizard(deps: Deps = {}) {
     });
   }, []);
 
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  const ensureDraftLocationUuids = async (draft: ListingDraft): Promise<void> => {
+    if (draft.details.provinceId) {
+      const resolvedProv = locationLookup.resolveProvinceUuid?.(draft.details.provinceId);
+      if (resolvedProv && resolvedProv !== draft.details.provinceId) {
+        draft.details.provinceId = resolvedProv;
+      }
+    }
+    if (draft.details.districtId && !UUID_REGEX.test(draft.details.districtId)) {
+      const provId = draft.details.provinceId;
+      if (provId) {
+        try {
+          const dists = await locationLookup.listDistricts(provId);
+          const legacyName = locationLookup.getDistrictName(draft.details.districtId);
+          const matched = dists.find(
+            (d) =>
+              d.name.toLowerCase() === legacyName.toLowerCase() ||
+              (legacyName.toLowerCase().includes('merkez') && d.name.toLowerCase().includes('merkez'))
+          );
+          if (matched) {
+            draft.details.districtId = matched.id;
+          }
+        } catch {}
+      }
+    }
+  };
+
   const publishListing = useCallback(
     async (accessToken: string): Promise<PublishListingResult> => {
       const current = getListingWizardState();
       const draft = {
         ...current.draft,
+        details: { ...current.draft.details },
         packageCode:
           current.draft.packageCode?.trim() || DEFAULT_LISTING_PACKAGE_CODE,
       };
-      if (draft.packageCode !== current.draft.packageCode) {
+      await ensureDraftLocationUuids(draft);
+      if (
+        draft.packageCode !== current.draft.packageCode ||
+        draft.details.provinceId !== current.draft.details.provinceId ||
+        draft.details.districtId !== current.draft.details.districtId
+      ) {
         setListingWizardState((prev) => ({
           ...prev,
-          draft: { ...prev.draft, packageCode: draft.packageCode },
+          draft: { ...prev.draft, packageCode: draft.packageCode, details: { ...draft.details } },
         }));
       }
       const created = await listingRepo.publish(draft, accessToken);
@@ -559,11 +594,16 @@ export function useListingWizard(deps: Deps = {}) {
       if (!listingRepo.createDraft || !listingRepo.startPaytrCheckout) {
         throw new Error('Ödeme servisi yapılandırılmamış.');
       }
-      const draft = await listingRepo.createDraft(current.draft, accessToken);
+      const draft = {
+        ...current.draft,
+        details: { ...current.draft.details },
+      };
+      await ensureDraftLocationUuids(draft);
+      const created = await listingRepo.createDraft(draft, accessToken);
       setListingWizardState((prev) => ({
         ...prev,
-        draftAdvertId: draft.advertId,
-        draft: { ...prev.draft, advertId: draft.advertId },
+        draftAdvertId: created.advertId,
+        draft: { ...prev.draft, advertId: created.advertId, details: { ...draft.details } },
       }));
       const checkout = await listingRepo.startPaytrCheckout(
         draft.advertId,

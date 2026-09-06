@@ -2,4 +2,10 @@ export type { IMediaUploader, LocalImageFile, UploadedMedia } from './MediaUploa
 export { LocalMediaUploader } from './LocalMediaUploader';
 export { HttpMediaUploader } from './HttpMediaUploader';
 export { createMediaUploader, mediaUploader } from './createMediaUploader';
-export { pickLocalImages } from './pickLocalImages';
+export {
+  pickLocalImages,
+  isAllowedImageFormat,
+  resolveImageMimeType,
+  type PickImagesResult,
+} from './pickLocalImages';
+

@@ -12,6 +12,7 @@ import {
   type GlobalPropertiesMap,
 } from '@/services/catalog/addressConfig';
 import { isValidNationalPhone } from '@/services/phone';
+import { isAllowedImageFormat } from '@/utils/mediaValidation';
 import type { CategoryPropertyPublic } from '@/types';
 import type {
   ListingDraft,
@@ -196,6 +197,13 @@ export function detailsErrors(
   // 7. Medya
   if (!draft.media || draft.media.length === 0) {
     e.media = 'En az bir görsel eklemelisiniz.';
+  } else {
+    const hasUnsupported = draft.media.some(
+      (m) => !isAllowedImageFormat(m.mimeType, m.fileName)
+    );
+    if (hasUnsupported) {
+      e.media = 'Yalnızca JPEG, PNG veya WebP formatında fotoğraflar yükleyebilirsiniz.';
+    }
   }
 
   // 8. Dinamik Ortak Alanlar (Custom Global Properties) Zorunluluk Kontrolü

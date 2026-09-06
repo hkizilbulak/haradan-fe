@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { pickLocalImages } from '@/services/media';
@@ -27,14 +27,20 @@ export function PostMediaGrid({
   const surface = useThemeColor('surface');
   const primary = useThemeColor('primary');
   const errorColor = useThemeColor('error');
+  const [localError, setLocalError] = useState<string | null>(null);
   const remaining = MAX_LISTING_IMAGES - items.length;
+  const activeError = localError || error;
 
   const add = async () => {
-    const picked = await pickLocalImages(remaining);
-    if (picked.length === 0) return;
+    setLocalError(null);
+    const result = await pickLocalImages(remaining);
+    if (result.error) {
+      setLocalError(result.error);
+    }
+    if (result.items.length === 0) return;
     const next = [
       ...items,
-      ...picked.map((p, i) => ({
+      ...result.items.map((p, i) => ({
         ...p,
         isCover: items.length === 0 && i === 0,
         assetId: null,
@@ -44,6 +50,7 @@ export function PostMediaGrid({
   };
 
   const remove = (localId: string) => {
+    setLocalError(null);
     const filtered = items.filter((m) => m.localId !== localId);
     if (filtered.length > 0 && !filtered.some((m) => m.isCover)) {
       filtered[0] = { ...filtered[0], isCover: true };
@@ -55,7 +62,7 @@ export function PostMediaGrid({
 
   const hintText =
     items.length === 0
-      ? 'En fazla 5 fotoğraf ekleyebilirsiniz (En az 1 görsel zorunludur).'
+      ? 'En fazla 5 fotoğraf ekleyebilirsiniz (En az 1 görsel zorunludur, JPEG/PNG/WebP).'
       : items.length === 1
         ? '1 fotoğraf yüklendi (Kapak fotoğrafı olarak ayarlandı).'
         : `${items.length} fotoğraf yüklendi. İstediğiniz görseli kapak yapabilirsiniz.`;
@@ -97,7 +104,7 @@ export function PostMediaGrid({
               style={({ pressed }) => [
                 styles.empty,
                 {
-                  borderColor: error ? errorColor : border,
+                  borderColor: activeError ? errorColor : border,
                   backgroundColor: surface,
                   opacity: pressed ? 0.8 : 1,
                 },
@@ -112,8 +119,8 @@ export function PostMediaGrid({
           )
         )}
       </View>
-      {error ? (
-        <Text style={[styles.error, { color: errorColor }]}>{error}</Text>
+      {activeError ? (
+        <Text style={[styles.error, { color: errorColor }]}>{activeError}</Text>
       ) : null}
     </View>
   );

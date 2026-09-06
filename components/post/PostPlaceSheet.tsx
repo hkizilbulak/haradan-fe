@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -46,6 +46,18 @@ export function PostPlaceSheet({
   const border = useThemeColor('border');
   const primary = useThemeColor('primary');
   const [q, setQ] = useState('');
+  const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (visible) {
+      setQ('');
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
+
   const filtered = useMemo(() => {
     const needle = q.trim().toLocaleLowerCase('tr');
     if (!needle) return items;
@@ -53,7 +65,15 @@ export function PostPlaceSheet({
   }, [items, q]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      onShow={() => {
+        inputRef.current?.focus();
+      }}
+    >
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={[styles.sheet, { backgroundColor: surface }]}>
@@ -61,6 +81,8 @@ export function PostPlaceSheet({
           <View style={[styles.search, { borderColor: border }]}>
             <Ionicons name="search-outline" size={18} color={muted} />
             <TextInput
+              ref={inputRef}
+              autoFocus
               value={q}
               onChangeText={setQ}
               placeholder="Ara"

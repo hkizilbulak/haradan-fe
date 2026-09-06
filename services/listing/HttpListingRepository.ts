@@ -11,6 +11,7 @@ import type { PaytrChargeStatus, PaytrCheckoutResult } from '@/types/paytr';
 import type { AdvertId } from '@/types/advertId';
 import type { IListingRepository } from './ListingRepository';
 import { buildDraftProperties, mapDraftToCreateAdvert } from './mapDraftToRequest';
+import { locationLookup } from '@/services/location';
 import {
   mapPublicPackage,
   type PublicPackageListResponse,
@@ -50,6 +51,31 @@ export class HttpListingRepository implements IListingRepository {
     draft: ListingDraft,
     accessToken: string
   ): Promise<{ advertId: AdvertId; version: number; status: string }> {
+    // Ensure province and district IDs are valid UUIDs expected by the backend
+    if (draft.details.provinceId) {
+      const resolvedProv = locationLookup.resolveProvinceUuid?.(draft.details.provinceId);
+      if (resolvedProv && resolvedProv !== draft.details.provinceId) {
+        draft.details.provinceId = resolvedProv;
+      }
+    }
+    if (draft.details.districtId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(draft.details.districtId)) {
+      const provId = draft.details.provinceId;
+      if (provId) {
+        try {
+          const dists = await locationLookup.listDistricts(provId);
+          const legacyName = locationLookup.getDistrictName(draft.details.districtId);
+          const matched = dists.find(
+            (d) =>
+              d.name.toLowerCase() === legacyName.toLowerCase() ||
+              (legacyName.toLowerCase().includes('merkez') && d.name.toLowerCase().includes('merkez'))
+          );
+          if (matched) {
+            draft.details.districtId = matched.id;
+          }
+        } catch {}
+      }
+    }
+
     const uploaded = await Promise.all(
       draft.media.map(async (slot) => {
         if (slot.assetId) return slot;
@@ -131,12 +157,13 @@ export class HttpListingRepository implements IListingRepository {
       try {
         const rawDigits = draft.details.priceTl.replace(/\D/g, '');
         const parsedPrice = rawDigits ? Number(rawDigits) : null;
+        const isDistrictUuid = draft.details.districtId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(draft.details.districtId);
         const patchBody: Record<string, unknown> = {
           expectedVersion: created.version,
           title: draft.details.title.trim() || null,
           description: draft.details.description.trim() || null,
           address: draft.details.address?.trim() || 'Merkez',
-          districtId: draft.details.districtId || null,
+          districtId: isDistrictUuid ? draft.details.districtId : null,
           horseId: draft.details.horseId || null,
           price: parsedPrice != null ? { amountMinor: Math.round(parsedPrice * 100), currency: 'TRY' } : null,
         };

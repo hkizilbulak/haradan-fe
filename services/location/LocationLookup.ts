@@ -18,6 +18,7 @@ export interface ILocationLookup {
     districtName?: string | null,
     provinceName?: string | null
   ): string;
+  resolveProvinceUuid?(provinceId?: string | null): string | null;
   subscribe?(listener: () => void): () => void;
   invalidate(): void;
 }

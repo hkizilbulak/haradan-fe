@@ -1,5 +1,6 @@
 import { ApiError, HttpClient } from '@/services/http';
 import type { IMediaUploader, LocalImageFile, UploadedMedia } from './MediaUploader';
+import { isAllowedImageFormat } from '@/utils/mediaValidation';
 
 type InitiateMediaUploadResponse = {
   assetId: string;
@@ -37,6 +38,13 @@ export class HttpMediaUploader implements IMediaUploader {
     const declaredContentType = normalizeContentType(
       file.mimeType || blob.type || 'image/jpeg'
     );
+    if (!isAllowedImageFormat(declaredContentType, file.fileName)) {
+      throw new ApiError(
+        'Yalnızca JPEG, PNG veya WebP formatında fotoğraflar desteklenmektedir.',
+        400,
+        'UNSUPPORTED_MEDIA_TYPE'
+      );
+    }
     const initiated = await this.http.request<InitiateMediaUploadResponse>(
       '/v1/media/uploads',
       {

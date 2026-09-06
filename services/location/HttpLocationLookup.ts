@@ -153,12 +153,24 @@ export class HttpLocationLookup implements ILocationLookup {
     }
   }
 
+  resolveProvinceUuid(provinceId?: string | null): string | null {
+    if (!provinceId) return null;
+    const cleanId = String(provinceId).trim();
+    if (!cleanId) return null;
+    return this.staticLookup.resolveProvinceUuid(cleanId);
+  }
+
   async listDistricts(provinceId: string): Promise<DistrictOption[]> {
-    const cached = this.districtsByProvince.get(provinceId);
+    const cleanId = (provinceId || '').trim();
+    if (!cleanId) return [];
+    const targetProvinceId = this.resolveProvinceUuid(cleanId) || cleanId;
+    const cached =
+      this.districtsByProvince.get(targetProvinceId) ||
+      this.districtsByProvince.get(cleanId);
     if (cached && cached.length > 0) return cached;
     try {
       const res = await this.http.request<{ items: District[] }>(
-        `/v1/provinces/${encodeURIComponent(provinceId)}/districts`,
+        `/v1/provinces/${encodeURIComponent(targetProvinceId)}/districts`,
         { method: 'GET' }
       );
       const items = (res.items ?? []).map((d) => ({
@@ -173,12 +185,13 @@ export class HttpLocationLookup implements ILocationLookup {
       });
       this.notifyListeners();
       if (items.length > 0) {
-        this.districtsByProvince.set(provinceId, items);
+        this.districtsByProvince.set(targetProvinceId, items);
+        this.districtsByProvince.set(cleanId, items);
         return items;
       }
-      return await this.staticLookup.listDistricts(provinceId);
+      return await this.staticLookup.listDistricts(cleanId);
     } catch {
-      return await this.staticLookup.listDistricts(provinceId);
+      return await this.staticLookup.listDistricts(cleanId);
     }
   }
 }
