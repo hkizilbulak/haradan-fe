@@ -1,12 +1,13 @@
 /**
  * PayTR iframe checkout for listing packages.
  *
- * TEMP (2026-08): always OFF — PayTR BE route 404; listing publishes
- * from details without package/payment UI. Re-enable by restoring the
- * env check below and setting isListingPackageStepEnabled() true.
+ * Enable with EXPO_PUBLIC_PAYTR_CHECKOUT_ENABLED=1 (and BE PAYTR_ENABLED=true).
+ * When off, package step still shows; CTA publishes without payment.
  */
 export function isPaytrCheckoutEnabled(): boolean {
-  return false;
+  return (
+    String(process.env.EXPO_PUBLIC_PAYTR_CHECKOUT_ENABLED ?? '').trim() === '1'
+  );
 }
 
 /**
@@ -16,5 +17,5 @@ export function isListingPackageStepEnabled(): boolean {
   return true;
 }
 
-/** Free default package while paid checkout is disabled. */
+/** Default package when none selected (free path / fallback). */
 export const DEFAULT_LISTING_PACKAGE_CODE = 'STANDARD' as const;

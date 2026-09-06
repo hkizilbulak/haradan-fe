@@ -239,6 +239,7 @@ export function useListingWizard(deps: Deps = {}) {
     submittedStatus,
     paytrMerchantOid,
     paytrIframeUrl,
+    paytrAmountMinor,
   } = state;
   const fieldErrors = useMemo(
     () => (detailsAttempted ? detailsErrors(draft, categoryProperties || undefined) : {}),
@@ -262,6 +263,7 @@ export function useListingWizard(deps: Deps = {}) {
         submittedStatus: null,
         paytrMerchantOid: null,
         paytrIframeUrl: null,
+        paytrAmountMinor: null,
       }));
     },
     []
@@ -536,6 +538,7 @@ export function useListingWizard(deps: Deps = {}) {
         step: 'review',
         paytrMerchantOid: null,
         paytrIframeUrl: null,
+        paytrAmountMinor: null,
       }));
       return created;
     },
@@ -554,7 +557,7 @@ export function useListingWizard(deps: Deps = {}) {
         throw new Error('Paket seçilmedi.');
       }
       if (!listingRepo.createDraft || !listingRepo.startPaytrCheckout) {
-        return publishListing(accessToken);
+        throw new Error('Ödeme servisi yapılandırılmamış.');
       }
       const draft = await listingRepo.createDraft(current.draft, accessToken);
       setListingWizardState((prev) => ({
@@ -562,41 +565,22 @@ export function useListingWizard(deps: Deps = {}) {
         draftAdvertId: draft.advertId,
         draft: { ...prev.draft, advertId: draft.advertId },
       }));
-      try {
-        const checkout = await listingRepo.startPaytrCheckout(
-          draft.advertId,
-          packageCode,
-          accessToken
-        );
-        setListingWizardState((prev) => ({
-          ...prev,
-          draftAdvertId: draft.advertId,
-          submittedDraftId: draft.advertId,
-          submittedStatus: draft.status,
-          paytrMerchantOid: checkout.merchantOid,
-          paytrIframeUrl: checkout.iframeUrl,
-          step: 'payment',
-        }));
-        return checkout;
-      } catch (err: unknown) {
-        const is404 =
-          err instanceof Error &&
-          (err.message.includes('404') || err.message.includes('bulunamadı'));
-        if (is404) {
-          const published = await listingRepo.publish(current.draft, accessToken);
-          setListingWizardState((prev) => ({
-            ...prev,
-            draftAdvertId: published.advertId,
-            submittedDraftId: published.advertId,
-            submittedStatus: published.status,
-            step: 'review',
-            paytrMerchantOid: null,
-            paytrIframeUrl: null,
-          }));
-          return;
-        }
-        throw err;
-      }
+      const checkout = await listingRepo.startPaytrCheckout(
+        draft.advertId,
+        packageCode,
+        accessToken
+      );
+      setListingWizardState((prev) => ({
+        ...prev,
+        draftAdvertId: draft.advertId,
+        submittedDraftId: draft.advertId,
+        submittedStatus: draft.status,
+        paytrMerchantOid: checkout.merchantOid,
+        paytrIframeUrl: checkout.iframeUrl,
+        paytrAmountMinor: checkout.amountMinor ?? null,
+        step: 'payment',
+      }));
+      return checkout;
     },
     [listingRepo, publishListing]
   );
@@ -626,6 +610,7 @@ export function useListingWizard(deps: Deps = {}) {
     submittedStatus,
     paytrMerchantOid,
     paytrIframeUrl,
+    paytrAmountMinor,
     fieldErrors,
     canNext,
     setStep,

@@ -19,6 +19,8 @@
     "selftest:geo": "npx --yes tsx scripts/selftest-geo.ts",
     "selftest:packages": "npx --yes tsx scripts/selftest-packages.ts",
     "selftest:package-features": "npx --yes tsx scripts/selftest-package-features.ts",
+    "selftest:paytr-flag": "npx --yes tsx scripts/selftest-paytr-flag.ts",
+    "selftest:paytr-checkout": "npx --yes tsx scripts/selftest-paytr-checkout.ts",
     "selftest:homepage-bootstrap": "npx --yes tsx scripts/selftest-homepage-bootstrap.ts",
     "selftest:listings-requests": "npx --yes tsx scripts/selftest-listings-requests.ts",
     "selftest:favorites": "npx --yes tsx scripts/selftest-favorites.ts",

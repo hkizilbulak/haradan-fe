@@ -25,6 +25,7 @@ export type ListingWizardState = {
   submittedStatus: string | null;
   paytrMerchantOid: string | null;
   paytrIframeUrl: string | null;
+  paytrAmountMinor: number | null;
 };
 
 const STORAGE_KEY = 'haradan.listingDraft';
@@ -99,6 +100,7 @@ function createInitialState(): ListingWizardState {
     submittedStatus: null,
     paytrMerchantOid: null,
     paytrIframeUrl: null,
+    paytrAmountMinor: null,
   };
 }
 
@@ -163,6 +165,7 @@ function hydrate(): ListingWizardState {
       submittedStatus: parsed.submittedStatus ?? null,
       paytrMerchantOid: parsed.paytrMerchantOid ?? null,
       paytrIframeUrl: parsed.paytrIframeUrl ?? null,
+      paytrAmountMinor: parsed.paytrAmountMinor ?? null,
       detailsAttempted: parsed.detailsAttempted === true,
       draft: {
         ...createEmptyDraft(),

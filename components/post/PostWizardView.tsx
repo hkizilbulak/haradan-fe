@@ -319,7 +319,16 @@ export function PostWizardView() {
       {wizard.step === 'payment' && paytrEnabled ? (
         <PostPaymentStep
           iframeUrl={wizard.paytrIframeUrl}
+          packageName={
+            packages.find((p) => p.code === wizard.draft.packageCode)?.name ??
+            wizard.draft.packageCode
+          }
+          amountMinor={wizard.paytrAmountMinor}
           error={submitError}
+          onRetry={() => {
+            setSubmitError(null);
+            void submitListing();
+          }}
         />
       ) : null}
       {wizard.step === 'review' ? (
