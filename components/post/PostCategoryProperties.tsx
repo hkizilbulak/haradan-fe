@@ -337,7 +337,6 @@ export function PostCategoryProperties({
     const loadProps = () => {
       catalogRepository
         .getCategoryFormDefinition(catId, {
-          fresh: true,
           categorySlug: type?.categorySlug,
         } as any)
         .then((def) => {

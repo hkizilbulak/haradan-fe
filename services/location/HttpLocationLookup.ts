@@ -22,9 +22,11 @@ export class HttpLocationLookup implements ILocationLookup {
   private readonly staticLookup: StaticLocationLookup;
   private provinces: ProvinceOption[] | null = null;
   private provincesFetchedAt = 0;
+  private provincesInflight: Promise<ProvinceOption[]> | null = null;
   private readonly provinceNames = new Map<string, string>();
   private readonly districtNames = new Map<string, string>();
   private readonly districtsByProvince = new Map<string, DistrictOption[]>();
+  private readonly districtsInflight = new Map<string, Promise<DistrictOption[]>>();
   private readonly listeners = new Set<() => void>();
 
   constructor(baseUrl: string) {
@@ -123,7 +125,9 @@ export class HttpLocationLookup implements ILocationLookup {
   invalidate(): void {
     this.provinces = null;
     this.provincesFetchedAt = 0;
+    this.provincesInflight = null;
     this.districtsByProvince.clear();
+    this.districtsInflight.clear();
     this.staticLookup.invalidate();
   }
 
@@ -135,6 +139,16 @@ export class HttpLocationLookup implements ILocationLookup {
     ) {
       return this.provinces;
     }
+    if (this.provincesInflight) {
+      return this.provincesInflight;
+    }
+    this.provincesInflight = this.fetchProvinces().finally(() => {
+      this.provincesInflight = null;
+    });
+    return this.provincesInflight;
+  }
+
+  private async fetchProvinces(): Promise<ProvinceOption[]> {
     try {
       const res = await this.http.request<{ items: Province[] }>('/v1/provinces', {
         method: 'GET',
@@ -168,6 +182,20 @@ export class HttpLocationLookup implements ILocationLookup {
       this.districtsByProvince.get(targetProvinceId) ||
       this.districtsByProvince.get(cleanId);
     if (cached && cached.length > 0) return cached;
+    const inflight =
+      this.districtsInflight.get(targetProvinceId) ||
+      this.districtsInflight.get(cleanId);
+    if (inflight) return inflight;
+    const promise = this.fetchDistricts(cleanId, targetProvinceId).finally(() => {
+      this.districtsInflight.delete(targetProvinceId);
+      this.districtsInflight.delete(cleanId);
+    });
+    this.districtsInflight.set(targetProvinceId, promise);
+    this.districtsInflight.set(cleanId, promise);
+    return promise;
+  }
+
+  private async fetchDistricts(cleanId: string, targetProvinceId: string): Promise<DistrictOption[]> {
     try {
       const res = await this.http.request<{ items: District[] }>(
         `/v1/provinces/${encodeURIComponent(targetProvinceId)}/districts`,

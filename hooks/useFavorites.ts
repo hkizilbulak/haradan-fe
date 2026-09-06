@@ -42,6 +42,12 @@ export function useFavorites() {
       return;
     }
 
+    // Post wizard has no favorites UI — skip cold hydrate here.
+    if (pathname?.includes('/post')) {
+      setHydrating(false);
+      return;
+    }
+
     let cancelled = false;
     setHydrating(true);
     void ensureFavoritesHydrated(session?.accessToken ?? null)
@@ -55,7 +61,7 @@ export function useFavorites() {
     return () => {
       cancelled = true;
     };
-  }, [isLoggedIn, session?.accessToken]);
+  }, [isLoggedIn, session?.accessToken, pathname]);
 
   const overrides = useMemo(() => getFavoriteOverrides(), [tick]);
   const items = useMemo(

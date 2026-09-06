@@ -318,5 +318,7 @@ export function mapDraftToCreateAdvert(
   if (price) {
     body.price = price;
   }
+  const address = draft.details.address?.trim() || 'Merkez';
+  body.address = address;
   return body;
 }

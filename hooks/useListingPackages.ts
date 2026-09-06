@@ -6,14 +6,17 @@ import {
 import type { ListingPackage } from '@/types/listing';
 
 export function useListingPackages(
-  repo: IListingRepository = listingRepository
+  repo: IListingRepository = listingRepository,
+  options?: { enabled?: boolean }
 ) {
+  const enabled = options?.enabled !== false;
   const [packages, setPackages] = useState<ListingPackage[]>(
     () => repo.getCachedPackages() ?? []
   );
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -29,7 +32,7 @@ export function useListingPackages(
     return () => {
       cancelled = true;
     };
-  }, [repo]);
+  }, [repo, enabled]);
 
   return { packages, error };
 }

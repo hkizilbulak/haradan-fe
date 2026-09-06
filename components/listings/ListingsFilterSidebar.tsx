@@ -350,7 +350,6 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     const loadProps = () => {
       catalogRepository
         .getCategoryFormDefinition(categoryId || value.categorySlug!, {
-          fresh: true,
           categorySlug: value.categorySlug!,
         } as any)
         .then((def) => {

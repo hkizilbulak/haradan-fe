@@ -7,6 +7,8 @@ import type {
 export interface CatalogQueryOptions {
   fresh?: boolean;
   categorySlug?: string;
+  /** Skip BE /form — use local mock/defaults (ortak-alanlar). */
+  localOnly?: boolean;
 }
 
 /**

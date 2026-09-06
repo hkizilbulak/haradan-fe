@@ -41,8 +41,13 @@ export function PostWizardView() {
   const [customGlobalProperties, setCustomGlobalProperties] = useState<CategoryPropertyPublic[]>([]);
   const { session, isLoggedIn } = useAuthSession();
   const { categoryTree, error: catalogError, loading: catalogLoading } = useCatalogFacets();
-  const { packages, error: packageError } = useListingPackages();
   const wizard = useListingWizard();
+  const { packages, error: packageError } = useListingPackages(undefined, {
+    enabled:
+      wizard.step === 'package' ||
+      wizard.step === 'payment' ||
+      wizard.step === 'review',
+  });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const packageStepEnabled = isListingPackageStepEnabled();
@@ -63,7 +68,10 @@ export function PostWizardView() {
     const refresh = () => setGlobalConfigs(getGlobalPropertiesConfig());
 
     void catalogRepository
-      .getCategoryFormDefinition('ortak-alanlar', { fresh: true, categorySlug: 'ortak-alanlar' })
+      .getCategoryFormDefinition('ortak-alanlar', {
+        categorySlug: 'ortak-alanlar',
+        localOnly: true,
+      })
       .then((def) => {
         if (!cancelled && def && Array.isArray(def.properties)) {
           const map = getGlobalPropertiesConfig();
@@ -219,11 +227,34 @@ export function PostWizardView() {
         setScrollTrigger((v) => v + 1);
         return;
       }
-      if (!packageStepEnabled) {
-        await submitListing();
+      if (!isLoggedIn) {
+        router.push('/auth/login?next=/post');
         return;
       }
-      wizard.goNext();
+      setSubmitting(true);
+      try {
+        const token = await getValidAccessToken();
+        if (!token) {
+          router.push('/auth/login?next=/post');
+          return;
+        }
+        if (!packageStepEnabled) {
+          // Direct submit path: persist + media + submit in one CTA.
+          await wizard.persistDraftAndStartMedia(token);
+          await wizard.publishListing(token);
+          return;
+        }
+        // Persist shell now; media uploads continue on package step.
+        await wizard.persistDraftAndStartMedia(token);
+        wizard.goNext();
+      } catch (err) {
+        setSubmitError(
+          err instanceof Error ? err.message : 'İlan kaydedilemedi.'
+        );
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+      } finally {
+        setSubmitting(false);
+      }
       return;
     }
     if (wizard.step === 'package') {
@@ -243,6 +274,8 @@ export function PostWizardView() {
     activeCategoryProperties,
     globalConfigs,
     customGlobalProperties,
+    isLoggedIn,
+    router,
   ]);
 
   const nextLabel =
@@ -309,12 +342,24 @@ export function PostWizardView() {
         </View>
       ) : null}
       {wizard.step === 'package' && packageStepEnabled ? (
-        <PostPackagesStep
-          packages={packages}
-          selected={wizard.draft.packageCode}
-          error={submitError ?? packageError ?? catalogError}
-          onSelect={wizard.selectPackage}
-        />
+        <View>
+          {wizard.mediaSyncStatus === 'uploading' ? (
+            <Text style={styles.mediaHint}>
+              Görseller arka planda yükleniyor — paket seçmeye devam edebilirsiniz.
+            </Text>
+          ) : null}
+          {wizard.mediaSyncStatus === 'error' && wizard.mediaSyncError ? (
+            <Text style={[styles.submitErr, { color: errorColor }]}>
+              {wizard.mediaSyncError}
+            </Text>
+          ) : null}
+          <PostPackagesStep
+            packages={packages}
+            selected={wizard.draft.packageCode}
+            error={submitError ?? packageError ?? catalogError}
+            onSelect={wizard.selectPackage}
+          />
+        </View>
       ) : null}
       {wizard.step === 'payment' && paytrEnabled ? (
         <PostPaymentStep
@@ -351,5 +396,10 @@ const styles = StyleSheet.create({
   submitErr: {
     ...Typography.body,
     fontWeight: '600',
+  },
+  mediaHint: {
+    ...Typography.body,
+    marginBottom: Spacing.sm,
+    opacity: 0.75,
   },
 });
