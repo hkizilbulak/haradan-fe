@@ -157,11 +157,15 @@ export class HttpListingRepository implements IListingRepository {
       ...uploaded.filter((m) => m.isCover),
       ...uploaded.filter((m) => !m.isCover),
     ];
+    const alreadyAttached = new Set(
+      (created.media ?? []).map((m) => m.assetId).filter(Boolean)
+    );
     const coverSlot = uploaded.find((m) => m.isCover) ?? uploaded[0];
     let coverAssetId: string | null = coverSlot?.assetId ?? null;
     for (let i = 0; i < ordered.length; i += 1) {
       const slot = ordered[i];
       if (!slot.assetId) continue;
+      if (alreadyAttached.has(slot.assetId)) continue;
       const attached = await this.http.request<AdvertMediaCollectionResponse>(
         `/v1/me/adverts/${created.id}/media`,
         {
@@ -170,11 +174,13 @@ export class HttpListingRepository implements IListingRepository {
           body: JSON.stringify({
             assetId: slot.assetId,
             expectedMediaVersion: mediaVersion,
-            displayOrder: i,
+            // Omit displayOrder: BE appends after existing media (avoids
+            // CONFLICT when re-saving a draft that already has images).
           }),
         }
       );
       mediaVersion = attached.mediaVersion;
+      alreadyAttached.add(slot.assetId);
     }
     if (coverAssetId) {
       const covered = await this.http.request<AdvertMediaCollectionResponse>(

@@ -49,6 +49,7 @@ export default function PaymentResultScreen() {
           step: 'package',
           paytrIframeUrl: null,
           paytrMerchantOid: null,
+          paytrAmountMinor: null,
         }));
         return;
       }
@@ -62,6 +63,7 @@ export default function PaymentResultScreen() {
           submittedDraftId: advertId,
           submittedStatus: 'PENDING_REVIEW',
           step: 'review',
+          paytrAmountMinor: null,
         }));
         router.replace('/post');
         return;
@@ -88,6 +90,7 @@ export default function PaymentResultScreen() {
               submittedStatus: 'PENDING_REVIEW',
               paytrMerchantOid: merchantOid,
               paytrIframeUrl: null,
+              paytrAmountMinor: null,
               step: 'review',
             }));
             router.replace('/post');
@@ -101,6 +104,7 @@ export default function PaymentResultScreen() {
               step: 'package',
               paytrIframeUrl: null,
               paytrMerchantOid: null,
+              paytrAmountMinor: null,
             }));
             return;
           }
