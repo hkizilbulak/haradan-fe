@@ -113,6 +113,11 @@ export type ListingDraftDetails = {
   inTraining?: string | boolean;
   isForRent?: string | boolean;
   isRaceReady?: string | boolean;
+  /** Satılık Kısrak */
+  isPregnant?: boolean;
+  coveringStallion?: string;
+  pregnancyStage?: string;
+  lastCoveringDate?: string;
   /** Dinamik Properties JSON Map */
   properties?: Record<string, unknown>;
 };

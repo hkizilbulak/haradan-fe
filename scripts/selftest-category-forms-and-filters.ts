@@ -37,7 +37,10 @@ import {
   matchHorseBreed,
   matchHorseAge,
   matchHorseColor,
+  matchHorsePregnant,
 } from '../components/listings/filterConfig';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { ListingDraft } from '../types/listing';
 import { normalizeSearchText } from '../services/adverts/filterAdverts';
 
@@ -779,6 +782,110 @@ const builtProps = buildDraftProperties(raceHorseDraft as any);
 assertEqual(builtProps.IN_TRAINING, true, 'buildDraftProperties IN_TRAINING aktardı');
 assertEqual(builtProps.IS_FOR_RENT, false, 'buildDraftProperties IS_FOR_RENT aktardı');
 assertEqual(builtProps.IS_RACE_READY, true, 'buildDraftProperties IS_RACE_READY aktardı');
+
+// --- 11. Satılık Kısrak Gebelik Özellikleri ve Filtreleme Testleri ---
+console.log('\n--- 11. Satılık Kısrak Gebelik Özellikleri ve Filtreleme Testleri ---');
+
+const kisrakCat = INITIAL_CATALOG.categories.find(c => c.slug === 'satilik-kisrak');
+assert(Boolean(kisrakCat), 'Satılık Kısrak kategorisi mevcut');
+
+const isPregnantProp = INITIAL_CATALOG.categoryProperties.find(p => p.code === 'IS_PREGNANT' && p.categoryId === kisrakCat?.id);
+assert(Boolean(isPregnantProp), 'IS_PREGNANT (Gebe mi) özelliği tanımlı');
+assertEqual(isPregnantProp?.title, 'Gebe mi', 'IS_PREGNANT başlığı doğru');
+assertEqual(isPregnantProp?.dataType, 'BOOLEAN', 'IS_PREGNANT BOOLEAN veri tipine sahip');
+assertEqual(isPregnantProp?.isFilterable, true, 'IS_PREGNANT filtrelenebilir');
+
+const coveringStallionProp = INITIAL_CATALOG.categoryProperties.find(p => p.code === 'COVERING_STALLION' && p.categoryId === kisrakCat?.id);
+assert(Boolean(coveringStallionProp), 'COVERING_STALLION (Gebe Olduğu Aygır) özelliği tanımlı');
+assertEqual(coveringStallionProp?.title, 'Gebe Olduğu Aygır', 'COVERING_STALLION başlığı doğru');
+assertEqual(coveringStallionProp?.dataType, 'STRING', 'COVERING_STALLION STRING veri tipine sahip');
+
+const pregnancyStageProp = INITIAL_CATALOG.categoryProperties.find(p => p.code === 'PREGNANCY_STAGE' && p.categoryId === kisrakCat?.id);
+assert(Boolean(pregnancyStageProp), 'PREGNANCY_STAGE (Gebelik Durumu) özelliği tanımlı');
+assertEqual(pregnancyStageProp?.title, 'Gebelik Durumu', 'PREGNANCY_STAGE başlığı doğru');
+assertEqual(pregnancyStageProp?.dataType, 'SINGLE_SELECT', 'PREGNANCY_STAGE SINGLE_SELECT veri tipine sahip');
+assertEqual(pregnancyStageProp?.options?.length, 3, 'PREGNANCY_STAGE 3 seçeneğe sahip (K1, K2, K3)');
+
+const lastCoveringDateProp = INITIAL_CATALOG.categoryProperties.find(p => p.code === 'LAST_COVERING_DATE' && p.categoryId === kisrakCat?.id);
+assert(Boolean(lastCoveringDateProp), 'LAST_COVERING_DATE (Son Aşım Tarihi) özelliği tanımlı');
+assertEqual(lastCoveringDateProp?.title, 'Son Aşım Tarihi', 'LAST_COVERING_DATE başlığı doğru');
+assertEqual(lastCoveringDateProp?.dataType, 'STRING', 'LAST_COVERING_DATE STRING veri tipine sahip');
+
+// Taslak aktarımı (buildDraftProperties)
+const pregnantMareDraft = {
+  ...draftWithAddress,
+  type: kisrakCat,
+  details: {
+    ...draftWithAddress.details,
+    isPregnant: true,
+    coveringStallion: 'Native Khan',
+    pregnancyStage: 'K2',
+    lastCoveringDate: '15.04.2024',
+    properties: {
+      IS_PREGNANT: true,
+      COVERING_STALLION: 'Native Khan',
+      PREGNANCY_STAGE: 'K2',
+      LAST_COVERING_DATE: '15.04.2024',
+    },
+  },
+};
+const builtPregnantProps = buildDraftProperties(pregnantMareDraft as any);
+assertEqual(builtPregnantProps.IS_PREGNANT, true, 'buildDraftProperties IS_PREGNANT aktardı');
+assertEqual(builtPregnantProps.COVERING_STALLION, 'Native Khan', 'buildDraftProperties COVERING_STALLION aktardı');
+assertEqual(builtPregnantProps.PREGNANCY_STAGE, 'K2', 'buildDraftProperties PREGNANCY_STAGE aktardı');
+assertEqual(builtPregnantProps.LAST_COVERING_DATE, '15.04.2024', 'buildDraftProperties LAST_COVERING_DATE aktardı');
+
+// Gebe mi = Hayır ise dependent alanlar silinmeli
+const nonPregnantMareDraft = {
+  ...pregnantMareDraft,
+  details: {
+    ...pregnantMareDraft.details,
+    isPregnant: false,
+    coveringStallion: '',
+    pregnancyStage: '',
+    lastCoveringDate: '',
+  },
+};
+const builtNonPregnantProps = buildDraftProperties(nonPregnantMareDraft as any);
+assertEqual(builtNonPregnantProps.IS_PREGNANT, false, 'Gebe=Hayır iken IS_PREGNANT=false');
+assertEqual(builtNonPregnantProps.COVERING_STALLION, undefined, 'Gebe=Hayır iken COVERING_STALLION silindi');
+assertEqual(builtNonPregnantProps.PREGNANCY_STAGE, undefined, 'Gebe=Hayır iken PREGNANCY_STAGE silindi');
+assertEqual(builtNonPregnantProps.LAST_COVERING_DATE, undefined, 'Gebe=Hayır iken LAST_COVERING_DATE silindi');
+
+// detailsErrors doğrulama testleri
+const invalidPregnantDraft = {
+  ...draftWithAddress,
+  type: kisrakCat,
+  details: {
+    ...draftWithAddress.details,
+    isPregnant: true,
+    coveringStallion: '',
+    pregnancyStage: '',
+    lastCoveringDate: '',
+    properties: {
+      IS_PREGNANT: true,
+    },
+  },
+};
+const pregErrs = detailsErrors(invalidPregnantDraft as any);
+assert(Boolean(pregErrs.COVERING_STALLION), 'Gebe=Evet iken aygır boşsa hata verdi');
+assert(Boolean(pregErrs.PREGNANCY_STAGE), 'Gebe=Evet iken gebelik durumu boşsa hata verdi');
+assert(Boolean(pregErrs.LAST_COVERING_DATE), 'Gebe=Evet iken son aşım tarihi boşsa hata verdi');
+
+const validPregnantErrs = detailsErrors(pregnantMareDraft as any);
+assertEqual(validPregnantErrs.COVERING_STALLION, undefined, 'Tüm gebelik alanları dolu iken aygır hatası yok');
+assertEqual(validPregnantErrs.PREGNANCY_STAGE, undefined, 'Tüm gebelik alanları dolu iken evre hatası yok');
+assertEqual(validPregnantErrs.LAST_COVERING_DATE, undefined, 'Tüm gebelik alanları dolu iken tarih hatası yok');
+
+// Filtre eşleştirme (matchHorsePregnant)
+assert(matchHorsePregnant({ properties: { IS_PREGNANT: true } }, true), 'IS_PREGNANT=true gebe filtresiyle eşleşti');
+assert(matchHorsePregnant({ properties: { IS_PREGNANT: 'true' } }, true), 'IS_PREGNANT="true" gebe filtresiyle eşleşti');
+assert(!matchHorsePregnant({ properties: { IS_PREGNANT: false } }, true), 'IS_PREGNANT=false gebe filtresiyle eşleşmedi');
+assert(!matchHorsePregnant({ properties: {} }, true), 'Boş özellikler gebe filtresiyle eşleşmedi');
+
+// Anasayfa Hızlı Arama Linki (Gebe Kısrak)
+const homeSearchSrc = readFileSync(resolve(import.meta.dirname, '../components/home/HomeSearchBar.tsx'), 'utf8');
+assert(homeSearchSrc.includes("params: { category: 'satilik-kisrak', pregnant: '1' }"), 'HomeSearchBar gebe hızlı linki pregnant: "1" parametresine sahip');
 
 console.log(`\nÖzet: ${passed} geçti, ${failed} kaldı.`);
 if (failed > 0) {

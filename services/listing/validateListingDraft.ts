@@ -522,6 +522,13 @@ export function detailsErrors(
       if (CORE_CODES.has(code) || CORE_CODES.has(codeUpper)) {
         continue;
       }
+      if (
+        codeUpper === 'COVERING_STALLION' ||
+        codeUpper === 'PREGNANCY_STAGE' ||
+        codeUpper === 'LAST_COVERING_DATE'
+      ) {
+        continue;
+      }
 
       let val = findPropertyValue(d.properties, prop);
       if (val === undefined || val === null || val === '' || String(val).trim() === '') {
@@ -616,6 +623,36 @@ export function detailsErrors(
           e[code] = `${prop.title} zorunludur.`;
         }
       }
+    }
+  }
+
+  // Satılık Kısrak - Gebelik koşullu alan doğrulaması
+  const isPregnantVal =
+    d.isPregnant ??
+    (d.properties?.IS_PREGNANT !== undefined
+      ? d.properties.IS_PREGNANT === true ||
+        d.properties.IS_PREGNANT === 'true' ||
+        d.properties.IS_PREGNANT === 1 ||
+        d.properties.IS_PREGNANT === '1'
+      : undefined);
+
+  if (isPregnantVal === true) {
+    const stallion = (d.coveringStallion || d.properties?.COVERING_STALLION || '') as string;
+    if (!String(stallion).trim()) {
+      e.COVERING_STALLION = 'Gebe olduğu aygır zorunludur.';
+      e.coveringStallion = 'Gebe olduğu aygır zorunludur.';
+    }
+
+    const stage = (d.pregnancyStage || d.properties?.PREGNANCY_STAGE || '') as string;
+    if (!String(stage).trim()) {
+      e.PREGNANCY_STAGE = 'Gebelik durumu (K1, K2, K3) seçilmelidir.';
+      e.pregnancyStage = 'Gebelik durumu (K1, K2, K3) seçilmelidir.';
+    }
+
+    const coveringDate = (d.lastCoveringDate || d.properties?.LAST_COVERING_DATE || '') as string;
+    if (!String(coveringDate).trim()) {
+      e.LAST_COVERING_DATE = 'Son aşım tarihi zorunludur.';
+      e.lastCoveringDate = 'Son aşım tarihi zorunludur.';
     }
   }
 

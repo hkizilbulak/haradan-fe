@@ -318,8 +318,11 @@ export const AdvertSpecs = memo(function AdvertSpecs({
     });
 
     // Helper to find boolean / string properties
-    const findProp = (codes: string[], defaultVal: boolean): string => {
-      if (!detail) return defaultVal ? 'Evet' : 'Hayır';
+    const findProp = (codes: string[], defaultVal: boolean | string | null = null): string | null => {
+      if (!detail) {
+        if (typeof defaultVal === 'boolean') return defaultVal ? 'Evet' : 'Hayır';
+        return defaultVal;
+      }
       const rawProps = (detail as any)?.properties || (detail as any)?.rawProperties || {};
       for (const c of codes) {
         const val = rawProps[c] ?? rawProps[c.toLowerCase()] ?? rawProps[c.toUpperCase()];
@@ -346,7 +349,8 @@ export const AdvertSpecs = memo(function AdvertSpecs({
           }
         }
       }
-      return defaultVal ? 'Evet' : 'Hayır';
+      if (typeof defaultVal === 'boolean') return defaultVal ? 'Evet' : 'Hayır';
+      return defaultVal;
     };
 
     if (categoryKind === 'horse') {
@@ -421,22 +425,62 @@ export const AdvertSpecs = memo(function AdvertSpecs({
       rows.push({
         icon: 'fitness-outline',
         label: 'İdmanda mı',
-        value: findProp(['IN_TRAINING', 'inTraining', 'idmanda'], true),
+        value: findProp(['IN_TRAINING', 'inTraining', 'idmanda'], true) ?? 'Evet',
       });
 
       // Koşar durumda mı
       rows.push({
         icon: 'flash-outline',
         label: 'Koşar durumda mı',
-        value: findProp(['IS_RACE_READY', 'isRaceReady', 'kosar', 'koşar'], true),
+        value: findProp(['IS_RACE_READY', 'isRaceReady', 'kosar', 'koşar'], true) ?? 'Evet',
       });
 
       // Kiralık mı
       rows.push({
         icon: 'key-outline',
         label: 'Kiralık mı',
-        value: findProp(['IS_FOR_RENT', 'isForRent', 'kiralik', 'kiralık'], false),
+        value: findProp(['IS_FOR_RENT', 'isForRent', 'kiralik', 'kiralık'], false) ?? 'Hayır',
       });
+
+      // Kısrak Gebelik Durumu
+      const isPregnant = findProp(['IS_PREGNANT', 'isPregnant', 'gebe'], null);
+      if (isPregnant != null) {
+        rows.push({
+          icon: 'heart-outline',
+          label: 'Gebe mi',
+          value: isPregnant,
+        });
+
+        const isPregBool = isPregnant === 'Evet' || isPregnant === 'true';
+        if (isPregBool) {
+          const coveringStallion = findProp(['COVERING_STALLION', 'coveringStallion', 'gebeOlduguAygir', 'aygir'], '');
+          if (coveringStallion) {
+            rows.push({
+              icon: 'flame-outline',
+              label: 'Gebe Olduğu Aygır',
+              value: coveringStallion,
+            });
+          }
+
+          const stage = findProp(['PREGNANCY_STAGE', 'pregnancyStage', 'gebelikDurumu'], '');
+          if (stage) {
+            rows.push({
+              icon: 'ribbon-outline',
+              label: 'Gebelik Durumu',
+              value: stage,
+            });
+          }
+
+          const coveringDate = findProp(['LAST_COVERING_DATE', 'lastCoveringDate', 'sonAsimTarihi', 'coveringDate'], '');
+          if (coveringDate) {
+            rows.push({
+              icon: 'calendar-outline',
+              label: 'Son Aşım Tarihi',
+              value: coveringDate,
+            });
+          }
+        }
+      }
     } else if (categoryKind === 'stud') {
       const studInfo = parseStudInfo(detail || ({ horse, specs: groups, title: '' } as AdvertDetail));
       if (studInfo.name) rows.push({ icon: 'star-outline', label: 'Aygır Adı', value: studInfo.name });

@@ -58,6 +58,7 @@ export type ListingsFiltersState = {
   colors: string[];
   genders?: string[];
   features?: string[];
+  pregnant?: boolean;
 };
 
 type ListingsFilterSidebarProps = {
@@ -265,6 +266,7 @@ export const EMPTY_LISTINGS_FILTERS: ListingsFiltersState = {
   colors: [],
   genders: [],
   features: [],
+  pregnant: false,
 };
 
 function isBreedProperty(p: CategoryPropertyPublic): boolean {
@@ -526,6 +528,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     (value.colors && value.colors.length > 0) ||
     (value.genders && value.genders.length > 0) ||
     (value.features && value.features.length > 0) ||
+    value.pregnant ||
     Object.values(value.facilities ?? {}).some(Boolean);
 
   const advancedHint =
@@ -975,14 +978,17 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
         >
           {booleanProps.map((fac) => {
             const propKey = fac.code || fac.title;
-            const on = Boolean(
-              value.facilities?.[fac.code as PansiyonFacilityKey] ??
-              value.facilities?.[propKey as PansiyonFacilityKey] ??
-              (value.features ?? []).includes(propKey) ??
-              (value.features ?? []).includes(fac.code) ??
-              (value.features ?? []).includes(`${propKey}:true`) ??
-              (value.features ?? []).includes(`${fac.code}:true`)
-            );
+            const isPregnantCode = fac.code === 'IS_PREGNANT' || propKey === 'IS_PREGNANT';
+            const on = isPregnantCode
+              ? Boolean(value.pregnant)
+              : Boolean(
+                  value.facilities?.[fac.code as PansiyonFacilityKey] ??
+                  value.facilities?.[propKey as PansiyonFacilityKey] ??
+                  (value.features ?? []).includes(propKey) ??
+                  (value.features ?? []).includes(fac.code) ??
+                  (value.features ?? []).includes(`${propKey}:true`) ??
+                  (value.features ?? []).includes(`${fac.code}:true`)
+                );
 
             return (
               <Pressable
@@ -1006,6 +1012,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
                     ...value,
                     facilities: nextFacilities,
                     features: nextFeatures,
+                    ...(isPregnantCode ? { pregnant: !on } : {}),
                   });
                 }}
                 accessibilityRole="switch"

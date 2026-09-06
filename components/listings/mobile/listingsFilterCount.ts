@@ -16,6 +16,7 @@ export function countActiveListingsFilters(f: ListingsFiltersState): number {
   if (f.colors?.length) n += 1;
   if (f.genders?.length) n += 1;
   if (f.features?.length) n += 1;
+  if (f.pregnant) n += 1;
   const facKeys = Object.keys(f.facilities ?? {}).filter(
     (k) => Boolean(f.facilities[k as keyof typeof f.facilities])
   );
@@ -39,5 +40,6 @@ export function emptyListingsFilters(): ListingsFiltersState {
     colors: [],
     genders: [],
     features: [],
+    pregnant: false,
   };
 }

@@ -789,3 +789,16 @@ export function matchHorseColor(
   });
 }
 
+export function matchHorsePregnant(
+  card: { title?: string; brand?: string | null; properties?: Record<string, unknown> | null },
+  isPregnantOnly?: boolean
+): boolean {
+  if (!isPregnantOnly) return true;
+  const props = card.properties || {};
+  const pVal = props.IS_PREGNANT ?? props.isPregnant ?? props.gebe ?? props.GEBE;
+  if (pVal === true || pVal === 'true' || pVal === 1 || pVal === '1' || pVal === 'evet') return true;
+  const text = `${card.title ?? ''} ${card.brand ?? ''}`.toLocaleLowerCase('tr');
+  if (text.includes('gebe kısrak') || text.includes('gebedir') || text.includes('gebe ')) return true;
+  return false;
+}
+

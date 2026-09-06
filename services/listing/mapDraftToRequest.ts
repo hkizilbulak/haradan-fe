@@ -154,6 +154,10 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
     ['IN_TRAINING', d.inTraining !== undefined ? Boolean(d.inTraining) : undefined],
     ['IS_FOR_RENT', d.isForRent !== undefined ? Boolean(d.isForRent) : undefined],
     ['IS_RACE_READY', d.isRaceReady !== undefined ? Boolean(d.isRaceReady) : undefined],
+    ['IS_PREGNANT', d.isPregnant !== undefined ? Boolean(d.isPregnant) : undefined],
+    ['COVERING_STALLION', d.coveringStallion],
+    ['PREGNANCY_STAGE', d.pregnancyStage],
+    ['LAST_COVERING_DATE', d.lastCoveringDate],
   ];
 
   const isStud = isStudServiceListing(draft.type);
@@ -163,6 +167,13 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
       // User's top-level form state always takes precedence over stale properties loaded from previous versions
       props[code] = typeof val === 'string' ? val.trim() : val;
     }
+  }
+
+  if (d.isPregnant === false) {
+    props['IS_PREGNANT'] = false;
+    delete props['COVERING_STALLION'];
+    delete props['PREGNANCY_STAGE'];
+    delete props['LAST_COVERING_DATE'];
   }
 
   // Keep canonical keys and aliases in sync so there is never an old conflicting alias

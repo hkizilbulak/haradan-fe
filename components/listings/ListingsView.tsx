@@ -64,6 +64,7 @@ import {
   matchHorseBreed,
   matchHorseColor,
   matchHorseGender,
+  matchHorsePregnant,
   parseArrayParam,
   parseProvinceParam,
   parseTlParam,
@@ -92,6 +93,7 @@ export type ListingsQuery = {
   colors?: string | null;
   genders?: string | null;
   features?: string | null;
+  pregnant?: string | null;
 };
 
 type ListingsViewProps = {
@@ -201,6 +203,11 @@ function applyClientFilters(
   // 11. Cinsiyet (Erkek, Dişi, İğdiş)
   if (filters.genders && filters.genders.length > 0) {
     list = list.filter((p) => matchHorseGender(p, filters.genders));
+  }
+
+  // 12. Gebelik (Gebe Kısrak)
+  if (filters.pregnant) {
+    list = list.filter((p) => matchHorsePregnant(p, true));
   }
 
   // 12. Dinamik Kategori Boolean Özellikleri (Tesis / Hizmet / Özel Boolean Filtreleri)
@@ -372,6 +379,7 @@ export const ListingsView = memo(function ListingsView({
     colors: parseArrayParam(query.colors),
     genders: parseArrayParam(query.genders),
     features: parseArrayParam(query.features),
+    pregnant: query.pregnant === '1' || query.pregnant === 'true',
   });
   const [page, setPage] = useState(0);
   const [liveQuery, setLiveQuery] = useState(query.q ?? '');
@@ -399,6 +407,7 @@ export const ListingsView = memo(function ListingsView({
       colors: parseArrayParam(query.colors),
       genders: parseArrayParam(query.genders),
       features: parseArrayParam(query.features),
+      pregnant: query.pregnant === '1' || query.pregnant === 'true',
     });
     setPage(0);
   }, [
@@ -417,6 +426,7 @@ export const ListingsView = memo(function ListingsView({
     query.colors,
     query.genders,
     query.features,
+    query.pregnant,
   ]);
 
   const search = usePublishedAdvertsSearch(
@@ -467,6 +477,7 @@ export const ListingsView = memo(function ListingsView({
       if (gendersStr) params.set('genders', gendersStr);
       const featuresStr = serializeArrayParam(next.features ?? []);
       if (featuresStr) params.set('features', featuresStr);
+      if (next.pregnant) params.set('pregnant', '1');
 
       skipHydrate.current = true;
       syncListingsQuery(params.toString(), router);
@@ -507,6 +518,7 @@ export const ListingsView = memo(function ListingsView({
       if (gendersStr) params.set('genders', gendersStr);
       const featuresStr = serializeArrayParam(filters.features ?? []);
       if (featuresStr) params.set('features', featuresStr);
+      if (filters.pregnant) params.set('pregnant', '1');
 
       skipHydrate.current = true;
       syncListingsQuery(params.toString(), router);

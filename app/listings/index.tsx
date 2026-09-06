@@ -36,6 +36,7 @@ export default function ListingsScreen() {
     colors?: string | string[];
     genders?: string | string[];
     features?: string | string[];
+    pregnant?: string | string[];
   }>();
   const bg = useThemeColor('background');
   const { isLoggedIn } = useAuthSession();
@@ -58,6 +59,7 @@ export default function ListingsScreen() {
       colors: first(params.colors),
       genders: first(params.genders),
       features: first(params.features),
+      pregnant: first(params.pregnant),
     }),
     [
       params.q,
@@ -75,6 +77,7 @@ export default function ListingsScreen() {
       params.colors,
       params.genders,
       params.features,
+      params.pregnant,
     ]
   );
 

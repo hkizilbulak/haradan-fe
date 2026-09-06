@@ -73,7 +73,7 @@ export const DEFAULT_QUICK_LINKS: QuickSearchTag[] = [
   {
     id: 'gebe',
     label: 'Gebe Kısrak',
-    params: { category: 'satilik-kisrak', genders: 'Dişi' },
+    params: { category: 'satilik-kisrak', pregnant: '1' },
     icon: 'female-outline',
   },
   {
@@ -105,12 +105,6 @@ export const DEFAULT_QUICK_LINKS: QuickSearchTag[] = [
     label: 'Pansiyon',
     params: { category: 'pansiyon-haralar' },
     icon: 'home-outline',
-  },
-  {
-    id: 'asim',
-    label: 'Aşım Hizmetleri',
-    params: { category: 'asim-hizmetleri' },
-    icon: 'git-network-outline',
   },
 ];
 
@@ -474,17 +468,6 @@ export const HomeSearchBar = memo(function HomeSearchBar({
                   },
                 ]}
               >
-                {link.icon ? (
-                  <Ionicons
-                    name={link.icon}
-                    size={12}
-                    color={
-                      isGlass
-                        ? '#ffffff'
-                        : textSecondary
-                    }
-                  />
-                ) : null}
                 <Text
                   style={[
                     styles.quickChipText,

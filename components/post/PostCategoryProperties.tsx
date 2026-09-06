@@ -294,6 +294,39 @@ function getCanonicalPropertyKey(p: { code?: string; title?: string } | null | u
   ) {
     return 'canonical_is_race_ready';
   }
+  if (
+    code === 'ISPREGNANT' ||
+    code === 'PREGNANT' ||
+    title === 'gebemi' ||
+    title === 'gebe'
+  ) {
+    return 'canonical_is_pregnant';
+  }
+  if (
+    code === 'COVERINGSTALLION' ||
+    code === 'PREGNANTSTALLION' ||
+    title === 'gebeolduguaygir' ||
+    title === 'gebeolduğuaygır'
+  ) {
+    return 'canonical_covering_stallion';
+  }
+  if (
+    code === 'PREGNANCYSTAGE' ||
+    code === 'PREGNANCYSTATUS' ||
+    title === 'gebelikdurumu' ||
+    title === 'gebelik'
+  ) {
+    return 'canonical_pregnancy_stage';
+  }
+  if (
+    code === 'LASTCOVERINGDATE' ||
+    code === 'COVERINGDATE' ||
+    title === 'sonasimtarihi' ||
+    title === 'sonaşımtarihi' ||
+    title === 'sonaskimtarihi'
+  ) {
+    return 'canonical_last_covering_date';
+  }
 
   return code || title;
 }
@@ -578,6 +611,35 @@ export function PostCategoryProperties({
       partialUpdate.isForRent = Boolean(value);
     } else if (canonicalKey === 'canonical_is_race_ready' || codeUpper === 'IS_RACE_READY' || code === 'isRaceReady') {
       partialUpdate.isRaceReady = Boolean(value);
+    } else if (canonicalKey === 'canonical_is_pregnant' || codeUpper === 'IS_PREGNANT' || code === 'isPregnant') {
+      const bVal = Boolean(value);
+      partialUpdate.isPregnant = bVal;
+      if (bVal) {
+        currentProps['IS_PREGNANT'] = true;
+      } else {
+        currentProps['IS_PREGNANT'] = false;
+        delete currentProps['COVERING_STALLION'];
+        delete currentProps['PREGNANCY_STAGE'];
+        delete currentProps['LAST_COVERING_DATE'];
+        partialUpdate.coveringStallion = '';
+        partialUpdate.pregnancyStage = '';
+        partialUpdate.lastCoveringDate = '';
+      }
+    } else if (canonicalKey === 'canonical_covering_stallion' || codeUpper === 'COVERING_STALLION' || code === 'coveringStallion') {
+      const v = String(value ?? '');
+      partialUpdate.coveringStallion = v;
+      if (v) currentProps['COVERING_STALLION'] = v;
+      else delete currentProps['COVERING_STALLION'];
+    } else if (canonicalKey === 'canonical_pregnancy_stage' || codeUpper === 'PREGNANCY_STAGE' || code === 'pregnancyStage') {
+      const v = String(value ?? '');
+      partialUpdate.pregnancyStage = v;
+      if (v) currentProps['PREGNANCY_STAGE'] = v;
+      else delete currentProps['PREGNANCY_STAGE'];
+    } else if (canonicalKey === 'canonical_last_covering_date' || codeUpper === 'LAST_COVERING_DATE' || code === 'lastCoveringDate') {
+      const v = String(value ?? '');
+      partialUpdate.lastCoveringDate = v;
+      if (v) currentProps['LAST_COVERING_DATE'] = v;
+      else delete currentProps['LAST_COVERING_DATE'];
     } else if (code === 'serviceType' || code === 'service_type' || codeUpper === 'SERVICE_TYPE') {
       (partialUpdate as any).serviceType = String(value ?? '');
     }
@@ -631,11 +693,15 @@ export function PostCategoryProperties({
     if (codeUpper === 'TRAINER' && d.trainer) return d.trainer;
     if (codeUpper === 'TJK_NUMBER' && d.tjkNumber) return d.tjkNumber;
     if (codeUpper === 'OWNER' && d.ownersText) return d.ownersText;
+    if ((canonicalKey === 'canonical_is_pregnant' || codeUpper === 'IS_PREGNANT') && d.isPregnant !== undefined) return d.isPregnant;
+    if ((canonicalKey === 'canonical_covering_stallion' || codeUpper === 'COVERING_STALLION') && d.coveringStallion) return d.coveringStallion;
+    if ((canonicalKey === 'canonical_pregnancy_stage' || codeUpper === 'PREGNANCY_STAGE') && d.pregnancyStage) return d.pregnancyStage;
+    if ((canonicalKey === 'canonical_last_covering_date' || codeUpper === 'LAST_COVERING_DATE') && d.lastCoveringDate) return d.lastCoveringDate;
     return undefined;
   };
 
   // Group properties into toggles vs chips/inputs
-  const { statusToggles, toggleProps, otherProps } = useMemo(() => {
+  const { statusToggles, toggleProps, otherProps, pregnancyProps } = useMemo(() => {
     const status: CategoryPropertyPublic[] = [];
     const toggles: CategoryPropertyPublic[] = [];
     const others: CategoryPropertyPublic[] = [];
@@ -645,13 +711,37 @@ export function PostCategoryProperties({
     const seenOtherKeys = new Set<string>();
 
     const STATUS_CODES = new Set(['IN_TRAINING', 'IS_FOR_RENT', 'IS_RACE_READY']);
+    const PREGNANCY_CODES = new Set([
+      'IS_PREGNANT',
+      'COVERING_STALLION',
+      'PREGNANCY_STAGE',
+      'LAST_COVERING_DATE',
+    ]);
+
+    let pregnantProp: CategoryPropertyPublic | undefined;
+    let coveringStallionProp: CategoryPropertyPublic | undefined;
+    let pregnancyStageProp: CategoryPropertyPublic | undefined;
+    let lastCoveringDateProp: CategoryPropertyPublic | undefined;
 
     for (const prop of categoryProperties) {
       if (isExcludedProperty(prop)) continue;
+      const codeUpper = String(prop.code || '').toUpperCase();
       const canonicalKey = getCanonicalPropertyKey(prop);
 
+      if (PREGNANCY_CODES.has(codeUpper) || canonicalKey.startsWith('canonical_') && (
+        canonicalKey === 'canonical_is_pregnant' ||
+        canonicalKey === 'canonical_covering_stallion' ||
+        canonicalKey === 'canonical_pregnancy_stage' ||
+        canonicalKey === 'canonical_last_covering_date'
+      )) {
+        if (codeUpper === 'IS_PREGNANT' || canonicalKey === 'canonical_is_pregnant') pregnantProp = prop;
+        else if (codeUpper === 'COVERING_STALLION' || canonicalKey === 'canonical_covering_stallion') coveringStallionProp = prop;
+        else if (codeUpper === 'PREGNANCY_STAGE' || canonicalKey === 'canonical_pregnancy_stage') pregnancyStageProp = prop;
+        else if (codeUpper === 'LAST_COVERING_DATE' || canonicalKey === 'canonical_last_covering_date') lastCoveringDateProp = prop;
+        continue;
+      }
+
       if (prop.dataType === 'BOOLEAN') {
-        const codeUpper = String(prop.code || '').toUpperCase();
         if (STATUS_CODES.has(codeUpper) || (prop.uiMetadata as any)?.displayGroup === 'raceStatus') {
           if (!seenStatusKeys.has(canonicalKey)) {
             seenStatusKeys.add(canonicalKey);
@@ -671,7 +761,17 @@ export function PostCategoryProperties({
       }
     }
 
-    return { statusToggles: status, toggleProps: toggles, otherProps: others };
+    return {
+      statusToggles: status,
+      toggleProps: toggles,
+      otherProps: others,
+      pregnancyProps: {
+        pregnantProp,
+        coveringStallionProp,
+        pregnancyStageProp,
+        lastCoveringDateProp,
+      },
+    };
   }, [categoryProperties]);
 
   if (categoryProperties.length === 0) {
@@ -797,7 +897,144 @@ export function PostCategoryProperties({
         );
       })}
 
-      {/* 2. Race Status Toggles (Switch) */}
+      {/* 2. Kısrak Gebelik Durumu Özel Bölümü */}
+      {pregnancyProps.pregnantProp ? (() => {
+        const isPregnantVal = (() => {
+          const raw = getPropertyValue('IS_PREGNANT');
+          if (raw === true || raw === 'true' || raw === 1 || raw === '1') return true;
+          if (raw === false || raw === 'false' || raw === 0 || raw === '0') return false;
+          return undefined;
+        })();
+
+        return (
+          <View style={[styles.pregnancyCard, { borderColor: border, backgroundColor: surface }]}>
+            <View style={styles.pregnancyHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.pregnancyTitle, { color: text }]}>
+                  {pregnancyProps.pregnantProp.title || 'Gebe mi?'}
+                </Text>
+                <Text style={[styles.desc, { color: secondary, marginBottom: 0 }]}>
+                  Kısrağın gebe olup olmadığını belirtiniz.
+                </Text>
+              </View>
+              <View style={styles.pregnantToggleRow}>
+                <Pressable
+                  onPress={() => handlePropertyChange('IS_PREGNANT', false)}
+                  style={[
+                    styles.pregnantChip,
+                    {
+                      borderColor: isPregnantVal === false ? header : border,
+                      backgroundColor: isPregnantVal === false ? header : 'transparent',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.pregnantChipText,
+                      {
+                        color: isPregnantVal === false ? '#fff' : text,
+                        fontWeight: isPregnantVal === false ? '700' : '500',
+                      },
+                    ]}
+                  >
+                    Hayır
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => handlePropertyChange('IS_PREGNANT', true)}
+                  style={[
+                    styles.pregnantChip,
+                    {
+                      borderColor: isPregnantVal === true ? header : border,
+                      backgroundColor: isPregnantVal === true ? header : 'transparent',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.pregnantChipText,
+                      {
+                        color: isPregnantVal === true ? '#fff' : text,
+                        fontWeight: isPregnantVal === true ? '700' : '500',
+                      },
+                    ]}
+                  >
+                    Evet
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {isPregnantVal === true ? (
+              <View style={styles.pregnancySubFields}>
+                {/* Gebe Olduğu Aygır */}
+                <PostField
+                  label={pregnancyProps.coveringStallionProp?.title || 'Gebe Olduğu Aygır'}
+                  required
+                  value={String(getPropertyValue('COVERING_STALLION') ?? '')}
+                  onChangeText={(textVal) => handlePropertyChange('COVERING_STALLION', textVal)}
+                  placeholder={pregnancyProps.coveringStallionProp?.helpText || 'Aygır adını giriniz'}
+                  error={errors.COVERING_STALLION || (errors as any).coveringStallion}
+                />
+
+                {/* Gebelik Durumu (K1, K2, K3) */}
+                <View style={styles.fieldBlock}>
+                  <Text style={[styles.fieldLabel, { color: secondary }]}>
+                    {pregnancyProps.pregnancyStageProp?.title || 'Gebelik Durumu'}
+                    <Text style={{ color: errorColor }}> *</Text>
+                  </Text>
+                  <View style={styles.chips}>
+                    {(pregnancyProps.pregnancyStageProp?.options && pregnancyProps.pregnancyStageProp.options.length > 0
+                      ? pregnancyProps.pregnancyStageProp.options
+                      : [{ value: 'K1', label: 'K1' }, { value: 'K2', label: 'K2' }, { value: 'K3', label: 'K3' }]
+                    ).map((opt) => {
+                      const optVal = opt.value || opt.label;
+                      const currentVal = String(getPropertyValue('PREGNANCY_STAGE') ?? '').toUpperCase().trim();
+                      const on = currentVal === String(optVal).toUpperCase().trim();
+
+                      return (
+                        <Pressable
+                          key={optVal}
+                          onPress={() => handlePropertyChange('PREGNANCY_STAGE', opt.value || optVal)}
+                          style={[
+                            styles.chip,
+                            {
+                              borderColor: on ? header : border,
+                              backgroundColor: on ? header : 'transparent',
+                            },
+                          ]}
+                        >
+                          <Text style={[styles.chipLabel, { color: on ? '#fff' : text }]}>
+                            {opt.label || opt.value}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  {(errors.PREGNANCY_STAGE || (errors as any).pregnancyStage) ? (
+                    <Text style={[styles.err, { color: errorColor }]}>
+                      {errors.PREGNANCY_STAGE || (errors as any).pregnancyStage}
+                    </Text>
+                  ) : null}
+                </View>
+
+                {/* Son Aşım Tarihi */}
+                <PostField
+                  label={pregnancyProps.lastCoveringDateProp?.title || 'Son Aşım Tarihi'}
+                  required
+                  value={String(getPropertyValue('LAST_COVERING_DATE') ?? '')}
+                  onChangeText={(textVal) => handlePropertyChange('LAST_COVERING_DATE', textVal)}
+                  placeholder={pregnancyProps.lastCoveringDateProp?.helpText || 'GG.AA.YYYY (Örn: 20.04.2024)'}
+                  error={errors.LAST_COVERING_DATE || (errors as any).lastCoveringDate}
+                />
+              </View>
+            ) : null}
+          </View>
+        );
+      })() : null}
+
+      {/* 3. Race Status Toggles (Switch) */}
       {statusToggles.length > 0 ? (
         <View style={styles.toggleSection}>
           <Text style={[styles.fieldLabel, { color: secondary, marginBottom: 4 }]}>
@@ -925,5 +1162,45 @@ const styles = StyleSheet.create({
   err: {
     ...Typography.caption,
     marginTop: 2,
+  },
+  pregnancyCard: {
+    padding: Spacing.md,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  pregnancyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  pregnancyTitle: {
+    ...Typography.body,
+    fontWeight: '700',
+  },
+  pregnantToggleRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  pregnantChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    minWidth: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pregnantChipText: {
+    ...Typography.caption,
+  },
+  pregnancySubFields: {
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
+    paddingTop: Spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(150, 150, 150, 0.2)',
   },
 });

@@ -312,7 +312,7 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
       });
 
       // Helper to find boolean / string properties
-      const findProp = (codes: string[], defaultVal: boolean): string => {
+      const findProp = (codes: string[], defaultVal: boolean | string | null = null): string | null => {
         const rawProps = (detail as any)?.properties || (detail as any)?.rawProperties || {};
         for (const c of codes) {
           const val = rawProps[c] ?? rawProps[c.toLowerCase()] ?? rawProps[c.toUpperCase()];
@@ -339,29 +339,71 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
             }
           }
         }
-        return defaultVal ? 'Evet' : 'Hayır';
+        if (typeof defaultVal === 'boolean') return defaultVal ? 'Evet' : 'Hayır';
+        return defaultVal;
       };
 
       list.push({
         label: 'İdmanda mı',
-        value: findProp(['IN_TRAINING', 'inTraining', 'idmanda'], true),
+        value: findProp(['IN_TRAINING', 'inTraining', 'idmanda'], true) ?? 'Evet',
         icon: 'fitness-outline',
         isBoolean: true,
       });
 
       list.push({
         label: 'Koşar durumda mı',
-        value: findProp(['IS_RACE_READY', 'isRaceReady', 'kosar', 'koşar'], true),
+        value: findProp(['IS_RACE_READY', 'isRaceReady', 'kosar', 'koşar'], true) ?? 'Evet',
         icon: 'flash-outline',
         isBoolean: true,
       });
 
       list.push({
         label: 'Kiralık mı',
-        value: findProp(['IS_FOR_RENT', 'isForRent', 'kiralik', 'kiralık'], false),
+        value: findProp(['IS_FOR_RENT', 'isForRent', 'kiralik', 'kiralık'], false) ?? 'Hayır',
         icon: 'key-outline',
         isBoolean: true,
       });
+
+      // Kısrak Gebelik Durumu
+      const isPregnant = findProp(['IS_PREGNANT', 'isPregnant', 'gebe'], null);
+      if (isPregnant != null) {
+        list.push({
+          label: 'Gebe mi',
+          value: isPregnant,
+          icon: 'heart-outline',
+          isBoolean: true,
+        });
+
+        const isPregBool = isPregnant === 'Evet' || isPregnant === 'true';
+        if (isPregBool) {
+          const coveringStallion = findProp(['COVERING_STALLION', 'coveringStallion', 'gebeOlduguAygir', 'aygir'], '');
+          if (coveringStallion) {
+            list.push({
+              label: 'Gebe Olduğu Aygır',
+              value: coveringStallion,
+              icon: 'flame-outline',
+            });
+          }
+
+          const stage = findProp(['PREGNANCY_STAGE', 'pregnancyStage', 'gebelikDurumu'], '');
+          if (stage) {
+            list.push({
+              label: 'Gebelik Durumu',
+              value: stage,
+              icon: 'ribbon-outline',
+            });
+          }
+
+          const coveringDate = findProp(['LAST_COVERING_DATE', 'lastCoveringDate', 'sonAsimTarihi', 'coveringDate'], '');
+          if (coveringDate) {
+            list.push({
+              label: 'Son Aşım Tarihi',
+              value: coveringDate,
+              icon: 'calendar-outline',
+            });
+          }
+        }
+      }
     }
 
     return list.map((item) => ({
