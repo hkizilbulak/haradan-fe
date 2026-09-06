@@ -221,6 +221,57 @@ async function main(): Promise<void> {
     wizardSrc.includes('persistDraftAndStartMedia'),
     'wizard exposes persistDraftAndStartMedia'
   );
+  assert(
+    !/const persist\s*=\s*\n?\s*listingRepo\.persistDraftShell/.test(wizardSrc) &&
+      !wizardSrc.includes('listingRepo.persistDraftShell ?? listingRepo.createDraft'),
+    'wizard does not extract persistDraftShell (keeps this)'
+  );
+  assert(
+    wizardSrc.includes('await listingRepo.persistDraftShell(') ||
+      wizardSrc.includes('listingRepo.persistDraftShell\n') ||
+      /listingRepo\.persistDraftShell\s*\?/.test(wizardSrc),
+    'wizard calls persistDraftShell on listingRepo'
+  );
+
+  // Reproduce prod bug: extracted class method loses `this`.
+  const listingForBind = new HttpListingRepository(
+    'http://localhost:8080/api',
+    new HttpMediaUploader('http://localhost:8080/api')
+  );
+  const extracted = listingForBind.persistDraftShell;
+  let unboundFailed = false;
+  try {
+    await extracted.call(undefined as never, makeDraft(0), 'token');
+  } catch (err) {
+    unboundFailed =
+      err instanceof TypeError &&
+      String(err.message).includes('upsertDraftShell');
+  }
+  assert(unboundFailed, 'extracted persistDraftShell loses this (TypeError)');
+
+  // Bound / method-call form must succeed (empty media → create + no props if none).
+  responses['POST /api/v1/me/adverts'] = {
+    status: 201,
+    body: {
+      id: 70,
+      status: 'DRAFT',
+      version: 1,
+      mediaVersion: 1,
+      categoryId: 'c1000000-0000-4000-8000-000000000021',
+      title: 'bind-test',
+      properties: {},
+      media: [],
+      publishedAt: null,
+      deletedAt: null,
+    },
+  };
+  const boundDraft = makeDraft(0);
+  boundDraft.details.title = 'bind-test';
+  boundDraft.details.sellerPhone = '';
+  boundDraft.details.properties = {};
+  calls.length = 0;
+  const boundShell = await listingForBind.persistDraftShell(boundDraft, 'token');
+  assertEqual(boundShell.advertId, 70, 'method call keeps this and creates draft');
 
   const viewSrc = readSrc('components/post/PostWizardView.tsx');
   assert(

@@ -577,9 +577,7 @@ export function useListingWizard(deps: Deps = {}) {
   const persistDraftAndStartMedia = useCallback(
     async (accessToken: string) => {
       const current = getListingWizardState();
-      const persist =
-        listingRepo.persistDraftShell ?? listingRepo.createDraft;
-      if (!persist) {
+      if (!listingRepo.persistDraftShell && !listingRepo.createDraft) {
         throw new Error('İlan kaydı yapılandırılmamış.');
       }
       setListingWizardState((prev) => ({
@@ -588,7 +586,10 @@ export function useListingWizard(deps: Deps = {}) {
         mediaSyncError: null,
       }));
       try {
-        const shell = await persist(current.draft, accessToken);
+        // Call through the repo so class methods keep `this` (do not extract).
+        const shell = listingRepo.persistDraftShell
+          ? await listingRepo.persistDraftShell(current.draft, accessToken)
+          : await listingRepo.createDraft!(current.draft, accessToken);
         setListingWizardState((prev) => ({
           ...prev,
           draftAdvertId: shell.advertId,
