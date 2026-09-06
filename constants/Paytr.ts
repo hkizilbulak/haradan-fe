@@ -1,8 +1,9 @@
 /**
  * PayTR iframe checkout for listing packages.
  *
+ * Disabled by default so listings publish without payment.
  * Enable with EXPO_PUBLIC_PAYTR_CHECKOUT_ENABLED=1 (and BE PAYTR_ENABLED=true).
- * When off, package step still shows; CTA publishes without payment.
+ * When off, package step still shows; CTA assigns package + submits for review.
  */
 export function isPaytrCheckoutEnabled(): boolean {
   return (

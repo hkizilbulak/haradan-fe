@@ -26,6 +26,9 @@ export type ListingWizardState = {
   paytrMerchantOid: string | null;
   paytrIframeUrl: string | null;
   paytrAmountMinor: number | null;
+  /** Background media upload while on package step. */
+  mediaSyncStatus: 'idle' | 'uploading' | 'ready' | 'error';
+  mediaSyncError: string | null;
 };
 
 const STORAGE_KEY = 'haradan.listingDraft';
@@ -78,6 +81,8 @@ export function createEmptyDetails(): ListingDraftDetails {
 export function createEmptyDraft(): ListingDraft {
   return {
     advertId: null,
+    serverVersion: null,
+    mediaVersion: null,
     type: null,
     breed: null,
     details: createEmptyDetails(),
@@ -101,6 +106,8 @@ function createInitialState(): ListingWizardState {
     paytrMerchantOid: null,
     paytrIframeUrl: null,
     paytrAmountMinor: null,
+    mediaSyncStatus: 'idle',
+    mediaSyncError: null,
   };
 }
 
@@ -166,11 +173,15 @@ function hydrate(): ListingWizardState {
       paytrMerchantOid: parsed.paytrMerchantOid ?? null,
       paytrIframeUrl: parsed.paytrIframeUrl ?? null,
       paytrAmountMinor: parsed.paytrAmountMinor ?? null,
+      mediaSyncStatus: parsed.mediaSyncStatus ?? 'idle',
+      mediaSyncError: parsed.mediaSyncError ?? null,
       detailsAttempted: parsed.detailsAttempted === true,
       draft: {
         ...createEmptyDraft(),
         ...parsed.draft,
         advertId: draftAdvertId,
+        serverVersion: parsed.draft.serverVersion ?? null,
+        mediaVersion: parsed.draft.mediaVersion ?? null,
         details: {
           ...createEmptyDetails(),
           ...details,

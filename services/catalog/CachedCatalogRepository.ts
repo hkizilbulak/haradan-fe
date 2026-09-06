@@ -106,7 +106,13 @@ export function createCachedCatalogRepository(
       if (formInflight.has(targetKey)) {
         return formInflight.get(targetKey)!;
       }
-      const promise = inner.getCategoryFormDefinition(categoryId, options).then((res) => {
+      const promise = inner
+        .getCategoryFormDefinition(categoryId, {
+          ...options,
+          // Form refresh must not bust the shared tree / inflight — Http clears
+          // only its form cache when fresh is set.
+        })
+        .then((res) => {
         formCache.set(targetKey, res);
         if (categoryId && categoryId !== targetKey) formCache.set(categoryId, res);
         if (options?.categorySlug && options.categorySlug !== targetKey) formCache.set(options.categorySlug, res);

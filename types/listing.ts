@@ -139,6 +139,10 @@ export type ListingPackage = {
 
 export type ListingDraft = {
   advertId?: AdvertId | null;
+  /** Last known advert.version from BE after persist (optimistic concurrency). */
+  serverVersion?: number | null;
+  /** Last known advert.mediaVersion after media sync. */
+  mediaVersion?: number | null;
   type: ListingTypeSelection | null;
   breed: ListingBreedSelection | null;
   details: ListingDraftDetails;

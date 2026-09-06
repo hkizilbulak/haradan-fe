@@ -240,6 +240,8 @@ export function useListingWizard(deps: Deps = {}) {
     paytrMerchantOid,
     paytrIframeUrl,
     paytrAmountMinor,
+    mediaSyncStatus,
+    mediaSyncError,
   } = state;
   const fieldErrors = useMemo(
     () => (detailsAttempted ? detailsErrors(draft, categoryProperties || undefined) : {}),
@@ -529,18 +531,117 @@ export function useListingWizard(deps: Deps = {}) {
           draft: { ...prev.draft, packageCode: draft.packageCode },
         }));
       }
-      const created = await listingRepo.publish(draft, accessToken);
       setListingWizardState((prev) => ({
         ...prev,
-        draftAdvertId: created.advertId,
-        submittedDraftId: created.advertId,
-        submittedStatus: created.status,
-        step: 'review',
-        paytrMerchantOid: null,
-        paytrIframeUrl: null,
-        paytrAmountMinor: null,
+        mediaSyncStatus:
+          prev.mediaSyncStatus === 'ready' ? 'ready' : 'uploading',
+        mediaSyncError: null,
       }));
-      return created;
+      try {
+        const created = await listingRepo.publish(draft, accessToken);
+        setListingWizardState((prev) => ({
+          ...prev,
+          draftAdvertId: created.advertId,
+          submittedDraftId: created.advertId,
+          submittedStatus: created.status,
+          step: 'review',
+          mediaSyncStatus: 'ready',
+          mediaSyncError: null,
+          paytrMerchantOid: null,
+          paytrIframeUrl: null,
+          paytrAmountMinor: null,
+          draft: {
+            ...prev.draft,
+            advertId: created.advertId,
+            packageCode: draft.packageCode,
+          },
+        }));
+        return created;
+      } catch (err) {
+        setListingWizardState((prev) => ({
+          ...prev,
+          mediaSyncStatus: 'error',
+          mediaSyncError:
+            err instanceof Error ? err.message : 'Görsel yükleme / gönderim başarısız.',
+        }));
+        throw err;
+      }
+    },
+    [listingRepo]
+  );
+
+  /**
+   * Details → package: persist advert shell + properties, start background media.
+   * Navigates only after shell succeeds; uploads continue on package step.
+   */
+  const persistDraftAndStartMedia = useCallback(
+    async (accessToken: string) => {
+      const current = getListingWizardState();
+      const persist =
+        listingRepo.persistDraftShell ?? listingRepo.createDraft;
+      if (!persist) {
+        throw new Error('İlan kaydı yapılandırılmamış.');
+      }
+      setListingWizardState((prev) => ({
+        ...prev,
+        mediaSyncStatus: 'uploading',
+        mediaSyncError: null,
+      }));
+      try {
+        const shell = await persist(current.draft, accessToken);
+        setListingWizardState((prev) => ({
+          ...prev,
+          draftAdvertId: shell.advertId,
+          draft: {
+            ...prev.draft,
+            advertId: shell.advertId,
+            serverVersion: shell.version,
+            mediaVersion: shell.mediaVersion,
+          },
+          mediaSyncStatus: 'uploading',
+          mediaSyncError: null,
+        }));
+        // Resolve media in background; update status when done.
+        void (async () => {
+          try {
+            const media = await listingRepo.awaitMediaPipeline?.(shell.advertId);
+            setListingWizardState((prev) => {
+              if (prev.draft.advertId !== shell.advertId) return prev;
+              return {
+                ...prev,
+                mediaSyncStatus: 'ready',
+                mediaSyncError: null,
+                draft: {
+                  ...prev.draft,
+                  serverVersion: media?.version ?? prev.draft.serverVersion,
+                  mediaVersion: media?.mediaVersion ?? prev.draft.mediaVersion,
+                },
+              };
+            });
+          } catch (err) {
+            setListingWizardState((prev) => {
+              if (prev.draft.advertId !== shell.advertId) return prev;
+              return {
+                ...prev,
+                mediaSyncStatus: 'error',
+                mediaSyncError:
+                  err instanceof Error
+                    ? err.message
+                    : 'Görseller yüklenemedi.',
+              };
+            });
+          }
+        })();
+        return shell;
+      } catch (err) {
+        setListingWizardState((prev) => ({
+          ...prev,
+          mediaSyncStatus: 'error',
+          mediaSyncError:
+            err instanceof Error ? err.message : 'İlan kaydedilemedi.',
+        }));
+        throw err;
+      }
     },
     [listingRepo]
   );
@@ -556,33 +657,47 @@ export function useListingWizard(deps: Deps = {}) {
       if (!packageCode) {
         throw new Error('Paket seçilmedi.');
       }
-      if (!listingRepo.createDraft || !listingRepo.startPaytrCheckout) {
+      if (!listingRepo.startPaytrCheckout) {
         throw new Error('Ödeme servisi yapılandırılmamış.');
       }
-      const draft = await listingRepo.createDraft(current.draft, accessToken);
+
+      let advertId = current.draft.advertId ?? current.draftAdvertId;
+      if (!advertId) {
+        const shell = await persistDraftAndStartMedia(accessToken);
+        advertId = shell.advertId;
+      }
+
       setListingWizardState((prev) => ({
         ...prev,
-        draftAdvertId: draft.advertId,
-        draft: { ...prev.draft, advertId: draft.advertId },
+        mediaSyncStatus:
+          prev.mediaSyncStatus === 'ready' ? 'ready' : 'uploading',
       }));
+      await listingRepo.awaitMediaPipeline?.(advertId);
+      setListingWizardState((prev) => ({
+        ...prev,
+        mediaSyncStatus: 'ready',
+        mediaSyncError: null,
+      }));
+
       const checkout = await listingRepo.startPaytrCheckout(
-        draft.advertId,
+        advertId,
         packageCode,
         accessToken
       );
       setListingWizardState((prev) => ({
         ...prev,
-        draftAdvertId: draft.advertId,
-        submittedDraftId: draft.advertId,
-        submittedStatus: draft.status,
+        draftAdvertId: advertId,
+        submittedDraftId: advertId,
+        submittedStatus: 'DRAFT',
         paytrMerchantOid: checkout.merchantOid,
         paytrIframeUrl: checkout.iframeUrl,
         paytrAmountMinor: checkout.amountMinor ?? null,
         step: 'payment',
+        draft: { ...prev.draft, advertId },
       }));
       return checkout;
     },
-    [listingRepo, publishListing]
+    [listingRepo, publishListing, persistDraftAndStartMedia]
   );
 
   const markPaymentSucceeded = useCallback((status = 'PENDING_REVIEW') => {
@@ -611,6 +726,8 @@ export function useListingWizard(deps: Deps = {}) {
     paytrMerchantOid,
     paytrIframeUrl,
     paytrAmountMinor,
+    mediaSyncStatus,
+    mediaSyncError,
     fieldErrors,
     canNext,
     setStep,
@@ -626,6 +743,7 @@ export function useListingWizard(deps: Deps = {}) {
     skipTjk,
     goNext,
     goBack,
+    persistDraftAndStartMedia,
     publishListing,
     startPaidCheckout,
     markPaymentSucceeded,

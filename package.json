@@ -14,6 +14,7 @@
     "lint": "expo lint",
     "selftest:auth": "npx --yes tsx scripts/selftest-auth.ts",
     "selftest:listing": "npx --yes tsx scripts/selftest-listing.ts",
+    "selftest:listing-publish-flow": "npx --yes tsx scripts/selftest-listing-publish-flow.ts",
     "selftest:advert-id": "npx --yes tsx scripts/selftest-advert-id.ts",
     "selftest:navigation": "npx --yes tsx scripts/selftest-navigation.ts",
     "selftest:geo": "npx --yes tsx scripts/selftest-geo.ts",
