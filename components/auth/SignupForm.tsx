@@ -6,6 +6,7 @@ import { AuthFormHeader } from './AuthFormHeader';
 import { AuthScreenFooter } from './AuthScreenFooter';
 import { AuthSubmitButton } from './AuthSubmitButton';
 import { AuthTextField } from './AuthTextField';
+import { GoogleSignInButton } from './GoogleSignInButton';
 import { PasswordStrengthBar } from './PasswordStrengthBar';
 import { useAuthTheme } from './AuthThemeContext';
 import { AUTH_FORM_MAX_WIDTH } from '@/constants/AuthTheme';
@@ -29,6 +30,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
   const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [googleError, setGoogleError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     clearError();
@@ -193,6 +195,22 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
         }
       />
 
+      <View style={styles.dividerRow}>
+        <View style={[styles.dividerLine, { backgroundColor: tokens.border }]} />
+        <Text style={[styles.dividerText, { color: tokens.textMuted }]}>veya</Text>
+        <View style={[styles.dividerLine, { backgroundColor: tokens.border }]} />
+      </View>
+
+      <GoogleSignInButton
+        actionText="signup"
+        onSuccess={() => {
+          router.replace('/');
+        }}
+        onError={(err) => setGoogleError(err)}
+      />
+
+      {googleError ? <AuthBanner message={googleError} variant="error" /> : null}
+
       <AuthScreenFooter
         prompt="Zaten hesabınız var mı?"
         actionLabel="Giriş yap"
@@ -226,5 +244,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 16,
     marginTop: -Spacing.sm,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginVertical: -Spacing.xs,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    ...Typography.caption,
+    fontSize: 12,
+    textTransform: 'uppercase',
   },
 });

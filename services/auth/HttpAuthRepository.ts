@@ -6,6 +6,7 @@ import type {
   ChangePasswordRequest,
   EmailRequest,
   GenericAuthMessageResponse,
+  GoogleLoginRequest,
   LoginRequest,
   MyProfileResponse,
   RefreshSessionRequest,
@@ -45,6 +46,30 @@ export class HttpAuthRepository implements IAuthRepository {
       return combineSession(tokens, {
         id: '',
         email: payload.email.trim().toLowerCase(),
+        firstName: '',
+        lastName: '',
+        phone: null,
+      });
+    }
+  }
+
+  async loginWithGoogle(payload: GoogleLoginRequest): Promise<AuthSession> {
+    const tokens = await this.guard(() =>
+      this.http.request<AuthTokenResponse>('/v1/auth/google', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+    );
+    try {
+      const user = await this.getMe(tokens.accessToken);
+      return combineSession(tokens, user);
+    } catch (err) {
+      if (err instanceof AuthError && (err.status === 401 || err.status === 403)) {
+        throw err;
+      }
+      return combineSession(tokens, {
+        id: '',
+        email: '',
         firstName: '',
         lastName: '',
         phone: null,

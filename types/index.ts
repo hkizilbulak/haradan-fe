@@ -56,6 +56,7 @@ export type {
 export type {
   ClientContext,
   FeClientContext,
+  GoogleLoginRequest,
   LoginRequest,
   RegisterUserRequest,
   AuthTokenResponse,

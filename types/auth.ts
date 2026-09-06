@@ -10,6 +10,15 @@ export type LoginRequest = {
   clientContext: FeClientContext;
 };
 
+/** OpenAPI: GoogleLoginRequest (AUTH-14) */
+export type GoogleLoginRequest = {
+  idToken?: string;
+  credential?: string;
+  code?: string;
+  redirectUri?: string;
+  clientContext: FeClientContext;
+};
+
 /** OpenAPI: RegisterUserRequest */
 export type RegisterUserRequest = {
   email: string;
@@ -59,6 +68,7 @@ export type AuthUser = {
   lastName: string;
   phone?: string | null;
   emailVerified?: boolean;
+  channel?: string;
 };
 
 /** OpenAPI: MyProfileResponse (ACCOUNT-01) */
@@ -71,6 +81,7 @@ export type MyProfileResponse = {
   phone?: string | null;
   role: string;
   status: string;
+  channel?: string;
 };
 
 export type AuthSession = AuthTokenResponse & {

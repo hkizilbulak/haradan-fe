@@ -4,6 +4,7 @@ import type {
   ChangePasswordRequest,
   EmailRequest,
   GenericAuthMessageResponse,
+  GoogleLoginRequest,
   LoginRequest,
   MyProfileResponse,
   RefreshSessionRequest,
@@ -49,6 +50,24 @@ export class MockAuthRepository implements IAuthRepository {
     }
 
     return issueSession(user, payload.clientContext);
+  }
+
+  async loginWithGoogle(payload: GoogleLoginRequest): Promise<AuthSession> {
+    await delay(LATENCY_MS);
+    const demo = mockUserDirectory.findByEmail('demo@cartzilla.com');
+    if (!demo) {
+      throw new AuthError('Demo kullanıcı bulunamadı.', 404, 'NOT_FOUND');
+    }
+    return combineSession(
+      {
+        accessToken: 'mock-access-token-google',
+        refreshToken: 'mock-refresh-token-google',
+        tokenType: 'Bearer',
+        expiresIn: 900,
+        clientContext: payload.clientContext,
+      },
+      toAuthUser(demo)
+    );
   }
 
   async register(

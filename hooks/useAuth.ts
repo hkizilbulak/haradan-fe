@@ -61,6 +61,22 @@ export function useAuth(repo: IAuthRepository = authRepository) {
     [repo, run]
   );
 
+  const loginWithGoogle = useCallback(
+    async (credentialOrIdToken: string, code?: string): Promise<AuthSession | null> => {
+      const session = await run(() =>
+        repo.loginWithGoogle({
+          idToken: credentialOrIdToken,
+          credential: credentialOrIdToken,
+          code,
+          clientContext: resolveFeClientContext(Platform.OS),
+        })
+      );
+      if (session) setAuthSession(session);
+      return session;
+    },
+    [repo, run]
+  );
+
   const register = useCallback(
     async (input: {
       email: string;
@@ -166,6 +182,7 @@ export function useAuth(repo: IAuthRepository = authRepository) {
     errorCode,
     clearError,
     login,
+    loginWithGoogle,
     register,
     forgotPassword,
     resendVerification,

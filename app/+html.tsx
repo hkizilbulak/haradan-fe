@@ -10,7 +10,7 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
 
         {/* PWA & Mobile Home Screen Shortcut Configurations */}
-        <title>Haradan.com | Türkiye'nin En Büyük At Pazaryeri</title>
+        <title>Haradan.com | Türkiye&apos;nin En Büyük At Pazaryeri</title>
         <meta name="description" content="Türkiye'nin en büyük at pazaryeri. Satılık at ilanları, aygır aşım hizmetleri, pansiyon haralar ve nakliye." />
         <meta name="theme-color" content="#0d1117" />
         <meta name="mobile-web-app-capable" content="yes" />

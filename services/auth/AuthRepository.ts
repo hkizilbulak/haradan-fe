@@ -5,6 +5,7 @@ import type {
   EmailRequest,
   FeClientContext,
   GenericAuthMessageResponse,
+  GoogleLoginRequest,
   LoginRequest,
   MyProfileResponse,
   RefreshSessionRequest,
@@ -31,6 +32,7 @@ import type {
  */
 export interface IAuthRepository {
   login(payload: LoginRequest): Promise<AuthSession>;
+  loginWithGoogle(payload: GoogleLoginRequest): Promise<AuthSession>;
   register(payload: RegisterUserRequest): Promise<GenericAuthMessageResponse>;
   forgotPassword(payload: EmailRequest): Promise<GenericAuthMessageResponse>;
   refresh(payload: RefreshSessionRequest): Promise<AuthSession>;

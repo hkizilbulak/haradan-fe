@@ -18,3 +18,4 @@ export { LoginForm } from './LoginForm';
 export { SignupForm } from './SignupForm';
 export { ForgotPasswordForm } from './ForgotPasswordForm';
 export { PasswordStrengthBar } from './PasswordStrengthBar';
+export { GoogleSignInButton } from './GoogleSignInButton';

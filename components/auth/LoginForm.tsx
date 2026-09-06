@@ -8,6 +8,7 @@ import { useAuthLayout } from './AuthLayoutContext';
 import { AuthScreenFooter } from './AuthScreenFooter';
 import { AuthSubmitButton } from './AuthSubmitButton';
 import { AuthTextField } from './AuthTextField';
+import { GoogleSignInButton } from './GoogleSignInButton';
 import { useAuthTheme } from './AuthThemeContext';
 import { AUTH_FORM_MAX_WIDTH } from '@/constants/AuthTheme';
 import { Spacing } from '@/constants/Spacing';
@@ -56,6 +57,7 @@ function LoginFormBody({ onSuccess }: LoginFormProps) {
     return null;
   });
   const [resendNote, setResendNote] = useState<string | null>(null);
+  const [googleError, setGoogleError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     clearError();
@@ -165,6 +167,25 @@ function LoginFormBody({ onSuccess }: LoginFormProps) {
         disabled={!email.trim() || !password}
       />
 
+      <View style={styles.dividerRow}>
+        <View style={[styles.dividerLine, { backgroundColor: tokens.border }]} />
+        <Text style={[styles.dividerText, { color: tokens.textMuted }]}>veya</Text>
+        <View style={[styles.dividerLine, { backgroundColor: tokens.border }]} />
+      </View>
+
+      <GoogleSignInButton
+        actionText="login"
+        onSuccess={() => {
+          onSuccess?.();
+          const next = safeNextPath(params.next);
+          if (next) router.replace(next as Href);
+          else router.replace('/');
+        }}
+        onError={(err) => setGoogleError(err)}
+      />
+
+      {googleError ? <AuthBanner message={googleError} variant="error" /> : null}
+
       <AuthScreenFooter
         prompt="Hesabınız yok mu?"
         actionLabel="Hesap oluştur"
@@ -235,5 +256,20 @@ const styles = StyleSheet.create({
   },
   demoText: {
     ...Typography.caption,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginVertical: -Spacing.xs,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    ...Typography.caption,
+    fontSize: 12,
+    textTransform: 'uppercase',
   },
 });
