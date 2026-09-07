@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, Pressable, Platform, Modal, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { AuthBanner } from './AuthBanner';
 import { AuthFormHeader } from './AuthFormHeader';
 import { AuthScreenFooter } from './AuthScreenFooter';
@@ -19,6 +20,8 @@ type SignupFormProps = {
   onSuccess?: (message: string) => void;
 };
 
+import { TERMS_AND_CONDITIONS, KVKK_TEXT } from '@/constants/LegalTexts';
+
 export function SignupForm({ onSuccess }: SignupFormProps) {
   const router = useRouter();
   const { register, login, loading, error, clearError } = useAuth();
@@ -31,10 +34,16 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [googleError, setGoogleError] = useState<string | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [kvkkAccepted, setKvkkAccepted] = useState(false);
+  const [campaignAccepted, setCampaignAccepted] = useState(false);
+  const [legalError, setLegalError] = useState<string | null>(null);
+  const [activeModal, setActiveModal] = useState<'terms' | 'kvkk' | null>(null);
 
   const handleSubmit = async () => {
     clearError();
     setFieldError(null);
+    setLegalError(null);
     if (password !== confirm) {
       setFieldError('Parolalar eşleşmiyor.');
       return;
@@ -47,11 +56,26 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
       setFieldError('Ad ve soyad en fazla 100 karakter olabilir.');
       return;
     }
+    if (!termsAccepted || !kvkkAccepted) {
+      setLegalError('Devam etmek için sözleşmeleri kabul etmelisiniz.');
+      return;
+    }
+    
+    const channel = Platform.OS === 'ios' ? 'IOS' : Platform.OS === 'android' ? 'ANDROID' : 'WEB';
+    const userAgent = typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent : `HaradanApp/${Platform.OS}`;
+
     const result = await register({
       email: email.trim(),
       password,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
+      termsAccepted,
+      kvkkAccepted,
+      allowEmail: campaignAccepted,
+      allowSms: campaignAccepted,
+      allowWhatsapp: false,
+      channel,
+      userAgent,
     });
     if (!result) return;
     onSuccess?.(result.message);
@@ -174,13 +198,47 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
         />
       </View>
 
-      <Text style={[styles.terms, { color: tokens.textMuted }]}>
-        Hesap oluşturarak{' '}
-        <Text style={{ color: tokens.textSecondary, fontWeight: '600' }}>
-          kullanım koşullarını
-        </Text>{' '}
-        kabul etmiş olursunuz.
-      </Text>
+      <View style={{ gap: Spacing.sm }}>
+        <Pressable style={styles.checkboxRow} onPress={() => { setTermsAccepted(!termsAccepted); setLegalError(null); }}>
+          <View style={[styles.checkbox, { borderColor: termsAccepted ? tokens.primary : tokens.border, backgroundColor: termsAccepted ? tokens.primary : 'transparent' }]}>
+            {termsAccepted && <Ionicons name="checkmark" size={14} color="#fff" />}
+          </View>
+          <Text style={[styles.checkboxLabel, { color: tokens.textSecondary }]}>
+            <Text 
+              style={{ color: tokens.primary, fontWeight: '600' }}
+              onPress={() => setActiveModal('terms')}
+            >
+              Üyelik ve Hizmet Sözleşmesini
+            </Text> okudum, kabul ediyorum.
+          </Text>
+        </Pressable>
+
+        <Pressable style={styles.checkboxRow} onPress={() => { setKvkkAccepted(!kvkkAccepted); setLegalError(null); }}>
+          <View style={[styles.checkbox, { borderColor: kvkkAccepted ? tokens.primary : tokens.border, backgroundColor: kvkkAccepted ? tokens.primary : 'transparent' }]}>
+            {kvkkAccepted && <Ionicons name="checkmark" size={14} color="#fff" />}
+          </View>
+          <Text style={[styles.checkboxLabel, { color: tokens.textSecondary }]}>
+            <Text 
+              style={{ color: tokens.primary, fontWeight: '600' }}
+              onPress={() => setActiveModal('kvkk')}
+            >
+              KVKK Aydınlatma Metnini
+            </Text> okudum ve Açık Rıza Beyanını kabul ediyorum.
+          </Text>
+        </Pressable>
+
+        <Pressable style={styles.checkboxRow} onPress={() => setCampaignAccepted(!campaignAccepted)}>
+          <View style={[styles.checkbox, { borderColor: campaignAccepted ? tokens.primary : tokens.border, backgroundColor: campaignAccepted ? tokens.primary : 'transparent' }]}>
+            {campaignAccepted && <Ionicons name="checkmark" size={14} color="#fff" />}
+          </View>
+          <Text style={[styles.checkboxLabel, { color: tokens.textSecondary }]}>
+            Kampanya, indirim ve yeniliklerden haberdar olmak için E-Posta ve SMS ile iletişime geçilmesine izin veriyorum.
+          </Text>
+        </Pressable>
+        {legalError && (
+          <Text style={{ color: tokens.error, fontSize: 12, marginTop: 4 }}>{legalError}</Text>
+        )}
+      </View>
 
       <AuthSubmitButton
         label="Hesap oluştur"
@@ -216,6 +274,29 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
         actionLabel="Giriş yap"
         href="/auth/login"
       />
+
+      <Modal 
+        visible={!!activeModal} 
+        animationType="slide" 
+        presentationStyle="pageSheet" 
+        onRequestClose={() => setActiveModal(null)}
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: tokens.background }}>
+          <View style={{ padding: Spacing.md, borderBottomWidth: 1, borderBottomColor: tokens.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={[Typography.h4, { color: tokens.text, flex: 1 }]}>
+              {activeModal === 'terms' ? 'Üyelik ve Hizmet Sözleşmesi' : 'KVKK Aydınlatma Metni'}
+            </Text>
+            <TouchableOpacity onPress={() => setActiveModal(null)} style={{ padding: 4 }}>
+              <Ionicons name="close" size={24} color={tokens.text} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={{ flex: 1, padding: Spacing.md }}>
+            <Text style={{ color: tokens.textSecondary, lineHeight: 22, paddingBottom: Spacing.xl }}>
+              {activeModal === 'terms' ? TERMS_AND_CONDITIONS : KVKK_TEXT}
+            </Text>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </View>
   );
 }
@@ -238,6 +319,24 @@ const styles = StyleSheet.create({
   },
   nameCol: {
     flex: 1,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxLabel: {
+    ...Typography.caption,
+    flex: 1,
+    lineHeight: 18,
   },
   terms: {
     ...Typography.caption,

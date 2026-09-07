@@ -84,6 +84,13 @@ export function useAuth(repo: IAuthRepository = authRepository) {
       firstName: string;
       lastName: string;
       phone?: string | null;
+      termsAccepted: boolean;
+      kvkkAccepted: boolean;
+      allowEmail?: boolean;
+      allowSms?: boolean;
+      allowWhatsapp?: boolean;
+      channel: string;
+      userAgent: string;
     }): Promise<GenericAuthMessageResponse | null> => {
       const phone = input.phone?.trim();
       return run(() =>
@@ -92,7 +99,14 @@ export function useAuth(repo: IAuthRepository = authRepository) {
           password: input.password,
           firstName: input.firstName.trim(),
           lastName: input.lastName.trim(),
-          ...(phone ? { phone } : {}),
+          phone: phone || null,
+          termsAccepted: input.termsAccepted,
+          kvkkAccepted: input.kvkkAccepted,
+          allowEmail: input.allowEmail,
+          allowSms: input.allowSms,
+          allowWhatsapp: input.allowWhatsapp,
+          channel: input.channel,
+          userAgent: input.userAgent,
         })
       );
     },

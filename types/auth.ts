@@ -26,6 +26,13 @@ export type RegisterUserRequest = {
   firstName: string;
   lastName: string;
   phone?: string | null;
+  termsAccepted: boolean;
+  kvkkAccepted: boolean;
+  allowEmail?: boolean;
+  allowSms?: boolean;
+  allowWhatsapp?: boolean;
+  channel: string;
+  userAgent: string;
 };
 
 /** OpenAPI: AuthTokenResponse — user yok; profil GET /v1/me. */
