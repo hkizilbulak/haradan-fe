@@ -123,6 +123,8 @@ function parseFacilities(raw: string | null | undefined): PansiyonFacilityFilter
   keys.forEach((k) => {
     if (validKeys[k]) {
       map[validKeys[k]] = true;
+    } else if (k) {
+      (map as Record<string, boolean>)[k] = true;
     }
   });
   return map;

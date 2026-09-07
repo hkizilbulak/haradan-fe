@@ -85,7 +85,11 @@ export const DEFAULT_QUICK_LINKS: QuickSearchTag[] = [
   {
     id: 'kosar',
     label: 'Koşar Durumda',
-    params: { category: 'satilik-yaris-ati', q: 'Koşar' },
+    params: {
+      category: 'satilik-yaris-ati',
+      facilities: 'IS_RACE_READY',
+      features: 'IS_RACE_READY',
+    },
     icon: 'trophy-outline',
   },
   {

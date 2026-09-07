@@ -35,6 +35,7 @@ import { SiteFooter } from './SiteFooter';
 import { HomeFooter } from './HomeFooter';
 import {
   HomeBrandsSkeleton,
+  HomeCategoriesSkeleton,
   HomeHeroSkeleton,
   HomeSaleSkeleton,
   HomeTrendingSkeleton,
@@ -121,6 +122,7 @@ function HomeFeedComponent({
           <HomeContentContainer>
             <SkeletonPulse>
               <HomeHeroSkeleton isWide={isWide} />
+              <HomeCategoriesSkeleton isWide={isWide} />
               <HomeUrgentSkeleton isWide={isWide} />
               <HomeTrendingSkeleton isWide={isWide} />
               <HomeSaleSkeleton isWide={isWide} />

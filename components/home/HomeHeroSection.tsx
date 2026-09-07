@@ -54,7 +54,11 @@ const QUICK_ACCESS_LINKS: Array<{
       title: 'Koşar Durumda Atlar',
       icon: 'trophy-outline' as const,
       color: '#3b82f6',
-      params: { q: 'Koşar Durumda' },
+      params: {
+        category: 'satilik-yaris-ati',
+        facilities: 'IS_RACE_READY',
+        features: 'IS_RACE_READY',
+      },
     },
     {
       id: 'kisrak',
