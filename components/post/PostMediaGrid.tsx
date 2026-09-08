@@ -58,7 +58,11 @@ export function PostMediaGrid({
     onChange(filtered);
   };
 
-  const slots = Array.from({ length: MAX_LISTING_IMAGES }, (_, i) => items[i] ?? null);
+  const totalSlotsCount =
+    items.length >= MAX_LISTING_IMAGES
+      ? MAX_LISTING_IMAGES
+      : Math.max(3, items.length + 1);
+  const slots = Array.from({ length: totalSlotsCount }, (_, i) => items[i] ?? null);
 
   const hintText =
     items.length === 0
