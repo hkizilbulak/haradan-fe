@@ -286,7 +286,9 @@ export function PostWizardView() {
           ? 'Ödemeye geç'
           : 'İncelemeye gönder'
         : 'Devam et';
-  const showBack = wizard.step !== 'type' || wizard.typePhase !== 'root';
+  const showBack =
+    wizard.step !== 'review' &&
+    (wizard.step !== 'type' || wizard.typePhase !== 'root');
   const showNext =
     wizard.step === 'details' ||
     (packageStepEnabled && wizard.step === 'package');
@@ -381,8 +383,23 @@ export function PostWizardView() {
           advertId={wizard.submittedDraftId}
           status={wizard.submittedStatus}
           title={wizard.draft.details.title}
-          onGoListings={() => router.replace('/my-listings')}
-          onGoHome={() => router.replace('/')}
+          categoryName={wizard.draft.type?.categoryName}
+          priceTl={wizard.draft.details.priceTl}
+          coverUri={
+            wizard.draft.media.find((m) => m.isCover)?.uri ||
+            wizard.draft.media[0]?.uri
+          }
+          onGoListings={() => {
+            resetListingWizard();
+            router.replace('/my-listings');
+          }}
+          onGoHome={() => {
+            resetListingWizard();
+            router.replace('/');
+          }}
+          onNewListing={() => {
+            resetListingWizard();
+          }}
         />
       ) : null}
     </PostWizardShell>
