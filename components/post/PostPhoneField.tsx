@@ -38,49 +38,51 @@ export function PostPhoneField({
   const borderColor = error ? errorColor : focused ? header : border;
 
   return (
-    <View style={styles.wrap}>
-      <Text style={[styles.label, { color: secondary }]}>
-        Telefon
-        {required ? <Text style={{ color: errorColor }}> *</Text> : null}
-      </Text>
-      <View style={[styles.row, { borderColor, backgroundColor: surface }]}>
-        <Pressable
-          onPress={() => setOpen(true)}
-          accessibilityRole="button"
-          accessibilityLabel="Ülke kodu seç"
-          style={({ pressed }) => [
-            styles.code,
-            { borderRightColor: border, opacity: pressed ? 0.7 : 1 },
-          ]}
-        >
-          <Text style={styles.flag}>{country.flag}</Text>
-          <Text style={[styles.dial, { color: text }]}>{country.dial}</Text>
-          <Ionicons name="chevron-down" size={14} color={muted} />
-        </Pressable>
-        <TextInput
-          value={national}
-          onChangeText={(raw) =>
-            onChange({
-              phoneCountryIso: country.iso,
-              sellerPhone: formatNationalPhone(country.iso, raw),
-            })
-          }
-          placeholder={country.iso === 'TR' ? '5XX XXX XX XX' : 'Numara'}
-          placeholderTextColor={muted}
-          keyboardType="phone-pad"
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          style={[styles.input, { color: text }]}
-          accessibilityLabel="Telefon numarası"
-        />
-      </View>
-      {error ? (
-        <Text style={[styles.error, { color: errorColor }]}>{error}</Text>
-      ) : (
-        <Text style={[styles.hint, { color: muted }]}>
-          Önce ülke kodunu seçin, sonra numarayı yazın.
+    <View style={styles.row}>
+      <View style={styles.labelCol}>
+        <Text style={[styles.label, { color: secondary }]}>
+          Telefon
+          {required ? <Text style={{ color: errorColor }}> *</Text> : null}
         </Text>
-      )}
+      </View>
+
+      <View style={styles.inputCol}>
+        <View style={[styles.field, { borderColor, backgroundColor: surface }]}>
+          <Pressable
+            onPress={() => setOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Ülke kodu seç"
+            style={({ pressed }) => [
+              styles.code,
+              { borderRightColor: border, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Text style={styles.flag}>{country.flag}</Text>
+            <Text style={[styles.dial, { color: text }]}>{country.dial}</Text>
+            <Ionicons name="chevron-down" size={13} color={muted} />
+          </Pressable>
+          <TextInput
+            value={national}
+            onChangeText={(raw) =>
+              onChange({
+                phoneCountryIso: country.iso,
+                sellerPhone: formatNationalPhone(country.iso, raw),
+              })
+            }
+            placeholder={country.iso === 'TR' ? '5XX XXX XX XX' : 'Numara'}
+            placeholderTextColor={muted}
+            keyboardType="phone-pad"
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            style={[styles.input, { color: text }]}
+            accessibilityLabel="Telefon numarası"
+          />
+        </View>
+        {error ? (
+          <Text style={[styles.error, { color: errorColor }]}>{error}</Text>
+        ) : null}
+      </View>
+
       <PostCountrySheet
         visible={open}
         selectedIso={country.iso}
@@ -97,14 +99,30 @@ export function PostPhoneField({
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 6 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  labelCol: {
+    width: 110,
+    flexShrink: 0,
+    minHeight: 46,
+    justifyContent: 'center',
+  },
   label: {
     ...Typography.caption,
+    fontSize: 13.5,
     fontWeight: '600',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+    lineHeight: 18,
   },
-  row: {
-    minHeight: 52,
+  inputCol: {
+    flex: 1,
+    gap: 4,
+  },
+  field: {
+    minHeight: 46,
     borderWidth: 1,
     borderRadius: 12,
     flexDirection: 'row',
@@ -114,19 +132,20 @@ const styles = StyleSheet.create({
   code: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
+    gap: 5,
+    paddingHorizontal: 10,
     borderRightWidth: 1,
   },
-  flag: { fontSize: 16 },
-  dial: { ...Typography.small, fontWeight: '700' },
+  flag: { fontSize: 15 },
+  dial: { ...Typography.small, fontSize: 13, fontWeight: '700' },
   input: {
     flex: 1,
     ...Typography.body,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Platform.OS === 'web' ? 14 : 12,
+    fontSize: 14,
+    paddingHorizontal: 10,
+    paddingVertical: Platform.OS === 'web' ? 12 : 8,
     ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
   },
-  error: { ...Typography.caption },
-  hint: { ...Typography.caption },
+  error: { ...Typography.caption, fontSize: 12 },
+  hint: { ...Typography.caption, fontSize: 11 },
 });

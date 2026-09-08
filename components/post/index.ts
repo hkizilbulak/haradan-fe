@@ -7,4 +7,5 @@ export { PostCategoryProperties } from './PostCategoryProperties';
 export { PostPackagesStep } from './PostPackagesStep';
 export { PostReviewStep } from './PostReviewStep';
 export { PostPlaceSheet } from './PostPlaceSheet';
+export { PostSelectSheet } from './PostSelectSheet';
 export { PostFormShell } from './PostFormShell';

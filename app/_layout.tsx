@@ -47,6 +47,19 @@ export default function RootLayout() {
               <meta name="apple-mobile-web-app-capable" content="yes" />
               <meta name="apple-mobile-web-app-title" content="Haradan" />
               <meta name="theme-color" content="#0d1117" />
+              <style>{`
+                /* Hide native OS scrollbars in modal dialogs and lists */
+                ::-webkit-scrollbar {
+                  display: none !important;
+                  width: 0px !important;
+                  height: 0px !important;
+                  background: transparent !important;
+                }
+                * {
+                  -ms-overflow-style: none !important;
+                  scrollbar-width: none !important;
+                }
+              `}</style>
             </Head>
             <View style={{ flex: 1 }}>
             <Stack>

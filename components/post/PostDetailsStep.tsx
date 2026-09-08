@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PostField } from './PostField';
 import { PostMediaGrid } from './PostMediaGrid';
@@ -93,6 +93,7 @@ export function PostDetailsStep({
   const locked = Boolean(d.horseId);
   const [tjkOpen, setTjkOpen] = useState(false);
   const [tjkMode, setTjkMode] = useState<'ask' | 'search'>('ask');
+  const [tjkEditMode, setTjkEditMode] = useState(false);
   const [provinceOpen, setProvinceOpen] = useState(false);
   const [districtOpen, setDistrictOpen] = useState(false);
   const [fallbackConfigs, setFallbackConfigs] = useState(getGlobalPropertiesConfig());
@@ -368,35 +369,123 @@ export function PostDetailsStep({
       </View>
 
       {isTjkEligible ? (
-        <Pressable
-          onPress={openTjkSearch}
-          accessibilityRole="button"
-          accessibilityLabel={d.horseId || d.registeredName ? horseLineageLabel : 'TJK’dan bilgilerimi getir'}
-          style={({ pressed }) => [
-            styles.tjkCta,
-            {
-              backgroundColor: header,
-              opacity: pressed ? 0.88 : 1,
-            },
-          ]}
-        >
-          <Ionicons name="ribbon-outline" size={18} color="#fff" />
-          <Text style={styles.tjkCtaLabel}>
-            {d.horseId || d.registeredName ? horseLineageLabel : 'TJK’dan bilgilerimi getir'}
-          </Text>
-          <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
-        </Pressable>
+        locked && !tjkEditMode ? (
+          /* ─── READ-ONLY TJK INFO CARD ─── */
+          <View style={[styles.card, { backgroundColor: surface, borderColor: border }]}>
+            {/* Header row */}
+            <View
+              style={[
+                styles.cardHeader,
+                {
+                  borderBottomColor: border,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                },
+              ]}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="ribbon-outline" size={17} color={header} />
+                <Text style={[styles.section, { color: text }]}>TJK Bilgileri</Text>
+              </View>
+              <Pressable
+                onPress={() => setTjkEditMode(true)}
+                accessibilityRole="button"
+                accessibilityLabel="TJK bilgilerini düzenle"
+                style={({ pressed }) => [
+                  styles.editBtn,
+                  { borderColor: header, opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Ionicons name="pencil-outline" size={14} color={header} />
+                <Text style={[styles.editBtnLabel, { color: header }]}>Düzenle</Text>
+              </Pressable>
+            </View>
+
+            {/* Category properties merged inline — single source of truth */}
+            <PostCategoryProperties
+              draft={draft}
+              onUpdate={onUpdate}
+              errors={errors}
+              readOnly
+              hideCard
+              onPropertiesLoaded={onCategoryPropertiesLoaded}
+            />
+          </View>
+        ) : (
+          <>
+            <Pressable
+              onPress={openTjkSearch}
+              accessibilityRole="button"
+              accessibilityLabel={d.horseId || d.registeredName ? horseLineageLabel : 'TJK\'dan bilgilerimi getir'}
+              style={({ pressed }) => [
+                styles.tjkCta,
+                {
+                  backgroundColor: header,
+                  opacity: pressed ? 0.88 : 1,
+                },
+              ]}
+            >
+              <Ionicons name="ribbon-outline" size={18} color="#fff" />
+              <Text style={styles.tjkCtaLabel}>
+                {d.horseId || d.registeredName ? horseLineageLabel : 'TJK\'dan bilgilerimi getir'}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
+            </Pressable>
+            {locked && (
+              <Pressable
+                onPress={() => setTjkEditMode(false)}
+                accessibilityRole="button"
+                style={({ pressed }) => [styles.doneBtn, { borderColor: secondary, opacity: pressed ? 0.7 : 1 }]}
+              >
+                <Ionicons name="checkmark" size={15} color={secondary} />
+                <Text style={[styles.doneBtnLabel, { color: secondary }]}>Bitti</Text>
+              </Pressable>
+            )}
+            {locked && tjkEditMode && (
+              <>
+                <PostCategoryProperties
+                  draft={draft}
+                  onUpdate={onUpdate}
+                  errors={errors}
+                  onPropertiesLoaded={onCategoryPropertiesLoaded}
+                  onLayoutSection={(_section, y) => {
+                    fieldYMap.current.categoryProperties = y;
+                  }}
+                />
+                <Pressable
+                  onPress={() => setTjkEditMode(false)}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.doneBtn,
+                    {
+                      borderColor: header,
+                      backgroundColor: surface,
+                      opacity: pressed ? 0.7 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons name="checkmark-circle-outline" size={16} color={header} />
+                  <Text style={[styles.doneBtnLabel, { color: header, fontWeight: '700' }]}>Bitti</Text>
+                </Pressable>
+              </>
+            )}
+          </>
+        )
       ) : null}
 
       <View
         style={[styles.card, { backgroundColor: surface, borderColor: border }]}
         onLayout={(e) => {
           card1Y.current = e.nativeEvent.layout.y;
-          ['title', 'description', 'priceTl', 'provinceId', 'districtId'].forEach((k) => updateFieldY(k));
+          ['title', 'description', 'priceTl', 'provinceId', 'districtId', 'address'].forEach((k) => updateFieldY(k));
         }}
       >
-        <Text style={[styles.section, { color: text }]}>İlan</Text>
-        <View onLayout={(e) => updateFieldY('title', e.nativeEvent.layout.y)}>
+        <View style={[styles.cardHeader, { borderBottomColor: border }]}>
+          <Text style={[styles.section, { color: text }]}>İlan</Text>
+        </View>
+
+        <View style={styles.fieldRow} onLayout={(e) => updateFieldY('title', e.nativeEvent.layout.y)}>
           <PostField
             label="Başlık"
             required
@@ -406,8 +495,12 @@ export function PostDetailsStep({
             error={errors.title}
           />
         </View>
+
         {descConfig.isActive ? (
-          <View onLayout={(e) => updateFieldY('description', e.nativeEvent.layout.y)}>
+          <View
+            style={[styles.fieldRow, { borderTopColor: border }]}
+            onLayout={(e) => updateFieldY('description', e.nativeEvent.layout.y)}
+          >
             <PostField
               label={descConfig.title}
               required={descConfig.isRequired}
@@ -425,7 +518,10 @@ export function PostDetailsStep({
         ) : null}
 
         {priceConfig.isActive ? (
-          <View onLayout={(e) => updateFieldY('priceTl', e.nativeEvent.layout.y)}>
+          <View
+            style={[styles.fieldRow, { borderTopColor: border }]}
+            onLayout={(e) => updateFieldY('priceTl', e.nativeEvent.layout.y)}
+          >
             <PostField
               label={priceConfig.title}
               required={priceConfig.isRequired}
@@ -442,94 +538,109 @@ export function PostDetailsStep({
         {locationConfig.isActive ? (
           <>
             <View
-              style={styles.fieldBlock}
+              style={[styles.fieldRow, { borderTopColor: border }]}
               onLayout={(e) => updateFieldY('provinceId', e.nativeEvent.layout.y)}
             >
-              <Text style={[styles.fieldLabel, { color: secondary }]}>
-                İl
-                {locationConfig.isRequired ? (
-                  <Text style={{ color: errorColor }}> *</Text>
-                ) : null}
-              </Text>
-              <Pressable
-                onPress={() => setProvinceOpen(true)}
-                style={[
-                  styles.select,
-                  {
-                    borderColor: errors.provinceId ? errorColor : border,
-                    backgroundColor: surface,
-                  },
-                ]}
-              >
-                <Text
-                  style={{
-                    color: provinceName ? text : muted,
-                    ...Typography.body,
-                    flex: 1,
-                  }}
-                >
-                  {provinceName || 'İl seçin'}
-                </Text>
-                <Ionicons name="chevron-down" size={16} color={muted} />
-              </Pressable>
-              {errors.provinceId ? (
-                <Text style={[styles.err, { color: errorColor }]}>{errors.provinceId}</Text>
-              ) : provincesError ? (
-                <Pressable onPress={retryProvinces}>
-                  <Text style={[styles.err, { color: errorColor }]}>
-                    {provincesError} · Yenile
+              <View style={styles.horizontalRow}>
+                <View style={styles.labelCol}>
+                  <Text style={[styles.fieldLabel, { color: secondary }]}>
+                    İl
+                    {locationConfig.isRequired ? (
+                      <Text style={{ color: errorColor }}> *</Text>
+                    ) : null}
                   </Text>
-                </Pressable>
-              ) : null}
+                </View>
+                <View style={styles.inputCol}>
+                  <Pressable
+                    onPress={() => setProvinceOpen(true)}
+                    style={[
+                      styles.select,
+                      {
+                        borderColor: errors.provinceId ? errorColor : border,
+                        backgroundColor: surface,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        color: provinceName ? text : muted,
+                        ...Typography.body,
+                        fontSize: 14,
+                        flex: 1,
+                      }}
+                    >
+                      {provinceName || 'İl seçin'}
+                    </Text>
+                    <Ionicons name="chevron-down" size={16} color={muted} />
+                  </Pressable>
+                  {errors.provinceId ? (
+                    <Text style={[styles.err, { color: errorColor }]}>{errors.provinceId}</Text>
+                  ) : provincesError ? (
+                    <Pressable onPress={retryProvinces}>
+                      <Text style={[styles.err, { color: errorColor }]}>
+                        {provincesError} · Yenile
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              </View>
             </View>
+
             <View
-              style={styles.fieldBlock}
+              style={[styles.fieldRow, { borderTopColor: border }]}
               onLayout={(e) => updateFieldY('districtId', e.nativeEvent.layout.y)}
             >
-              <Text style={[styles.fieldLabel, { color: secondary }]}>
-                İlçe
-                {locationConfig.isRequired ? (
-                  <Text style={{ color: errorColor }}> *</Text>
-                ) : null}
-              </Text>
-              <Pressable
-                onPress={() => d.provinceId && setDistrictOpen(true)}
-                style={[
-                  styles.select,
-                  {
-                    borderColor: errors.districtId ? errorColor : border,
-                    backgroundColor: surface,
-                    opacity: d.provinceId ? 1 : 0.55,
-                  },
-                ]}
-              >
-                <Text
-                  style={{
-                    color: districtName ? text : muted,
-                    ...Typography.body,
-                    flex: 1,
-                  }}
-                >
-                  {districtName || (d.provinceId ? 'İlçe seçin' : 'Önce il seçin')}
-                </Text>
-                <Ionicons name="chevron-down" size={16} color={muted} />
-              </Pressable>
-              {errors.districtId ? (
-                <Text style={[styles.err, { color: errorColor }]}>{errors.districtId}</Text>
-              ) : districtsError ? (
-                <Pressable onPress={retryDistricts}>
-                  <Text style={[styles.err, { color: errorColor }]}>
-                    {districtsError} · Yenile
+              <View style={styles.horizontalRow}>
+                <View style={styles.labelCol}>
+                  <Text style={[styles.fieldLabel, { color: secondary }]}>
+                    İlçe
+                    {locationConfig.isRequired ? (
+                      <Text style={{ color: errorColor }}> *</Text>
+                    ) : null}
                   </Text>
-                </Pressable>
-              ) : null}
+                </View>
+                <View style={styles.inputCol}>
+                  <Pressable
+                    onPress={() => d.provinceId && setDistrictOpen(true)}
+                    style={[
+                      styles.select,
+                      {
+                        borderColor: errors.districtId ? errorColor : border,
+                        backgroundColor: surface,
+                        opacity: d.provinceId ? 1 : 0.55,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        color: districtName ? text : muted,
+                        ...Typography.body,
+                        fontSize: 14,
+                        flex: 1,
+                      }}
+                    >
+                      {districtName || (d.provinceId ? 'İlçe seçin' : 'Önce il seçin')}
+                    </Text>
+                    <Ionicons name="chevron-down" size={16} color={muted} />
+                  </Pressable>
+                  {errors.districtId ? (
+                    <Text style={[styles.err, { color: errorColor }]}>{errors.districtId}</Text>
+                  ) : districtsError ? (
+                    <Pressable onPress={retryDistricts}>
+                      <Text style={[styles.err, { color: errorColor }]}>
+                        {districtsError} · Yenile
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              </View>
             </View>
           </>
         ) : null}
 
         {addressConfig.isActive ? (
           <View
-            style={styles.fieldBlock}
+            style={[styles.fieldRow, { borderTopColor: border }]}
             onLayout={(e) => updateFieldY('address', e.nativeEvent.layout.y)}
           >
             <PostField
@@ -538,7 +649,6 @@ export function PostDetailsStep({
               value={d.address}
               onChangeText={(address) => onUpdate({ address })}
               placeholder="Mahalle, cadde, sokak, no, tesis veya çiftlik/hara adı…"
-              hint="İlanınızın tam konumunu belirtmek için açık adres girin."
               error={errors.address}
               multiline
             />
@@ -558,37 +668,37 @@ export function PostDetailsStep({
               return (
                 <View
                   key={prop.code}
-                  style={styles.fieldBlock}
+                  style={[styles.fieldRow, { borderTopColor: border }]}
                   onLayout={(e) => updateFieldY(prop.code, e.nativeEvent.layout.y)}
                 >
-                  <Pressable
-                    onPress={() => handleCustomPropertyChange(prop.code, !boolVal)}
-                    style={styles.toggleRow}
-                    accessibilityRole="switch"
-                    accessibilityState={{ checked: boolVal }}
-                  >
-                    <Text
-                      style={[
-                        styles.toggleLabel,
-                        { color: boolVal ? text : secondary, fontWeight: boolVal ? '600' : '400' },
-                      ]}
-                    >
-                      {prop.title}
-                      {prop.isRequired ? <Text style={{ color: errorColor }}> *</Text> : null}
-                    </Text>
-                    <View
-                      style={[
-                        styles.switch,
-                        {
-                          backgroundColor: boolVal ? header : border,
-                          justifyContent: boolVal ? 'flex-end' : 'flex-start',
-                        },
-                      ]}
-                    >
-                      <View style={styles.switchKnob} />
+                  <View style={styles.horizontalRow}>
+                    <View style={styles.labelCol}>
+                      <Text style={[styles.fieldLabel, { color: secondary }]}>
+                        {prop.title}
+                        {prop.isRequired ? <Text style={{ color: errorColor }}> *</Text> : null}
+                      </Text>
                     </View>
-                  </Pressable>
-                  {err ? <Text style={[styles.err, { color: errorColor }]}>{err}</Text> : null}
+                    <View style={[styles.inputCol, { alignItems: 'flex-start', justifyContent: 'center' }]}>
+                      <Pressable
+                        onPress={() => handleCustomPropertyChange(prop.code, !boolVal)}
+                        accessibilityRole="switch"
+                        accessibilityState={{ checked: boolVal }}
+                      >
+                        <View
+                          style={[
+                            styles.switch,
+                            {
+                              backgroundColor: boolVal ? header : border,
+                              justifyContent: boolVal ? 'flex-end' : 'flex-start',
+                            },
+                          ]}
+                        >
+                          <View style={styles.switchKnob} />
+                        </View>
+                      </Pressable>
+                      {err ? <Text style={[styles.err, { color: errorColor }]}>{err}</Text> : null}
+                    </View>
+                  </View>
                 </View>
               );
             }
@@ -597,52 +707,58 @@ export function PostDetailsStep({
               return (
                 <View
                   key={prop.code}
-                  style={styles.fieldBlock}
+                  style={[styles.fieldRow, { borderTopColor: border }]}
                   onLayout={(e) => updateFieldY(prop.code, e.nativeEvent.layout.y)}
                 >
-                  <Text style={[styles.fieldLabel, { color: secondary }]}>
-                    {prop.title}
-                    {prop.isRequired ? <Text style={{ color: errorColor }}> *</Text> : null}
-                  </Text>
-                  <View style={styles.chips}>
-                    {prop.options.map((opt) => {
-                      const optVal = opt.value || opt.label;
-                      const isSelected =
-                        String(val ?? '').toLocaleLowerCase('tr') === optVal.toLocaleLowerCase('tr') ||
-                        String(val ?? '').toLocaleLowerCase('tr') === (opt.value || '').toLocaleLowerCase('tr');
-                      return (
-                        <Pressable
-                          key={opt.value || opt.label}
-                          onPress={() =>
-                            handleCustomPropertyChange(
-                              prop.code,
-                              isSelected ? '' : opt.value || opt.label
-                            )
-                          }
-                          style={[
-                            styles.chip,
-                            {
-                              borderColor: isSelected ? header : border,
-                              backgroundColor: isSelected ? header : surface,
-                            },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.chipText,
-                              {
-                                color: isSelected ? '#fff' : text,
-                                fontWeight: isSelected ? '600' : '400',
-                              },
-                            ]}
-                          >
-                            {opt.label || opt.value}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
+                  <View style={styles.horizontalRow}>
+                    <View style={[styles.labelCol, { paddingTop: 6 }]}>
+                      <Text style={[styles.fieldLabel, { color: secondary }]}>
+                        {prop.title}
+                        {prop.isRequired ? <Text style={{ color: errorColor }}> *</Text> : null}
+                      </Text>
+                    </View>
+                    <View style={styles.inputCol}>
+                      <View style={styles.chips}>
+                        {prop.options.map((opt) => {
+                          const optVal = opt.value || opt.label;
+                          const isSelected =
+                            String(val ?? '').toLocaleLowerCase('tr') === optVal.toLocaleLowerCase('tr') ||
+                            String(val ?? '').toLocaleLowerCase('tr') === (opt.value || '').toLocaleLowerCase('tr');
+                          return (
+                            <Pressable
+                              key={opt.value || opt.label}
+                              onPress={() =>
+                                handleCustomPropertyChange(
+                                  prop.code,
+                                  isSelected ? '' : opt.value || opt.label
+                                )
+                              }
+                              style={[
+                                styles.chip,
+                                {
+                                  borderColor: isSelected ? header : border,
+                                  backgroundColor: isSelected ? header : surface,
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.chipText,
+                                  {
+                                    color: isSelected ? '#fff' : text,
+                                    fontWeight: isSelected ? '600' : '400',
+                                  },
+                                ]}
+                              >
+                                {opt.label || opt.value}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                      {err ? <Text style={[styles.err, { color: errorColor }]}>{err}</Text> : null}
+                    </View>
                   </View>
-                  {err ? <Text style={[styles.err, { color: errorColor }]}>{err}</Text> : null}
                 </View>
               );
             }
@@ -650,7 +766,7 @@ export function PostDetailsStep({
             return (
               <View
                 key={prop.code}
-                style={styles.fieldBlock}
+                style={[styles.fieldRow, { borderTopColor: border }]}
                 onLayout={(e) => updateFieldY(prop.code, e.nativeEvent.layout.y)}
               >
                 <PostField
@@ -661,8 +777,8 @@ export function PostDetailsStep({
                   placeholder={prop.helpText || `${prop.title} giriniz…`}
                   keyboardType={
                     prop.dataType === 'INTEGER' ||
-                    prop.dataType === 'DECIMAL' ||
-                    prop.dataType === 'YEAR'
+                      prop.dataType === 'DECIMAL' ||
+                      prop.dataType === 'YEAR'
                       ? 'numeric'
                       : 'default'
                   }
@@ -683,8 +799,10 @@ export function PostDetailsStep({
             updateFieldY('sellerPhone');
           }}
         >
-          <Text style={[styles.section, { color: text }]}>{phoneConfig.title}</Text>
-          <View onLayout={(e) => updateFieldY('sellerPhone', e.nativeEvent.layout.y)}>
+          <View style={[styles.cardHeader, { borderBottomColor: border }]}>
+            <Text style={[styles.section, { color: text }]}>{phoneConfig.title}</Text>
+          </View>
+          <View style={styles.fieldRow} onLayout={(e) => updateFieldY('sellerPhone', e.nativeEvent.layout.y)}>
             <PostPhoneField
               iso={d.phoneCountryIso || 'TR'}
               national={d.sellerPhone}
@@ -698,15 +816,18 @@ export function PostDetailsStep({
 
 
 
-      <PostCategoryProperties
-        draft={draft}
-        onUpdate={onUpdate}
-        errors={errors}
-        onPropertiesLoaded={onCategoryPropertiesLoaded}
-        onLayoutSection={(_section, y) => {
-          fieldYMap.current.categoryProperties = y;
-        }}
-      />
+      {/* Standalone category properties — only shown when horse is not locked / non-TJK */}
+      {!locked && (
+        <PostCategoryProperties
+          draft={draft}
+          onUpdate={onUpdate}
+          errors={errors}
+          onPropertiesLoaded={onCategoryPropertiesLoaded}
+          onLayoutSection={(_section, y) => {
+            fieldYMap.current.categoryProperties = y;
+          }}
+        />
+      )}
 
 
       <View
@@ -717,16 +838,23 @@ export function PostDetailsStep({
           updateFieldY('media', 0);
         }}
       >
-        <Text style={[styles.section, { color: text }]}>
-          Görseller
-          <Text style={{ color: errorColor }}> *</Text>
-        </Text>
-        <PostMediaGrid
-          items={draft.media}
-          error={errors.media}
-          onChange={onMediaChange}
-          onSetCover={onSetCover}
-        />
+        <View style={[styles.cardHeader, { borderBottomColor: border }]}>
+          <Text style={[styles.section, { color: text }]}>
+            Görseller
+            <Text style={{ color: errorColor }}> *</Text>
+          </Text>
+          <Text style={[styles.cardDesc, { color: secondary }]}>
+            En fazla 5 fotoğraf ekleyebilirsiniz (En az 1 görsel zorunludur).
+          </Text>
+        </View>
+        <View style={styles.mediaCardBody}>
+          <PostMediaGrid
+            items={draft.media}
+            error={errors.media}
+            onChange={onMediaChange}
+            onSetCover={onSetCover}
+          />
+        </View>
       </View>
 
       <PostTjkSheet
@@ -782,11 +910,51 @@ const styles = StyleSheet.create({
   lead: { ...Typography.body },
   card: {
     borderWidth: 1,
-    borderRadius: 16,
-    padding: Spacing.lg,
-    gap: Spacing.md,
+    borderRadius: 18,
+    overflow: 'hidden',
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.04)',
+      } as any,
+      default: {},
+    }),
+  },
+  cardHeader: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  fieldRow: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  horizontalRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  labelCol: {
+    width: 110,
+    flexShrink: 0,
+    minHeight: 46,
+    justifyContent: 'center',
+  },
+  inputCol: {
+    flex: 1,
+    gap: 4,
+    justifyContent: 'center',
   },
   section: { ...Typography.h5, fontWeight: '700' },
+  cardDesc: {
+    ...Typography.caption,
+    fontSize: 12.5,
+    marginTop: 3,
+    lineHeight: 17,
+  },
+  mediaCardBody: {
+    padding: Spacing.lg,
+  },
   tjkCta: {
     minHeight: 52,
     paddingVertical: 10,
@@ -795,6 +963,53 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+  },
+  editBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 5,
+    paddingHorizontal: 11,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  editBtnLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  doneBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  doneBtnLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: 12,
+  },
+  infoLabel: {
+    fontSize: 13.5,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'left',
+    flex: 1,
+    textTransform: 'uppercase',
   },
   tjkCtaLabel: {
     ...Typography.small,
@@ -805,29 +1020,31 @@ const styles = StyleSheet.create({
   fieldBlock: { gap: 6 },
   fieldLabel: {
     ...Typography.caption,
+    fontSize: 13.5,
     fontWeight: '600',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+    lineHeight: 18,
   },
   select: {
-    minHeight: 52,
+    minHeight: 46,
     borderWidth: 1,
     borderRadius: 12,
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingVertical: 4 },
   chip: {
-    minHeight: 40,
-    paddingHorizontal: 16,
+    minHeight: 34,
+    paddingHorizontal: 14,
     borderRadius: 999,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chipLabel: { ...Typography.small, fontWeight: '600' },
-  chipText: { ...Typography.small, fontWeight: '600' },
+  chipLabel: { ...Typography.small, fontSize: 13, fontWeight: '600' },
+  chipText: { ...Typography.small, fontSize: 13, fontWeight: '600' },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -854,5 +1071,5 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', gap: Spacing.sm },
   flex: { flex: 1 },
-  err: { ...Typography.caption },
+  err: { ...Typography.caption, fontSize: 12 },
 });

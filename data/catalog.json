@@ -452,7 +452,7 @@
       "categoryId": "c1000000-0000-4000-8000-000000000001",
       "code": "BIRTH_DATE",
       "title": "Doğum Tarihi",
-      "helpText": "Atın doğum tarihi (YYYY-AA-GG)",
+      "helpText": "YYYY-AA-GG (Örn: 2021)",
       "dataType": "STRING",
       "isRequired": false,
       "isPublicVisible": true,

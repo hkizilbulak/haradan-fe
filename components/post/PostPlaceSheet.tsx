@@ -93,7 +93,12 @@ export function PostPlaceSheet({
           {loading ? (
             <ActivityIndicator color={primary} />
           ) : (
-            <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
+            <ScrollView
+              style={styles.list}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              showsHorizontalScrollIndicator={false}
+            >
               {filtered.map((p) => {
                 const selected = p.id === selectedId;
                 return (
@@ -164,7 +169,16 @@ const styles = StyleSheet.create({
     ...Typography.body,
     ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
   },
-  list: { maxHeight: 360 },
+  list: {
+    maxHeight: 360,
+    ...Platform.select({
+      web: {
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+      } as any,
+      default: {},
+    }),
+  },
   row: {
     minHeight: 44,
     borderWidth: 1,

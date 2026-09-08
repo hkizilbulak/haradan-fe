@@ -10,38 +10,46 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { phoneCountryCatalog } from '@/services/phone';
-import type { PhoneCountry } from '@/types/phone';
 import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
-type PostCountrySheetProps = {
+export type SelectOption = { label: string; value: string };
+
+type PostSelectSheetProps = {
   visible: boolean;
-  selectedIso: string;
+  title: string;
+  options: SelectOption[];
+  selectedValue?: unknown;
+  emptyText?: string;
   onClose: () => void;
-  onSelect: (country: PhoneCountry) => void;
+  onSelect: (value: string) => void;
 };
 
-export function PostCountrySheet({
+export function PostSelectSheet({
   visible,
-  selectedIso,
+  title,
+  options,
+  selectedValue,
+  emptyText = 'Seçenek bulunamadı.',
   onClose,
   onSelect,
-}: PostCountrySheetProps) {
+}: PostSelectSheetProps) {
   const text = useThemeColor('text');
   const secondary = useThemeColor('textSecondary');
   const muted = useThemeColor('textMuted');
   const surface = useThemeColor('surface');
   const border = useThemeColor('border');
-  const success = useThemeColor('success');
-  const [q, setQ] = useState('');
+  const header = useThemeColor('header');
+  const primary = useThemeColor('primary');
+
+  const [searchQuery, setSearchQuery] = useState('');
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (visible) {
-      setQ('');
+      setSearchQuery('');
       const timer = setTimeout(() => {
         inputRef.current?.focus();
       }, 50);
@@ -49,17 +57,35 @@ export function PostCountrySheet({
     }
   }, [visible]);
 
-  const countries = useMemo(() => phoneCountryCatalog.list(), []);
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLocaleLowerCase('tr');
-    if (!needle) return countries;
-    return countries.filter(
-      (c) =>
-        c.name.toLocaleLowerCase('tr').includes(needle) ||
-        c.dial.includes(needle) ||
-        c.iso.toLowerCase().includes(needle)
+  const showSearch = options.length > 3;
+
+  const filteredOptions = useMemo(() => {
+    const q = searchQuery.trim().toLocaleLowerCase('tr');
+    if (!q) return options;
+    return options.filter((opt) => {
+      const label = (opt.label || opt.value).toLocaleLowerCase('tr');
+      const val = (opt.value || '').toLocaleLowerCase('tr');
+      return label.includes(q) || val.includes(q);
+    });
+  }, [options, searchQuery]);
+
+  const checkSelected = (opt: SelectOption) => {
+    if (selectedValue == null || selectedValue === '') return false;
+    const sVal = String(selectedValue).toLocaleLowerCase('tr').trim();
+    const optVal = (opt.value || opt.label).toLocaleLowerCase('tr').trim();
+    const optValue = (opt.value || '').toLocaleLowerCase('tr').trim();
+    const optLabel = (opt.label || '').toLocaleLowerCase('tr').trim();
+
+    return (
+      sVal === optVal ||
+      sVal === optValue ||
+      sVal === optLabel ||
+      (sVal !== '' && (
+        (sVal.includes('ingiliz') && optVal.includes('ingiliz')) ||
+        (sVal.includes('arap') && optVal.includes('arap'))
+      ))
     );
-  }, [countries, q]);
+  };
 
   return (
     <Modal
@@ -73,10 +99,20 @@ export function PostCountrySheet({
     >
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={[styles.sheet, { backgroundColor: surface, borderColor: border }]}>
+        <View
+          style={[
+            styles.sheet,
+            {
+              backgroundColor: surface,
+              borderColor: border,
+            },
+          ]}
+        >
           {/* Header */}
           <View style={styles.headerRow}>
-            <Text style={[styles.title, { color: text }]}>Ülke Kodu Seçin</Text>
+            <Text style={[styles.title, { color: text }]} numberOfLines={1}>
+              {title}
+            </Text>
             <Pressable
               onPress={onClose}
               hitSlop={8}
@@ -86,71 +122,77 @@ export function PostCountrySheet({
             </Pressable>
           </View>
 
-          {/* Search bar */}
-          <View style={[styles.search, { borderColor: border }]}>
-            <Ionicons name="search-outline" size={18} color={muted} />
-            <TextInput
-              ref={inputRef}
-              autoFocus
-              value={q}
-              onChangeText={setQ}
-              placeholder="Ülke veya kod ara..."
-              placeholderTextColor={muted}
-              style={[styles.input, { color: text }]}
-              autoCorrect={false}
-              autoCapitalize="none"
-            />
-            {q ? (
-              <Pressable onPress={() => setQ('')} hitSlop={6}>
-                <Ionicons name="close-circle" size={16} color={muted} />
-              </Pressable>
-            ) : null}
-          </View>
+          {/* Search bar if many items */}
+          {showSearch ? (
+            <View style={[styles.search, { borderColor: border }]}>
+              <Ionicons name="search-outline" size={18} color={muted} />
+              <TextInput
+                ref={inputRef}
+                autoFocus
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Seçenek ara..."
+                placeholderTextColor={muted}
+                style={[styles.input, { color: text }]}
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+              {searchQuery ? (
+                <Pressable onPress={() => setSearchQuery('')} hitSlop={6}>
+                  <Ionicons name="close-circle" size={16} color={muted} />
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
 
-          {/* List */}
+          {/* Options List */}
           <ScrollView
             style={styles.list}
             contentContainerStyle={styles.listContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {filtered.map((c) => {
-              const selected = c.iso === selectedIso;
+            {filteredOptions.map((opt) => {
+              const selected = checkSelected(opt);
               return (
                 <Pressable
-                  key={c.iso}
+                  key={opt.value || opt.label}
                   onPress={() => {
-                    onSelect(c);
+                    onSelect(opt.value || opt.label);
                     onClose();
-                    setQ('');
                   }}
                   style={({ pressed }) => [
-                    styles.row,
+                    styles.optionItem,
                     {
-                      borderColor: selected ? success : border,
+                      borderColor: selected ? header : border,
                       backgroundColor: selected
-                        ? success + '15'
+                        ? header + '18'
                         : pressed
-                        ? border + '30'
+                        ? border + '40'
                         : 'transparent',
                     },
                   ]}
                 >
-                  <Text style={styles.flag}>{c.flag}</Text>
-                  <View style={styles.meta}>
-                    <Text style={[styles.name, { color: text }]}>{c.name}</Text>
-                    <Text style={[styles.dial, { color: secondary }]}>{c.dial}</Text>
-                  </View>
+                  <Text
+                    style={[
+                      styles.optionLabel,
+                      {
+                        color: selected ? header : text,
+                        fontWeight: selected ? '700' : '400',
+                      },
+                    ]}
+                  >
+                    {opt.label || opt.value}
+                  </Text>
                   {selected ? (
-                    <Ionicons name="checkmark-circle" size={20} color={success} />
+                    <Ionicons name="checkmark-circle" size={20} color={header} />
                   ) : null}
                 </Pressable>
               );
             })}
-            {filtered.length === 0 ? (
-              <Text style={[styles.empty, { color: secondary }]}>
-                Aramanızla eşleşen ülke bulunamadı.
-              </Text>
+
+            {filteredOptions.length === 0 ? (
+              <Text style={[styles.empty, { color: secondary }]}>{emptyText}</Text>
             ) : null}
           </ScrollView>
 
@@ -236,33 +278,22 @@ const styles = StyleSheet.create({
     }),
   },
   listContent: {
-    gap: Spacing.xs,
+    gap: Spacing.sm,
     paddingVertical: 2,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  optionItem: {
+    minHeight: 46,
     borderWidth: 1,
     borderRadius: 14,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 10,
-    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  flag: {
-    fontSize: 22,
-  },
-  meta: {
-    flex: 1,
-  },
-  name: {
+  optionLabel: {
     ...Typography.body,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  dial: {
-    ...Typography.caption,
-    fontSize: 12,
+    fontSize: 15,
+    flex: 1,
   },
   empty: {
     ...Typography.small,
