@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PostField } from './PostField';
@@ -296,6 +296,67 @@ export function PostDetailsStep({
     [d.properties, onUpdate]
   );
 
+  const horseLineageLabel = useMemo(() => {
+    const horseName = (d.registeredName || d.studHorseName || '').trim();
+    if (!horseName && !d.horseId) return 'TJK’dan bilgilerimi getir';
+
+    const sire = (
+      d.sire ||
+      d.studSire ||
+      (d.properties?.['SIRE'] as string) ||
+      (d.properties?.['studSire'] as string) ||
+      ''
+    ).trim();
+
+    const dam = (
+      d.dam ||
+      d.studDam ||
+      (d.properties?.['DAM'] as string) ||
+      (d.properties?.['studDam'] as string) ||
+      ''
+    ).trim();
+
+    const damsire = (
+      d.damsire ||
+      d.studDamsire ||
+      (d.properties?.['DAMSIRE'] as string) ||
+      (d.properties?.['studDamSire'] as string) ||
+      (d.properties?.['studDamsire'] as string) ||
+      ''
+    ).trim();
+
+    let pedigree = '';
+    if (sire && dam && damsire) {
+      pedigree = `${sire} - ${dam} / ${damsire}`;
+    } else if (sire && dam) {
+      pedigree = `${sire} - ${dam}`;
+    } else if (sire && damsire) {
+      pedigree = `${sire} / ${damsire}`;
+    } else if (dam && damsire) {
+      pedigree = `${dam} / ${damsire}`;
+    } else if (sire) {
+      pedigree = sire;
+    } else if (dam) {
+      pedigree = dam;
+    }
+
+    if (horseName && pedigree) {
+      return `${horseName} (${pedigree})`;
+    }
+    return horseName || 'TJK’dan bilgilerimi getir';
+  }, [
+    d.horseId,
+    d.registeredName,
+    d.studHorseName,
+    d.sire,
+    d.studSire,
+    d.dam,
+    d.studDam,
+    d.damsire,
+    d.studDamsire,
+    d.properties,
+  ]);
+
   return (
     <View style={styles.wrap}>
       <View style={styles.intro}>
@@ -310,7 +371,7 @@ export function PostDetailsStep({
         <Pressable
           onPress={openTjkSearch}
           accessibilityRole="button"
-          accessibilityLabel="TJK’dan bilgilerimi getir"
+          accessibilityLabel={d.horseId || d.registeredName ? horseLineageLabel : 'TJK’dan bilgilerimi getir'}
           style={({ pressed }) => [
             styles.tjkCta,
             {
@@ -321,9 +382,7 @@ export function PostDetailsStep({
         >
           <Ionicons name="ribbon-outline" size={18} color="#fff" />
           <Text style={styles.tjkCtaLabel}>
-            {d.horseId
-              ? `TJK: ${d.registeredName || d.studHorseName}${d.tjkNumber ? ` · ${d.tjkNumber}` : ''}`
-              : 'TJK’dan bilgilerimi getir'}
+            {d.horseId || d.registeredName ? horseLineageLabel : 'TJK’dan bilgilerimi getir'}
           </Text>
           <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
         </Pressable>
@@ -730,6 +789,7 @@ const styles = StyleSheet.create({
   section: { ...Typography.h5, fontWeight: '700' },
   tjkCta: {
     minHeight: 52,
+    paddingVertical: 10,
     borderRadius: 14,
     paddingHorizontal: Spacing.md,
     flexDirection: 'row',
