@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -17,6 +18,7 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { locationLookup } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
 import { Button } from '@/components/ui/Button';
+import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import type { ListingDraft, ListingPackage, ListingPackageCode } from '@/types/listing';
 
 type PackagePreviewModalProps = {
@@ -486,26 +488,270 @@ export const PackagePreviewModal = memo(function PackagePreviewModal({
     placements[0]?.key || 'category'
   );
 
+  const { width: screenWidth } = useWindowDimensions();
+  const isWide = screenWidth >= HOME_DESKTOP_BREAKPOINT;
+
   // Ensure active tab exists in available placements
   const currentPlacement =
     placements.find((p) => p.key === activeTabKey) || placements[0];
 
+  const placementBanner = (
+    <View
+      style={[
+        styles.placementInfoBanner,
+        {
+          backgroundColor: currentPlacement.badgeColor + '12',
+          borderColor: currentPlacement.badgeColor + '40',
+          borderLeftColor: currentPlacement.badgeColor,
+        },
+      ]}
+    >
+      <View style={styles.placementInfoTop}>
+        <View
+          style={[
+            styles.placementColorDot,
+            { backgroundColor: currentPlacement.badgeColor },
+          ]}
+        />
+        <Text
+          style={[
+            styles.placementLocationTag,
+            { color: currentPlacement.badgeColor },
+          ]}
+        >
+          {currentPlacement.locationTag}
+        </Text>
+      </View>
+      <Text style={[styles.placementTitle, { color: text }]}>
+        {currentPlacement.title}
+      </Text>
+      <Text style={[styles.placementDesc, { color: textSecondary }]}>
+        {currentPlacement.description}
+      </Text>
+    </View>
+  );
+
+  const previewContent = currentPlacement.isSocial ? (
+    <InstagramPostPreview
+      coverUri={coverUri}
+      displayTitle={displayTitle}
+      displayPrice={displayPrice}
+      location={location}
+      categoryName={categoryName}
+    />
+  ) : (
+    <View
+      style={[
+        styles.previewFrame,
+        { backgroundColor: bg, borderColor: border },
+      ]}
+    >
+      {/* Site Section Simulator Bar */}
+      <View style={styles.sectionHeaderSim}>
+        <View style={styles.simHeadingLeft}>
+          <Ionicons
+            name={currentPlacement.tabIcon}
+            size={16}
+            color={currentPlacement.badgeColor}
+          />
+          <Text
+            style={[styles.simHeadingTitle, { color: text }]}
+            numberOfLines={1}
+          >
+            {currentPlacement.sectionTitle}
+          </Text>
+        </View>
+        <Text
+          style={[
+            styles.simHeadingAction,
+            { color: currentPlacement.badgeColor },
+          ]}
+        >
+          Tümünü gör ›
+        </Text>
+      </View>
+
+      {/* Centered Advert Card */}
+      <View style={styles.cardPreviewContainer}>
+        <PreviewAdvertCard
+          coverUri={coverUri}
+          categoryName={categoryName}
+          displayTitle={displayTitle}
+          displayPrice={displayPrice}
+          location={location}
+          badgeType={currentPlacement.badgeType}
+          badgeLabel={currentPlacement.badgeLabel}
+          isUnlocked={true}
+        />
+      </View>
+    </View>
+  );
+
+  const featuresCard = (
+    <View
+      style={[
+        styles.featuresCard,
+        { backgroundColor: bg, borderColor: border },
+      ]}
+    >
+      <View style={styles.featuresCardHeader}>
+        <Ionicons name="sparkles-outline" size={16} color={primary} />
+        <Text style={[styles.featuresCardTitle, { color: text }]}>
+          {pkg.name} Paket Özellikleri
+        </Text>
+      </View>
+
+      <View style={styles.featuresList}>
+        {/* Yayın Süresi */}
+        <View style={styles.featureItemRow}>
+          <View
+            style={[
+              styles.featureCheckCircle,
+              { backgroundColor: success + '20' },
+            ]}
+          >
+            <Ionicons name="checkmark" size={13} color={success} />
+          </View>
+          <Text style={[styles.featureItemText, { color: text }]}>
+            <Text style={{ fontWeight: '700' }}>
+              {pkg.durationDays} gün
+            </Text>{' '}
+            aktif yayın süresi
+          </Text>
+        </View>
+
+        {/* Paketin Tanımlı Özellikleri */}
+        {pkg.features
+          .filter(
+            (f) =>
+              !f.label.toLowerCase().endsWith('gün yayın') &&
+              !f.label.toLowerCase().endsWith('gun yayin')
+          )
+          .map((f) => (
+          <View key={f.id} style={styles.featureItemRow}>
+            <View
+              style={[
+                styles.featureCheckCircle,
+                {
+                  backgroundColor: f.included
+                    ? success + '20'
+                    : border + '40',
+                },
+              ]}
+            >
+              <Ionicons
+                name={f.included ? 'checkmark' : 'close'}
+                size={13}
+                color={f.included ? success : textMuted}
+              />
+            </View>
+            <Text
+              style={[
+                styles.featureItemText,
+                {
+                  color: f.included ? text : textMuted,
+                  textDecorationLine: f.included
+                    ? 'none'
+                    : 'line-through',
+                },
+              ]}
+            >
+              {f.label}
+            </Text>
+          </View>
+        ))}
+
+        {/* Acil Rozeti (Pakette varsa ve listede yoksa) */}
+        {hasUrgent &&
+        !pkg.features.some((f) =>
+          f.label.toLowerCase().includes('acil')
+        ) ? (
+          <View style={styles.featureItemRow}>
+            <View
+              style={[
+                styles.featureCheckCircle,
+                { backgroundColor: URGENT_RED + '20' },
+              ]}
+            >
+              <Ionicons name="flash" size={13} color={URGENT_RED} />
+            </View>
+            <Text style={[styles.featureItemText, { color: text }]}>
+              Kırmızı{' '}
+              <Text style={{ fontWeight: '700', color: URGENT_RED }}>
+                ACİL
+              </Text>{' '}
+              ilan rozeti ve anasayfa vitrini
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Anasayfa Vitrini (Pakette varsa ve listede yoksa) */}
+        {hasShowcase &&
+        !pkg.features.some((f) =>
+          f.label.toLowerCase().includes('vitrin')
+        ) ? (
+          <View style={styles.featureItemRow}>
+            <View
+              style={[
+                styles.featureCheckCircle,
+                { backgroundColor: GOLD_AMBER + '20' },
+              ]}
+            >
+              <Ionicons name="trophy" size={13} color={GOLD_AMBER} />
+            </View>
+            <Text style={[styles.featureItemText, { color: text }]}>
+              Altın{' '}
+              <Text style={{ fontWeight: '700', color: GOLD_AMBER }}>
+                VİTRİN
+              </Text>{' '}
+              rozetli ana vitrin bandı
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Sosyal Medya (Pakette varsa ve listede yoksa) */}
+        {hasSocial &&
+        !pkg.features.some((f) =>
+          f.label.toLowerCase().includes('sosyal')
+        ) ? (
+          <View style={styles.featureItemRow}>
+            <View
+              style={[
+                styles.featureCheckCircle,
+                { backgroundColor: '#ec489920' },
+              ]}
+            >
+              <Ionicons
+                name="share-social"
+                size={13}
+                color="#ec4899"
+              />
+            </View>
+            <Text style={[styles.featureItemText, { color: text }]}>
+              Resmi Instagram & Facebook hesaplarında paylaşım
+            </Text>
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+
   return (
     <Modal
       visible={visible}
-      transparent
-      animationType="fade"
+      transparent={isWide}
+      animationType={isWide ? 'fade' : 'slide'}
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <View style={isWide ? styles.overlayWide : styles.overlayMobile}>
         <View
           style={[
-            styles.modalCard,
+            isWide ? styles.modalCardWide : styles.modalCardMobile,
             { backgroundColor: surface, borderColor: border },
           ]}
         >
           {/* Header */}
-          <View style={[styles.header, { borderBottomColor: border }]}>
+          <View style={[styles.header, { borderBottomColor: border, backgroundColor: surface }]}>
             <View style={styles.headerTitleWrap}>
               <View style={styles.kickerRow}>
                 <View style={[styles.pkgBadge, { backgroundColor: primary + '20' }]}>
@@ -524,311 +770,106 @@ export const PackagePreviewModal = memo(function PackagePreviewModal({
             </View>
             <Pressable
               onPress={onClose}
-              hitSlop={8}
+              hitSlop={10}
               accessibilityRole="button"
               accessibilityLabel="Kapat"
-              style={styles.closeBtn}
+              style={[styles.closeBtn, { borderColor: border, backgroundColor: bg }]}
             >
-              <Ionicons name="close" size={22} color={text} />
+              <Ionicons name="close" size={20} color={text} />
             </Pressable>
           </View>
 
           {/* Placement Tabs (Only if > 1 placement) */}
           {placements.length > 1 ? (
-            <View style={[styles.tabBar, { borderBottomColor: border, backgroundColor: bg }]}>
-              {placements.map((p) => {
-                const isActive = p.key === currentPlacement.key;
-                return (
-                  <Pressable
-                    key={p.key}
-                    onPress={() => setActiveTabKey(p.key)}
-                    style={[
-                      styles.tabBtn,
-                      isActive && {
-                        backgroundColor: surface,
-                        borderColor: p.badgeColor,
-                        borderBottomColor: p.badgeColor,
-                      },
-                    ]}
-                  >
-                    <Ionicons
-                      name={p.tabIcon}
-                      size={15}
-                      color={isActive ? p.badgeColor : textMuted}
-                    />
-                    <Text
+            <View style={[styles.tabBarWrapper, { borderBottomColor: border, backgroundColor: bg }]}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.tabBarContent}
+              >
+                {placements.map((p) => {
+                  const isActive = p.key === currentPlacement.key;
+                  return (
+                    <Pressable
+                      key={p.key}
+                      onPress={() => setActiveTabKey(p.key)}
                       style={[
-                        styles.tabText,
-                        {
-                          color: isActive ? text : textMuted,
-                          fontWeight: isActive ? '700' : '500',
-                        },
+                        styles.tabBtn,
+                        isActive
+                          ? [
+                              styles.tabBtnActive,
+                              {
+                                backgroundColor: p.badgeColor + '18',
+                                borderColor: p.badgeColor,
+                              },
+                            ]
+                          : [
+                              styles.tabBtnInactive,
+                              {
+                                backgroundColor: surface,
+                                borderColor: border,
+                              },
+                            ],
                       ]}
                     >
-                      {p.tabLabel}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+                      <Ionicons
+                        name={p.tabIcon}
+                        size={14}
+                        color={isActive ? p.badgeColor : textMuted}
+                      />
+                      <Text
+                        style={[
+                          styles.tabText,
+                          {
+                            color: isActive ? text : textMuted,
+                            fontWeight: isActive ? '700' : '500',
+                          },
+                        ]}
+                      >
+                        {p.tabLabel}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
             </View>
           ) : null}
 
-          {/* Body Content - 2 Column Layout (Left: Card, Right: Package Features) */}
+          {/* Body Content - 2 Column Layout on Desktop, 1 Column on Mobile */}
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.twoColWrap}>
-              {/* SOL TARAF: Kart veya Instagram Gönderi Önizlemesi */}
-              <View style={styles.leftCol}>
-                {currentPlacement.isSocial ? (
-                  <InstagramPostPreview
-                    coverUri={coverUri}
-                    displayTitle={displayTitle}
-                    displayPrice={displayPrice}
-                    location={location}
-                    categoryName={categoryName}
-                  />
-                ) : (
-                  <View
-                    style={[
-                      styles.previewFrame,
-                      { backgroundColor: bg, borderColor: border },
-                    ]}
-                  >
-                    {/* Site Section Simulator Bar */}
-                    <View style={styles.sectionHeaderSim}>
-                      <View style={styles.simHeadingLeft}>
-                        <Ionicons
-                          name={currentPlacement.tabIcon}
-                          size={16}
-                          color={currentPlacement.badgeColor}
-                        />
-                        <Text
-                          style={[styles.simHeadingTitle, { color: text }]}
-                          numberOfLines={1}
-                        >
-                          {currentPlacement.sectionTitle}
-                        </Text>
-                      </View>
-                      <Text
-                        style={[
-                          styles.simHeadingAction,
-                          { color: currentPlacement.badgeColor },
-                        ]}
-                      >
-                        Tümünü gör ›
-                      </Text>
-                    </View>
-
-                    {/* Centered Advert Card */}
-                    <View style={styles.cardPreviewContainer}>
-                      <PreviewAdvertCard
-                        coverUri={coverUri}
-                        categoryName={categoryName}
-                        displayTitle={displayTitle}
-                        displayPrice={displayPrice}
-                        location={location}
-                        badgeType={currentPlacement.badgeType}
-                        badgeLabel={currentPlacement.badgeLabel}
-                        isUnlocked={true}
-                      />
-                    </View>
-                  </View>
-                )}
-              </View>
-
-              {/* SAĞ TARAF: Yayın Konumu & Paket Özellikleri */}
-              <View style={styles.rightCol}>
-                {/* 1. Aktif Yayın Konumu Bilgisi */}
-                <View
-                  style={[
-                    styles.placementInfoBanner,
-                    {
-                      backgroundColor: currentPlacement.badgeColor + '12',
-                      borderColor: currentPlacement.badgeColor + '40',
-                      borderLeftColor: currentPlacement.badgeColor,
-                    },
-                  ]}
-                >
-                  <View style={styles.placementInfoTop}>
-                    <View
-                      style={[
-                        styles.placementColorDot,
-                        { backgroundColor: currentPlacement.badgeColor },
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        styles.placementLocationTag,
-                        { color: currentPlacement.badgeColor },
-                      ]}
-                    >
-                      {currentPlacement.locationTag}
-                    </Text>
-                  </View>
-                  <Text style={[styles.placementTitle, { color: text }]}>
-                    {currentPlacement.title}
-                  </Text>
-                  <Text style={[styles.placementDesc, { color: textSecondary }]}>
-                    {currentPlacement.description}
-                  </Text>
+            {isWide ? (
+              <View style={styles.twoColWrap}>
+                {/* Sol Sütun: Önizleme */}
+                <View style={styles.leftCol}>
+                  {previewContent}
                 </View>
 
-                {/* 2. Paket Özellikleri Listesi */}
-                <View
-                  style={[
-                    styles.featuresCard,
-                    { backgroundColor: bg, borderColor: border },
-                  ]}
-                >
-                  <View style={styles.featuresCardHeader}>
-                    <Ionicons name="sparkles-outline" size={16} color={primary} />
-                    <Text style={[styles.featuresCardTitle, { color: text }]}>
-                      {pkg.name} Paket Özellikleri
-                    </Text>
-                  </View>
-
-                  <View style={styles.featuresList}>
-                    {/* Yayın Süresi */}
-                    <View style={styles.featureItemRow}>
-                      <View
-                        style={[
-                          styles.featureCheckCircle,
-                          { backgroundColor: success + '20' },
-                        ]}
-                      >
-                        <Ionicons name="checkmark" size={13} color={success} />
-                      </View>
-                      <Text style={[styles.featureItemText, { color: text }]}>
-                        <Text style={{ fontWeight: '700' }}>
-                          {pkg.durationDays} gün
-                        </Text>{' '}
-                        aktif yayın süresi
-                      </Text>
-                    </View>
-
-                    {/* Paketin Tanımlı Özellikleri */}
-                    {pkg.features
-                      .filter(
-                        (f) =>
-                          !f.label.toLowerCase().endsWith('gün yayın') &&
-                          !f.label.toLowerCase().endsWith('gun yayin')
-                      )
-                      .map((f) => (
-                      <View key={f.id} style={styles.featureItemRow}>
-                        <View
-                          style={[
-                            styles.featureCheckCircle,
-                            {
-                              backgroundColor: f.included
-                                ? success + '20'
-                                : border + '40',
-                            },
-                          ]}
-                        >
-                          <Ionicons
-                            name={f.included ? 'checkmark' : 'close'}
-                            size={13}
-                            color={f.included ? success : textMuted}
-                          />
-                        </View>
-                        <Text
-                          style={[
-                            styles.featureItemText,
-                            {
-                              color: f.included ? text : textMuted,
-                              textDecorationLine: f.included
-                                ? 'none'
-                                : 'line-through',
-                            },
-                          ]}
-                        >
-                          {f.label}
-                        </Text>
-                      </View>
-                    ))}
-
-                    {/* Acil Rozeti (Pakette varsa ve listede yoksa) */}
-                    {hasUrgent &&
-                    !pkg.features.some((f) =>
-                      f.label.toLowerCase().includes('acil')
-                    ) ? (
-                      <View style={styles.featureItemRow}>
-                        <View
-                          style={[
-                            styles.featureCheckCircle,
-                            { backgroundColor: URGENT_RED + '20' },
-                          ]}
-                        >
-                          <Ionicons name="flash" size={13} color={URGENT_RED} />
-                        </View>
-                        <Text style={[styles.featureItemText, { color: text }]}>
-                          Kırmızı{' '}
-                          <Text style={{ fontWeight: '700', color: URGENT_RED }}>
-                            ACİL
-                          </Text>{' '}
-                          ilan rozeti ve anasayfa vitrini
-                        </Text>
-                      </View>
-                    ) : null}
-
-                    {/* Anasayfa Vitrini (Pakette varsa ve listede yoksa) */}
-                    {hasShowcase &&
-                    !pkg.features.some((f) =>
-                      f.label.toLowerCase().includes('vitrin')
-                    ) ? (
-                      <View style={styles.featureItemRow}>
-                        <View
-                          style={[
-                            styles.featureCheckCircle,
-                            { backgroundColor: GOLD_AMBER + '20' },
-                          ]}
-                        >
-                          <Ionicons name="trophy" size={13} color={GOLD_AMBER} />
-                        </View>
-                        <Text style={[styles.featureItemText, { color: text }]}>
-                          Altın{' '}
-                          <Text style={{ fontWeight: '700', color: GOLD_AMBER }}>
-                            VİTRİN
-                          </Text>{' '}
-                          rozetli ana vitrin bandı
-                        </Text>
-                      </View>
-                    ) : null}
-
-                    {/* Sosyal Medya (Pakette varsa ve listede yoksa) */}
-                    {hasSocial &&
-                    !pkg.features.some((f) =>
-                      f.label.toLowerCase().includes('sosyal')
-                    ) ? (
-                      <View style={styles.featureItemRow}>
-                        <View
-                          style={[
-                            styles.featureCheckCircle,
-                            { backgroundColor: '#ec489920' },
-                          ]}
-                        >
-                          <Ionicons
-                            name="share-social"
-                            size={13}
-                            color="#ec4899"
-                          />
-                        </View>
-                        <Text style={[styles.featureItemText, { color: text }]}>
-                          Resmi Instagram & Facebook hesaplarında paylaşım
-                        </Text>
-                      </View>
-                    ) : null}
-                  </View>
+                {/* Sağ Sütun: Konum Bilgisi & Paket Özellikleri */}
+                <View style={styles.rightCol}>
+                  {placementBanner}
+                  {featuresCard}
                 </View>
               </View>
-            </View>
+            ) : (
+              <View style={styles.oneColWrap}>
+                {/* Mobilde 1: Yeşil/Rozet Renkli Konum Bilgilendirme Kutusu ÜSTTE */}
+                {placementBanner}
+
+                {/* Mobilde 2: Kart Önizleme Simülatörü */}
+                {previewContent}
+
+                {/* Mobilde 3: Paket Özellikleri Listesi */}
+                {featuresCard}
+              </View>
+            )}
           </ScrollView>
 
           {/* Footer Actions */}
-          <View style={[styles.footer, { borderTopColor: border }]}>
+          <View style={[styles.footer, { borderTopColor: border, backgroundColor: surface }]}>
             <View style={styles.priceMeta}>
               <Text style={[styles.priceTag, { color: text }]}>
                 {formatMoney(pkg.price)}
@@ -840,6 +881,7 @@ export const PackagePreviewModal = memo(function PackagePreviewModal({
             <View style={styles.footerButtons}>
               <Button
                 variant="secondary"
+                size={isWide ? 'md' : 'sm'}
                 onPress={onClose}
                 accessibilityLabel="Kapat"
               >
@@ -847,6 +889,7 @@ export const PackagePreviewModal = memo(function PackagePreviewModal({
               </Button>
               <Button
                 variant="primary"
+                size={isWide ? 'md' : 'sm'}
                 onPress={() => onSelectPackage(pkg.code)}
                 accessibilityLabel="Bu Paketi Seç"
               >
@@ -861,14 +904,18 @@ export const PackagePreviewModal = memo(function PackagePreviewModal({
 });
 
 const styles = StyleSheet.create({
-  overlay: {
+  overlayWide: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.72)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.md,
   },
-  modalCard: {
+  overlayMobile: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+  },
+  modalCardWide: {
     width: '100%',
     maxWidth: 860,
     maxHeight: '92%',
@@ -884,9 +931,18 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  modalCardMobile: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    maxHeight: '100%',
+    borderRadius: 0,
+    borderWidth: 0,
+    overflow: 'hidden',
+  },
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
@@ -929,29 +985,33 @@ const styles = StyleSheet.create({
   closeBtn: {
     padding: 6,
     borderRadius: Radius.avatar,
+    borderWidth: 1,
   },
-  tabBar: {
-    flexDirection: 'row',
+  tabBarWrapper: {
     borderBottomWidth: 1,
+    paddingVertical: 8,
+  },
+  tabBarContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: Spacing.md,
-    gap: 4,
-    overflow: 'hidden',
+    gap: 8,
   },
   tabBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-    borderTopLeftRadius: 6,
-    borderTopRightRadius: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 13,
+    borderRadius: 20,
+    borderWidth: 1,
     ...Platform.select({
-      web: { cursor: 'pointer' as const },
+      web: { cursor: 'pointer' as const, userSelect: 'none' as const },
       default: {},
     }),
   },
+  tabBtnActive: {},
+  tabBtnInactive: {},
   tabText: {
     fontSize: 13,
   },
@@ -963,27 +1023,26 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   twoColWrap: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+  },
+  oneColWrap: {
     flexDirection: 'column',
     alignItems: 'stretch',
     gap: Spacing.md,
-    ...Platform.select({
-      web: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        flexWrap: 'nowrap',
-      },
-      default: {},
-    }),
+    width: '100%',
   },
   leftCol: {
-    flex: 1,
-    ...Platform.select({
-      web: { maxWidth: 360 },
-      default: {},
-    }),
+    width: 340,
+    maxWidth: 360,
   },
   rightCol: {
     flex: 1,
+    gap: Spacing.md,
+  },
+  mobileFullCol: {
+    width: '100%',
     gap: Spacing.md,
   },
   placementInfoBanner: {
@@ -1023,6 +1082,7 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     gap: 12,
     alignItems: 'center',
+    width: '100%',
   },
   sectionHeaderSim: {
     width: '100%',
@@ -1052,10 +1112,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+    paddingVertical: 4,
   },
   mockCard: {
-    width: '85%',
-    maxWidth: 240,
+    width: 250,
+    maxWidth: '100%',
     alignSelf: 'center',
     borderRadius: 16,
     overflow: 'hidden',
@@ -1126,8 +1187,8 @@ const styles = StyleSheet.create({
   },
   // Vitrin Kartı Özel Stilleri (ABATHAN ekran görüntüsü ile birebir eşleşme)
   mockVitrinCard: {
-    width: '85%',
-    maxWidth: 240,
+    width: 250,
+    maxWidth: '100%',
     alignSelf: 'center',
     backgroundColor: 'transparent',
   },
@@ -1193,8 +1254,8 @@ const styles = StyleSheet.create({
   },
   // Instagram Gönderisi Özel Stilleri (Kompakt ve taşmayan Instagram UI)
   igCard: {
-    width: '85%',
-    maxWidth: 250,
+    width: 260,
+    maxWidth: '100%',
     alignSelf: 'center',
     backgroundColor: '#000000',
     borderRadius: 14,
@@ -1392,23 +1453,26 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   priceMeta: {
-    gap: 2,
+    gap: 1,
+    flexShrink: 1,
   },
   priceTag: {
     fontSize: 20,
     fontWeight: '800',
+    letterSpacing: -0.3,
     ...Platform.select({
-      web: { fontSize: 26 },
+      web: { fontSize: 24 },
       default: {},
     }),
   },
   durationTag: {
     ...Typography.caption,
+    fontSize: 12,
   },
   footerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
-    flexShrink: 1,
+    flexShrink: 0,
   },
 });

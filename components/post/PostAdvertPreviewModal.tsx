@@ -163,6 +163,7 @@ const SAMPLE_STATISTICS: HorseStatistic[] = [
     second: '1',
     third: '1',
     fourth: '1',
+    fifth: '0',
     earning: '165.000 ₺',
   },
   {
@@ -172,6 +173,7 @@ const SAMPLE_STATISTICS: HorseStatistic[] = [
     second: '2',
     third: '1',
     fourth: '0',
+    fifth: '1',
     earning: '240.000 ₺',
   },
   {
@@ -181,6 +183,7 @@ const SAMPLE_STATISTICS: HorseStatistic[] = [
     second: '3',
     third: '2',
     fourth: '1',
+    fifth: '1',
     earning: '405.000 ₺',
   },
 ];

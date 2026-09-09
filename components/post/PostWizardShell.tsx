@@ -116,8 +116,8 @@ export function PostWizardShell({
           ]}
         >
           <View style={[styles.footerInner, { maxWidth: contentMax }]}>
-            <View style={styles.leftAction}>
-              {showBack ? (
+            {isWide && showBack ? (
+              <View style={styles.leftAction}>
                 <Button
                   variant="secondary"
                   size="md"
@@ -126,17 +126,17 @@ export function PostWizardShell({
                 >
                   Geri
                 </Button>
-              ) : null}
-            </View>
+              </View>
+            ) : null}
 
-            <View style={styles.rightActions}>
+            <View style={[styles.rightActions, !isWide && styles.rightActionsMobile]}>
               {showPreview && onPreview ? (
                 <Button
                   variant="secondary"
-                  size="lg"
+                  size={isWide ? 'lg' : 'md'}
                   onPress={onPreview}
                   accessibilityLabel={previewLabel}
-                  style={styles.actionBtn}
+                  style={!isWide ? styles.actionBtnMobile : styles.actionBtn}
                 >
                   {previewLabel}
                 </Button>
@@ -144,12 +144,12 @@ export function PostWizardShell({
               {showNext ? (
                 <Button
                   variant="dark"
-                  size="lg"
+                  size={isWide ? 'lg' : 'md'}
                   onPress={onNext}
                   disabled={!canNext}
                   loading={nextLoading}
                   accessibilityLabel={nextLabel}
-                  style={styles.actionBtn}
+                  style={!isWide ? styles.actionBtnMobile : styles.actionBtn}
                 >
                   {nextLabel}
                 </Button>
@@ -226,11 +226,23 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     flexShrink: 1,
   },
+  rightActionsMobile: {
+    flex: 1,
+    width: '100%',
+  },
   actionBtn: {
     minWidth: 120,
     flexShrink: 1,
     ...Platform.select({
       web: { minWidth: 170 },
+      default: {},
+    }),
+  },
+  actionBtnMobile: {
+    flex: 1,
+    minWidth: 0,
+    ...Platform.select({
+      web: { minWidth: 0 },
       default: {},
     }),
   },
