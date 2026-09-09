@@ -6,23 +6,23 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
-import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { locationLookup } from '@/services/location';
+import { locationLookup, useAdvertLocation } from '@/services/location';
 import { Button } from '@/components/ui/Button';
+import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import {
   AdvertBuyBox,
   AdvertGallery,
-  AdvertPedigree,
-  AdvertSiblings,
-  AdvertStatistics,
+  AdvertSpecs,
   type SpecsSubTab,
 } from '@/components/advert-detail';
+import { formatMoney } from '@/utils/formatMoney';
 import type {
   AdvertDetail,
   AdvertSpecGroup,
@@ -344,6 +344,9 @@ export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
   onEdit,
   onContinue,
 }: PostAdvertPreviewModalProps) {
+  const { width: screenWidth } = useWindowDimensions();
+  const isWide = screenWidth >= HOME_DESKTOP_BREAKPOINT;
+
   const bg = useThemeColor('background');
   const surface = useThemeColor('surface');
   const text = useThemeColor('text');
@@ -351,579 +354,319 @@ export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
   const textMuted = useThemeColor('textMuted');
   const border = useThemeColor('border');
   const primary = useThemeColor('primary');
-  const skeleton = useThemeColor('skeleton');
-
-  const [specsSubTab, setSpecsSubTab] = useState<SpecsSubTab>('specs');
 
   const detail = useMemo(() => mapDraftToAdvertDetail(draft), [draft]);
+  const location = useAdvertLocation(detail);
+  const [specsSubTab, setSpecsSubTab] = useState<SpecsSubTab>('specs');
 
-  const subTabs = useMemo(() => {
-    const list: {
-      key: SpecsSubTab;
-      label: string;
-      icon: keyof typeof Ionicons.glyphMap;
-      badge?: string;
-    }[] = [];
-
-    list.push({ key: 'specs', label: 'Genel Bilgiler', icon: 'information-circle-outline' });
-
-    list.push({
-      key: 'pedigree',
-      label: 'Pedigri (Soyağacı)',
-      icon: 'git-branch-outline',
-    });
-
-    list.push({
-      key: 'statistics',
-      label: 'İstatistikler',
-      icon: 'bar-chart-outline',
-    });
-
-    const siblingCount = detail.horse?.siblings?.length ?? 0;
-    list.push({
-      key: 'siblings',
-      label: 'Anne Kardeşleri',
-      icon: 'people-outline',
-      badge: siblingCount > 0 ? String(siblingCount) : undefined,
-    });
-
-    return list;
-  }, [detail]);
+  const galleryHeight = isWide ? 420 : 300;
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <View
-          style={[
-            styles.modalCard,
-            { backgroundColor: bg, borderColor: border },
-          ]}
-        >
-          {/* Modal Header Bar with Close Button */}
-          <View style={[styles.topModalBar, { borderBottomColor: border, backgroundColor: surface }]}>
-            <View style={styles.topModalBarLeft}>
-              <View style={[styles.liveTag, { backgroundColor: primary }]}>
-                <Ionicons name="eye" size={12} color="#ffffff" />
-                <Text style={styles.liveTagText}>İLAN ÖNİZLEME</Text>
+      {isWide ? (
+        /* ═══ DESKTOP: overlay + centered card ═══ */
+        <View style={styles.overlayWide}>
+          <View style={[styles.wideCard, { backgroundColor: bg, borderColor: border }]}>
+            {/* Desktop Header */}
+            <View style={[styles.header, { backgroundColor: surface, borderBottomColor: border }]}>
+              <View style={styles.headerLeft}>
+                <View style={[styles.liveTag, { backgroundColor: primary }]}>
+                  <Ionicons name="eye" size={11} color="#fff" />
+                  <Text style={styles.liveTagText}>ÖNİZLEME</Text>
+                </View>
+                <Text style={[styles.headerHint, { color: textMuted }]}>
+                  Alıcılar bu şekilde görecek
+                </Text>
               </View>
-              <Text style={[styles.topModalBarTitle, { color: textSecondary }]}>
-                Yayınlandığında sitede alıcılara bu şekilde görünecektir
-              </Text>
+              <Pressable onPress={onClose} style={[styles.closeBtn, { borderColor: border }]}>
+                <Ionicons name="close" size={20} color={text} />
+              </Pressable>
             </View>
-            <Pressable
-              onPress={onClose}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="Kapat"
-              style={styles.closeBtn}
+
+            <ScrollView
+              style={styles.scroll}
+              contentContainerStyle={styles.wideScrollContent}
+              showsVerticalScrollIndicator={false}
             >
-              <Ionicons name="close" size={22} color={text} />
-            </Pressable>
-          </View>
-
-          {/* Gerçek İlan Detay Görünümü Scroll Alanı */}
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* 1. Büyük İlan Başlığı (Ekran görüntüsündeki gibi: AÇELYA) */}
-            <Text style={[styles.mainAdvertTitle, { color: text }]}>
-              {detail.title.toUpperCase()}
-            </Text>
-
-            {/* 2. Sub Tabs & İlanı Düzenle Butonu (Ekran görüntüsündeki gibi) */}
-            <View style={styles.desktopTopNavRow}>
-              {/* Sol: Sekmeler */}
-              <View style={styles.desktopTopTabsCol}>
-                <View style={styles.subTabsContainer}>
-                  {subTabs.map((t) => {
-                    const isActive = t.key === specsSubTab;
-                    const iconName = isActive
-                      ? (t.key === 'specs' ? 'information-circle' : t.icon.replace('-outline', '') as any)
-                      : t.icon;
-                    return (
-                      <Pressable
-                        key={t.key}
-                        onPress={() => setSpecsSubTab(t.key)}
-                        style={[
-                          styles.subTabButton,
-                          {
-                            backgroundColor: isActive ? primary : surface,
-                            borderColor: isActive ? primary : border,
-                          },
-                        ]}
-                      >
-                        <Ionicons
-                          name={iconName}
-                          size={16}
-                          color={isActive ? '#ffffff' : textSecondary}
-                        />
-                        <Text
-                          style={[
-                            styles.subTabButtonText,
-                            {
-                              color: isActive ? '#ffffff' : text,
-                              fontWeight: isActive ? '700' : '600',
-                            },
-                          ]}
-                        >
-                          {t.label}
-                        </Text>
-                        {t.badge ? (
-                          <View
-                            style={[
-                              styles.subTabBadge,
-                              {
-                                backgroundColor: isActive
-                                  ? 'rgba(255, 255, 255, 0.25)'
-                                  : '#3b1219',
-                              },
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.subTabBadgeText,
-                                { color: isActive ? '#ffffff' : '#ef4444' },
-                              ]}
-                            >
-                              {t.badge}
-                            </Text>
-                          </View>
-                        ) : null}
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* Sağ: İlanı Düzenle Butonu (Ekran görüntüsündeki sağ üst buton) */}
-              <View style={styles.desktopTopActionsCol}>
-                <Pressable
-                  onPress={onEdit}
-                  style={({ pressed }) => [
-                    styles.desktopTopEditBtn,
-                    { borderColor: border, backgroundColor: surface },
-                    pressed && { opacity: 0.8 },
-                  ]}
-                  accessibilityLabel="İlanı Düzenle"
-                >
-                  <Ionicons name="create-outline" size={17} color={text} />
-                  <Text style={[styles.desktopTopEditText, { color: text }]}>
-                    İlanı Düzenle
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-
-            {/* 3. Hero 2 Kolonlu Alan (Sol: Galeri + Yorumlar, Sağ: BuyBox) */}
-            {specsSubTab === 'specs' && (
-              <View style={styles.hero}>
-                {/* Sol Kolon: Galeri ve Yorumlar */}
-                <View style={styles.galleryCol}>
-                  {detail.gallery && detail.gallery.length > 0 ? (
-                    <AdvertGallery
-                      items={detail.gallery}
-                      height={420}
-                      accessToken={null}
-                    />
-                  ) : (
-                    <View
-                      style={[
-                        styles.noGalleryBox,
-                        { backgroundColor: skeleton, borderColor: border },
-                      ]}
-                    >
-                      <Ionicons
-                        name="images-outline"
-                        size={54}
-                        color={textMuted}
-                      />
-                      <Text style={[styles.noGalleryText, { color: textMuted }]}>
-                        Fotoğraf yüklenmedi
-                      </Text>
-                      <Text style={[styles.noGallerySub, { color: textSecondary }]}>
-                        Fotoğraflı ilanlar ortalama 5 kat daha fazla incelenir.
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Yorumlar Bölümü (Ekran görüntüsündeki sol alt alan) */}
-                  <View style={styles.reviewsSection}>
-                    <View style={styles.reviewsHeader}>
-                      <Text style={[styles.reviewsTitle, { color: text }]}>
-                        Yorumlar
-                      </Text>
-                      <View
-                        style={[
-                          styles.writeReviewBtn,
-                          { borderColor: border, backgroundColor: surface },
-                        ]}
-                      >
-                        <Ionicons
-                          name="create-outline"
-                          size={15}
-                          color={text}
-                        />
-                        <Text
-                          style={[styles.writeReviewBtnText, { color: text }]}
-                        >
-                          Yorum ve Puan Yaz
-                        </Text>
-                      </View>
-                    </View>
-                    <View
-                      style={[
-                        styles.reviewsEmptyCard,
-                        { backgroundColor: surface, borderColor: border },
-                      ]}
-                    >
-                      <Ionicons
-                        name="chatbubbles-outline"
-                        size={32}
-                        color={textMuted}
-                      />
-                      <Text
-                        style={[styles.reviewsEmptyText, { color: textMuted }]}
-                      >
-                        Bu ilan için henüz yorum yapılmamış.
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Sağ Kolon: Orijinal AdvertBuyBox (Ekran görüntüsündeki gibi) */}
-                <View style={styles.buyCol}>
-                  <AdvertBuyBox
-                    detail={detail}
-                    variant="default"
-                    favorite={false}
-                    isOwner={true}
-                    onEdit={onEdit}
-                  />
-                </View>
-              </View>
-            )}
-
-            {/* Tab: Pedigri (Soyağacı) */}
-            {specsSubTab === 'pedigree' && (
-              <View style={styles.tabContentCard}>
-                <AdvertPedigree
-                  pedigree={detail.horse?.pedigree}
-                  horseName={detail.horse?.registeredName || detail.title}
-                  sireFallback={detail.horse?.sire}
-                  damFallback={detail.horse?.dam}
-                  damsireFallback={detail.horse?.damsire}
-                />
-              </View>
-            )}
-
-            {/* Tab: İstatistikler */}
-            {specsSubTab === 'statistics' && (
-              <View style={styles.tabContentCard}>
-                <AdvertStatistics
-                  statistics={detail.horse?.statistics}
-                  handicap={detail.horse?.handicap}
-                />
-              </View>
-            )}
-
-            {/* Tab: Anne Kardeşleri */}
-            {specsSubTab === 'siblings' && (
-              <View style={styles.tabContentCard}>
-                <AdvertSiblings
-                  siblings={detail.horse?.siblings}
-                  damName={detail.horse?.dam}
-                />
-              </View>
-            )}
-          </ScrollView>
-
-          {/* Modal Sabit Alt Bar: Düzenle & Devam Et */}
-          <View
-            style={[
-              styles.footer,
-              { borderTopColor: border, backgroundColor: surface },
-            ]}
-          >
-            <View style={styles.footerNoteWrap}>
-              <Ionicons
-                name="sparkles"
-                size={16}
-                color={primary}
-              />
-              <Text style={[styles.footerNoteText, { color: textSecondary }]}>
-                İlanınız yayına alındığında ziyaretçilere birebir bu şekilde gösterilecektir.
+              <Text style={[styles.wideTitle, { color: text }]}>
+                {detail.title.toUpperCase()}
               </Text>
-            </View>
-            <View style={styles.footerButtons}>
-              <Button
-                variant="primary"
-                size="md"
-                onPress={onContinue}
-                accessibilityLabel="Devam Et"
-              >
-                Devam Et ›
-              </Button>
+
+              <View style={styles.wideHero}>
+                {/* Sol: Galeri */}
+                <View style={styles.wideGalleryCol}>
+                  <AdvertGallery items={detail.gallery} height={galleryHeight} accessToken={null} />
+                </View>
+                {/* Sağ: BuyBox */}
+                <View style={styles.wideBuyCol}>
+                  <AdvertBuyBox detail={detail} variant="default" favorite={false} isOwner onEdit={onEdit} />
+                </View>
+              </View>
+
+              <View style={styles.wideSpecsWrap}>
+                <AdvertSpecs
+                  groups={detail.specs}
+                  horse={detail.horse}
+                  detail={detail}
+                  activeSubTab={specsSubTab}
+                  onSubTabChange={setSpecsSubTab}
+                />
+              </View>
+            </ScrollView>
+
+            {/* Desktop Footer */}
+            <View style={[styles.footer, { backgroundColor: surface, borderTopColor: border }]}>
+              <View style={styles.footerHint}>
+                <Ionicons name="sparkles" size={14} color={primary} />
+                <Text style={[styles.footerHintText, { color: textSecondary }]}>
+                  Alıcılara birebir bu şekilde gösterilecek
+                </Text>
+              </View>
+              <View style={styles.footerButtons}>
+                <Button variant="secondary" size="md" onPress={onEdit}>Düzenle</Button>
+                <Button variant="primary" size="md" onPress={onContinue}>Devam Et ›</Button>
+              </View>
             </View>
           </View>
         </View>
-      </View>
+      ) : (
+        /* ═══ MOBİL: Gerçek ilan sayfasıyla birebir tam ekran ═══ */
+        <View style={[styles.container, { backgroundColor: bg }]}>
+          {/* Mobil Header — gerçek sayfadaki gibi geri + başlık + düzenle */}
+          <View style={[styles.header, { backgroundColor: surface, borderBottomColor: border }]}>
+            <Pressable onPress={onClose} hitSlop={10} style={styles.backBtn}>
+              <Ionicons name="arrow-back" size={22} color={text} />
+            </Pressable>
+            <View style={styles.headerCenter}>
+              <View style={[styles.liveTag, { backgroundColor: primary }]}>
+                <Ionicons name="eye" size={10} color="#fff" />
+                <Text style={styles.liveTagText}>ÖNİZLEME</Text>
+              </View>
+            </View>
+            <View style={{ width: 34 }} />
+          </View>
+
+          <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+            {/* 1. Full-bleed galeri — gerçek sayfa gibi */}
+            <View style={styles.mobileGalleryWrap}>
+              <AdvertGallery
+                items={detail.gallery}
+                height={galleryHeight}
+                fullBleed
+                accessToken={null}
+              />
+            </View>
+
+            {/* 2. Başlık + Konum / Fiyat satırı */}
+            <View style={styles.mobileSummary}>
+              <Text style={[styles.mobileTitle, { color: text }]}>{detail.title}</Text>
+              <View style={styles.mobilePriceRow}>
+                <View style={styles.mobileLocationRow}>
+                  {location && location !== '-' && location.trim() !== '' ? (
+                    <>
+                      <Ionicons name="location-outline" size={13} color={primary} />
+                      <Text style={[styles.mobileLocationText, { color: textSecondary }]} numberOfLines={1}>
+                        {location}
+                      </Text>
+                    </>
+                  ) : null}
+                </View>
+                <Text style={[styles.mobilePrice, { color: text }]}>
+                  {formatMoney(detail.price)}
+                </Text>
+              </View>
+            </View>
+
+            {/* AdvertSpecs sekmeli bölümü */}
+            <View style={styles.mobileSpecsWrap}>
+              <AdvertSpecs
+                groups={detail.specs}
+                horse={detail.horse}
+                detail={detail}
+                activeSubTab={specsSubTab}
+                onSubTabChange={setSpecsSubTab}
+              />
+            </View>
+          </ScrollView>
+
+          {/* Sabit Alt Bar */}
+          <View style={[styles.footer, { backgroundColor: surface, borderTopColor: border }]}>
+            <Button variant="secondary" size="md" onPress={onEdit} style={styles.footerSecBtn}>
+              Düzenle
+            </Button>
+            <Button variant="primary" size="md" onPress={onContinue} style={styles.footerPriBtn}>
+              Devam Et ›
+            </Button>
+          </View>
+        </View>
+      )}
     </Modal>
   );
 });
 
 const styles = StyleSheet.create({
-  overlay: {
+  /* Overlay (desktop) */
+  overlayWide: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.82)',
+    backgroundColor: 'rgba(0,0,0,0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.md,
   },
-  modalCard: {
+  wideCard: {
     width: '100%',
     maxWidth: 1180,
-    maxHeight: '94%',
+    maxHeight: '92%',
     borderRadius: Radius.card,
     borderWidth: 1,
     overflow: 'hidden',
     ...Platform.select({
-      web: {
-        boxShadow: '0 24px 64px rgba(0, 0, 0, 0.45)',
-      },
-      default: {
-        elevation: 16,
-      },
+      web: { boxShadow: '0 24px 64px rgba(0,0,0,0.5)' } as any,
+      default: { elevation: 20 },
     }),
   },
-  topModalBar: {
+  /* Shared container (mobile full-screen) */
+  container: { flex: 1 },
+  /* Shared header */
+  header: {
+    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    paddingHorizontal: Spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 8,
   },
-  topModalBarLeft: {
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
+    flex: 1,
   },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerHint: { fontSize: 12, flexShrink: 1 },
   liveTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: 6,
   },
   liveTagText: {
-    color: '#ffffff',
+    color: '#fff',
     fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 0.6,
-  },
-  topModalBarTitle: {
-    fontSize: 12,
+    letterSpacing: 0.4,
   },
   closeBtn: {
-    padding: 6,
-    borderRadius: Radius.avatar,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: Spacing.xl,
-    gap: Spacing.md,
-  },
-  mainAdvertTitle: {
-    fontSize: 32,
-    fontWeight: '800',
-    letterSpacing: -0.6,
-    lineHeight: 38,
-    marginBottom: 4,
-  },
-  desktopTopNavRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.md,
-    marginBottom: Spacing.sm,
-    ...Platform.select({
-      web: { flexWrap: 'nowrap' },
-      default: { flexWrap: 'wrap' },
-    }),
-  },
-  desktopTopTabsCol: {
-    flex: 1,
-    minWidth: 260,
-  },
-  desktopTopActionsCol: {
-    minWidth: 160,
-    alignItems: 'flex-end',
-  },
-  desktopTopEditBtn: {
-    flexDirection: 'row',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    ...Platform.select({
-      web: { cursor: 'pointer' as const },
-      default: {},
-    }),
   },
-  desktopTopEditText: {
-    fontSize: 14,
-    fontWeight: '700',
+  backBtn: { padding: 6 },
+  editBtn: { padding: 6 },
+  editAction: { fontSize: 14, fontWeight: '600' },
+  /* Scroll */
+  scroll: { flex: 1 },
+  /* Mobile layout */
+  mobileGalleryWrap: { width: '100%' },
+  mobileSummary: {
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
+    gap: 4,
   },
-  subTabsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  subTabButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    ...Platform.select({
-      web: {
-        cursor: 'pointer' as const,
-      },
-      default: {},
-    }),
-  },
-  subTabButtonText: {
-    fontSize: 13.5,
-    letterSpacing: -0.1,
-  },
-  subTabBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 8,
-  },
-  subTabBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  hero: {
-    flexDirection: 'row',
-    gap: Spacing.xl,
-    marginTop: Spacing.xs,
-    alignItems: 'flex-start',
-    ...Platform.select({
-      web: { flexWrap: 'nowrap' },
-      default: { flexWrap: 'wrap' },
-    }),
-  },
-  galleryCol: {
-    flex: 1.15,
-    minWidth: 320,
-    gap: Spacing.xl,
-  },
-  buyCol: {
-    flex: 0.85,
-    minWidth: 320,
-  },
-  noGalleryBox: {
-    height: 420,
-    borderRadius: 16,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    padding: Spacing.lg,
-  },
-  noGalleryText: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  noGallerySub: {
-    ...Typography.caption,
-    textAlign: 'center',
-    maxWidth: 280,
-  },
-  reviewsSection: {
-    gap: 12,
-    marginTop: Spacing.sm,
-  },
-  reviewsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  reviewsTitle: {
+  mobileTitle: {
     fontSize: 20,
     fontWeight: '700',
+    letterSpacing: -0.3,
+    lineHeight: 26,
   },
-  writeReviewBtn: {
+  mobilePriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 6,
+  },
+  mobileLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+    minWidth: 0,
+  },
+  mobileLocationText: {
+    fontSize: 13,
+    fontWeight: '500',
+    flexShrink: 1,
+  },
+  mobilePrice: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  mobileBuyBox: {
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  mobileSpecsWrap: {
+    paddingHorizontal: Spacing.sm,
+    paddingBottom: Spacing.xl,
+  },
+  /* Desktop layout */
+  wideScrollContent: {
+    padding: Spacing.xl,
+    gap: Spacing.lg,
+  },
+  wideTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    lineHeight: 34,
+  },
+  wideHero: {
+    flexDirection: 'row',
+    gap: Spacing.xl,
+    alignItems: 'flex-start',
+  },
+  wideGalleryCol: { flex: 1.15, minWidth: 0 },
+  wideBuyCol: { flex: 0.85, minWidth: 0 },
+  wideSpecsWrap: { marginTop: Spacing.sm },
+  /* Footer */
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: Spacing.sm,
+  },
+  footerHint: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  writeReviewBtnText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-  },
-  reviewsEmptyCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingVertical: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  reviewsEmptyText: {
-    fontSize: 13,
-  },
-  tabContentCard: {
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.xl,
-  },
-  footer: {
-    borderTopWidth: 1,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.md,
-    ...Platform.select({
-      web: { flexWrap: 'nowrap' },
-      default: { flexWrap: 'wrap' },
-    }),
-  },
-  footerNoteWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
     flex: 1,
+    minWidth: 0,
   },
-  footerNoteText: {
-    fontSize: 12,
-  },
+  footerHintText: { fontSize: 12, flexShrink: 1 },
   footerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
+  footerSecBtn: { flexShrink: 1 },
+  footerPriBtn: { flexShrink: 1 },
 });

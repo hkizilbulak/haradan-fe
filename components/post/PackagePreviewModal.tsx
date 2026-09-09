@@ -646,8 +646,9 @@ export const PackagePreviewModal = memo(function PackagePreviewModal({
                   style={[
                     styles.placementInfoBanner,
                     {
-                      backgroundColor: bg,
-                      borderColor: currentPlacement.badgeColor + '50',
+                      backgroundColor: currentPlacement.badgeColor + '12',
+                      borderColor: currentPlacement.badgeColor + '40',
+                      borderLeftColor: currentPlacement.badgeColor,
                     },
                   ]}
                 >
@@ -887,10 +888,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
-    gap: 12,
+    gap: 8,
   },
   headerTitleWrap: { flex: 1, gap: 4 },
   kickerRow: {
@@ -917,8 +918,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   modalTitle: {
-    ...Typography.h3,
+    fontSize: 16,
     fontWeight: '700',
+    lineHeight: 22,
+    ...Platform.select({
+      web: { fontSize: 20, lineHeight: 26 },
+      default: {},
+    }),
   },
   closeBtn: {
     padding: 6,
@@ -957,31 +963,33 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   twoColWrap: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: 'column',
+    alignItems: 'stretch',
     gap: Spacing.md,
     ...Platform.select({
       web: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
         flexWrap: 'nowrap',
       },
-      default: {
-        flexWrap: 'wrap',
-      },
+      default: {},
     }),
   },
   leftCol: {
     flex: 1,
-    minWidth: 280,
-    maxWidth: 360,
+    ...Platform.select({
+      web: { maxWidth: 360 },
+      default: {},
+    }),
   },
   rightCol: {
-    flex: 1.2,
-    minWidth: 280,
+    flex: 1,
     gap: Spacing.md,
   },
   placementInfoBanner: {
     borderRadius: 12,
     borderWidth: 1,
+    borderLeftWidth: 4,
     padding: Spacing.md,
     gap: 6,
   },
@@ -1001,12 +1009,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
   placementTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
+    lineHeight: 22,
   },
   placementDesc: {
-    ...Typography.small,
-    lineHeight: 18,
+    fontSize: 13,
+    lineHeight: 19,
   },
   previewFrame: {
     borderRadius: 14,
@@ -1045,7 +1054,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   mockCard: {
-    width: 224,
+    width: '85%',
+    maxWidth: 240,
+    alignSelf: 'center',
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
@@ -1115,7 +1126,9 @@ const styles = StyleSheet.create({
   },
   // Vitrin Kartı Özel Stilleri (ABATHAN ekran görüntüsü ile birebir eşleşme)
   mockVitrinCard: {
-    width: 224,
+    width: '85%',
+    maxWidth: 240,
+    alignSelf: 'center',
     backgroundColor: 'transparent',
   },
   mockVitrinImageWrap: {
@@ -1180,13 +1193,14 @@ const styles = StyleSheet.create({
   },
   // Instagram Gönderisi Özel Stilleri (Kompakt ve taşmayan Instagram UI)
   igCard: {
-    width: 236,
+    width: '85%',
+    maxWidth: 250,
+    alignSelf: 'center',
     backgroundColor: '#000000',
     borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#262626',
-    alignSelf: 'center',
     ...Platform.select({
       web: {
         boxShadow: '0 6px 20px rgba(0, 0, 0, 0.45)',
@@ -1370,19 +1384,23 @@ const styles = StyleSheet.create({
   },
   footer: {
     borderTopWidth: 1,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   priceMeta: {
     gap: 2,
   },
   priceTag: {
-    ...Typography.h2,
+    fontSize: 20,
     fontWeight: '800',
+    ...Platform.select({
+      web: { fontSize: 26 },
+      default: {},
+    }),
   },
   durationTag: {
     ...Typography.caption,
@@ -1390,6 +1408,7 @@ const styles = StyleSheet.create({
   footerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: Spacing.xs,
+    flexShrink: 1,
   },
 });

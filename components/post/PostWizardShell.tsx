@@ -227,6 +227,11 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   actionBtn: {
-    minWidth: 170,
+    minWidth: 120,
+    flexShrink: 1,
+    ...Platform.select({
+      web: { minWidth: 170 },
+      default: {},
+    }),
   },
 });

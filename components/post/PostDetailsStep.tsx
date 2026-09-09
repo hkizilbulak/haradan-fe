@@ -92,12 +92,20 @@ export function PostDetailsStep({
   const errorColor = useThemeColor('error');
   const d = draft.details;
   const locked = Boolean(d.horseId);
+  const genderMissing = locked && !d.gender;
   const [tjkOpen, setTjkOpen] = useState(false);
   const [tjkMode, setTjkMode] = useState<'ask' | 'search'>('ask');
   const [tjkEditMode, setTjkEditMode] = useState(false);
   const [provinceOpen, setProvinceOpen] = useState(false);
   const [districtOpen, setDistrictOpen] = useState(false);
   const [fallbackConfigs, setFallbackConfigs] = useState(getGlobalPropertiesConfig());
+
+  // TJK verisi yüklendiğinde cinsiyet boşsa otomatik olarak düzenleme moduna geç
+  useEffect(() => {
+    if (locked && !d.gender) {
+      setTjkEditMode(true);
+    }
+  }, [locked, d.gender]);
 
   const activeConfigs = propGlobalConfigs ?? fallbackConfigs;
 
@@ -408,6 +416,27 @@ export function PostDetailsStep({
                 <Text style={[styles.editBtnLabel, { color: header }]}>Düzenle</Text>
               </Pressable>
             </View>
+
+            {/* Cinsiyet eksik uyarısı */}
+            {genderMissing ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  backgroundColor: 'rgba(234,179,8,0.12)',
+                  borderTopWidth: 0.5,
+                  borderTopColor: 'rgba(234,179,8,0.4)',
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                }}
+              >
+                <Ionicons name="warning-outline" size={16} color="#eab308" />
+                <Text style={{ color: '#eab308', fontSize: 13, flex: 1, lineHeight: 18 }}>
+                  TJK'dan cinsiyet bilgisi alınamadı. Lütfen aşağıdan seçin.
+                </Text>
+              </View>
+            ) : null}
 
             {/* Category properties merged inline — single source of truth */}
             <PostCategoryProperties
