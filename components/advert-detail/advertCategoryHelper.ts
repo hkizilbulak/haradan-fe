@@ -1,4 +1,6 @@
 import type { AdvertDetail } from '@/types';
+import { Ionicons } from '@expo/vector-icons';
+import { openTjkHorseSearch } from '@/utils/tjkLinks';
 
 export type AdvertCategoryKind = 'pansiyon' | 'transport' | 'farrier' | 'stud' | 'horse';
 
@@ -477,3 +479,383 @@ export function parseTransportInfo(detail: AdvertDetail): ParsedTransportInfo {
       '',
   };
 }
+
+export type AdvertInfoRow = {
+  label: string;
+  value: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress?: () => void;
+  isBoolean?: boolean;
+  hint?: string;
+  badge?: string;
+  badgeTone?: 'primary' | 'muted' | 'success';
+};
+
+export function normalizeLabel(raw: string): string {
+  const norm = (raw || '')
+    .toLowerCase()
+    .replace(/[-_]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (norm.startsWith('cinsiyet')) return 'Cinsiyet';
+  if (norm.startsWith('cins')) return 'At Irkı';
+  if (norm.startsWith('irk') || norm.startsWith('ırk')) return 'At Irkı';
+  if (norm.startsWith('yas') || norm.startsWith('yaş')) return 'Yaş';
+  if (norm.startsWith('don') || norm.startsWith('donu')) return 'Donu';
+  if (norm.startsWith('baba adi') || norm.startsWith('baba adı') || norm === 'baba') return 'Baba Adı';
+  if (norm.startsWith('anne adi') || norm.startsWith('anne adı') || norm === 'anne') return 'Anne Adı';
+  if (norm.includes('annesinin baba') || norm.includes('anne baba')) return 'Annesinin Baba Adı';
+  if (norm.startsWith('at adi') || norm.startsWith('at adı') || norm.startsWith('isim')) return 'At Adı';
+  return raw;
+}
+
+export function getRowIcon(label: string): keyof typeof Ionicons.glyphMap {
+  const l = label.toLowerCase();
+  if (l.includes('ilan no')) return 'pricetag-outline';
+  if (l.includes('tarih')) return 'calendar-outline';
+  if (l.includes('fiyat')) return 'cash-outline';
+  if (l.includes('konum')) return 'location-outline';
+  if (l.includes('kategori')) return 'grid-outline';
+  if (l.includes('at adı') || l.includes('isim')) return 'ribbon-outline';
+  if (l.includes('baba')) return 'git-branch-outline';
+  if (l.includes('anne')) return 'heart-outline';
+  if (l.includes('ırk') || l.includes('cins')) return 'color-palette-outline';
+  if (l.includes('yaş') || l.includes('dogum') || l.includes('doğum')) return 'hourglass-outline';
+  if (l.includes('cinsiyet')) return 'male-female-outline';
+  if (l.includes('don')) return 'brush-outline';
+  if (l.includes('idman')) return 'fitness-outline';
+  if (l.includes('kiralık') || l.includes('kiralik')) return 'key-outline';
+  if (l.includes('koşar') || l.includes('kosar')) return 'flash-outline';
+  if (l.includes('padok')) return 'leaf-outline';
+  if (l.includes('doğumhane') || l.includes('pansiyon')) return 'home-outline';
+  if (l.includes('nalbant')) return 'hammer-outline';
+  if (l.includes('veteriner')) return 'medkit-outline';
+  if (l.includes('aşım') || l.includes('aygır')) return 'trophy-outline';
+  if (l.includes('kapasite') || l.includes('araç')) return 'car-outline';
+  return 'ellipse-outline';
+}
+
+export function buildAdvertInfoRows(detail: AdvertDetail): AdvertInfoRow[] {
+  const list: AdvertInfoRow[] = [];
+
+  // 1. İlan No
+  list.push({
+    label: 'İlan No',
+    value: detail.id ? String(detail.id) : '-',
+    icon: 'pricetag-outline',
+  });
+
+  // 2. İlan Tarihi
+  const formatPublishDate = (dateStr?: string | null): string => {
+    if (!dateStr) return '-';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  };
+  list.push({
+    label: 'İlan Tarihi',
+    value: formatPublishDate(detail.publishedAt),
+    icon: 'calendar-outline',
+  });
+
+  // 3. Kategori
+  const categoryName = getAdvertCategoryName(detail);
+  list.push({
+    label: 'Kategori',
+    value: categoryName,
+    icon: 'grid-outline',
+  });
+
+  const categoryKind = getAdvertCategoryKind(detail);
+
+  if (categoryKind === 'pansiyon') {
+    const pansiyonInfo = parsePansiyonInfo(detail);
+    list.push({ label: 'Çim Padok', value: pansiyonInfo.hasGrassPaddock ? 'Evet' : 'Hayır', icon: 'leaf-outline', isBoolean: true });
+    list.push({ label: 'Kum Padok', value: pansiyonInfo.hasSandPaddock ? 'Evet' : 'Hayır', icon: 'leaf-outline', isBoolean: true });
+    list.push({ label: 'Aygır Padoğu', value: pansiyonInfo.hasStallionPaddock ? 'Evet' : 'Hayır', icon: 'leaf-outline', isBoolean: true });
+    list.push({ label: 'Doğumhane', value: pansiyonInfo.hasFoalingBarn ? 'Evet' : 'Hayır', icon: 'home-outline', isBoolean: true });
+    list.push({ label: 'Nalbant', value: pansiyonInfo.hasFarrier ? 'Evet' : 'Hayır', icon: 'hammer-outline', isBoolean: true });
+    list.push({ label: 'Veteriner Hekim', value: pansiyonInfo.hasVeterinarian ? 'Evet' : 'Hayır', icon: 'medkit-outline', isBoolean: true });
+    list.push({ label: 'İdman Pisti', value: (pansiyonInfo.hasTrainingTrack || !!pansiyonInfo.trainingTrack) ? 'Evet' : 'Hayır', icon: 'fitness-outline', isBoolean: true });
+  } else if (categoryKind === 'transport') {
+    const transportInfo = parseTransportInfo(detail);
+    if (transportInfo.companyName) {
+      list.push({ label: 'Firma Adı', value: transportInfo.companyName, icon: 'business-outline' });
+    }
+    if (transportInfo.websiteUrl) {
+      list.push({ label: 'Web Sitesi', value: transportInfo.websiteUrl, icon: 'globe-outline' });
+    }
+    list.push({ label: 'Hizmet', value: 'At Nakliyesi & Taşımacılık', icon: 'car-outline' });
+  } else if (categoryKind === 'stud') {
+    const studInfo = parseStudInfo(detail);
+    if (studInfo.name) list.push({ label: 'Aygır Adı', value: studInfo.name, icon: 'star-outline' });
+    if (studInfo.breed) list.push({ label: 'At Irkı', value: studInfo.breed, icon: 'ribbon-outline' });
+    if (studInfo.age) list.push({ label: 'Yaş', value: studInfo.age, icon: 'hourglass-outline' });
+    list.push({ label: 'Cinsiyet', value: studInfo.gender || 'Erkek', icon: 'male-female-outline' });
+    if (studInfo.coatColor) list.push({ label: 'Donu', value: studInfo.coatColor, icon: 'color-palette-outline' });
+    if (studInfo.sire) {
+      list.push({
+        label: 'Baba Adı',
+        value: studInfo.sire,
+        icon: 'git-branch-outline',
+        onPress: studInfo.sire !== '-' ? () => openTjkHorseSearch(studInfo.sire) : undefined,
+      });
+    }
+    if (studInfo.dam) {
+      list.push({
+        label: 'Anne Adı',
+        value: studInfo.dam,
+        icon: 'git-branch-outline',
+        onPress: studInfo.dam !== '-' ? () => openTjkHorseSearch(studInfo.dam) : undefined,
+      });
+    }
+    if (studInfo.damsire) {
+      list.push({
+        label: 'Annesinin Baba Adı',
+        value: studInfo.damsire,
+        icon: 'git-network-outline',
+        onPress: studInfo.damsire !== '-' ? () => openTjkHorseSearch(studInfo.damsire) : undefined,
+      });
+    }
+  } else if (categoryKind === 'farrier') {
+    const seenLabels = new Set<string>();
+    for (const group of detail.specs ?? []) {
+      for (const row of group.rows ?? []) {
+        const l = row.label.trim();
+        const lower = l.toLowerCase();
+        if (lower === 'telefon' || lower === 'sellerphone' || lower === 'phone') continue;
+        const v = String(row.value).trim();
+        const isBool = v.toLowerCase() === 'evet' || v.toLowerCase() === 'hayır' || v.toLowerCase() === 'true' || v.toLowerCase() === 'false';
+        const formattedVal = v.toLowerCase() === 'true' ? 'Evet' : v.toLowerCase() === 'false' ? 'Hayır' : v;
+        list.push({
+          label: l.charAt(0).toLocaleUpperCase('tr-TR') + l.slice(1),
+          value: formattedVal,
+          icon: getRowIcon(l),
+          isBoolean: isBool,
+        });
+        seenLabels.add(lower);
+        seenLabels.add(lower.replace(/[-_\s]/g, ''));
+      }
+    }
+  } else {
+    // Horse advert
+    const horseInfo = parseHorseInfo(detail);
+
+    // At Adı
+    list.push({
+      label: 'At Adı',
+      value: horseInfo.name,
+      icon: 'star-outline',
+    });
+
+    // Baba Adı
+    const sireName = horseInfo.sire;
+    list.push({
+      label: 'Baba Adı',
+      value: sireName,
+      icon: 'git-branch-outline',
+      onPress: sireName && sireName !== '-' ? () => openTjkHorseSearch(sireName) : undefined,
+    });
+
+    // Anne Adı
+    const damName = horseInfo.dam;
+    list.push({
+      label: 'Anne Adı',
+      value: damName,
+      icon: 'git-branch-outline',
+      onPress: damName && damName !== '-' ? () => openTjkHorseSearch(damName) : undefined,
+    });
+
+    // Annesinin Baba Adı
+    const damsireName = horseInfo.damsire;
+    list.push({
+      label: 'Annesinin Baba Adı',
+      value: damsireName,
+      icon: 'git-network-outline',
+      onPress: damsireName && damsireName !== '-' ? () => openTjkHorseSearch(damsireName) : undefined,
+    });
+
+    // At Irkı
+    list.push({
+      label: 'At Irkı',
+      value: horseInfo.breed,
+      icon: 'leaf-outline',
+    });
+
+    // Yaş
+    if (horseInfo.age) {
+      list.push({
+        label: 'Yaş',
+        value: horseInfo.age,
+        icon: 'hourglass-outline',
+      });
+    }
+
+    // Cinsiyet
+    list.push({
+      label: 'Cinsiyet',
+      value: horseInfo.gender,
+      icon: 'male-female-outline',
+    });
+
+    // Donu
+    list.push({
+      label: 'Donu',
+      value: horseInfo.coatColor,
+      icon: 'color-palette-outline',
+    });
+
+    const normText = (s: string) =>
+      (s || '')
+        .toLowerCase()
+        .replace(/['’`"]/g, '')
+        .replace(/[-_\s\(\)]/g, '')
+        .replace(/ı/g, 'i')
+        .replace(/ğ/g, 'g')
+        .replace(/ü/g, 'u')
+        .replace(/ş/g, 's')
+        .replace(/ö/g, 'o')
+        .replace(/ç/g, 'c');
+
+    const findProp = (codes: string[], defaultVal: boolean | string | null = null): string | null => {
+      const rawProps = (detail as any)?.properties || (detail as any)?.rawProperties || {};
+      for (const c of codes) {
+        const val =
+          rawProps[c] ??
+          rawProps[c.toLowerCase()] ??
+          rawProps[c.toUpperCase()] ??
+          (detail as any)?.[c] ??
+          (detail as any)?.[c.toLowerCase()] ??
+          (detail as any)?.horse?.[c] ??
+          (detail as any)?.horse?.[c.toLowerCase()] ??
+          (detail as any)?.details?.[c] ??
+          (detail as any)?.details?.[c.toLowerCase()];
+        if (val != null && val !== '' && val !== 'null' && val !== 'undefined') {
+          if (typeof val === 'boolean') return val ? 'Evet' : 'Hayır';
+          if (typeof val === 'string') {
+            const lower = val.toLowerCase().trim();
+            if (lower === 'true' || lower === 'evet') return 'Evet';
+            if (lower === 'false' || lower === 'hayır' || lower === 'hayir') return 'Hayır';
+            return val.trim();
+          }
+          return String(val).trim();
+        }
+      }
+      const normCodes = codes.map(normText);
+      for (const [k, val] of Object.entries(rawProps)) {
+        if (val != null && val !== '' && val !== 'null' && val !== 'undefined') {
+          const kNorm = normText(k);
+          if (normCodes.some((c) => kNorm === c || kNorm.includes(c) || c.includes(kNorm))) {
+            if (typeof val === 'boolean') return val ? 'Evet' : 'Hayır';
+            if (typeof val === 'string') {
+              const lower = val.toLowerCase().trim();
+              if (lower === 'true' || lower === 'evet') return 'Evet';
+              if (lower === 'false' || lower === 'hayır' || lower === 'hayir') return 'Hayır';
+              return val.trim();
+            }
+            return String(val).trim();
+          }
+        }
+      }
+      for (const g of detail.specs ?? []) {
+        for (const r of g.rows ?? []) {
+          if (r.value != null && r.value !== '' && r.value !== 'null' && r.value !== 'undefined') {
+            const lNorm = normText(r.label || '');
+            if (normCodes.some((c) => lNorm === c || lNorm.includes(c) || c.includes(lNorm))) {
+              const v = String(r.value).trim();
+              const lower = v.toLowerCase();
+              if (lower === 'true' || lower === 'evet') return 'Evet';
+              if (lower === 'false' || lower === 'hayır' || lower === 'hayir') return 'Hayır';
+              return v;
+            }
+          }
+        }
+      }
+      if (typeof defaultVal === 'boolean') return defaultVal ? 'Evet' : 'Hayır';
+      return defaultVal;
+    };
+
+    const isRaceHorse = isRaceHorseAdvert(detail, categoryName);
+    if (isRaceHorse) {
+      list.push({
+        label: 'İdmanda mı',
+        value: findProp(['IN_TRAINING', 'inTraining', 'idmanda'], true) ?? 'Evet',
+        icon: 'fitness-outline',
+        isBoolean: true,
+      });
+
+      list.push({
+        label: 'Koşar durumda mı',
+        value: findProp(['IS_RACE_READY', 'isRaceReady', 'kosar', 'koşar'], true) ?? 'Evet',
+        icon: 'flash-outline',
+        isBoolean: true,
+      });
+
+      list.push({
+        label: 'Kiralık mı',
+        value: findProp(['IS_FOR_RENT', 'isForRent', 'kiralik', 'kiralık'], false) ?? 'Hayır',
+        icon: 'key-outline',
+        isBoolean: true,
+      });
+    }
+
+    // Kısrak Gebelik Durumu
+    const isPregnant = findProp(['IS_PREGNANT', 'isPregnant', 'gebe', 'gebemi', 'gebe mi'], null);
+    if (isPregnant != null) {
+      list.push({
+        label: 'Gebe mi',
+        value: isPregnant,
+        icon: 'heart-outline',
+        isBoolean: true,
+      });
+
+      const isPregBool = isPregnant === 'Evet' || isPregnant === 'true' || isPregnant === '1';
+      if (isPregBool) {
+        const coveringStallion = findProp(
+          ['COVERING_STALLION', 'coveringStallion', 'gebeOlduguAygir', 'gebe oldugu aygir', 'gebe olduğu aygır', 'aygir', 'aygır'],
+          '-'
+        );
+        list.push({
+          label: 'Gebe Olduğu Aygır',
+          value: coveringStallion || '-',
+          icon: 'flame-outline',
+          onPress:
+            coveringStallion && coveringStallion !== '-'
+              ? () => openTjkHorseSearch(coveringStallion)
+              : undefined,
+        });
+
+        const stage = findProp(
+          ['PREGNANCY_STAGE', 'pregnancyStage', 'gebelikDurumu', 'gebelik durumu', 'gebelik', 'evre'],
+          '-'
+        );
+        list.push({
+          label: 'Gebelik Durumu',
+          value: stage || '-',
+          icon: 'ribbon-outline',
+        });
+
+        const coveringDate = findProp(
+          ['LAST_COVERING_DATE', 'lastCoveringDate', 'sonAsimTarihi', 'son aşım tarihi', 'son asim tarihi', 'aşım tarihi', 'asim tarihi', 'coveringDate'],
+          '-'
+        );
+        list.push({
+          label: 'Son Aşım Tarihi',
+          value: coveringDate || '-',
+          icon: 'calendar-outline',
+        });
+      }
+    }
+  }
+
+  return list.map((item) => ({
+    ...item,
+    label: normalizeLabel(item.label),
+    icon: item.icon || getRowIcon(item.label),
+  }));
+}
+

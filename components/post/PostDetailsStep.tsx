@@ -23,6 +23,7 @@ import {
   type GlobalPropertiesMap,
 } from '@/services/catalog/addressConfig';
 import { PostCategoryProperties } from './PostCategoryProperties';
+import { IconicSwitch } from './IconicSwitch';
 import type { ListingFieldErrors } from '@/services/listing';
 import type { CategoryPropertyPublic } from '@/types';
 import type { ListingDraft, ListingMediaSlot } from '@/types/listing';
@@ -706,17 +707,7 @@ export function PostDetailsStep({
                         accessibilityRole="switch"
                         accessibilityState={{ checked: Boolean(val) }}
                       >
-                        <View
-                          style={[
-                            styles.switch,
-                            {
-                              backgroundColor: Boolean(val) ? header : border,
-                              justifyContent: Boolean(val) ? 'flex-end' : 'flex-start',
-                            },
-                          ]}
-                        >
-                          <View style={styles.switchKnob} />
-                        </View>
+                        <IconicSwitch value={Boolean(val)} compact={false} />
                       </Pressable>
                       {err ? <Text style={[styles.err, { color: errorColor }]}>{err}</Text> : null}
                     </View>

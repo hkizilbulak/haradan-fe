@@ -9,6 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { PostField } from './PostField';
 import { PostSelectSheet } from './PostSelectSheet';
+import { IconicSwitch } from './IconicSwitch';
 import { catalogRepository } from '@/services/catalog';
 import CATALOG_DATA from '@/data/catalog.json';
 import { Spacing } from '@/constants/Spacing';
@@ -727,6 +728,67 @@ export function PostCategoryProperties({
       }
     }
 
+    const isKisrakCategory =
+      type?.categoryId === 'c1000000-0000-4000-8000-000000000012' ||
+      (type?.categoryName && (type.categoryName.toLowerCase().includes('kısrak') || type.categoryName.toLowerCase().includes('kisrak')));
+
+    if (!pregnantProp && (isKisrakCategory || d.isPregnant !== undefined)) {
+      pregnantProp = {
+        id: 'p1000000-0000-4000-8000-000000000017',
+        code: 'IS_PREGNANT',
+        title: 'Gebe mi',
+        helpText: 'Kısrağın gebe olup olmadığını belirtiniz',
+        dataType: 'BOOLEAN',
+        isRequired: false,
+        isFilterable: true,
+        sortOrder: 14,
+        options: [],
+      };
+    }
+    if (!coveringStallionProp && (isKisrakCategory || pregnantProp)) {
+      coveringStallionProp = {
+        id: 'p1000000-0000-4000-8000-000000000018',
+        code: 'COVERING_STALLION',
+        title: 'Gebe Olduğu Aygır',
+        helpText: 'Kısrağın gebe olduğu aygırın adını giriniz',
+        dataType: 'STRING',
+        isRequired: false,
+        isFilterable: true,
+        sortOrder: 15,
+        options: [],
+      };
+    }
+    if (!pregnancyStageProp && (isKisrakCategory || pregnantProp)) {
+      pregnancyStageProp = {
+        id: 'p1000000-0000-4000-8000-000000000019',
+        code: 'PREGNANCY_STAGE',
+        title: 'Gebelik Durumu',
+        helpText: 'Gebelik kontrol durumunu seçiniz (K1, K2, K3)',
+        dataType: 'SINGLE_SELECT',
+        isRequired: false,
+        isFilterable: true,
+        sortOrder: 16,
+        options: [
+          { value: 'K1', label: 'K1' },
+          { value: 'K2', label: 'K2' },
+          { value: 'K3', label: 'K3' },
+        ],
+      };
+    }
+    if (!lastCoveringDateProp && (isKisrakCategory || pregnantProp)) {
+      lastCoveringDateProp = {
+        id: 'p1000000-0000-4000-8000-000000000020',
+        code: 'LAST_COVERING_DATE',
+        title: 'Son Aşım Tarihi',
+        helpText: 'Son aşım tarihi (GG.AA.YYYY)',
+        dataType: 'STRING',
+        isRequired: false,
+        isFilterable: false,
+        sortOrder: 17,
+        options: [],
+      };
+    }
+
     return {
       statusToggles: status,
       toggleProps: toggles,
@@ -738,7 +800,7 @@ export function PostCategoryProperties({
         lastCoveringDateProp,
       },
     };
-  }, [categoryProperties]);
+  }, [categoryProperties, type, d.isPregnant]);
 
   if (categoryProperties.length === 0) {
     return null;
@@ -825,20 +887,81 @@ export function PostCategoryProperties({
           })}
 
           {/* pregnancyProps — read-only */}
-          {pregnancyProps.pregnantProp ? (
-            <View style={[styles.readOnlyRow, { borderTopColor: border }]}>
-              <View style={styles.labelCol}>
-                <Text style={[styles.readOnlyLabel, { color: secondary }]}>
-                  {pregnancyProps.pregnantProp.title || 'Gebe mi?'}
-                </Text>
-              </View>
-              <View style={[styles.inputCol, { alignItems: 'flex-end' }]}>
-                <Text style={[styles.readOnlyValue, { color: text }]}>
-                  {getDisplayLabel(pregnancyProps.pregnantProp)}
-                </Text>
-              </View>
-            </View>
-          ) : null}
+          {pregnancyProps.pregnantProp ? (() => {
+            const raw = getPropertyValue('IS_PREGNANT');
+            const isPregnantVal =
+              raw === true ||
+              raw === 'true' ||
+              raw === 1 ||
+              raw === '1' ||
+              String(raw).toLowerCase() === 'evet';
+
+            return (
+              <>
+                <View style={[styles.readOnlyRow, { borderTopColor: border }]}>
+                  <View style={styles.labelCol}>
+                    <Text style={[styles.readOnlyLabel, { color: secondary }]}>
+                      {pregnancyProps.pregnantProp.title || 'Gebe mi?'}
+                    </Text>
+                  </View>
+                  <View style={[styles.inputCol, { alignItems: 'flex-end' }]}>
+                    <Text style={[styles.readOnlyValue, { color: text }]}>
+                      {getDisplayLabel(pregnancyProps.pregnantProp)}
+                    </Text>
+                  </View>
+                </View>
+
+                {isPregnantVal && (
+                  <>
+                    {pregnancyProps.coveringStallionProp ? (
+                      <View style={[styles.readOnlyRow, { borderTopColor: border }]}>
+                        <View style={styles.labelCol}>
+                          <Text style={[styles.readOnlyLabel, { color: secondary }]}>
+                            {pregnancyProps.coveringStallionProp.title || 'Gebe Olduğu Aygır'}
+                          </Text>
+                        </View>
+                        <View style={[styles.inputCol, { alignItems: 'flex-end' }]}>
+                          <Text style={[styles.readOnlyValue, { color: text }]}>
+                            {getDisplayLabel(pregnancyProps.coveringStallionProp)}
+                          </Text>
+                        </View>
+                      </View>
+                    ) : null}
+
+                    {pregnancyProps.pregnancyStageProp ? (
+                      <View style={[styles.readOnlyRow, { borderTopColor: border }]}>
+                        <View style={styles.labelCol}>
+                          <Text style={[styles.readOnlyLabel, { color: secondary }]}>
+                            {pregnancyProps.pregnancyStageProp.title || 'Gebelik Durumu'}
+                          </Text>
+                        </View>
+                        <View style={[styles.inputCol, { alignItems: 'flex-end' }]}>
+                          <Text style={[styles.readOnlyValue, { color: text }]}>
+                            {getDisplayLabel(pregnancyProps.pregnancyStageProp)}
+                          </Text>
+                        </View>
+                      </View>
+                    ) : null}
+
+                    {pregnancyProps.lastCoveringDateProp ? (
+                      <View style={[styles.readOnlyRow, { borderTopColor: border }]}>
+                        <View style={styles.labelCol}>
+                          <Text style={[styles.readOnlyLabel, { color: secondary }]}>
+                            {pregnancyProps.lastCoveringDateProp.title || 'Son Aşım Tarihi'}
+                          </Text>
+                        </View>
+                        <View style={[styles.inputCol, { alignItems: 'flex-end' }]}>
+                          <Text style={[styles.readOnlyValue, { color: text }]}>
+                            {getDisplayLabel(pregnancyProps.lastCoveringDateProp)}
+                          </Text>
+                        </View>
+                      </View>
+                    ) : null}
+                  </>
+                )}
+              </>
+            );
+          })() : null}
 
           {/* statusToggles: full-width rows on mobile, inline row on wide screens */}
           {statusToggles.length > 0 ? (
@@ -857,20 +980,10 @@ export function PostCategoryProperties({
                       accessibilityRole="switch"
                       accessibilityState={{ checked: val }}
                     >
-                      <Text style={[styles.toggleMobileLabel, { color: secondary }]}>
+                      <Text style={[styles.toggleMobileLabel, { color: val ? text : secondary, fontWeight: val ? '700' : '600' }]}>
                         {prop.title}
                       </Text>
-                      <View
-                        style={[
-                          styles.compactSwitch,
-                          {
-                            backgroundColor: val ? header : border,
-                            justifyContent: val ? 'flex-end' : 'flex-start',
-                          },
-                        ]}
-                      >
-                        <View style={styles.compactSwitchKnob} />
-                      </View>
+                      <IconicSwitch value={val} compact />
                     </Pressable>
                   );
                 })}
@@ -887,20 +1000,10 @@ export function PostCategoryProperties({
                       accessibilityRole="switch"
                       accessibilityState={{ checked: val }}
                     >
-                      <Text style={[styles.toggleInlineLabel, { color: secondary }]} numberOfLines={1}>
+                      <Text style={[styles.toggleInlineLabel, { color: val ? text : secondary, fontWeight: val ? '700' : '600' }]} numberOfLines={1}>
                         {prop.title}
                       </Text>
-                      <View
-                        style={[
-                          styles.compactSwitch,
-                          {
-                            backgroundColor: val ? header : border,
-                            justifyContent: val ? 'flex-end' : 'flex-start',
-                          },
-                        ]}
-                      >
-                        <View style={styles.compactSwitchKnob} />
-                      </View>
+                      <IconicSwitch value={val} compact />
                     </Pressable>
                   );
                 })}
@@ -931,17 +1034,7 @@ export function PostCategoryProperties({
                         accessibilityRole="switch"
                         accessibilityState={{ checked: val }}
                       >
-                        <View
-                          style={[
-                            styles.switch,
-                            {
-                              backgroundColor: val ? header : border,
-                              justifyContent: val ? 'flex-end' : 'flex-start',
-                            },
-                          ]}
-                        >
-                          <View style={styles.switchKnob} />
-                        </View>
+                        <IconicSwitch value={val} compact={false} />
                       </Pressable>
                     </View>
                   </View>
@@ -1169,8 +1262,8 @@ export function PostCategoryProperties({
           {pregnancyProps.pregnantProp ? (() => {
             const isPregnantVal = (() => {
               const raw = getPropertyValue('IS_PREGNANT');
-              if (raw === true || raw === 'true' || raw === 1 || raw === '1') return true;
-              if (raw === false || raw === 'false' || raw === 0 || raw === '0') return false;
+              if (raw === true || raw === 'true' || raw === 1 || raw === '1' || String(raw).toLowerCase() === 'evet') return true;
+              if (raw === false || raw === 'false' || raw === 0 || raw === '0' || String(raw).toLowerCase() === 'hayır' || String(raw).toLowerCase() === 'hayir') return false;
               return undefined;
             })();
 
@@ -1326,20 +1419,10 @@ export function PostCategoryProperties({
                       accessibilityRole="switch"
                       accessibilityState={{ checked: val }}
                     >
-                      <Text style={[styles.toggleMobileLabel, { color: secondary }]}>
+                      <Text style={[styles.toggleMobileLabel, { color: val ? text : secondary, fontWeight: val ? '700' : '600' }]}>
                         {prop.title}
                       </Text>
-                      <View
-                        style={[
-                          styles.compactSwitch,
-                          {
-                            backgroundColor: val ? header : border,
-                            justifyContent: val ? 'flex-end' : 'flex-start',
-                          },
-                        ]}
-                      >
-                        <View style={styles.compactSwitchKnob} />
-                      </View>
+                      <IconicSwitch value={val} compact />
                     </Pressable>
                   );
                 })}
@@ -1356,20 +1439,10 @@ export function PostCategoryProperties({
                       accessibilityRole="switch"
                       accessibilityState={{ checked: val }}
                     >
-                      <Text style={[styles.toggleInlineLabel, { color: secondary }]} numberOfLines={1}>
+                      <Text style={[styles.toggleInlineLabel, { color: val ? text : secondary, fontWeight: val ? '700' : '600' }]} numberOfLines={1}>
                         {prop.title}
                       </Text>
-                      <View
-                        style={[
-                          styles.compactSwitch,
-                          {
-                            backgroundColor: val ? header : border,
-                            justifyContent: val ? 'flex-end' : 'flex-start',
-                          },
-                        ]}
-                      >
-                        <View style={styles.compactSwitchKnob} />
-                      </View>
+                      <IconicSwitch value={val} compact />
                     </Pressable>
                   );
                 })}
@@ -1400,17 +1473,7 @@ export function PostCategoryProperties({
                         accessibilityRole="switch"
                         accessibilityState={{ checked: val }}
                       >
-                        <View
-                          style={[
-                            styles.switch,
-                            {
-                              backgroundColor: val ? header : border,
-                              justifyContent: val ? 'flex-end' : 'flex-start',
-                            },
-                          ]}
-                        >
-                          <View style={styles.switchKnob} />
-                        </View>
+                        <IconicSwitch value={val} compact={false} />
                       </Pressable>
                     </View>
                   </View>
@@ -1612,6 +1675,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     minHeight: 46,
+    ...Platform.select({
+      web: { cursor: 'pointer' } as any,
+      default: {},
+    }),
   },
   toggleMobileLabel: {
     ...Typography.body,
@@ -1634,6 +1701,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    ...Platform.select({
+      web: { cursor: 'pointer' } as any,
+      default: {},
+    }),
   },
   toggleInlineLabel: {
     ...Typography.caption,
