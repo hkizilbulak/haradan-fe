@@ -19,7 +19,10 @@ import { HOME_DESKTOP_BREAKPOINT } from '@/constants/Layout';
 import {
   AdvertBuyBox,
   AdvertGallery,
+  AdvertPedigree,
+  AdvertSiblings,
   AdvertSpecs,
+  AdvertStatistics,
   type SpecsSubTab,
 } from '@/components/advert-detail';
 import { formatMoney } from '@/utils/formatMoney';
@@ -260,7 +263,7 @@ function mapDraftToAdvertDetail(draft: ListingDraft): AdvertDetail {
     handicap: 68,
     races: [],
     offspring: null,
-    pedigree: [],
+    pedigree: (d as any).pedigree && Array.isArray((d as any).pedigree) ? (d as any).pedigree : [],
     siblings: rawSiblings,
     statistics: rawStatistics,
   };
@@ -362,6 +365,36 @@ export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
   const location = useAdvertLocation(detail);
   const [specsSubTab, setSpecsSubTab] = useState<SpecsSubTab>('specs');
 
+  const subTabs = useMemo(() => {
+    const list: {
+      key: SpecsSubTab;
+      label: string;
+      icon: keyof typeof Ionicons.glyphMap;
+      badge?: string;
+    }[] = [];
+
+    list.push({ key: 'specs', label: 'Genel Bilgiler', icon: 'information-circle-outline' });
+
+    if (
+      (detail.horse?.pedigree && detail.horse.pedigree.length > 0) ||
+      Boolean(detail.horse?.sire || detail.horse?.dam)
+    ) {
+      list.push({ key: 'pedigree', label: 'Pedigri (Soyağacı)', icon: 'git-branch-outline' });
+    }
+    if (detail.horse?.statistics && detail.horse.statistics.length > 0) {
+      list.push({ key: 'statistics', label: 'İstatistikler', icon: 'stats-chart-outline' });
+    }
+    if (detail.horse?.siblings && detail.horse.siblings.length > 0) {
+      list.push({
+        key: 'siblings',
+        label: 'Anne Kardeşleri',
+        icon: 'people-outline',
+        badge: String(detail.horse.siblings.length),
+      });
+    }
+    return list;
+  }, [detail.horse]);
+
   const galleryHeight = isWide ? 420 : 300;
 
   return (
@@ -400,26 +433,114 @@ export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
                 {detail.title.toUpperCase()}
               </Text>
 
-              <View style={styles.wideHero}>
-                {/* Sol: Galeri */}
-                <View style={styles.wideGalleryCol}>
-                  <AdvertGallery items={detail.gallery} height={galleryHeight} accessToken={null} />
-                </View>
-                {/* Sağ: BuyBox */}
-                <View style={styles.wideBuyCol}>
-                  <AdvertBuyBox detail={detail} variant="default" favorite={false} isOwner onEdit={onEdit} />
+              {/* Sub Tabs Bar (Web ilanlarındaki gibi üstte) */}
+              <View style={styles.desktopSubTabsWrap}>
+                <View style={styles.subTabsContainer}>
+                  {subTabs.map((t) => {
+                    const isActive = t.key === specsSubTab;
+                    return (
+                      <Pressable
+                        key={t.key}
+                        onPress={() => setSpecsSubTab(t.key)}
+                        style={[
+                          styles.subTabButton,
+                          {
+                            backgroundColor: isActive ? primary : surface,
+                            borderColor: isActive ? primary : border,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={t.icon}
+                          size={16}
+                          color={isActive ? '#ffffff' : textSecondary}
+                        />
+                        <Text
+                          style={[
+                            styles.subTabButtonText,
+                            {
+                              color: isActive ? '#ffffff' : text,
+                              fontWeight: isActive ? '700' : '600',
+                            },
+                          ]}
+                        >
+                          {t.label}
+                        </Text>
+                        {t.badge ? (
+                          <View
+                            style={[
+                              styles.subTabBadge,
+                              {
+                                backgroundColor: isActive
+                                  ? 'rgba(255, 255, 255, 0.25)'
+                                  : `${primary}15`,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.subTabBadgeText,
+                                { color: isActive ? '#ffffff' : primary },
+                              ]}
+                            >
+                              {t.badge}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
                 </View>
               </View>
 
-              <View style={styles.wideSpecsWrap}>
-                <AdvertSpecs
-                  groups={detail.specs}
-                  horse={detail.horse}
-                  detail={detail}
-                  activeSubTab={specsSubTab}
-                  onSubTabChange={setSpecsSubTab}
-                />
-              </View>
+              {/* Tab Content: Genel Bilgiler */}
+              {specsSubTab === 'specs' && (
+                <View style={styles.wideHero}>
+                  {/* Sol: Galeri */}
+                  <View style={styles.wideGalleryCol}>
+                    <AdvertGallery items={detail.gallery} height={galleryHeight} accessToken={null} />
+                  </View>
+                  {/* Sağ: BuyBox */}
+                  <View style={styles.wideBuyCol}>
+                    <AdvertBuyBox detail={detail} variant="default" favorite={false} isOwner onEdit={onEdit} />
+                  </View>
+                </View>
+              )}
+
+              {/* Tab Content: Pedigri */}
+              {specsSubTab === 'pedigree' && (
+                <View style={styles.tabContentCard}>
+                  <AdvertPedigree
+                    pedigree={detail.horse?.pedigree}
+                    horseName={detail.horse?.registeredName || detail.title}
+                    sireFallback={detail.horse?.sire}
+                    damFallback={detail.horse?.dam}
+                    damsireFallback={detail.horse?.damsire}
+                  />
+                </View>
+              )}
+
+              {/* Tab Content: İstatistikler */}
+              {specsSubTab === 'statistics' && (
+                <View style={styles.tabContentCard}>
+                  <AdvertStatistics
+                    statistics={detail.horse?.statistics}
+                    handicap={detail.horse?.handicap}
+                    handicapPoint={detail.horse?.detailProfile?.handicapPoint}
+                    careerEarnings={detail.horse?.detailProfile?.earning}
+                  />
+                </View>
+              )}
+
+              {/* Tab Content: Anne Kardeşleri */}
+              {specsSubTab === 'siblings' && (
+                <View style={styles.tabContentCard}>
+                  <AdvertSiblings
+                    siblings={detail.horse?.siblings}
+                    damName={detail.horse?.dam}
+                  />
+                </View>
+              )}
             </ScrollView>
 
             {/* Desktop Footer */}
@@ -646,7 +767,49 @@ const styles = StyleSheet.create({
   },
   wideGalleryCol: { flex: 1.15, minWidth: 0 },
   wideBuyCol: { flex: 0.85, minWidth: 0 },
-  wideSpecsWrap: { marginTop: Spacing.sm },
+  desktopSubTabsWrap: {
+    marginTop: -Spacing.xs,
+    marginBottom: Spacing.xs,
+  },
+  subTabsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  subTabButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderWidth: 1,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        transition: 'all 0.15s ease',
+      } as any,
+      default: {},
+    }),
+  },
+  subTabButtonText: {
+    fontSize: 13.5,
+    letterSpacing: -0.1,
+  },
+  subTabBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
+  },
+  subTabBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  tabContentCard: {
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.md,
+  },
   /* Footer */
   footer: {
     flexDirection: 'row',
