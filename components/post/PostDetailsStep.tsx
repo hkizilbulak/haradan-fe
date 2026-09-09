@@ -914,17 +914,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   fieldRow: {
+    width: '100%',
     paddingHorizontal: Spacing.lg,
     paddingVertical: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#e3e9ef',
   },
   horizontalRow: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
   },
   rowStacked: {
+    width: '100%',
     flexDirection: 'column',
     alignItems: 'stretch',
     gap: 6,
@@ -932,21 +935,25 @@ const styles = StyleSheet.create({
   labelCol: {
     width: 110,
     flexShrink: 0,
+  },
+  labelColSide: {
     minHeight: 46,
     justifyContent: 'center',
   },
   labelColStacked: {
     width: '100%',
-    minHeight: undefined,
+    minHeight: 0,
     justifyContent: 'flex-start',
   },
   inputCol: {
     flex: 1,
+    minWidth: 0,
     gap: 4,
-    justifyContent: 'center',
   },
   inputColStacked: {
     width: '100%',
+    minWidth: 0,
+    justifyContent: 'flex-start',
   },
   section: { ...Typography.h5, fontWeight: '700' },
   cardDesc: {

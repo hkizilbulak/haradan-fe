@@ -41,7 +41,7 @@ export function PostPhoneField({
 
   return (
     <View style={[styles.row, stacked && styles.rowStacked]}>
-      <View style={[styles.labelCol, stacked && styles.labelColStacked]}>
+      <View style={[styles.labelCol, stacked ? styles.labelColStacked : styles.labelColSide]}>
         <Text style={[styles.label, { color: secondary }]}>
           Telefon
           {required ? <Text style={{ color: errorColor }}> *</Text> : null}
@@ -102,11 +102,13 @@ export function PostPhoneField({
 
 const styles = StyleSheet.create({
   row: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
   },
   rowStacked: {
+    width: '100%',
     flexDirection: 'column',
     alignItems: 'stretch',
     gap: 6,
@@ -114,12 +116,14 @@ const styles = StyleSheet.create({
   labelCol: {
     width: 110,
     flexShrink: 0,
+  },
+  labelColSide: {
     minHeight: 46,
     justifyContent: 'center',
   },
   labelColStacked: {
     width: '100%',
-    minHeight: undefined,
+    minHeight: 0,
     justifyContent: 'flex-start',
   },
   label: {
@@ -131,12 +135,16 @@ const styles = StyleSheet.create({
   },
   inputCol: {
     flex: 1,
+    minWidth: 0,
     gap: 4,
   },
   inputColStacked: {
     width: '100%',
+    minWidth: 0,
   },
   field: {
+    width: '100%',
+    minWidth: 0,
     minHeight: 46,
     borderWidth: 1,
     borderRadius: 12,
@@ -155,6 +163,7 @@ const styles = StyleSheet.create({
   dial: { ...Typography.small, fontSize: 13, fontWeight: '700' },
   input: {
     flex: 1,
+    minWidth: 0,
     ...Typography.body,
     fontSize: 14,
     paddingHorizontal: 10,

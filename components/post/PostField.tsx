@@ -114,11 +114,13 @@ export function PostField({
 
 const styles = StyleSheet.create({
   row: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
   },
   rowStacked: {
+    width: '100%',
     flexDirection: 'column',
     alignItems: 'stretch',
     gap: 6,
@@ -129,7 +131,7 @@ const styles = StyleSheet.create({
   },
   labelColStacked: {
     width: '100%',
-    minHeight: undefined,
+    minHeight: 0,
     paddingTop: 0,
     justifyContent: 'flex-start',
   },
@@ -160,12 +162,16 @@ const styles = StyleSheet.create({
   },
   inputCol: {
     flex: 1,
+    minWidth: 0,
     gap: 4,
   },
   inputColStacked: {
     width: '100%',
+    minWidth: 0,
   },
   field: {
+    width: '100%',
+    minWidth: 0,
     minHeight: 46,
     borderWidth: 1,
     borderRadius: 12,
@@ -182,6 +188,7 @@ const styles = StyleSheet.create({
     ...Typography.body,
     fontSize: 14,
     flex: 1,
+    minWidth: 0,
     paddingVertical: Platform.OS === 'web' ? 12 : 8,
     ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
   },

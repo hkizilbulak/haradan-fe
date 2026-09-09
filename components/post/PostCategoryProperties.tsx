@@ -1104,7 +1104,7 @@ export function PostCategoryProperties({
 
             return (
               <React.Fragment key={propKey}>
-                <View style={[styles.rowItem, { borderTopColor: border }]}>
+                <View style={[styles.fieldRow, { borderTopColor: border }]}>
                   <PostField
                     label={prop.title}
                     required={prop.isRequired}
@@ -1235,7 +1235,7 @@ export function PostCategoryProperties({
 
                 {isPregnantVal === true ? (
                   <>
-                    <View style={[styles.rowItem, { borderTopColor: border }]}>
+                    <View style={[styles.fieldRow, { borderTopColor: border }]}>
                       <PostField
                         label={pregnancyProps.coveringStallionProp?.title || 'Gebe Olduğu Aygır'}
                         required
@@ -1293,7 +1293,7 @@ export function PostCategoryProperties({
                     ) : null}
 
                     {pregnancyProps.lastCoveringDateProp ? (
-                      <View style={[styles.rowItem, { borderTopColor: border }]}>
+                      <View style={[styles.fieldRow, { borderTopColor: border }]}>
                         <PostField
                           label={pregnancyProps.lastCoveringDateProp.title || 'Son Aşım Tarihi'}
                           value={String(getPropertyValue('LAST_COVERING_DATE') ?? '')}
@@ -1482,7 +1482,14 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     marginTop: 3,
   },
+  fieldRow: {
+    width: '100%',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
   rowItem: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingHorizontal: Spacing.lg,
@@ -1505,10 +1512,13 @@ const styles = StyleSheet.create({
   },
   inputCol: {
     flex: 1,
+    minWidth: 0,
     gap: 4,
     justifyContent: 'center',
   },
   select: {
+    width: '100%',
+    minWidth: 0,
     minHeight: 46,
     borderWidth: 1,
     borderRadius: 12,
