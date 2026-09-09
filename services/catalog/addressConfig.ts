@@ -27,7 +27,7 @@ const DEFAULT_GLOBAL_CONFIGS: GlobalPropertiesMap = {
   },
   DESCRIPTION: {
     code: 'DESCRIPTION',
-    title: 'İlan Açıklaması',
+    title: 'Açıklama',
     isActive: true,
     isRequired: false,
     isFormVisible: true,
@@ -35,7 +35,7 @@ const DEFAULT_GLOBAL_CONFIGS: GlobalPropertiesMap = {
   },
   PRICE: {
     code: 'PRICE',
-    title: 'İlan Fiyatı',
+    title: 'Fiyat',
     isActive: true,
     isRequired: true,
     isFormVisible: true,

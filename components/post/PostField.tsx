@@ -18,6 +18,8 @@ type PostFieldProps = Omit<TextInputProps, 'style'> & {
   suffix?: string;
   /** Red asterisk for required fields. */
   required?: boolean;
+  /** When true, renders label on top of the input. */
+  stacked?: boolean;
 };
 
 export function PostField({
@@ -27,6 +29,7 @@ export function PostField({
   locked = false,
   suffix,
   required = false,
+  stacked = false,
   onFocus,
   onBlur,
   ...inputProps
@@ -43,8 +46,17 @@ export function PostField({
   const isMultiline = Boolean(inputProps.multiline);
 
   return (
-    <View style={styles.row}>
-      <View style={[styles.labelCol, isMultiline ? styles.labelColTop : styles.labelColCenter]}>
+    <View style={[styles.row, stacked && styles.rowStacked]}>
+      <View
+        style={[
+          styles.labelCol,
+          stacked
+            ? styles.labelColStacked
+            : isMultiline
+              ? styles.labelColTop
+              : styles.labelColCenter,
+        ]}
+      >
         <Text style={[styles.label, { color: secondary }]}>
           {label}
           {required ? (
@@ -56,7 +68,7 @@ export function PostField({
         ) : null}
       </View>
 
-      <View style={styles.inputCol}>
+      <View style={[styles.inputCol, stacked && styles.inputColStacked]}>
         <View
           style={[
             styles.field,
@@ -106,9 +118,20 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 12,
   },
+  rowStacked: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 6,
+  },
   labelCol: {
     width: 110,
     flexShrink: 0,
+  },
+  labelColStacked: {
+    width: '100%',
+    minHeight: undefined,
+    paddingTop: 0,
+    justifyContent: 'flex-start',
   },
   labelColCenter: {
     minHeight: 46,
@@ -138,6 +161,9 @@ const styles = StyleSheet.create({
   inputCol: {
     flex: 1,
     gap: 4,
+  },
+  inputColStacked: {
+    width: '100%',
   },
   field: {
     minHeight: 46,

@@ -15,6 +15,7 @@ type PostPhoneFieldProps = {
   national: string;
   error?: string | null;
   required?: boolean;
+  stacked?: boolean;
   onChange: (next: { phoneCountryIso: string; sellerPhone: string }) => void;
 };
 
@@ -23,6 +24,7 @@ export function PostPhoneField({
   national,
   error,
   required = false,
+  stacked = false,
   onChange,
 }: PostPhoneFieldProps) {
   const text = useThemeColor('text');
@@ -38,15 +40,15 @@ export function PostPhoneField({
   const borderColor = error ? errorColor : focused ? header : border;
 
   return (
-    <View style={styles.row}>
-      <View style={styles.labelCol}>
+    <View style={[styles.row, stacked && styles.rowStacked]}>
+      <View style={[styles.labelCol, stacked && styles.labelColStacked]}>
         <Text style={[styles.label, { color: secondary }]}>
           Telefon
           {required ? <Text style={{ color: errorColor }}> *</Text> : null}
         </Text>
       </View>
 
-      <View style={styles.inputCol}>
+      <View style={[styles.inputCol, stacked && styles.inputColStacked]}>
         <View style={[styles.field, { borderColor, backgroundColor: surface }]}>
           <Pressable
             onPress={() => setOpen(true)}
@@ -104,11 +106,21 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 12,
   },
+  rowStacked: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 6,
+  },
   labelCol: {
     width: 110,
     flexShrink: 0,
     minHeight: 46,
     justifyContent: 'center',
+  },
+  labelColStacked: {
+    width: '100%',
+    minHeight: undefined,
+    justifyContent: 'flex-start',
   },
   label: {
     ...Typography.caption,
@@ -120,6 +132,9 @@ const styles = StyleSheet.create({
   inputCol: {
     flex: 1,
     gap: 4,
+  },
+  inputColStacked: {
+    width: '100%',
   },
   field: {
     minHeight: 46,

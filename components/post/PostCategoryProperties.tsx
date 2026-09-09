@@ -14,6 +14,7 @@ import CATALOG_DATA from '@/data/catalog.json';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import type { CategoryPropertyPublic } from '@/types';
 import type { ListingDraft, ListingDraftDetails } from '@/types/listing';
 import { setListingWizardState, type ListingFieldErrors } from '@/services/listing';
@@ -306,6 +307,7 @@ export function PostCategoryProperties({
   const header = useThemeColor('header');
   const errorColor = useThemeColor('error');
   const muted = useThemeColor('textMuted');
+  const isWide = useIsWideLayout(600);
 
   const [activeSelectProp, setActiveSelectProp] = useState<CategoryPropertyPublic | null>(null);
 
@@ -838,37 +840,72 @@ export function PostCategoryProperties({
             </View>
           ) : null}
 
-          {/* statusToggles: single row, header text removed */}
+          {/* statusToggles: full-width rows on mobile, inline row on wide screens */}
           {statusToggles.length > 0 ? (
-            <View style={[styles.togglesInlineRow, { borderTopColor: border }]}>
-              {statusToggles.map((prop) => {
-                const val = Boolean(getPropertyValue(prop.code));
-                return (
-                  <Pressable
-                    key={prop.code}
-                    onPress={() => handlePropertyChange(prop.code, !val)}
-                    style={styles.toggleInlineItem}
-                    accessibilityRole="switch"
-                    accessibilityState={{ checked: val }}
-                  >
-                    <Text style={[styles.toggleInlineLabel, { color: secondary }]} numberOfLines={1}>
-                      {prop.title}
-                    </Text>
-                    <View
+            !isWide ? (
+              <View style={[styles.togglesMobileList, { borderTopColor: border }]}>
+                {statusToggles.map((prop, idx) => {
+                  const val = Boolean(getPropertyValue(prop.code));
+                  return (
+                    <Pressable
+                      key={prop.code}
+                      onPress={() => handlePropertyChange(prop.code, !val)}
                       style={[
-                        styles.compactSwitch,
-                        {
-                          backgroundColor: val ? header : border,
-                          justifyContent: val ? 'flex-end' : 'flex-start',
-                        },
+                        styles.toggleMobileRow,
+                        idx > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: border },
                       ]}
+                      accessibilityRole="switch"
+                      accessibilityState={{ checked: val }}
                     >
-                      <View style={styles.compactSwitchKnob} />
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
+                      <Text style={[styles.toggleMobileLabel, { color: secondary }]}>
+                        {prop.title}
+                      </Text>
+                      <View
+                        style={[
+                          styles.compactSwitch,
+                          {
+                            backgroundColor: val ? header : border,
+                            justifyContent: val ? 'flex-end' : 'flex-start',
+                          },
+                        ]}
+                      >
+                        <View style={styles.compactSwitchKnob} />
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : (
+              <View style={[styles.togglesInlineRow, { borderTopColor: border }]}>
+                {statusToggles.map((prop) => {
+                  const val = Boolean(getPropertyValue(prop.code));
+                  return (
+                    <Pressable
+                      key={prop.code}
+                      onPress={() => handlePropertyChange(prop.code, !val)}
+                      style={styles.toggleInlineItem}
+                      accessibilityRole="switch"
+                      accessibilityState={{ checked: val }}
+                    >
+                      <Text style={[styles.toggleInlineLabel, { color: secondary }]} numberOfLines={1}>
+                        {prop.title}
+                      </Text>
+                      <View
+                        style={[
+                          styles.compactSwitch,
+                          {
+                            backgroundColor: val ? header : border,
+                            justifyContent: val ? 'flex-end' : 'flex-start',
+                          },
+                        ]}
+                      >
+                        <View style={styles.compactSwitchKnob} />
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )
           ) : null}
 
           {/* toggleProps — still interactive (user must select) */}
@@ -1272,37 +1309,72 @@ export function PostCategoryProperties({
             );
           })() : null}
 
-          {/* 3. Race Status Toggles: single row, header text removed */}
+          {/* 3. Race Status Toggles: full-width rows on mobile, inline row on wide screens */}
           {statusToggles.length > 0 ? (
-            <View style={[styles.togglesInlineRow, { borderTopColor: border }]}>
-              {statusToggles.map((prop) => {
-                const val = Boolean(getPropertyValue(prop.code));
-                return (
-                  <Pressable
-                    key={prop.code}
-                    onPress={() => handlePropertyChange(prop.code, !val)}
-                    style={styles.toggleInlineItem}
-                    accessibilityRole="switch"
-                    accessibilityState={{ checked: val }}
-                  >
-                    <Text style={[styles.toggleInlineLabel, { color: secondary }]} numberOfLines={1}>
-                      {prop.title}
-                    </Text>
-                    <View
+            !isWide ? (
+              <View style={[styles.togglesMobileList, { borderTopColor: border }]}>
+                {statusToggles.map((prop, idx) => {
+                  const val = Boolean(getPropertyValue(prop.code));
+                  return (
+                    <Pressable
+                      key={prop.code}
+                      onPress={() => handlePropertyChange(prop.code, !val)}
                       style={[
-                        styles.compactSwitch,
-                        {
-                          backgroundColor: val ? header : border,
-                          justifyContent: val ? 'flex-end' : 'flex-start',
-                        },
+                        styles.toggleMobileRow,
+                        idx > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: border },
                       ]}
+                      accessibilityRole="switch"
+                      accessibilityState={{ checked: val }}
                     >
-                      <View style={styles.compactSwitchKnob} />
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
+                      <Text style={[styles.toggleMobileLabel, { color: secondary }]}>
+                        {prop.title}
+                      </Text>
+                      <View
+                        style={[
+                          styles.compactSwitch,
+                          {
+                            backgroundColor: val ? header : border,
+                            justifyContent: val ? 'flex-end' : 'flex-start',
+                          },
+                        ]}
+                      >
+                        <View style={styles.compactSwitchKnob} />
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : (
+              <View style={[styles.togglesInlineRow, { borderTopColor: border }]}>
+                {statusToggles.map((prop) => {
+                  const val = Boolean(getPropertyValue(prop.code));
+                  return (
+                    <Pressable
+                      key={prop.code}
+                      onPress={() => handlePropertyChange(prop.code, !val)}
+                      style={styles.toggleInlineItem}
+                      accessibilityRole="switch"
+                      accessibilityState={{ checked: val }}
+                    >
+                      <Text style={[styles.toggleInlineLabel, { color: secondary }]} numberOfLines={1}>
+                        {prop.title}
+                      </Text>
+                      <View
+                        style={[
+                          styles.compactSwitch,
+                          {
+                            backgroundColor: val ? header : border,
+                            justifyContent: val ? 'flex-end' : 'flex-start',
+                          },
+                        ]}
+                      >
+                        <View style={styles.compactSwitchKnob} />
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )
           ) : null}
 
           {/* 4. Boolean Toggle Grid */}
@@ -1519,6 +1591,24 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     backgroundColor: '#fff',
+  },
+  togglesMobileList: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: Spacing.lg,
+  },
+  toggleMobileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    minHeight: 46,
+  },
+  toggleMobileLabel: {
+    ...Typography.body,
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+    paddingRight: 12,
   },
   togglesInlineRow: {
     borderTopWidth: StyleSheet.hairlineWidth,

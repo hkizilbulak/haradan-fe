@@ -106,12 +106,18 @@ export function PostDetailsStep({
     isRequired: Boolean(activeConfigs.ADDRESS?.isRequired),
   };
   const descConfig = {
-    title: activeConfigs.DESCRIPTION?.title || 'Açıklama',
+    title:
+      activeConfigs.DESCRIPTION?.title && activeConfigs.DESCRIPTION?.title !== 'İlan Açıklaması'
+        ? activeConfigs.DESCRIPTION.title
+        : 'Açıklama',
     isActive: Boolean(activeConfigs.DESCRIPTION?.isActive && activeConfigs.DESCRIPTION?.isFormVisible),
     isRequired: Boolean(activeConfigs.DESCRIPTION?.isRequired),
   };
   const priceConfig = {
-    title: activeConfigs.PRICE?.title || 'Fiyat',
+    title:
+      activeConfigs.PRICE?.title && activeConfigs.PRICE?.title !== 'İlan Fiyatı'
+        ? activeConfigs.PRICE.title
+        : 'Fiyat',
     isActive: Boolean(activeConfigs.PRICE?.isActive && activeConfigs.PRICE?.isFormVisible),
     isRequired: Boolean(activeConfigs.PRICE?.isRequired),
   };
@@ -512,6 +518,7 @@ export function PostDetailsStep({
             onChangeText={(title) => onUpdate({ title })}
             placeholder="Kısa, net bir başlık"
             error={errors.title}
+            stacked
           />
         </View>
 
@@ -532,6 +539,7 @@ export function PostDetailsStep({
               }
               multiline
               error={errors.description}
+              stacked
             />
           </View>
         ) : null}
@@ -550,6 +558,7 @@ export function PostDetailsStep({
               keyboardType="numeric"
               error={errors.priceTl}
               suffix="₺"
+              stacked
             />
           </View>
         ) : null}
@@ -563,8 +572,8 @@ export function PostDetailsStep({
               updateFieldY('districtId', y);
             }}
           >
-            <View style={styles.horizontalRow}>
-              <View style={styles.labelCol}>
+            <View style={[styles.horizontalRow, styles.rowStacked]}>
+              <View style={[styles.labelCol, styles.labelColStacked]}>
                 <Text style={[styles.fieldLabel, { color: secondary }]}>
                   İl / İlçe
                   {locationConfig.isRequired ? (
@@ -573,7 +582,7 @@ export function PostDetailsStep({
                 </Text>
               </View>
 
-              <View style={styles.inputCol}>
+              <View style={[styles.inputCol, styles.inputColStacked]}>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   {/* İl */}
                   <View style={{ flex: 1, gap: 4 }}>
@@ -664,6 +673,7 @@ export function PostDetailsStep({
               error={errors.sellerPhone}
               required={phoneConfig.isRequired}
               onChange={onUpdate}
+              stacked
             />
           </View>
         ) : null}
@@ -683,14 +693,14 @@ export function PostDetailsStep({
                   style={[styles.fieldRow, { borderTopColor: border }]}
                   onLayout={(e) => updateFieldY(prop.code, e.nativeEvent.layout.y)}
                 >
-                  <View style={styles.horizontalRow}>
-                    <View style={styles.labelCol}>
+                  <View style={[styles.horizontalRow, styles.rowStacked]}>
+                    <View style={[styles.labelCol, styles.labelColStacked]}>
                       <Text style={[styles.fieldLabel, { color: secondary }]}>
                         {prop.title}
                         {prop.isRequired ? <Text style={{ color: errorColor }}> *</Text> : null}
                       </Text>
                     </View>
-                    <View style={[styles.inputCol, { alignItems: 'flex-start', justifyContent: 'center' }]}>
+                    <View style={[styles.inputCol, styles.inputColStacked, { alignItems: 'flex-start', justifyContent: 'center' }]}>
                       <Pressable
                         onPress={() => handleCustomPropertyChange(prop.code, !Boolean(val))}
                         accessibilityRole="switch"
@@ -722,14 +732,14 @@ export function PostDetailsStep({
                   style={[styles.fieldRow, { borderTopColor: border }]}
                   onLayout={(e) => updateFieldY(prop.code, e.nativeEvent.layout.y)}
                 >
-                  <View style={styles.horizontalRow}>
-                    <View style={[styles.labelCol, { paddingTop: 6 }]}>
+                  <View style={[styles.horizontalRow, styles.rowStacked]}>
+                    <View style={[styles.labelCol, styles.labelColStacked]}>
                       <Text style={[styles.fieldLabel, { color: secondary }]}>
                         {prop.title}
                         {prop.isRequired ? <Text style={{ color: errorColor }}> *</Text> : null}
                       </Text>
                     </View>
-                    <View style={styles.inputCol}>
+                    <View style={[styles.inputCol, styles.inputColStacked]}>
                       <View style={styles.chips}>
                         {prop.options.map((opt) => {
                           const optVal = opt.value || opt.label;
@@ -796,6 +806,7 @@ export function PostDetailsStep({
                   }
                   multiline={prop.dataType === 'TEXT'}
                   error={err}
+                  stacked
                 />
               </View>
             );
@@ -913,16 +924,29 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 12,
   },
+  rowStacked: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 6,
+  },
   labelCol: {
     width: 110,
     flexShrink: 0,
     minHeight: 46,
     justifyContent: 'center',
   },
+  labelColStacked: {
+    width: '100%',
+    minHeight: undefined,
+    justifyContent: 'flex-start',
+  },
   inputCol: {
     flex: 1,
     gap: 4,
     justifyContent: 'center',
+  },
+  inputColStacked: {
+    width: '100%',
   },
   section: { ...Typography.h5, fontWeight: '700' },
   cardDesc: {

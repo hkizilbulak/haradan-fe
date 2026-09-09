@@ -182,7 +182,7 @@ export function detailsErrors(
   const descConfig = globalConfigs.DESCRIPTION;
   if (descConfig && descConfig.isActive && descConfig.isRequired) {
     if (!d.description || !d.description.trim()) {
-      e.description = 'İlan açıklaması zorunludur.';
+      e.description = 'Açıklama zorunludur.';
     }
   }
 
