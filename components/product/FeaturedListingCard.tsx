@@ -253,10 +253,6 @@ function FeaturedListingCardComponent({
             <Text style={[styles.price, compact && styles.priceCompact, { color: text }]}>
               {formatMoney(product.price)}
             </Text>
-            <View style={styles.views}>
-              <Ionicons name="eye-outline" size={compact ? 11 : 13} color={textMuted} />
-              <Text style={[styles.viewText, { color: textMuted }]}>{views}</Text>
-            </View>
           </View>
         </View>
       </Animated.View>

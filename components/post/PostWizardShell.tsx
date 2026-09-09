@@ -25,6 +25,9 @@ type PostWizardShellProps = {
   nextLoading?: boolean;
   showBack: boolean;
   showNext: boolean;
+  showPreview?: boolean;
+  onPreview?: () => void;
+  previewLabel?: string;
   scrollViewRef?: React.RefObject<ScrollView | null>;
   children: React.ReactNode;
   onClose: () => void;
@@ -40,6 +43,9 @@ export function PostWizardShell({
   nextLoading,
   showBack,
   showNext,
+  showPreview,
+  onPreview,
+  previewLabel = 'İlan Önizleme',
   scrollViewRef,
   children,
   onClose,
@@ -99,44 +105,58 @@ export function PostWizardShell({
       </ScrollView>
 
       {showBack || showNext ? (
-      <View
-        style={[
-          styles.footer,
-          {
-            backgroundColor: surface,
-            borderTopColor: border,
-            paddingBottom: Math.max(insets.bottom, 12),
-          },
-        ]}
-      >
-        <View style={[styles.footerInner, { maxWidth: contentMax }]}>
-          {showBack ? (
-            <Button
-              variant="secondary"
-              onPress={onBack}
-              accessibilityLabel="Geri"
-            >
-              Geri
-            </Button>
-          ) : (
-            <View style={styles.spacer} />
-          )}
-          {showNext ? (
-            <View style={styles.next}>
-              <Button
-                variant="dark"
-                size="lg"
-                onPress={onNext}
-                disabled={!canNext}
-                loading={nextLoading}
-                accessibilityLabel={nextLabel}
-              >
-                {nextLabel}
-              </Button>
+        <View
+          style={[
+            styles.footer,
+            {
+              backgroundColor: surface,
+              borderTopColor: border,
+              paddingBottom: Math.max(insets.bottom, 12),
+            },
+          ]}
+        >
+          <View style={[styles.footerInner, { maxWidth: contentMax }]}>
+            <View style={styles.leftAction}>
+              {showBack ? (
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onPress={onBack}
+                  accessibilityLabel="Geri"
+                >
+                  Geri
+                </Button>
+              ) : null}
             </View>
-          ) : null}
+
+            <View style={styles.rightActions}>
+              {showPreview && onPreview ? (
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  onPress={onPreview}
+                  accessibilityLabel={previewLabel}
+                  style={styles.actionBtn}
+                >
+                  {previewLabel}
+                </Button>
+              ) : null}
+              {showNext ? (
+                <Button
+                  variant="dark"
+                  size="lg"
+                  onPress={onNext}
+                  disabled={!canNext}
+                  loading={nextLoading}
+                  accessibilityLabel={nextLabel}
+                  style={styles.actionBtn}
+                >
+                  {nextLabel}
+                </Button>
+              ) : null}
+            </View>
+          </View>
         </View>
-      </View>
       ) : null}
     </View>
   );
@@ -192,8 +212,21 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    justifyContent: 'space-between',
+    gap: Spacing.md,
   },
-  spacer: { width: 88 },
-  next: { flex: 1 },
+  leftAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: Spacing.sm,
+    flexShrink: 1,
+  },
+  actionBtn: {
+    minWidth: 170,
+  },
 });

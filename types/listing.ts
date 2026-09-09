@@ -140,6 +140,9 @@ export type ListingPackage = {
   durationDays: number;
   highlighted: boolean;
   features: ListingPackageFeature[];
+  allowsUrgent?: boolean;
+  showcaseEligible?: boolean;
+  featuredDays?: number | null;
 };
 
 export type ListingDraft = {

@@ -7,6 +7,7 @@ import { PostDetailsStep } from './PostDetailsStep';
 import { PostPackagesStep } from './PostPackagesStep';
 import { PostPaymentStep } from './PostPaymentStep';
 import { PostReviewStep } from './PostReviewStep';
+import { PostAdvertPreviewModal } from './PostAdvertPreviewModal';
 import { useCatalogFacets } from '@/hooks/useCatalogFacets';
 import { useListingPackages } from '@/hooks/useListingPackages';
 import { useListingWizard } from '@/hooks/useListingWizard';
@@ -50,6 +51,7 @@ export function PostWizardView() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const packageStepEnabled = isListingPackageStepEnabled();
   const paytrEnabled = packageStepEnabled && isPaytrCheckoutEnabled();
   const errorColor = useThemeColor('error');
@@ -292,117 +294,137 @@ export function PostWizardView() {
   const showNext =
     wizard.step === 'details' ||
     (packageStepEnabled && wizard.step === 'package');
+  const showPreview =
+    (packageStepEnabled && wizard.step === 'package') ||
+    (!packageStepEnabled && wizard.step === 'details');
 
   return (
-    <PostWizardShell
-      step={wizard.step}
-      canNext={wizard.canNext}
-      nextLabel={nextLabel}
-      nextLoading={submitting}
-      showBack={showBack}
-      showNext={showNext}
-      scrollViewRef={scrollViewRef}
-      onClose={close}
-      onBack={back}
-      onNext={() => void onNext()}
-      onPressStep={(key: ListingWizardStep) => wizard.setStep(key)}
-    >
-      {wizard.step === 'type' ? (
-        <PostTypeStep
-          phase={wizard.typePhase}
-          categoryTree={categoryTree}
-          selectedRootSlug={wizard.selectedRootSlug}
-          selectedType={wizard.draft.type}
-          loading={catalogLoading}
-          error={catalogError}
-          onSelectRoot={wizard.selectRoot}
-          onSelectType={wizard.selectType}
-          onBack={back}
-        />
-      ) : null}
-      {wizard.step === 'details' ? (
-        <View style={styles.detailsBlock}>
-          {submitError ? (
-            <Text style={[styles.submitErr, { color: errorColor }]}>{submitError}</Text>
-          ) : null}
-          <PostDetailsStep
-            draft={wizard.draft}
-            errors={currentFieldErrors}
-            globalConfigs={globalConfigs}
-            customGlobalProperties={customGlobalProperties}
-            tjkPromptSeen={wizard.tjkPromptSeen}
-            scrollViewRef={scrollViewRef}
-            scrollTrigger={scrollTrigger}
-            onUpdate={wizard.updateDetails}
-            onMediaChange={wizard.setMedia}
-            onSetCover={wizard.setCover}
-            onApplyTjk={wizard.applyTjk}
-            onSkipTjk={wizard.skipTjk}
-            onMarkTjkSeen={wizard.markTjkPromptSeen}
-            onCategoryPropertiesLoaded={setLoadedCategoryProperties}
+    <>
+      <PostWizardShell
+        step={wizard.step}
+        canNext={wizard.canNext}
+        nextLabel={nextLabel}
+        nextLoading={submitting}
+        showBack={showBack}
+        showNext={showNext}
+        showPreview={showPreview}
+        onPreview={() => setPreviewModalOpen(true)}
+        previewLabel="İlan Önizleme"
+        scrollViewRef={scrollViewRef}
+        onClose={close}
+        onBack={back}
+        onNext={() => void onNext()}
+        onPressStep={(key: ListingWizardStep) => wizard.setStep(key)}
+      >
+        {wizard.step === 'type' ? (
+          <PostTypeStep
+            phase={wizard.typePhase}
+            categoryTree={categoryTree}
+            selectedRootSlug={wizard.selectedRootSlug}
+            selectedType={wizard.draft.type}
+            loading={catalogLoading}
+            error={catalogError}
+            onSelectRoot={wizard.selectRoot}
+            onSelectType={wizard.selectType}
+            onBack={back}
           />
-        </View>
-      ) : null}
-      {wizard.step === 'package' && packageStepEnabled ? (
-        <View>
-          {wizard.mediaSyncStatus === 'uploading' ? (
-            <Text style={styles.mediaHint}>
-              Görseller arka planda yükleniyor — paket seçmeye devam edebilirsiniz.
-            </Text>
-          ) : null}
-          {wizard.mediaSyncStatus === 'error' && wizard.mediaSyncError ? (
-            <Text style={[styles.submitErr, { color: errorColor }]}>
-              {wizard.mediaSyncError}
-            </Text>
-          ) : null}
-          <PostPackagesStep
-            packages={packages}
-            selected={wizard.draft.packageCode}
-            error={submitError ?? packageError ?? catalogError}
-            onSelect={wizard.selectPackage}
+        ) : null}
+        {wizard.step === 'details' ? (
+          <View style={styles.detailsBlock}>
+            {submitError ? (
+              <Text style={[styles.submitErr, { color: errorColor }]}>{submitError}</Text>
+            ) : null}
+            <PostDetailsStep
+              draft={wizard.draft}
+              errors={currentFieldErrors}
+              globalConfigs={globalConfigs}
+              customGlobalProperties={customGlobalProperties}
+              tjkPromptSeen={wizard.tjkPromptSeen}
+              scrollViewRef={scrollViewRef}
+              scrollTrigger={scrollTrigger}
+              onUpdate={wizard.updateDetails}
+              onMediaChange={wizard.setMedia}
+              onSetCover={wizard.setCover}
+              onApplyTjk={wizard.applyTjk}
+              onSkipTjk={wizard.skipTjk}
+              onMarkTjkSeen={wizard.markTjkPromptSeen}
+              onCategoryPropertiesLoaded={setLoadedCategoryProperties}
+            />
+          </View>
+        ) : null}
+        {wizard.step === 'package' && packageStepEnabled ? (
+          <View>
+            {wizard.mediaSyncStatus === 'uploading' ? (
+              <Text style={styles.mediaHint}>
+                Görseller arka planda yükleniyor — paket seçmeye devam edebilirsiniz.
+              </Text>
+            ) : null}
+            {wizard.mediaSyncStatus === 'error' && wizard.mediaSyncError ? (
+              <Text style={[styles.submitErr, { color: errorColor }]}>
+                {wizard.mediaSyncError}
+              </Text>
+            ) : null}
+            <PostPackagesStep
+              packages={packages}
+              selected={wizard.draft.packageCode}
+              draft={wizard.draft}
+              error={submitError ?? packageError ?? catalogError}
+              onSelect={wizard.selectPackage}
+            />
+          </View>
+        ) : null}
+        {wizard.step === 'payment' && paytrEnabled ? (
+          <PostPaymentStep
+            iframeUrl={wizard.paytrIframeUrl}
+            packageName={
+              packages.find((p) => p.code === wizard.draft.packageCode)?.name ??
+              wizard.draft.packageCode
+            }
+            amountMinor={wizard.paytrAmountMinor}
+            error={submitError}
+            onRetry={() => {
+              setSubmitError(null);
+              void submitListing();
+            }}
           />
-        </View>
-      ) : null}
-      {wizard.step === 'payment' && paytrEnabled ? (
-        <PostPaymentStep
-          iframeUrl={wizard.paytrIframeUrl}
-          packageName={
-            packages.find((p) => p.code === wizard.draft.packageCode)?.name ??
-            wizard.draft.packageCode
-          }
-          amountMinor={wizard.paytrAmountMinor}
-          error={submitError}
-          onRetry={() => {
-            setSubmitError(null);
-            void submitListing();
-          }}
-        />
-      ) : null}
-      {wizard.step === 'review' ? (
-        <PostReviewStep
-          advertId={wizard.submittedDraftId}
-          status={wizard.submittedStatus}
-          title={wizard.draft.details.title}
-          categoryName={wizard.draft.type?.categoryName}
-          priceTl={wizard.draft.details.priceTl}
-          coverUri={
-            wizard.draft.media.find((m) => m.isCover)?.uri ||
-            wizard.draft.media[0]?.uri
-          }
-          onGoListings={() => {
-            resetListingWizard();
-            router.replace('/my-listings');
-          }}
-          onGoHome={() => {
-            resetListingWizard();
-            router.replace('/');
-          }}
-          onNewListing={() => {
-            resetListingWizard();
-          }}
-        />
-      ) : null}
-    </PostWizardShell>
+        ) : null}
+        {wizard.step === 'review' ? (
+          <PostReviewStep
+            advertId={wizard.submittedDraftId}
+            status={wizard.submittedStatus}
+            title={wizard.draft.details.title}
+            categoryName={wizard.draft.type?.categoryName}
+            priceTl={wizard.draft.details.priceTl}
+            coverUri={
+              wizard.draft.media.find((m) => m.isCover)?.uri ||
+              wizard.draft.media[0]?.uri
+            }
+            onGoListings={() => {
+              resetListingWizard();
+              router.replace('/my-listings');
+            }}
+            onGoHome={() => {
+              resetListingWizard();
+              router.replace('/');
+            }}
+            onNewListing={() => {
+              resetListingWizard();
+            }}
+          />
+        ) : null}
+      </PostWizardShell>
+
+      <PostAdvertPreviewModal
+        visible={previewModalOpen}
+        draft={wizard.draft}
+        onClose={() => setPreviewModalOpen(false)}
+        onEdit={() => {
+          setPreviewModalOpen(false);
+          wizard.setStep('details');
+        }}
+        onContinue={() => setPreviewModalOpen(false)}
+      />
+    </>
   );
 }
 

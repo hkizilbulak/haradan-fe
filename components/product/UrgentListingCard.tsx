@@ -152,14 +152,6 @@ function UrgentListingCardComponent({
               <Text style={styles.featuredPrice}>
                 {formatMoney(product.price)}
               </Text>
-              <View style={styles.viewChip}>
-                <Ionicons
-                  name="eye-outline"
-                  size={13}
-                  color="rgba(255,255,255,0.82)"
-                />
-                <Text style={styles.viewChipText}>{views}</Text>
-              </View>
             </View>
           </View>
         </Animated.View>
@@ -221,7 +213,6 @@ function UrgentListingCardComponent({
             <Text style={[styles.tilePrice, { color: text }]}>
               {formatMoney(product.price)}
             </Text>
-            <Text style={[styles.tileViews, { color: textMuted }]}>{views}</Text>
           </View>
         </View>
       </Pressable>
@@ -290,10 +281,6 @@ function UrgentListingCardComponent({
           <Text style={[styles.rowPrice, compact && styles.rowPriceCompact, { color: text }]}>
             {formatMoney(product.price)}
           </Text>
-          <View style={styles.viewMeta}>
-            <Ionicons name="eye-outline" size={13} color={textMuted} />
-            <Text style={[styles.rowViews, { color: textMuted }]}>{views}</Text>
-          </View>
         </View>
       </View>
     </Pressable>

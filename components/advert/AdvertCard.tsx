@@ -167,13 +167,6 @@ function AdvertCardComponent({
             </Text>
           </View>
           <View style={styles.metaSubRow}>
-            <View style={styles.viewRow}>
-              <Ionicons name="eye-outline" size={12} color={textMuted} />
-              <Text style={[styles.meta, { color: textMuted }]}>
-                {formatViewCount(advert.viewCount)}
-              </Text>
-            </View>
-            <Text style={[styles.meta, { color: textMuted }]}>•</Text>
             <Text style={[styles.meta, { color: textMuted }]}>{relative}</Text>
           </View>
         </View>

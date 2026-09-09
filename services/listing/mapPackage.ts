@@ -56,6 +56,9 @@ export function mapPublicPackage(pkg: PublicPackage): ListingPackage {
     price: pkg.displayPrice ?? { amountMinor: 0, currency: 'TRY' },
     durationDays: pkg.defaultDurationDays ?? 30,
     highlighted: Boolean((pkg.badgeText ?? '').trim()),
+    allowsUrgent: pkg.allowsUrgent,
+    showcaseEligible: pkg.showcaseEligible,
+    featuredDays: pkg.featuredDays,
     features: (pkg.benefits ?? []).map((label, index) =>
       parseBenefit(label, index, pkg.code)
     ),
