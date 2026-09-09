@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo, useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -14,6 +14,12 @@ import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthSession } from '@/hooks/useAuthSession';
+import {
+  digitsOnly,
+  formatNationalPhone,
+  isValidNationalPhone,
+  parseInternationalPhone,
+} from '@/services/phone';
 import type { AuthUser } from '@/types';
 
 type SettingsDrawerProps = {
@@ -21,7 +27,7 @@ type SettingsDrawerProps = {
 };
 
 /* ─── Expandable setting item key ─── */
-type SettingKey = 'password' | 'email' | 'name';
+type SettingKey = 'password' | 'email' | 'name' | 'phone';
 
 /* ─── Inline row component (same pattern as ProfileDrawer) ─── */
 type RowProps = {
@@ -217,6 +223,22 @@ export const SettingsDrawer = memo(function SettingsDrawer({
   const [firstName, setFirstName] = useState(user?.firstName ?? '');
   const [lastName, setLastName] = useState(user?.lastName ?? '');
 
+  // Phone form state
+  const [phoneInput, setPhoneInput] = useState(() => {
+    if (user?.phone) {
+      return parseInternationalPhone(user.phone).national;
+    }
+    return '';
+  });
+
+  useEffect(() => {
+    if (user?.firstName !== undefined) setFirstName(user.firstName ?? '');
+    if (user?.lastName !== undefined) setLastName(user.lastName ?? '');
+    if (user?.phone !== undefined) {
+      setPhoneInput(user.phone ? parseInternationalPhone(user.phone).national : '');
+    }
+  }, [user?.firstName, user?.lastName, user?.phone]);
+
   const toggle = useCallback(
     (key: SettingKey) => {
       clearError();
@@ -287,51 +309,77 @@ export const SettingsDrawer = memo(function SettingsDrawer({
     }
   }, [updateProfile, accessToken, firstName, lastName, clearError, session]);
 
+  /* ── Telefon Numarası Değiştir ── */
+  const handleUpdatePhone = useCallback(async () => {
+    clearError();
+    setSuccessMsg(null);
+    const digits = digitsOnly(phoneInput);
+    const clean = digits.startsWith('0') ? digits.slice(1) : digits;
+    const fullPhone = clean ? `+90${clean}` : null;
+
+    const result = await updateProfile(accessToken, {
+      phone: fullPhone,
+    });
+    if (result) {
+      setSuccessMsg('Telefon numaranız güncellendi.');
+      if (session) {
+        const { setAuthSession } = await import('@/services/auth/sessionStore');
+        setAuthSession({
+          ...session,
+          user: {
+            ...session.user,
+            phone: result.phone ?? fullPhone,
+          },
+        });
+      }
+    }
+  }, [updateProfile, accessToken, phoneInput, clearError, session]);
+
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.body}
     >
-      {/* ── 1. Şifre Değiştir ── */}
+      {/* ── 1. Hesap İsmi Değiştir ── */}
       <SettingsRow
-        icon="lock-closed-outline"
-        label="Şifre Değiştir"
-        onPress={() => toggle('password')}
-        expanded={expanded === 'password'}
+        icon="person-outline"
+        label="Hesap İsmi Değiştir"
+        onPress={() => toggle('name')}
+        expanded={expanded === 'name'}
         text={text}
         textMuted={textMuted}
       />
-      {expanded === 'password' && (
+      {expanded === 'name' && (
         <View style={[styles.formWrap, { borderColor: border }]}>
           <InlineField
-            placeholder="Mevcut şifre"
-            value={currentPw}
-            onChangeText={setCurrentPw}
-            secureTextEntry
+            placeholder="Ad"
+            value={firstName}
+            onChangeText={setFirstName}
+            autoCapitalize="words"
             border={border}
             text={text}
             textMuted={textMuted}
           />
           <InlineField
-            placeholder="Yeni şifre (en az 8 karakter)"
-            value={newPw}
-            onChangeText={setNewPw}
-            secureTextEntry
+            placeholder="Soyad"
+            value={lastName}
+            onChangeText={setLastName}
+            autoCapitalize="words"
             border={border}
             text={text}
             textMuted={textMuted}
           />
           <StatusBanner
-            message={expanded === 'password' ? (error ?? successMsg) : null}
+            message={expanded === 'name' ? (error ?? successMsg) : null}
             isError={!!error}
             errorColor="#e53935"
             successColor="#43a047"
           />
           <ActionButton
-            label="Şifreyi Güncelle"
-            onPress={handleChangePassword}
+            label="İsmi Güncelle"
+            onPress={handleUpdateName}
             loading={loading}
-            disabled={!currentPw || !newPw || newPw.length < 8}
+            disabled={!firstName.trim() || !lastName.trim()}
             primary={primary}
           />
         </View>
@@ -376,46 +424,92 @@ export const SettingsDrawer = memo(function SettingsDrawer({
         </View>
       )}
 
-      {/* ── 3. Hesap İsmi Değiştir ── */}
+      {/* ── 3. Telefon Numarası Değiştir ── */}
       <SettingsRow
-        icon="person-outline"
-        label="Hesap İsmi Değiştir"
-        onPress={() => toggle('name')}
-        expanded={expanded === 'name'}
+        icon="call-outline"
+        label="Telefon Numarası Değiştir"
+        onPress={() => toggle('phone')}
+        expanded={expanded === 'phone'}
         text={text}
         textMuted={textMuted}
       />
-      {expanded === 'name' && (
+      {expanded === 'phone' && (
         <View style={[styles.formWrap, { borderColor: border }]}>
-          <InlineField
-            placeholder="Ad"
-            value={firstName}
-            onChangeText={setFirstName}
-            autoCapitalize="words"
-            border={border}
-            text={text}
-            textMuted={textMuted}
-          />
-          <InlineField
-            placeholder="Soyad"
-            value={lastName}
-            onChangeText={setLastName}
-            autoCapitalize="words"
-            border={border}
-            text={text}
-            textMuted={textMuted}
-          />
+          <Text style={[styles.hint, { color: textMuted }]}>
+            Mevcut: {user?.phone ? (parseInternationalPhone(user.phone).national ? `+90 ${parseInternationalPhone(user.phone).national}` : user.phone) : 'Belirtilmedi'}
+          </Text>
+          <View style={styles.phoneInputRow}>
+            <View style={[styles.phonePrefix, { borderColor: border, backgroundColor: 'rgba(150,150,150,0.06)' }]}>
+              <Text style={[styles.phonePrefixText, { color: text }]}>🇹🇷 +90</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <InlineField
+                placeholder="5XX XXX XX XX"
+                value={phoneInput}
+                onChangeText={(v) => setPhoneInput(formatNationalPhone('TR', v))}
+                keyboardType="phone-pad"
+                border={border}
+                text={text}
+                textMuted={textMuted}
+              />
+            </View>
+          </View>
           <StatusBanner
-            message={expanded === 'name' ? (error ?? successMsg) : null}
+            message={expanded === 'phone' ? (error ?? successMsg) : null}
             isError={!!error}
             errorColor="#e53935"
             successColor="#43a047"
           />
           <ActionButton
-            label="İsmi Güncelle"
-            onPress={handleUpdateName}
+            label="Telefon Numarasını Güncelle"
+            onPress={handleUpdatePhone}
             loading={loading}
-            disabled={!firstName.trim() || !lastName.trim()}
+            disabled={!isValidNationalPhone('TR', phoneInput)}
+            primary={primary}
+          />
+        </View>
+      )}
+
+      {/* ── 4. Şifre Değiştir ── */}
+      <SettingsRow
+        icon="lock-closed-outline"
+        label="Şifre Değiştir"
+        onPress={() => toggle('password')}
+        expanded={expanded === 'password'}
+        text={text}
+        textMuted={textMuted}
+      />
+      {expanded === 'password' && (
+        <View style={[styles.formWrap, { borderColor: border }]}>
+          <InlineField
+            placeholder="Mevcut şifre"
+            value={currentPw}
+            onChangeText={setCurrentPw}
+            secureTextEntry
+            border={border}
+            text={text}
+            textMuted={textMuted}
+          />
+          <InlineField
+            placeholder="Yeni şifre (en az 8 karakter)"
+            value={newPw}
+            onChangeText={setNewPw}
+            secureTextEntry
+            border={border}
+            text={text}
+            textMuted={textMuted}
+          />
+          <StatusBanner
+            message={expanded === 'password' ? (error ?? successMsg) : null}
+            isError={!!error}
+            errorColor="#e53935"
+            successColor="#43a047"
+          />
+          <ActionButton
+            label="Şifreyi Güncelle"
+            onPress={handleChangePassword}
+            loading={loading}
+            disabled={!currentPw || !newPw || newPw.length < 8}
             primary={primary}
           />
         </View>
@@ -494,5 +588,22 @@ const styles = StyleSheet.create({
     width: 32,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  phoneInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  phonePrefix: {
+    height: 44,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  phonePrefixText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

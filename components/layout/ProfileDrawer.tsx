@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Spacing } from '@/constants/Spacing';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { parseInternationalPhone } from '@/services/phone';
 import type { AuthUser } from '@/types';
 
 export type ProfileDrawerAction =
@@ -121,14 +122,21 @@ export const ProfileDrawer = memo(function ProfileDrawer({
 
   const identity = useMemo(() => {
     if (!user) {
-      return { name: 'Hesabım', initials: 'H', email: '' };
+      return { name: 'Hesabım', initials: 'H', email: '', phone: null };
     }
     const full = `${user.firstName} ${user.lastName}`.trim();
     const name = full || nameFromEmail(user.email);
     const initials = full
       ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toLocaleUpperCase('tr')
       : initialsFromEmail(user.email);
-    return { name, initials: initials || 'H', email: user.email };
+
+    let phoneText: string | null = null;
+    if (user.phone && user.phone.trim()) {
+      const { national } = parseInternationalPhone(user.phone);
+      phoneText = national ? `+90 ${national}` : user.phone.trim();
+    }
+
+    return { name, initials: initials || 'H', email: user.email, phone: phoneText };
   }, [user]);
 
   return (
@@ -149,6 +157,25 @@ export const ProfileDrawer = memo(function ProfileDrawer({
             {identity.email}
           </Text>
         ) : null}
+
+        {/* Kayıtlı Telefon Numarası veya Uyarı */}
+        {identity.phone ? (
+          <View style={[styles.phoneBadge, { backgroundColor: 'rgba(150,150,150,0.06)', borderColor: border }]}>
+            <Ionicons name="call-outline" size={12} color={textMuted} />
+            <Text style={[styles.phoneText, { color: text }]}>{identity.phone}</Text>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => onNavigate?.('settings')}
+            style={[styles.phoneWarningBadge, { backgroundColor: 'rgba(234, 88, 12, 0.08)', borderColor: 'rgba(234, 88, 12, 0.28)' }]}
+            accessibilityRole="button"
+            accessibilityLabel="Telefon numarası kayıtlı değil. Eklemek için dokunun."
+          >
+            <Ionicons name="alert-circle-outline" size={13} color="#ea580c" />
+            <Text style={styles.phoneWarningText}>Telefon numarası kayıtlı değil</Text>
+            <Ionicons name="chevron-forward" size={11} color="#ea580c" />
+          </Pressable>
+        )}
       </View>
 
       {/* ─── Grup 1: İlan & Favoriler ─── */}
@@ -257,6 +284,41 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '400',
     textAlign: 'center',
+  },
+  phoneBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginTop: 2,
+  },
+  phoneText: {
+    fontSize: 12.5,
+    fontWeight: '500',
+    letterSpacing: 0.1,
+  },
+  phoneWarningBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 2,
+    ...Platform.select({
+      web: { cursor: 'pointer' } as any,
+      default: {},
+    }),
+  },
+  phoneWarningText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ea580c',
+    letterSpacing: -0.1,
   },
 
   // Kart Grubu (Apple Inset Card Style)

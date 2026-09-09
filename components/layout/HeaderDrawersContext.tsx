@@ -17,7 +17,8 @@ import { SideDrawer } from '@/components/layout/SideDrawer';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useFavorites } from '@/hooks/useFavorites';
-import { useThemeColor } from '@/hooks/useThemeColor'
+import { useThemeColor } from '@/hooks/useThemeColor';
+import { prepareListingWizardEntry } from '@/services/listing';
 import type { AdvertId } from '@/types/advertId';
 
 type DrawerPanel = 'none' | 'profile' | 'favorites' | 'settings';
@@ -141,6 +142,12 @@ export function HeaderDrawersProvider({
       if (action === 'listings') {
         closeAll();
         router.push('/my-listings');
+        return;
+      }
+      if (action === 'post') {
+        closeAll();
+        prepareListingWizardEntry();
+        router.push('/post');
         return;
       }
       closeAll();

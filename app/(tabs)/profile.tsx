@@ -23,6 +23,7 @@ import { useAuthSession } from '@/hooks/useAuthSession';
 import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { prepareListingWizardEntry } from '@/services/listing';
 
 type MobilePanel = 'menu' | 'settings';
 
@@ -67,6 +68,7 @@ export default function ProfileScreen() {
         return;
       }
       if (action === 'post') {
+        prepareListingWizardEntry();
         router.push('/post');
         return;
       }
