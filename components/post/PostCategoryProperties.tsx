@@ -768,8 +768,20 @@ export function PostCategoryProperties({
   const cardContent = (
     <>
       {!hideCard && (
-        <View style={[styles.cardHeader, { borderBottomColor: border }]}>
-          <Text style={[styles.section, { color: text }]}>{categoryTitle}</Text>
+        <View
+          style={[
+            styles.cardHeader,
+            {
+              borderBottomColor: border,
+              flexDirection: 'row',
+              alignItems: 'center',
+            },
+          ]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="options-outline" size={17} color={header} />
+            <Text style={[styles.section, { color: text }]}>{categoryTitle}</Text>
+          </View>
         </View>
       )}
 
@@ -791,7 +803,7 @@ export function PostCategoryProperties({
                   <View style={styles.labelCol}>
                     <Text style={[styles.readOnlyLabel, { color: secondary }]}>{prop.title}</Text>
                   </View>
-                  <View style={styles.inputCol}>
+                  <View style={[styles.inputCol, { alignItems: 'flex-end' }]}>
                     <Text style={[styles.readOnlyValue, { color: text }]}>{getDisplayLabel(prop)}</Text>
                   </View>
                 </View>
@@ -801,7 +813,7 @@ export function PostCategoryProperties({
                     <View style={styles.labelCol}>
                       <Text style={[styles.readOnlyLabel, { color: secondary }]}>TJK No</Text>
                     </View>
-                    <View style={styles.inputCol}>
+                    <View style={[styles.inputCol, { alignItems: 'flex-end' }]}>
                       <Text style={[styles.readOnlyValue, { color: text }]}>{d.tjkNumber}</Text>
                     </View>
                   </View>
@@ -818,7 +830,7 @@ export function PostCategoryProperties({
                   {pregnancyProps.pregnantProp.title || 'Gebe mi?'}
                 </Text>
               </View>
-              <View style={styles.inputCol}>
+              <View style={[styles.inputCol, { alignItems: 'flex-end' }]}>
                 <Text style={[styles.readOnlyValue, { color: text }]}>
                   {getDisplayLabel(pregnancyProps.pregnantProp)}
                 </Text>
@@ -1491,7 +1503,7 @@ const styles = StyleSheet.create({
     ...Typography.body,
     fontSize: 14,
     fontWeight: '700',
-    textAlign: 'left',
+    textAlign: 'right',
     flex: 1,
   },
   switch: {

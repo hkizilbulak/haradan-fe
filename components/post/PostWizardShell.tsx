@@ -54,7 +54,7 @@ export function PostWizardShell({
   const surface = useThemeColor('surface');
   const text = useThemeColor('text');
   const border = useThemeColor('border');
-  const contentMax = step === 'package' ? 980 : 560;
+  const contentMax = step === 'package' ? 980 : 720;
 
   return (
     <View style={[styles.root, { backgroundColor: bg, paddingTop: insets.top }]}>
@@ -64,7 +64,7 @@ export function PostWizardShell({
           { backgroundColor: surface, borderBottomColor: border },
         ]}
       >
-        <View style={[styles.topInner, isWide && styles.topWide]}>
+        <View style={[styles.topInner, isWide && { maxWidth: contentMax, width: '100%', alignSelf: 'center' }]}>
           <Pressable
             onPress={onClose}
             hitSlop={8}
@@ -77,7 +77,7 @@ export function PostWizardShell({
           <Text style={[styles.brand, { color: text }]}>İlan Ver</Text>
           <View style={styles.close} />
         </View>
-        <View style={[styles.stepWrap, isWide && styles.topWide]}>
+        <View style={[styles.stepWrap, isWide && { maxWidth: contentMax, width: '100%', alignSelf: 'center' }]}>
           <PostStepper step={step} onPressStep={onPressStep} />
         </View>
       </View>

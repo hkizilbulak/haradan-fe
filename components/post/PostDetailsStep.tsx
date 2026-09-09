@@ -432,16 +432,7 @@ export function PostDetailsStep({
               </Text>
               <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
             </Pressable>
-            {locked && (
-              <Pressable
-                onPress={() => setTjkEditMode(false)}
-                accessibilityRole="button"
-                style={({ pressed }) => [styles.doneBtn, { borderColor: secondary, opacity: pressed ? 0.7 : 1 }]}
-              >
-                <Ionicons name="checkmark" size={15} color={secondary} />
-                <Text style={[styles.doneBtnLabel, { color: secondary }]}>Bitti</Text>
-              </Pressable>
-            )}
+
             {locked && tjkEditMode && (
               <>
                 <PostCategoryProperties
@@ -460,13 +451,13 @@ export function PostDetailsStep({
                     styles.doneBtn,
                     {
                       borderColor: header,
-                      backgroundColor: surface,
+                      backgroundColor: header,
                       opacity: pressed ? 0.7 : 1,
                     },
                   ]}
                 >
-                  <Ionicons name="checkmark-circle-outline" size={16} color={header} />
-                  <Text style={[styles.doneBtnLabel, { color: header, fontWeight: '700' }]}>Bitti</Text>
+                  <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
+                  <Text style={[styles.doneBtnLabel, { color: '#fff', fontWeight: '700', fontSize: 15 }]}>Bitti</Text>
                 </Pressable>
               </>
             )}
@@ -474,18 +465,46 @@ export function PostDetailsStep({
         )
       ) : null}
 
+      {/* Standalone category properties — only shown when horse is not locked / non-TJK */}
+      {!locked && (
+        <PostCategoryProperties
+          draft={draft}
+          onUpdate={onUpdate}
+          errors={errors}
+          onPropertiesLoaded={onCategoryPropertiesLoaded}
+          onLayoutSection={(_section, y) => {
+            fieldYMap.current.categoryProperties = y;
+          }}
+        />
+      )}
+
       <View
         style={[styles.card, { backgroundColor: surface, borderColor: border }]}
         onLayout={(e) => {
           card1Y.current = e.nativeEvent.layout.y;
-          ['title', 'description', 'priceTl', 'provinceId', 'districtId', 'address'].forEach((k) => updateFieldY(k));
+          ['title', 'description', 'priceTl', 'provinceId', 'districtId', 'sellerPhone'].forEach((k) => updateFieldY(k));
         }}
       >
-        <View style={[styles.cardHeader, { borderBottomColor: border }]}>
-          <Text style={[styles.section, { color: text }]}>İlan</Text>
+        <View
+          style={[
+            styles.cardHeader,
+            {
+              borderBottomColor: border,
+              flexDirection: 'row',
+              alignItems: 'center',
+            },
+          ]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="document-text-outline" size={17} color={header} />
+            <Text style={[styles.section, { color: text }]}>İlan Detayları</Text>
+          </View>
         </View>
 
-        <View style={styles.fieldRow} onLayout={(e) => updateFieldY('title', e.nativeEvent.layout.y)}>
+        <View
+          style={[styles.fieldRow, { borderTopWidth: 0 }]}
+          onLayout={(e) => updateFieldY('title', e.nativeEvent.layout.y)}
+        >
           <PostField
             label="Başlık"
             required
@@ -536,121 +555,115 @@ export function PostDetailsStep({
         ) : null}
 
         {locationConfig.isActive ? (
-          <>
-            <View
-              style={[styles.fieldRow, { borderTopColor: border }]}
-              onLayout={(e) => updateFieldY('provinceId', e.nativeEvent.layout.y)}
-            >
-              <View style={styles.horizontalRow}>
-                <View style={styles.labelCol}>
-                  <Text style={[styles.fieldLabel, { color: secondary }]}>
-                    İl
-                    {locationConfig.isRequired ? (
-                      <Text style={{ color: errorColor }}> *</Text>
-                    ) : null}
-                  </Text>
-                </View>
-                <View style={styles.inputCol}>
-                  <Pressable
-                    onPress={() => setProvinceOpen(true)}
-                    style={[
-                      styles.select,
-                      {
-                        borderColor: errors.provinceId ? errorColor : border,
-                        backgroundColor: surface,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={{
-                        color: provinceName ? text : muted,
-                        ...Typography.body,
-                        fontSize: 14,
-                        flex: 1,
-                      }}
-                    >
-                      {provinceName || 'İl seçin'}
-                    </Text>
-                    <Ionicons name="chevron-down" size={16} color={muted} />
-                  </Pressable>
-                  {errors.provinceId ? (
-                    <Text style={[styles.err, { color: errorColor }]}>{errors.provinceId}</Text>
-                  ) : provincesError ? (
-                    <Pressable onPress={retryProvinces}>
-                      <Text style={[styles.err, { color: errorColor }]}>
-                        {provincesError} · Yenile
-                      </Text>
-                    </Pressable>
-                  ) : null}
-                </View>
-              </View>
-            </View>
-
-            <View
-              style={[styles.fieldRow, { borderTopColor: border }]}
-              onLayout={(e) => updateFieldY('districtId', e.nativeEvent.layout.y)}
-            >
-              <View style={styles.horizontalRow}>
-                <View style={styles.labelCol}>
-                  <Text style={[styles.fieldLabel, { color: secondary }]}>
-                    İlçe
-                    {locationConfig.isRequired ? (
-                      <Text style={{ color: errorColor }}> *</Text>
-                    ) : null}
-                  </Text>
-                </View>
-                <View style={styles.inputCol}>
-                  <Pressable
-                    onPress={() => d.provinceId && setDistrictOpen(true)}
-                    style={[
-                      styles.select,
-                      {
-                        borderColor: errors.districtId ? errorColor : border,
-                        backgroundColor: surface,
-                        opacity: d.provinceId ? 1 : 0.55,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={{
-                        color: districtName ? text : muted,
-                        ...Typography.body,
-                        fontSize: 14,
-                        flex: 1,
-                      }}
-                    >
-                      {districtName || (d.provinceId ? 'İlçe seçin' : 'Önce il seçin')}
-                    </Text>
-                    <Ionicons name="chevron-down" size={16} color={muted} />
-                  </Pressable>
-                  {errors.districtId ? (
-                    <Text style={[styles.err, { color: errorColor }]}>{errors.districtId}</Text>
-                  ) : districtsError ? (
-                    <Pressable onPress={retryDistricts}>
-                      <Text style={[styles.err, { color: errorColor }]}>
-                        {districtsError} · Yenile
-                      </Text>
-                    </Pressable>
-                  ) : null}
-                </View>
-              </View>
-            </View>
-          </>
-        ) : null}
-
-        {addressConfig.isActive ? (
           <View
             style={[styles.fieldRow, { borderTopColor: border }]}
-            onLayout={(e) => updateFieldY('address', e.nativeEvent.layout.y)}
+            onLayout={(e) => {
+              const y = e.nativeEvent.layout.y;
+              updateFieldY('provinceId', y);
+              updateFieldY('districtId', y);
+            }}
           >
-            <PostField
-              label={addressConfig.title}
-              required={addressConfig.isRequired}
-              value={d.address}
-              onChangeText={(address) => onUpdate({ address })}
-              placeholder="Mahalle, cadde, sokak, no, tesis veya çiftlik/hara adı…"
-              error={errors.address}
-              multiline
+            <View style={styles.horizontalRow}>
+              <View style={styles.labelCol}>
+                <Text style={[styles.fieldLabel, { color: secondary }]}>
+                  İl / İlçe
+                  {locationConfig.isRequired ? (
+                    <Text style={{ color: errorColor }}> *</Text>
+                  ) : null}
+                </Text>
+              </View>
+
+              <View style={styles.inputCol}>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  {/* İl */}
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Pressable
+                      onPress={() => setProvinceOpen(true)}
+                      style={[
+                        styles.select,
+                        {
+                          borderColor: errors.provinceId ? errorColor : border,
+                          backgroundColor: surface,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={{
+                          color: provinceName ? text : muted,
+                          ...Typography.body,
+                          fontSize: 14,
+                          flex: 1,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {provinceName || 'İl seçin'}
+                      </Text>
+                      <Ionicons name="chevron-down" size={16} color={muted} />
+                    </Pressable>
+                    {errors.provinceId ? (
+                      <Text style={[styles.err, { color: errorColor }]}>{errors.provinceId}</Text>
+                    ) : provincesError ? (
+                      <Pressable onPress={retryProvinces}>
+                        <Text style={[styles.err, { color: errorColor }]}>
+                          {provincesError} · Yenile
+                        </Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+
+                  {/* İlçe */}
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Pressable
+                      onPress={() => d.provinceId && setDistrictOpen(true)}
+                      style={[
+                        styles.select,
+                        {
+                          borderColor: errors.districtId ? errorColor : border,
+                          backgroundColor: surface,
+                          opacity: d.provinceId ? 1 : 0.55,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={{
+                          color: districtName ? text : muted,
+                          ...Typography.body,
+                          fontSize: 14,
+                          flex: 1,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {districtName || (d.provinceId ? 'İlçe seçin' : 'Önce il seçin')}
+                      </Text>
+                      <Ionicons name="chevron-down" size={16} color={muted} />
+                    </Pressable>
+                    {errors.districtId ? (
+                      <Text style={[styles.err, { color: errorColor }]}>{errors.districtId}</Text>
+                    ) : districtsError ? (
+                      <Pressable onPress={retryDistricts}>
+                        <Text style={[styles.err, { color: errorColor }]}>
+                          {districtsError} · Yenile
+                        </Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+        ) : null}
+
+        {phoneConfig.isActive ? (
+          <View
+            style={[styles.fieldRow, { borderTopColor: border }]}
+            onLayout={(e) => updateFieldY('sellerPhone', e.nativeEvent.layout.y)}
+          >
+            <PostPhoneField
+              iso={d.phoneCountryIso || 'TR'}
+              national={d.sellerPhone}
+              error={errors.sellerPhone}
+              required={phoneConfig.isRequired}
+              onChange={onUpdate}
             />
           </View>
         ) : null}
@@ -664,7 +677,6 @@ export function PostDetailsStep({
             const err = errors[prop.code as keyof ListingFieldErrors];
 
             if (prop.dataType === 'BOOLEAN') {
-              const boolVal = Boolean(val);
               return (
                 <View
                   key={prop.code}
@@ -680,16 +692,16 @@ export function PostDetailsStep({
                     </View>
                     <View style={[styles.inputCol, { alignItems: 'flex-start', justifyContent: 'center' }]}>
                       <Pressable
-                        onPress={() => handleCustomPropertyChange(prop.code, !boolVal)}
+                        onPress={() => handleCustomPropertyChange(prop.code, !Boolean(val))}
                         accessibilityRole="switch"
-                        accessibilityState={{ checked: boolVal }}
+                        accessibilityState={{ checked: Boolean(val) }}
                       >
                         <View
                           style={[
                             styles.switch,
                             {
-                              backgroundColor: boolVal ? header : border,
-                              justifyContent: boolVal ? 'flex-end' : 'flex-start',
+                              backgroundColor: Boolean(val) ? header : border,
+                              justifyContent: Boolean(val) ? 'flex-end' : 'flex-start',
                             },
                           ]}
                         >
@@ -791,43 +803,6 @@ export function PostDetailsStep({
         ) : null}
       </View>
 
-      {phoneConfig.isActive ? (
-        <View
-          style={[styles.card, { backgroundColor: surface, borderColor: border }]}
-          onLayout={(e) => {
-            cardPhoneY.current = e.nativeEvent.layout.y;
-            updateFieldY('sellerPhone');
-          }}
-        >
-          <View style={[styles.cardHeader, { borderBottomColor: border }]}>
-            <Text style={[styles.section, { color: text }]}>{phoneConfig.title}</Text>
-          </View>
-          <View style={styles.fieldRow} onLayout={(e) => updateFieldY('sellerPhone', e.nativeEvent.layout.y)}>
-            <PostPhoneField
-              iso={d.phoneCountryIso || 'TR'}
-              national={d.sellerPhone}
-              error={errors.sellerPhone}
-              required={phoneConfig.isRequired}
-              onChange={onUpdate}
-            />
-          </View>
-        </View>
-      ) : null}
-
-
-
-      {/* Standalone category properties — only shown when horse is not locked / non-TJK */}
-      {!locked && (
-        <PostCategoryProperties
-          draft={draft}
-          onUpdate={onUpdate}
-          errors={errors}
-          onPropertiesLoaded={onCategoryPropertiesLoaded}
-          onLayoutSection={(_section, y) => {
-            fieldYMap.current.categoryProperties = y;
-          }}
-        />
-      )}
 
 
       <View
@@ -839,11 +814,14 @@ export function PostDetailsStep({
         }}
       >
         <View style={[styles.cardHeader, { borderBottomColor: border }]}>
-          <Text style={[styles.section, { color: text }]}>
-            Görseller
-            <Text style={{ color: errorColor }}> *</Text>
-          </Text>
-          <Text style={[styles.cardDesc, { color: secondary }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="images-outline" size={17} color={header} />
+            <Text style={[styles.section, { color: text }]}>
+              Görseller
+              <Text style={{ color: errorColor }}> *</Text>
+            </Text>
+          </View>
+          <Text style={[styles.cardDesc, { color: secondary, marginTop: 4 }]}>
             En fazla 5 fotoğraf ekleyebilirsiniz (En az 1 görsel zorunludur).
           </Text>
         </View>
@@ -928,6 +906,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e3e9ef',
   },
   horizontalRow: {
     flexDirection: 'row',
@@ -982,8 +961,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: 13,
+    borderRadius: 12,
     borderWidth: 1,
   },
   doneBtnLabel: {

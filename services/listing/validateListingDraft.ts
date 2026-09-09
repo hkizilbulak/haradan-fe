@@ -170,13 +170,13 @@ export function detailsErrors(
     if (!d.districtId) e.districtId = 'İlçe seçin.';
   }
 
-  // 4. Açık Adres
-  const addressConfig = globalConfigs.ADDRESS;
-  if (addressConfig && addressConfig.isActive && addressConfig.isRequired) {
-    if (!d.address.trim() || d.address.trim().length < 5) {
-      e.address = 'Açık adres zorunludur (en az 5 karakter).';
-    }
-  }
+  // 4. Açık Adres (UI'dan kaldırıldı)
+  // const addressConfig = globalConfigs.ADDRESS;
+  // if (addressConfig && addressConfig.isActive && addressConfig.isRequired) {
+  //   if (!d.address.trim() || d.address.trim().length < 5) {
+  //     e.address = 'Açık adres zorunludur (en az 5 karakter).';
+  //   }
+  // }
 
   // 5. Açıklama
   const descConfig = globalConfigs.DESCRIPTION;

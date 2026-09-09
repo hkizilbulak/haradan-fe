@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.sm,
   },
   topWide: {
-    maxWidth: 560,
+    maxWidth: 720,
     width: '100%',
     alignSelf: 'center',
   },
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: {
     width: '100%',
-    maxWidth: 560,
+    maxWidth: 720,
     alignSelf: 'center',
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.lg,
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   },
   footerInner: {
     width: '100%',
-    maxWidth: 560,
+    maxWidth: 720,
     alignSelf: 'center',
   },
 });
