@@ -17,6 +17,7 @@ import { useAdvertLocation } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
 import { formatViewCount } from '@/utils/formatViewCount';
 import { WishlistButton } from '@/components/advert/WishlistButton';
+import { useListingCardAttributes } from './cardAttributes';
 import type { CatalogProductCard } from '@/types';
 import type { AdvertId } from '@/types/advertId';
 
@@ -36,6 +37,9 @@ type UrgentListingCardProps = {
   onToggleFavorite?: (product: CatalogProductCard) => void;
 };
 
+
+
+
 function UrgentListingCardComponent({
   product,
   variant = 'row',
@@ -47,14 +51,18 @@ function UrgentListingCardComponent({
   onToggleFavorite,
 }: UrgentListingCardProps) {
   const text = useThemeColor('text');
+  const textSecondary = useThemeColor('textSecondary');
   const textMuted = useThemeColor('textMuted');
   const border = useThemeColor('border');
   const surface = useThemeColor('surface');
   const skeleton = useThemeColor('skeleton');
+  const chipBg = useThemeColor('background');
   const fade = useRef(new Animated.Value(1)).current;
   const bar = useRef(new Animated.Value(0)).current;
 
   const location = useAdvertLocation(product);
+  const attrs = useListingCardAttributes(product);
+  const cityLabel = attrs.province || 'Türkiye';
 
   const views = formatViewCount(product.viewCount);
 
@@ -169,14 +177,17 @@ function UrgentListingCardComponent({
       <Pressable
         onPress={handlePress}
         accessibilityRole="button"
-        accessibilityLabel={`${product.title}, ${location}, ${views} görüntülenme`}
+        accessibilityLabel={`${product.title}, ${cityLabel}`}
         style={({ pressed }) => [
           styles.tile,
           width ? { width } : null,
           { backgroundColor: surface, borderColor: border },
-          pressed && { opacity: 0.92 },
+          pressed && { opacity: 0.94 },
           Platform.select({
-            web: { cursor: 'pointer' as const },
+            web: {
+              cursor: 'pointer' as const,
+              boxShadow: '0 4px 18px -2px rgba(15, 23, 42, 0.05)',
+            },
             default: {},
           }),
         ]}
@@ -192,11 +203,13 @@ function UrgentListingCardComponent({
             cachePolicy="memory-disk"
           />
           <View style={styles.tileUrgent}>
-            <Text style={styles.tileUrgentText}>Acil</Text>
+            <View style={styles.tileUrgentDot} />
+            <Text style={styles.tileUrgentText}>ACİL</Text>
           </View>
           <View style={styles.tileWish}>
             <WishlistButton
               size="sm"
+              variant="circle"
               active={product.isFavorite === true}
               onPress={handleFavorite}
             />
@@ -206,14 +219,50 @@ function UrgentListingCardComponent({
           <Text style={[styles.tileTitle, { color: text }]} numberOfLines={2}>
             {product.title}
           </Text>
-          <Text style={[styles.tileMeta, { color: textMuted }]} numberOfLines={1}>
-            {location}
-          </Text>
-          <View style={styles.tileFooter}>
+          <View style={styles.tileLocationPriceRow}>
+            <View style={styles.tileLocationWrap}>
+              <Ionicons name="location-outline" size={13} color={textMuted} />
+              <Text style={[styles.tileMeta, { color: textSecondary }]} numberOfLines={1}>
+                {cityLabel}
+              </Text>
+            </View>
             <Text style={[styles.tilePrice, { color: text }]}>
               {formatMoney(product.price)}
             </Text>
           </View>
+          {/* 3. Cinsiyet, Yaş, Irk kutucukları (İkonsuz, sade ve net) */}
+          {attrs.serviceCategory ? (
+            <View style={styles.tileBoxesRow}>
+              <View style={[styles.tileBoxItem, { backgroundColor: chipBg }]}>
+                <Text style={[styles.tileBoxText, { color: textSecondary }]} numberOfLines={1}>
+                  {attrs.serviceCategory}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.tileBoxesRow}>
+              {/* Kutucuk 1: Cinsiyet */}
+              <View style={[styles.tileBoxItem, { backgroundColor: chipBg }]}>
+                <Text style={[styles.tileBoxText, { color: textSecondary }]} numberOfLines={1}>
+                  {attrs.gender || 'Erkek'}
+                </Text>
+              </View>
+
+              {/* Kutucuk 2: Yaş */}
+              <View style={[styles.tileBoxItem, { backgroundColor: chipBg }]}>
+                <Text style={[styles.tileBoxText, { color: textSecondary }]} numberOfLines={1}>
+                  {attrs.age || '4 yaş'}
+                </Text>
+              </View>
+
+              {/* Kutucuk 3: Irk */}
+              <View style={[styles.tileBoxItem, { backgroundColor: chipBg }]}>
+                <Text style={[styles.tileBoxText, { color: textSecondary }]} numberOfLines={1}>
+                  {attrs.breed || 'Arap'}
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
       </Pressable>
     );
@@ -504,14 +553,29 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   tile: {
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 20,
+    borderWidth: 1,
     overflow: 'hidden',
+    ...Platform.select({
+      web: {
+        transition: 'transform 240ms ease, box-shadow 240ms ease',
+      },
+      default: {
+        shadowColor: '#0f172a',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.07,
+        shadowRadius: 10,
+        elevation: 3,
+      },
+    }),
   },
   tileImageWrap: {
     width: '100%',
-    aspectRatio: 1,
+    aspectRatio: 4 / 3,
     position: 'relative',
+    borderTopLeftRadius: 19,
+    borderTopRightRadius: 19,
+    overflow: 'hidden',
   },
   tileImage: {
     width: '100%',
@@ -519,55 +583,104 @@ const styles = StyleSheet.create({
   },
   tileUrgent: {
     position: 'absolute',
-    top: 8,
-    left: 8,
+    top: 10,
+    left: 10,
     backgroundColor: URGENT_RED,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 4.5,
+    borderRadius: 999,
+    zIndex: 2,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 8px rgba(225, 29, 72, 0.35)',
+      },
+      default: {
+        shadowColor: '#e11d48',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.35,
+        shadowRadius: 4,
+        elevation: 2,
+      },
+    }),
+  },
+  tileUrgentDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#ffffff',
   },
   tileUrgentText: {
     color: '#fff',
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.3,
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 1.1,
   },
   tileWish: {
     position: 'absolute',
-    top: 6,
-    right: 6,
+    top: 10,
+    right: 10,
+    zIndex: 2,
   },
   tileBody: {
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 12,
-    gap: 4,
-    minHeight: 88,
+    paddingHorizontal: 12,
+    paddingTop: 11,
+    paddingBottom: 13,
+    gap: 8,
   },
   tileTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 17,
+    fontSize: 13.5,
+    fontWeight: '700',
+    lineHeight: 18,
     letterSpacing: -0.2,
-    minHeight: 34,
+    minHeight: 36,
   },
-  tileMeta: {
-    ...Typography.caption,
-    fontSize: 11,
-  },
-  tileFooter: {
+  tileLocationPriceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 4,
+    gap: 6,
+  },
+  tileLocationWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    flexShrink: 1,
+  },
+  tileMeta: {
+    fontSize: 12,
+    fontWeight: '500',
+    flexShrink: 1,
   },
   tilePrice: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.25,
+    flexShrink: 0,
   },
-  tileViews: {
-    fontSize: 11,
-    fontWeight: '500',
+  tileBoxesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 5,
+    marginTop: 4,
+  },
+  tileBoxItem: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  tileBoxText: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    textAlign: 'center',
+    flexShrink: 1,
   },
 });

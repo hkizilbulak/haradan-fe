@@ -11,16 +11,14 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Spacing } from '@/constants/Spacing';
-import { Typography } from '@/constants/Typography';
 import { useMediaImageSource } from '@/hooks/useMediaImageSource';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { useAdvertLocation } from '@/services/location';
 import { formatMoney } from '@/utils/formatMoney';
-import { formatViewCount } from '@/utils/formatViewCount';
 import { WishlistButton } from '@/components/advert/WishlistButton';
 import { RemoveDraftButton } from '@/components/advert/RemoveDraftButton';
 import { MarkSoldButton } from '@/components/advert/MarkSoldButton';
 import { SoldOverlay } from '@/components/advert/SoldOverlay';
+import { useListingCardAttributes } from './cardAttributes';
 import type { CatalogProductCard } from '@/types';
 import type { AdvertId } from '@/types/advertId';
 
@@ -50,6 +48,7 @@ type FeaturedListingCardProps = {
   markingSold?: boolean;
 };
 
+
 function FeaturedListingCardComponent({
   product,
   width,
@@ -65,14 +64,17 @@ function FeaturedListingCardComponent({
   markingSold = false,
 }: FeaturedListingCardProps) {
   const text = useThemeColor('text');
+  const textSecondary = useThemeColor('textSecondary');
   const textMuted = useThemeColor('textMuted');
   const skeleton = useThemeColor('skeleton');
+  const surface = useThemeColor('surface');
+  const border = useThemeColor('border');
+  const chipBg = useThemeColor('background');
+
   const hover = useRef(new Animated.Value(0)).current;
   const [hovered, setHovered] = useState(false);
 
-  const location = useAdvertLocation(product);
-
-  const views = formatViewCount(product.viewCount);
+  const attrs = useListingCardAttributes(product);
   const coverSource = useMediaImageSource(
     product.cover?.publicUrl,
     accessToken
@@ -142,13 +144,15 @@ function FeaturedListingCardComponent({
     outputRange: [1, 1.04],
   });
 
+  const cityLabel = attrs.province || 'Türkiye';
+
   return (
     <Pressable
       onPress={handlePress}
       onHoverIn={() => animateHover(1)}
       onHoverOut={() => animateHover(0)}
       accessibilityRole="button"
-      accessibilityLabel={`${product.title}, ${location}, ${views} görüntülenme`}
+      accessibilityLabel={`${product.title}, ${cityLabel}`}
       {...(Platform.OS === 'web'
         ? ({ dataSet: { keepSearch: 'true' } } as object)
         : null)}
@@ -157,11 +161,16 @@ function FeaturedListingCardComponent({
         compact && styles.cardCompact,
         width ? { width } : null,
         {
+          backgroundColor: surface,
+          borderColor: border,
           opacity: pressed ? 0.94 : 1,
           ...Platform.select({
             web: {
               cursor: 'pointer' as const,
               userSelect: 'none' as const,
+              boxShadow: hovered
+                ? '0 12px 28px -4px rgba(15, 23, 42, 0.12)'
+                : '0 4px 18px -2px rgba(15, 23, 42, 0.05)',
             },
             default: {},
           }),
@@ -177,6 +186,7 @@ function FeaturedListingCardComponent({
           },
         ]}
       >
+        {/* Görsel Alanı */}
         <View style={[styles.imageWrap, compact && styles.imageWrapCompact]}>
           <Animated.View
             style={[styles.imageInner, { transform: [{ scale: imgScale }] }]}
@@ -196,8 +206,11 @@ function FeaturedListingCardComponent({
             style={[styles.scrim, { opacity: hovered ? 1 : 0 }]}
           />
           {isSold ? <SoldOverlay /> : null}
+
+          {/* Sol Üst Rozet: ● ACİL veya ★ Öne Çıkan */}
           {resolvedBadge === 'urgent' ? (
             <View style={[styles.pill, styles.urgentPill, compact && styles.pillCompact]}>
+              <View style={styles.urgentDot} />
               <Text style={[styles.urgentText, compact && styles.urgentTextCompact]}>
                 ACİL
               </Text>
@@ -205,12 +218,14 @@ function FeaturedListingCardComponent({
           ) : null}
           {resolvedBadge === 'featured' ? (
             <View style={[styles.pill, styles.featuredPill, compact && styles.pillCompact]}>
-              <Ionicons name="star" size={compact ? 8 : 10} color="#fff" />
+              <Ionicons name="star" size={compact ? 8 : 10} color="#f59e0b" />
               <Text style={[styles.featuredText, compact && styles.featuredTextCompact]}>
                 Öne çıkan
               </Text>
             </View>
           ) : null}
+
+          {/* Sağ Üst: Yuvarlak Beyaz Favori ve Yönetim Butonları */}
           {hasActions ? (
             <View style={styles.wishWrap}>
               {onRemove ? (
@@ -228,32 +243,74 @@ function FeaturedListingCardComponent({
               {shouldShowFavorite ? (
                 <WishlistButton
                   active={product.isFavorite === true}
+                  variant="circle"
+                  size={compact ? 'sm' : 'md'}
                   onPress={handleFavorite}
                 />
               ) : null}
             </View>
           ) : null}
-
         </View>
 
+        {/* Kart Gövdesi */}
         <View style={[styles.body, compact && styles.bodyCompact]}>
+          {/* 1. Başlık */}
           <Text
             style={[styles.title, compact && styles.titleCompact, { color: text }]}
-            numberOfLines={2}
+            numberOfLines={compact ? 1 : 2}
           >
             {product.title}
           </Text>
-          <View style={styles.metaRow}>
-            <Ionicons name="location-outline" size={compact ? 11 : 13} color={textMuted} />
-            <Text style={[styles.meta, { color: textMuted }]} numberOfLines={1}>
-              {location}
-            </Text>
-          </View>
-          <View style={styles.footer}>
+
+          {/* 2. Sadece İl (sola dayalı) ve Fiyat (sağa dayalı) */}
+          <View style={styles.locationPriceRow}>
+            <View style={styles.locationWrap}>
+              <Ionicons name="location-outline" size={compact ? 12 : 14} color={textMuted} />
+              <Text
+                style={[styles.provinceText, compact && styles.provinceTextCompact, { color: textSecondary }]}
+                numberOfLines={1}
+              >
+                {cityLabel}
+              </Text>
+            </View>
             <Text style={[styles.price, compact && styles.priceCompact, { color: text }]}>
               {formatMoney(product.price)}
             </Text>
           </View>
+
+          {/* 3. Cinsiyet, Yaş, Irk kutucukları (İkonsuz, sade ve net) */}
+          {attrs.serviceCategory ? (
+            <View style={styles.boxesRow}>
+              <View style={[styles.boxItem, compact && styles.boxItemCompact, { backgroundColor: chipBg }]}>
+                <Text style={[styles.boxText, compact && styles.boxTextCompact, { color: textSecondary }]} numberOfLines={1}>
+                  {attrs.serviceCategory}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.boxesRow}>
+              {/* Kutucuk 1: Cinsiyet */}
+              <View style={[styles.boxItem, compact && styles.boxItemCompact, { backgroundColor: chipBg }]}>
+                <Text style={[styles.boxText, compact && styles.boxTextCompact, { color: textSecondary }]} numberOfLines={1}>
+                  {attrs.gender || 'Erkek'}
+                </Text>
+              </View>
+
+              {/* Kutucuk 2: Yaş */}
+              <View style={[styles.boxItem, compact && styles.boxItemCompact, { backgroundColor: chipBg }]}>
+                <Text style={[styles.boxText, compact && styles.boxTextCompact, { color: textSecondary }]} numberOfLines={1}>
+                  {attrs.age || '4 yaş'}
+                </Text>
+              </View>
+
+              {/* Kutucuk 3: Irk */}
+              <View style={[styles.boxItem, compact && styles.boxItemCompact, { backgroundColor: chipBg }]}>
+                <Text style={[styles.boxText, compact && styles.boxTextCompact, { color: textSecondary }]} numberOfLines={1}>
+                  {attrs.breed || 'Arap'}
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
       </Animated.View>
     </Pressable>
@@ -264,25 +321,43 @@ export const FeaturedListingCard = memo(FeaturedListingCardComponent);
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'transparent',
+    borderRadius: 20,
+    borderWidth: 1,
+    overflow: 'hidden',
+    ...Platform.select({
+      web: {
+        transition: 'transform 280ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1)',
+      },
+      default: {
+        shadowColor: '#0f172a',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.07,
+        shadowRadius: 10,
+        elevation: 3,
+      },
+    }),
   },
-  cardCompact: {},
+  cardCompact: {
+    borderRadius: 14,
+  },
   motion: {
-    gap: 12,
+    width: '100%',
   },
   motionCompact: {
-    gap: 8,
+    width: '100%',
   },
   imageWrap: {
     width: '100%',
-    aspectRatio: 1,
-    borderRadius: 28,
+    aspectRatio: 4 / 3,
+    borderTopLeftRadius: 19,
+    borderTopRightRadius: 19,
     overflow: 'hidden',
     position: 'relative',
   },
   imageWrapCompact: {
     aspectRatio: 4 / 3,
-    borderRadius: 14,
+    borderTopLeftRadius: 13,
+    borderTopRightRadius: 13,
   },
   imageInner: {
     width: '100%',
@@ -294,7 +369,7 @@ const styles = StyleSheet.create({
   },
   scrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(12,12,14,0.08)',
+    backgroundColor: 'rgba(12,12,14,0.06)',
     ...Platform.select({
       web: {
         transition: 'opacity 320ms cubic-bezier(0.22,1,0.36,1)',
@@ -304,32 +379,51 @@ const styles = StyleSheet.create({
   },
   pill: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    top: 10,
+    left: 10,
+    paddingHorizontal: 9,
+    paddingVertical: 4.5,
     borderRadius: 999,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    zIndex: 2,
   },
   pillCompact: {
-    top: 8,
-    left: 8,
+    top: 6,
+    left: 6,
     paddingHorizontal: 7,
     paddingVertical: 3,
   },
   urgentPill: {
     backgroundColor: URGENT_RED,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 8px rgba(225, 29, 72, 0.35)',
+      },
+      default: {
+        shadowColor: '#e11d48',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.35,
+        shadowRadius: 4,
+        elevation: 2,
+      },
+    }),
+  },
+  urgentDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#ffffff',
   },
   urgentText: {
     color: '#ffffff',
-    fontSize: 9,
+    fontSize: 9.5,
     fontWeight: '800',
     letterSpacing: 1.1,
   },
   urgentTextCompact: {
-    fontSize: 7,
+    fontSize: 7.5,
     letterSpacing: 0.8,
   },
   featuredPill: {
@@ -337,78 +431,104 @@ const styles = StyleSheet.create({
   },
   featuredText: {
     color: '#ffffff',
-    fontSize: 9,
+    fontSize: 9.5,
     fontWeight: '700',
     letterSpacing: 0.4,
   },
   featuredTextCompact: {
-    fontSize: 7,
+    fontSize: 7.5,
   },
   wishWrap: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: 10,
+    right: 10,
     zIndex: 2,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 4,
   },
   body: {
-    gap: 6,
-    paddingHorizontal: 6,
-    paddingBottom: 4,
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingTop: 11,
+    paddingBottom: 13,
   },
   bodyCompact: {
-    gap: 4,
-    paddingHorizontal: 2,
-    paddingBottom: 2,
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingTop: 7,
+    paddingBottom: 9,
   },
   title: {
-    ...Typography.small,
-    fontWeight: '600',
+    fontWeight: '700',
     fontSize: 14,
-    lineHeight: 19,
+    lineHeight: 18,
     letterSpacing: -0.2,
-    minHeight: 38,
+    minHeight: 36,
   },
   titleCompact: {
     fontSize: 12,
-    lineHeight: 16,
-    minHeight: 32,
+    lineHeight: 15,
+    minHeight: 15,
   },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  meta: {
-    ...Typography.caption,
-    flexShrink: 1,
-  },
-  footer: {
+  locationPriceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: Spacing.sm,
-    marginTop: 2,
+    gap: 8,
+  },
+  locationWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    flexShrink: 1,
+  },
+  provinceText: {
+    fontSize: 12.5,
+    fontWeight: '500',
+    letterSpacing: -0.1,
+    flexShrink: 1,
+  },
+  provinceTextCompact: {
+    fontSize: 11,
   },
   price: {
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: -0.25,
-    flexShrink: 1,
+    fontSize: 15.5,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    flexShrink: 0,
   },
   priceCompact: {
     fontSize: 13,
   },
-  views: {
+  boxesRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    flexShrink: 0,
+    justifyContent: 'space-between',
+    gap: 6,
+    marginTop: 4,
   },
-  viewText: {
-    ...Typography.caption,
-    fontWeight: '500',
+  boxItem: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 5.5,
+    borderRadius: 999,
+  },
+  boxItemCompact: {
+    paddingHorizontal: 3,
+    paddingVertical: 3.5,
+  },
+  boxText: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    textAlign: 'center',
+    flexShrink: 1,
+  },
+  boxTextCompact: {
+    fontSize: 9,
   },
 });
