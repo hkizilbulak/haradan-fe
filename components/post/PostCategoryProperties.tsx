@@ -1014,30 +1014,24 @@ export function PostCategoryProperties({
           {/* toggleProps — still interactive (user must select) */}
           {toggleProps.length > 0 ? (
             <View style={[styles.sectionBlock, { borderTopColor: border }]}>
-              <View style={styles.subHeaderRow}>
-                <Text style={[styles.subHeaderText, { color: text }]}>
-                  Olanaklar & Hizmet Özellikleri
-                </Text>
-              </View>
               {toggleProps.map((prop) => {
                 const val = Boolean(getPropertyValue(prop.code));
                 return (
-                  <View key={prop.code} style={[styles.rowItem, { borderTopColor: border }]}>
-                    <View style={styles.labelCol}>
-                      <Text style={[styles.fieldLabel, { color: secondary }]}>
-                        {prop.title}
-                      </Text>
-                    </View>
-                    <View style={styles.switchCol}>
-                      <Pressable
-                        onPress={() => handlePropertyChange(prop.code, !val)}
-                        accessibilityRole="switch"
-                        accessibilityState={{ checked: val }}
-                      >
-                        <IconicSwitch value={val} compact={false} />
-                      </Pressable>
-                    </View>
-                  </View>
+                  <Pressable
+                    key={prop.code}
+                    onPress={() => handlePropertyChange(prop.code, !val)}
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: val }}
+                    style={[
+                      styles.toggleSwitchRow,
+                      { borderTopColor: border },
+                    ]}
+                  >
+                    <Text style={[styles.fieldLabel, { color: secondary, flex: 1 }]}>
+                      {prop.title}
+                    </Text>
+                    <IconicSwitch value={val} compact={false} />
+                  </Pressable>
                 );
               })}
             </View>
@@ -1453,30 +1447,24 @@ export function PostCategoryProperties({
           {/* 4. Boolean Toggle Grid */}
           {toggleProps.length > 0 ? (
             <View style={[styles.sectionBlock, { borderTopColor: border }]}>
-              <View style={styles.subHeaderRow}>
-                <Text style={[styles.subHeaderText, { color: text }]}>
-                  Olanaklar & Hizmet Özellikleri
-                </Text>
-              </View>
               {toggleProps.map((prop) => {
                 const val = Boolean(getPropertyValue(prop.code));
                 return (
-                  <View key={prop.code} style={[styles.rowItem, { borderTopColor: border }]}>
-                    <View style={styles.labelCol}>
-                      <Text style={[styles.fieldLabel, { color: secondary }]}>
-                        {prop.title}
-                      </Text>
-                    </View>
-                    <View style={styles.switchCol}>
-                      <Pressable
-                        onPress={() => handlePropertyChange(prop.code, !val)}
-                        accessibilityRole="switch"
-                        accessibilityState={{ checked: val }}
-                      >
-                        <IconicSwitch value={val} compact={false} />
-                      </Pressable>
-                    </View>
-                  </View>
+                  <Pressable
+                    key={prop.code}
+                    onPress={() => handlePropertyChange(prop.code, !val)}
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: val }}
+                    style={[
+                      styles.toggleSwitchRow,
+                      { borderTopColor: border },
+                    ]}
+                  >
+                    <Text style={[styles.fieldLabel, { color: secondary, flex: 1 }]}>
+                      {prop.title}
+                    </Text>
+                    <IconicSwitch value={val} compact={false} />
+                  </Pressable>
                 );
               })}
             </View>
@@ -1591,8 +1579,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   switchCol: {
-    flex: 1,
-    alignItems: 'flex-start',
+    alignItems: 'flex-end',
     justifyContent: 'center',
     minHeight: 46,
   },
@@ -1617,6 +1604,20 @@ const styles = StyleSheet.create({
   },
   sectionBlock: {
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  toggleSwitchRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    minHeight: 46,
+    ...Platform.select({
+      web: { cursor: 'pointer' } as any,
+      default: {},
+    }),
   },
   subHeaderRow: {
     paddingHorizontal: Spacing.lg,
