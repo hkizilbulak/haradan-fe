@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { locationLookup } from '@/services/location/createLocationLookup';
+import { MOCK_TJK_HORSES } from '@/mocks/tjkHorses';
 import type { CatalogProductCard } from '@/types';
 
 export type CardHorseAttributes = {
@@ -7,6 +8,7 @@ export type CardHorseAttributes = {
   gender: string | null;
   age: string | null;
   breed: string | null;
+  height: string | null;
   serviceCategory: string | null;
 };
 
@@ -272,11 +274,56 @@ export function getListingCardAttributes(
     }
   }
 
+  // 6. Boy / Cidago (Height)
+  let height: string | null = null;
+  const rawHeight =
+    getPropValue(rawProps, [
+      'HORSE_HEIGHT',
+      'horseheight',
+      'horse_height',
+      'heightcm',
+      'height_cm',
+      'cidago',
+      'cidagoboyu',
+      'cidago_boyu',
+      'cidagosu',
+      'boy',
+      'height',
+      'yukseklik',
+    ]) ||
+    (product as any).heightCm ||
+    (product as any).height;
+
+  if (rawHeight != null && String(rawHeight).trim() && String(rawHeight) !== '-') {
+    const hStr = String(rawHeight).trim();
+    if (hStr.toLowerCase().includes('cm')) {
+      height = hStr;
+    } else {
+      const matchNum = hStr.match(/\d+/);
+      if (matchNum) {
+        height = `${matchNum[0]} cm`;
+      }
+    }
+  } else if (product.horseId) {
+    const foundHorse = MOCK_TJK_HORSES.find((h) => h.horseId === product.horseId);
+    if (foundHorse?.heightCm) {
+      height = `${foundHorse.heightCm} cm`;
+    }
+  }
+
+  if (!height && !serviceCategory) {
+    const cmMatch = title.match(/(\d{2,3})\s*cm\b/i);
+    if (cmMatch) {
+      height = `${cmMatch[1]} cm`;
+    }
+  }
+
   return {
     province,
     gender,
     age,
     breed,
+    height,
     serviceCategory,
   };
 }

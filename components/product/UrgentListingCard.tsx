@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -219,21 +219,30 @@ function UrgentListingCardComponent({
           <Text style={[styles.tileTitle, { color: text }]} numberOfLines={2}>
             {product.title}
           </Text>
-          <View style={styles.tileLocationPriceRow}>
+          {/* 2. Fiyat (solda), Dikey Çizgi ve İl (sağda) */}
+          <View style={styles.tilePriceLocationRow}>
+            <Text style={[styles.tilePrice, { color: text }]} numberOfLines={1}>
+              {formatMoney(product.price)}
+            </Text>
+            <View style={[styles.tilePriceLocationDivider, { backgroundColor: border }]} />
             <View style={styles.tileLocationWrap}>
-              <Ionicons name="location-outline" size={13} color={textMuted} />
+              <Ionicons name="location-outline" size={13} color={textSecondary} />
               <Text style={[styles.tileMeta, { color: textSecondary }]} numberOfLines={1}>
                 {cityLabel}
               </Text>
             </View>
-            <Text style={[styles.tilePrice, { color: text }]}>
-              {formatMoney(product.price)}
-            </Text>
           </View>
-          {/* 3. Cinsiyet, Yaş, Irk kutucukları (İkonsuz, sade ve net) */}
+
+          {/* 3. Cinsiyet, Yaş, Irk, Boy kutucukları (İkonlu) */}
           {attrs.serviceCategory ? (
             <View style={styles.tileBoxesRow}>
               <View style={[styles.tileBoxItem, { backgroundColor: chipBg }]}>
+                <Ionicons
+                  name="briefcase-outline"
+                  size={12}
+                  color={textSecondary}
+                  style={styles.tileBoxIcon}
+                />
                 <Text style={[styles.tileBoxText, { color: textSecondary }]} numberOfLines={1}>
                   {attrs.serviceCategory}
                 </Text>
@@ -243,6 +252,18 @@ function UrgentListingCardComponent({
             <View style={styles.tileBoxesRow}>
               {/* Kutucuk 1: Cinsiyet */}
               <View style={[styles.tileBoxItem, { backgroundColor: chipBg }]}>
+                <Ionicons
+                  name={
+                    attrs.gender === 'Dişi'
+                      ? 'female'
+                      : attrs.gender === 'İğdiş'
+                        ? 'male-female'
+                        : 'male'
+                  }
+                  size={12}
+                  color={textSecondary}
+                  style={styles.tileBoxIcon}
+                />
                 <Text style={[styles.tileBoxText, { color: textSecondary }]} numberOfLines={1}>
                   {attrs.gender || 'Erkek'}
                 </Text>
@@ -250,6 +271,12 @@ function UrgentListingCardComponent({
 
               {/* Kutucuk 2: Yaş */}
               <View style={[styles.tileBoxItem, { backgroundColor: chipBg }]}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={12}
+                  color={textSecondary}
+                  style={styles.tileBoxIcon}
+                />
                 <Text style={[styles.tileBoxText, { color: textSecondary }]} numberOfLines={1}>
                   {attrs.age || '4 yaş'}
                 </Text>
@@ -257,10 +284,31 @@ function UrgentListingCardComponent({
 
               {/* Kutucuk 3: Irk */}
               <View style={[styles.tileBoxItem, { backgroundColor: chipBg }]}>
+                <FontAwesome5
+                  name="horse-head"
+                  size={11}
+                  color={textSecondary}
+                  style={styles.tileBoxIcon}
+                />
                 <Text style={[styles.tileBoxText, { color: textSecondary }]} numberOfLines={1}>
                   {attrs.breed || 'Arap'}
                 </Text>
               </View>
+
+              {/* Kutucuk 4: Boy / Cidago (Varsa) */}
+              {attrs.height ? (
+                <View style={[styles.tileBoxItem, { backgroundColor: chipBg }]}>
+                  <MaterialCommunityIcons
+                    name="ruler"
+                    size={12}
+                    color={textSecondary}
+                    style={styles.tileBoxIcon}
+                  />
+                  <Text style={[styles.tileBoxText, { color: textSecondary }]} numberOfLines={1}>
+                    {attrs.height}
+                  </Text>
+                </View>
+              ) : null}
             </View>
           )}
         </View>
@@ -626,22 +674,20 @@ const styles = StyleSheet.create({
   },
   tileBody: {
     paddingHorizontal: 12,
-    paddingTop: 11,
-    paddingBottom: 13,
-    gap: 8,
+    paddingTop: 10,
+    paddingBottom: 12,
+    gap: 4,
   },
   tileTitle: {
     fontSize: 13.5,
     fontWeight: '700',
     lineHeight: 18,
     letterSpacing: -0.2,
-    minHeight: 36,
   },
-  tileLocationPriceRow: {
+  tilePriceLocationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 6,
+    marginTop: 0,
   },
   tileLocationWrap: {
     flexDirection: 'row',
@@ -649,37 +695,49 @@ const styles = StyleSheet.create({
     gap: 3,
     flexShrink: 1,
   },
+  tilePriceLocationDivider: {
+    width: 1,
+    height: 14,
+    marginHorizontal: 8,
+    opacity: 0.8,
+  },
   tileMeta: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: '500',
+    letterSpacing: -0.1,
     flexShrink: 1,
   },
   tilePrice: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
-    letterSpacing: -0.25,
+    letterSpacing: -0.3,
     flexShrink: 0,
   },
   tileBoxesRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 5,
+    gap: 4,
     marginTop: 4,
   },
   tileBoxItem: {
     flex: 1,
     minWidth: 0,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 5,
+    paddingHorizontal: 3,
     paddingVertical: 5,
     borderRadius: 999,
+    gap: 3,
+  },
+  tileBoxIcon: {
+    flexShrink: 0,
   },
   tileBoxText: {
     fontSize: 10.5,
     fontWeight: '600',
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
     textAlign: 'center',
     flexShrink: 1,
   },

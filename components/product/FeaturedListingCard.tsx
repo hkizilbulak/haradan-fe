@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Spacing } from '@/constants/Spacing';
 import { useMediaImageSource } from '@/hooks/useMediaImageSource';
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -262,10 +262,14 @@ function FeaturedListingCardComponent({
             {product.title}
           </Text>
 
-          {/* 2. Sadece İl (sola dayalı) ve Fiyat (sağa dayalı) */}
-          <View style={styles.locationPriceRow}>
+          {/* 2. Fiyat (solda), Dikey Çizgi ve İl (sağda) */}
+          <View style={styles.priceLocationRow}>
+            <Text style={[styles.price, compact && styles.priceCompact, { color: text }]} numberOfLines={1}>
+              {formatMoney(product.price)}
+            </Text>
+            <View style={[styles.priceLocationDivider, { backgroundColor: border }]} />
             <View style={styles.locationWrap}>
-              <Ionicons name="location-outline" size={compact ? 12 : 14} color={textMuted} />
+              <Ionicons name="location-outline" size={compact ? 12 : 14} color={textSecondary} />
               <Text
                 style={[styles.provinceText, compact && styles.provinceTextCompact, { color: textSecondary }]}
                 numberOfLines={1}
@@ -273,15 +277,18 @@ function FeaturedListingCardComponent({
                 {cityLabel}
               </Text>
             </View>
-            <Text style={[styles.price, compact && styles.priceCompact, { color: text }]}>
-              {formatMoney(product.price)}
-            </Text>
           </View>
 
-          {/* 3. Cinsiyet, Yaş, Irk kutucukları (İkonsuz, sade ve net) */}
+          {/* 3. Cinsiyet, Yaş, Irk, Boy kutucukları (İkonlu) */}
           {attrs.serviceCategory ? (
             <View style={styles.boxesRow}>
               <View style={[styles.boxItem, compact && styles.boxItemCompact, { backgroundColor: chipBg }]}>
+                <Ionicons
+                  name="briefcase-outline"
+                  size={compact ? 11 : 13}
+                  color={textSecondary}
+                  style={styles.boxIcon}
+                />
                 <Text style={[styles.boxText, compact && styles.boxTextCompact, { color: textSecondary }]} numberOfLines={1}>
                   {attrs.serviceCategory}
                 </Text>
@@ -291,6 +298,18 @@ function FeaturedListingCardComponent({
             <View style={styles.boxesRow}>
               {/* Kutucuk 1: Cinsiyet */}
               <View style={[styles.boxItem, compact && styles.boxItemCompact, { backgroundColor: chipBg }]}>
+                <Ionicons
+                  name={
+                    attrs.gender === 'Dişi'
+                      ? 'female'
+                      : attrs.gender === 'İğdiş'
+                        ? 'male-female'
+                        : 'male'
+                  }
+                  size={compact ? 11 : 13}
+                  color={textSecondary}
+                  style={styles.boxIcon}
+                />
                 <Text style={[styles.boxText, compact && styles.boxTextCompact, { color: textSecondary }]} numberOfLines={1}>
                   {attrs.gender || 'Erkek'}
                 </Text>
@@ -298,6 +317,12 @@ function FeaturedListingCardComponent({
 
               {/* Kutucuk 2: Yaş */}
               <View style={[styles.boxItem, compact && styles.boxItemCompact, { backgroundColor: chipBg }]}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={compact ? 11 : 13}
+                  color={textSecondary}
+                  style={styles.boxIcon}
+                />
                 <Text style={[styles.boxText, compact && styles.boxTextCompact, { color: textSecondary }]} numberOfLines={1}>
                   {attrs.age || '4 yaş'}
                 </Text>
@@ -305,10 +330,31 @@ function FeaturedListingCardComponent({
 
               {/* Kutucuk 3: Irk */}
               <View style={[styles.boxItem, compact && styles.boxItemCompact, { backgroundColor: chipBg }]}>
+                <FontAwesome5
+                  name="horse-head"
+                  size={compact ? 10 : 12}
+                  color={textSecondary}
+                  style={styles.boxIcon}
+                />
                 <Text style={[styles.boxText, compact && styles.boxTextCompact, { color: textSecondary }]} numberOfLines={1}>
                   {attrs.breed || 'Arap'}
                 </Text>
               </View>
+
+              {/* Kutucuk 4: Boy / Cidago (Varsa) */}
+              {attrs.height ? (
+                <View style={[styles.boxItem, compact && styles.boxItemCompact, { backgroundColor: chipBg }]}>
+                  <MaterialCommunityIcons
+                    name="ruler"
+                    size={compact ? 11 : 13}
+                    color={textSecondary}
+                    style={styles.boxIcon}
+                  />
+                  <Text style={[styles.boxText, compact && styles.boxTextCompact, { color: textSecondary }]} numberOfLines={1}>
+                    {attrs.height}
+                  </Text>
+                </View>
+              ) : null}
             </View>
           )}
         </View>
@@ -448,34 +494,31 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   body: {
-    gap: 8,
+    gap: 4,
     paddingHorizontal: 12,
-    paddingTop: 11,
-    paddingBottom: 13,
+    paddingTop: 10,
+    paddingBottom: 12,
   },
   bodyCompact: {
-    gap: 6,
+    gap: 3,
     paddingHorizontal: 8,
-    paddingTop: 7,
-    paddingBottom: 9,
+    paddingTop: 6,
+    paddingBottom: 8,
   },
   title: {
     fontWeight: '700',
     fontSize: 14,
     lineHeight: 18,
     letterSpacing: -0.2,
-    minHeight: 36,
   },
   titleCompact: {
     fontSize: 12,
     lineHeight: 15,
-    minHeight: 15,
   },
-  locationPriceRow: {
+  priceLocationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
+    marginTop: 0,
   },
   locationWrap: {
     flexDirection: 'row',
@@ -483,8 +526,14 @@ const styles = StyleSheet.create({
     gap: 3,
     flexShrink: 1,
   },
+  priceLocationDivider: {
+    width: 1,
+    height: 14,
+    marginHorizontal: 8,
+    opacity: 0.8,
+  },
   provinceText: {
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: '500',
     letterSpacing: -0.1,
     flexShrink: 1,
@@ -493,42 +542,48 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   price: {
-    fontSize: 15.5,
+    fontSize: 16.5,
     fontWeight: '800',
     letterSpacing: -0.3,
     flexShrink: 0,
   },
   priceCompact: {
-    fontSize: 13,
+    fontSize: 13.5,
   },
   boxesRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 6,
+    gap: 4,
     marginTop: 4,
   },
   boxItem: {
     flex: 1,
     minWidth: 0,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 5.5,
+    paddingHorizontal: 3,
+    paddingVertical: 5,
     borderRadius: 999,
+    gap: 3,
   },
   boxItemCompact: {
-    paddingHorizontal: 3,
+    paddingHorizontal: 2,
     paddingVertical: 3.5,
+    gap: 2,
+  },
+  boxIcon: {
+    flexShrink: 0,
   },
   boxText: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '600',
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
     textAlign: 'center',
     flexShrink: 1,
   },
   boxTextCompact: {
-    fontSize: 9,
+    fontSize: 8.5,
   },
 });
