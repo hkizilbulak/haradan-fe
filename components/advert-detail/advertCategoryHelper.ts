@@ -2,7 +2,7 @@ import type { AdvertDetail } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 import { openTjkHorseSearch } from '@/utils/tjkLinks';
 
-export type AdvertCategoryKind = 'pansiyon' | 'transport' | 'farrier' | 'stud' | 'horse';
+export type AdvertCategoryKind = 'pansiyon' | 'transport' | 'farrier' | 'service' | 'stud' | 'horse';
 
 export function getAdvertCategoryKind(detail: AdvertDetail): AdvertCategoryKind {
   const catId = (detail.categoryId ?? '').toLowerCase();
@@ -47,6 +47,20 @@ export function getAdvertCategoryKind(detail: AdvertDetail): AdvertCategoryKind 
     text.includes('stud')
   ) {
     return 'stud';
+  }
+  if (
+    text.includes('hizmet') ||
+    text.includes('servis') ||
+    text.includes('service') ||
+    text.includes('at-hizmetleri') ||
+    text.includes('ekipman') ||
+    text.includes('ahir') ||
+    text.includes('tesis') ||
+    catId === 'c1000000-0000-4000-8000-000000000002' ||
+    catId === 'c1000000-0000-4000-8000-000000000004' ||
+    catId === 'c1000000-0000-4000-8000-000000000005'
+  ) {
+    return 'service';
   }
   return 'horse';
 }
@@ -581,6 +595,32 @@ export function buildAdvertInfoRows(detail: AdvertDetail): AdvertInfoRow[] {
     list.push({ label: 'Nalbant', value: pansiyonInfo.hasFarrier ? 'Evet' : 'Hayır', icon: 'hammer-outline', isBoolean: true });
     list.push({ label: 'Veteriner Hekim', value: pansiyonInfo.hasVeterinarian ? 'Evet' : 'Hayır', icon: 'medkit-outline', isBoolean: true });
     list.push({ label: 'İdman Pisti', value: (pansiyonInfo.hasTrainingTrack || !!pansiyonInfo.trainingTrack) ? 'Evet' : 'Hayır', icon: 'fitness-outline', isBoolean: true });
+
+    const seenLabels = new Set<string>([
+      'çim padok', 'kum padok', 'aygır padoğu', 'doğumhane', 'nalbant', 'veteriner hekim', 'idman pisti',
+      'grasspaddock', 'sandpaddock', 'stallionpaddock', 'foalingbarn', 'farrier', 'veterinarian', 'trainingtrack',
+      'telefon', 'sellerphone', 'phone'
+    ]);
+    for (const group of detail.specs ?? []) {
+      for (const row of group.rows ?? []) {
+        const l = row.label.trim();
+        const lower = l.toLowerCase();
+        const norm = lower.replace(/[-_\s]/g, '');
+        if (seenLabels.has(lower) || seenLabels.has(norm)) continue;
+        const v = String(row.value).trim();
+        if (!v) continue;
+        const isBool = v.toLowerCase() === 'evet' || v.toLowerCase() === 'hayır' || v.toLowerCase() === 'true' || v.toLowerCase() === 'false';
+        const formattedVal = v.toLowerCase() === 'true' ? 'Evet' : v.toLowerCase() === 'false' ? 'Hayır' : v;
+        list.push({
+          label: l.charAt(0).toLocaleUpperCase('tr-TR') + l.slice(1),
+          value: formattedVal,
+          icon: getRowIcon(l),
+          isBoolean: isBool,
+        });
+        seenLabels.add(lower);
+        seenLabels.add(norm);
+      }
+    }
   } else if (categoryKind === 'transport') {
     const transportInfo = parseTransportInfo(detail);
     if (transportInfo.companyName) {
@@ -590,6 +630,30 @@ export function buildAdvertInfoRows(detail: AdvertDetail): AdvertInfoRow[] {
       list.push({ label: 'Web Sitesi', value: transportInfo.websiteUrl, icon: 'globe-outline' });
     }
     list.push({ label: 'Hizmet', value: 'At Nakliyesi & Taşımacılık', icon: 'car-outline' });
+
+    const seenLabels = new Set<string>([
+      'firma adı', 'web sitesi', 'hizmet', 'companyname', 'websiteurl', 'telefon', 'sellerphone', 'phone'
+    ]);
+    for (const group of detail.specs ?? []) {
+      for (const row of group.rows ?? []) {
+        const l = row.label.trim();
+        const lower = l.toLowerCase();
+        const norm = lower.replace(/[-_\s]/g, '');
+        if (seenLabels.has(lower) || seenLabels.has(norm)) continue;
+        const v = String(row.value).trim();
+        if (!v) continue;
+        const isBool = v.toLowerCase() === 'evet' || v.toLowerCase() === 'hayır' || v.toLowerCase() === 'true' || v.toLowerCase() === 'false';
+        const formattedVal = v.toLowerCase() === 'true' ? 'Evet' : v.toLowerCase() === 'false' ? 'Hayır' : v;
+        list.push({
+          label: l.charAt(0).toLocaleUpperCase('tr-TR') + l.slice(1),
+          value: formattedVal,
+          icon: getRowIcon(l),
+          isBoolean: isBool,
+        });
+        seenLabels.add(lower);
+        seenLabels.add(norm);
+      }
+    }
   } else if (categoryKind === 'stud') {
     const studInfo = parseStudInfo(detail);
     if (studInfo.name) list.push({ label: 'Aygır Adı', value: studInfo.name, icon: 'star-outline' });
@@ -621,7 +685,7 @@ export function buildAdvertInfoRows(detail: AdvertDetail): AdvertInfoRow[] {
         onPress: studInfo.damsire !== '-' ? () => openTjkHorseSearch(studInfo.damsire) : undefined,
       });
     }
-  } else if (categoryKind === 'farrier') {
+  } else if (categoryKind === 'farrier' || categoryKind === 'service') {
     const seenLabels = new Set<string>();
     for (const group of detail.specs ?? []) {
       for (const row of group.rows ?? []) {

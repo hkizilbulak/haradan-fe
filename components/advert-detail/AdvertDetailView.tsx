@@ -27,6 +27,7 @@ import {
   type SpecsSubTab,
 } from '@/components/advert-detail';
 import { MobileAdvertTopBar } from '@/components/advert-detail/mobile/MobileAdvertTopBar';
+import { getAdvertCategoryKind } from './advertCategoryHelper';
 import { LazySection } from '@/components/ui/LazySection';
 import { toast } from '@/components/ui';
 import { HomeContentContainer } from '@/components/layout';
@@ -127,16 +128,21 @@ export function AdvertDetailView({
     : Math.min(Math.round(width * 0.78), 420);
 
   const horse = detail.horse;
+  const categoryKind = useMemo(() => getAdvertCategoryKind(detail), [detail]);
+  const isHorseOrStud = categoryKind === 'horse' || categoryKind === 'stud';
 
-  const hasPedigree = Boolean(horse?.pedigree && horse.pedigree.length > 0);
-  const hasSiblings = Boolean(horse?.siblings && horse.siblings.length > 0);
+  const hasPedigree = Boolean(isHorseOrStud && horse?.pedigree && horse.pedigree.length > 0);
+  const hasSiblings = Boolean(isHorseOrStud && horse?.siblings && horse.siblings.length > 0);
   const hasStatistics = Boolean(
-    (horse?.statistics && horse.statistics.length > 0) ||
-    horse?.detailProfile?.handicapPoint ||
-    (horse?.handicap != null && horse.handicap > 0)
+    isHorseOrStud && (
+      (horse?.statistics && horse.statistics.length > 0) ||
+      horse?.detailProfile?.handicapPoint ||
+      (horse?.handicap != null && horse.handicap > 0)
+    )
   );
 
   const hasHorseData = Boolean(
+    isHorseOrStud &&
     horse && (
       (horse.registeredName && horse.registeredName !== 'Başlıksız ilan' && horse.registeredName.trim() !== '') ||
       horse.sire ||

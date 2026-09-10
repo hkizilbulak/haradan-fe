@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useState } from 'react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   Platform,
@@ -25,14 +25,22 @@ import {
   AdvertStatistics,
   type SpecsSubTab,
 } from '@/components/advert-detail';
+import { getAdvertCategoryKind } from '@/components/advert-detail/advertCategoryHelper';
 import { formatMoney } from '@/utils/formatMoney';
+import { buildDraftProperties } from '@/services/listing/mapDraftToRequest';
+import {
+  isFarrierListing,
+  isHorseListing,
+  isPansiyonListing,
+  isSaleHorseListing,
+  isStudServiceListing,
+  isTransportListing,
+} from '@/services/listing';
 import type {
   AdvertDetail,
   AdvertSpecGroup,
   HorseGender,
   HorseProfile,
-  HorseSibling,
-  HorseStatistic,
   Money,
   PublicMediaItem,
 } from '@/types';
@@ -46,48 +54,130 @@ type PostAdvertPreviewModalProps = {
   onContinue: () => void;
 };
 
+const EMPTY_HORSE: HorseProfile = {
+  registeredName: '',
+  age: 0,
+  birthDate: '',
+  gender: '' as HorseGender,
+  coatColor: '',
+  heightCm: null,
+  breed: '',
+  sire: '',
+  dam: '',
+  damsire: '',
+  owners: [],
+  breeder: '',
+  trainer: '',
+  career: { starts: 0, first: 0, second: 0, third: 0, fourth: 0, fifth: 0 },
+  yearly: [],
+  careerEarnings: { amountMinor: 0, currency: 'TRY' },
+  handicap: 0,
+  races: [],
+  offspring: null,
+  pedigree: [],
+  siblings: [],
+  statistics: [],
+};
+
+const SAMPLE_FACILITY_GALLERY: PublicMediaItem[] = [
+  {
+    assetId: 'sample-facility-1',
+    displayOrder: 0,
+    isCover: true,
+    publicUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1200&q=80',
+    usage: 'cover',
+  },
+];
+
+const SAMPLE_HORSE_GALLERY: PublicMediaItem[] = [
+  {
+    assetId: 'sample-horse-1',
+    displayOrder: 0,
+    isCover: true,
+    publicUrl: 'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?auto=format&fit=crop&w=1200&q=80',
+    usage: 'cover',
+  },
+];
+
 function buildSpecsFromDraft(draft: ListingDraft): AdvertSpecGroup[] {
   const d = draft.details;
   const rows: { label: string; value: string }[] = [];
 
-  if (d.registeredName) rows.push({ label: 'At Adı', value: d.registeredName });
-  if (d.tjkNumber) rows.push({ label: 'TJK No', value: d.tjkNumber });
-  if (d.breed) rows.push({ label: 'Irk', value: d.breed });
-  if (d.gender) {
-    const gMap: Record<string, string> = {
-      STALLION: 'Aygır',
-      MARE: 'Kısrak',
-      GELDING: 'İğdiş',
-      COLT: 'Erkek Tay',
-      FILLY: 'Dişi Tay',
-    };
-    rows.push({ label: 'Cinsiyet', value: gMap[d.gender] || d.gender });
+  const isPansiyon = isPansiyonListing(draft.type);
+  const isTransport = isTransportListing(draft.type);
+  const isStud = isStudServiceListing(draft.type);
+  const isHorse = isHorseListing(draft.type) || isSaleHorseListing(draft.type);
+
+  if (isPansiyon) {
+    if (d.facilityGrassPaddock != null)
+      rows.push({ label: 'Çim Padok', value: d.facilityGrassPaddock ? 'Evet' : 'Hayır' });
+    if (d.facilitySandPaddock != null)
+      rows.push({ label: 'Kum Padok', value: d.facilitySandPaddock ? 'Evet' : 'Hayır' });
+    if (d.facilityStallionPaddock != null)
+      rows.push({ label: 'Aygır Padoğu', value: d.facilityStallionPaddock ? 'Evet' : 'Hayır' });
+    if (d.facilityFoalingBarn != null)
+      rows.push({ label: 'Doğumhane', value: d.facilityFoalingBarn ? 'Evet' : 'Hayır' });
+    if (d.facilityFarrier != null)
+      rows.push({ label: 'Nalbant', value: d.facilityFarrier ? 'Evet' : 'Hayır' });
+    if (d.facilityVeterinarian != null)
+      rows.push({ label: 'Veteriner Hekim', value: d.facilityVeterinarian ? 'Evet' : 'Hayır' });
+    if (d.facilityTrainingTrack != null)
+      rows.push({ label: 'İdman Pisti', value: d.facilityTrainingTrack ? 'Evet' : 'Hayır' });
+  } else if (isTransport) {
+    if (d.companyName) rows.push({ label: 'Firma Adı', value: d.companyName });
+    if (d.websiteUrl) rows.push({ label: 'Web Sitesi', value: d.websiteUrl });
+  } else if (isStud) {
+    if (d.studHorseName || d.registeredName) rows.push({ label: 'Aygır Adı', value: d.studHorseName || d.registeredName });
+    if (d.studBreed || d.breed) rows.push({ label: 'At Irkı', value: d.studBreed || d.breed });
+    if (d.studAge || d.age) rows.push({ label: 'Yaş', value: String(d.studAge || d.age) });
+    rows.push({ label: 'Cinsiyet', value: 'Erkek' });
+    if (d.studCoatColor || d.coatColor) rows.push({ label: 'Donu', value: d.studCoatColor || d.coatColor });
+    if (d.studSire || d.sire) rows.push({ label: 'Baba Adı', value: d.studSire || d.sire });
+    if (d.studDam || d.dam) rows.push({ label: 'Anne Adı', value: d.studDam || d.dam });
+    if (d.studDamsire || d.damsire) rows.push({ label: 'Annesinin Baba Adı', value: d.studDamsire || d.damsire || '' });
+  } else if (isHorse) {
+    if (d.registeredName) rows.push({ label: 'At Adı', value: d.registeredName });
+    if (d.tjkNumber) rows.push({ label: 'TJK No', value: d.tjkNumber });
+    if (d.breed) rows.push({ label: 'Irk', value: d.breed });
+    if (d.gender) {
+      const gMap: Record<string, string> = {
+        STALLION: 'Aygır',
+        MARE: 'Kısrak',
+        GELDING: 'İğdiş',
+        COLT: 'Erkek Tay',
+        FILLY: 'Dişi Tay',
+      };
+      rows.push({ label: 'Cinsiyet', value: gMap[d.gender] || d.gender });
+    }
+    if (d.age) rows.push({ label: 'Yaş', value: `${d.age} Yaşında` });
+    if (d.birthDate) rows.push({ label: 'Doğum Tarihi', value: d.birthDate });
+    if (d.coatColor) rows.push({ label: 'Don (Renk)', value: d.coatColor });
+    if (d.heightCm) rows.push({ label: 'Cidago (Boy)', value: `${d.heightCm} cm` });
+    if (d.sire) rows.push({ label: 'Baba (Sire)', value: d.sire });
+    if (d.dam) rows.push({ label: 'Anne (Dam)', value: d.dam });
+    if (d.damsire) rows.push({ label: 'Anne Babası', value: d.damsire });
+    if (d.breeder) rows.push({ label: 'Yetiştirici', value: d.breeder });
+    if (d.trainer) rows.push({ label: 'Antrenör', value: d.trainer });
+    if (d.ownersText) rows.push({ label: 'Sahip / İlgililer', value: d.ownersText });
+    if (d.inTraining != null) rows.push({ label: 'İdmanda mı', value: d.inTraining ? 'Evet' : 'Hayır' });
+    if (d.isRaceReady != null) rows.push({ label: 'Koşar durumda mı', value: d.isRaceReady ? 'Evet' : 'Hayır' });
+    if (d.isForRent != null) rows.push({ label: 'Kiralık mı', value: d.isForRent ? 'Evet' : 'Hayır' });
+    if (d.isPregnant != null) rows.push({ label: 'Gebe mi', value: d.isPregnant ? 'Evet' : 'Hayır' });
+    if (d.coveringStallion) rows.push({ label: 'Gebe Olduğu Aygır', value: d.coveringStallion });
+    if (d.pregnancyStage) rows.push({ label: 'Gebelik Durumu', value: d.pregnancyStage });
+    if (d.lastCoveringDate) rows.push({ label: 'Son Aşım Tarihi', value: d.lastCoveringDate });
   }
-  if (d.age) rows.push({ label: 'Yaş', value: `${d.age} Yaşında` });
-  if (d.birthDate) rows.push({ label: 'Doğum Tarihi', value: d.birthDate });
-  if (d.coatColor) rows.push({ label: 'Don (Renk)', value: d.coatColor });
-  if (d.heightCm) rows.push({ label: 'Cidago (Boy)', value: `${d.heightCm} cm` });
-  if (d.sire) rows.push({ label: 'Baba (Sire)', value: d.sire });
-  if (d.dam) rows.push({ label: 'Anne (Dam)', value: d.dam });
-  if (d.damsire) rows.push({ label: 'Anne Babası', value: d.damsire });
-  if (d.breeder) rows.push({ label: 'Yetiştirici', value: d.breeder });
-  if (d.trainer) rows.push({ label: 'Antrenör', value: d.trainer });
-  if (d.ownersText) rows.push({ label: 'Sahip / İlgililer', value: d.ownersText });
 
-  if (d.facilityGrassPaddock != null)
-    rows.push({ label: 'Çim Padok', value: d.facilityGrassPaddock ? 'Var' : 'Yok' });
-  if (d.facilitySandPaddock != null)
-    rows.push({ label: 'Kum Padok', value: d.facilitySandPaddock ? 'Var' : 'Yok' });
-  if (d.facilityVeterinarian != null)
-    rows.push({ label: 'Veteriner Hizmeti', value: d.facilityVeterinarian ? 'Var' : 'Yok' });
-  if (d.facilityFarrier != null)
-    rows.push({ label: 'Nalbant Hizmeti', value: d.facilityFarrier ? 'Var' : 'Yok' });
-
+  // Dinamik kategori özellikleri
   if (d.properties) {
     for (const [k, v] of Object.entries(d.properties)) {
       if (
         v != null &&
         v !== '' &&
+        v !== 'null' &&
+        v !== 'undefined' &&
+        k !== 'sellerPhone' &&
+        k !== 'phone' &&
         !rows.some((r) => r.label.toLowerCase() === k.toLowerCase())
       ) {
         rows.push({
@@ -101,99 +191,23 @@ function buildSpecsFromDraft(draft: ListingDraft): AdvertSpecGroup[] {
   return rows.length ? [{ id: 'props', title: 'Genel Bilgiler', rows }] : [];
 }
 
-const SAMPLE_GALLERY: PublicMediaItem[] = [
-  {
-    assetId: 'sample-horse-1',
-    displayOrder: 0,
-    isCover: true,
-    publicUrl: 'https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?auto=format&fit=crop&w=1200&q=80',
-    usage: 'cover',
-  },
-  {
-    assetId: 'sample-horse-2',
-    displayOrder: 1,
-    isCover: false,
-    publicUrl: 'https://images.unsplash.com/photo-1493962853295-0fd70327578a?auto=format&fit=crop&w=600&q=80',
-    usage: 'gallery',
-  },
-  {
-    assetId: 'sample-horse-3',
-    displayOrder: 2,
-    isCover: false,
-    publicUrl: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=600&q=80',
-    usage: 'gallery',
-  },
-];
-
-const SAMPLE_SIBLINGS: HorseSibling[] = [
-  {
-    name: 'GÖKÇE EFE',
-    fatherName: 'KAFKAS ŞAHI',
-    raceCount: '24',
-    first: '5',
-    second: '3',
-    third: '4',
-    fourth: '2',
-    earning: '420.500 ₺',
-  },
-  {
-    name: 'RÜZGARIN SESİ',
-    fatherName: 'TURBO',
-    raceCount: '18',
-    first: '4',
-    second: '2',
-    third: '1',
-    fourth: '3',
-    earning: '315.000 ₺',
-  },
-  {
-    name: 'ASİL KIZ',
-    fatherName: 'ÖZGÜNHAN',
-    raceCount: '12',
-    first: '2',
-    second: '3',
-    third: '2',
-    fourth: '1',
-    earning: '185.000 ₺',
-  },
-];
-
-const SAMPLE_STATISTICS: HorseStatistic[] = [
-  {
-    yearLabel: '2026',
-    raceCount: '6',
-    first: '2',
-    second: '1',
-    third: '1',
-    fourth: '1',
-    fifth: '0',
-    earning: '165.000 ₺',
-  },
-  {
-    yearLabel: '2025',
-    raceCount: '8',
-    first: '3',
-    second: '2',
-    third: '1',
-    fourth: '0',
-    fifth: '1',
-    earning: '240.000 ₺',
-  },
-  {
-    yearLabel: 'TOPLAM',
-    raceCount: '14',
-    first: '5',
-    second: '3',
-    third: '2',
-    fourth: '1',
-    fifth: '1',
-    earning: '405.000 ₺',
-  },
-];
-
 function mapDraftToAdvertDetail(draft: ListingDraft): AdvertDetail {
   const d = draft.details;
-  const title = (d.registeredName || d.title || '').trim() || 'AÇELYA';
+  const isPansiyon = isPansiyonListing(draft.type);
+  const isTransport = isTransportListing(draft.type);
+  const isFarrier = isFarrierListing(draft.type);
+  const isStud = isStudServiceListing(draft.type);
+  const isHorse = isHorseListing(draft.type) || isSaleHorseListing(draft.type);
+  const isService =
+    isPansiyon ||
+    isTransport ||
+    isFarrier ||
+    draft.type?.parentSlug === 'at-hizmetleri' ||
+    draft.type?.categorySlug === 'at-hizmetleri' ||
+    Boolean(draft.type?.categoryName?.toLowerCase().includes('hizmet')) ||
+    draft.type?.categoryId === 'c1000000-0000-4000-8000-000000000002';
+
+  const title = (d.title || d.registeredName || d.studHorseName || '').trim() || 'İlan Başlığı';
   const description = d.description || '';
 
   const priceNum = parseFloat(
@@ -202,15 +216,17 @@ function mapDraftToAdvertDetail(draft: ListingDraft): AdvertDetail {
   const price: Money | null =
     !isNaN(priceNum) && priceNum > 0
       ? { amountMinor: Math.round(priceNum * 100), currency: 'TRY' }
-      : { amountMinor: 300000000, currency: 'TRY' };
+      : null;
 
   const districtId = d.districtId || '';
   const provinceId = d.provinceId || '';
   const locationName =
-    locationLookup.formatLocation(districtId, provinceId) || 'Çankaya, Ankara';
+    locationLookup.formatLocation(districtId, provinceId) || 'Konum Belirtilmedi';
 
-  const categoryName = draft.type?.categoryName || 'Satılık Yarış Atı';
-  const categoryId = draft.type?.categoryId || 'c1000000-0000-4000-8000-000000000011';
+  const categoryName = draft.type?.categoryName || (isService ? 'At Hizmetleri' : 'Satılık Yarış Atı');
+  const categoryId = draft.type?.categoryId || (isService ? 'c1000000-0000-4000-8000-000000000002' : 'c1000000-0000-4000-8000-000000000011');
+  const categorySlug = draft.type?.categorySlug || (isService ? 'at-hizmetleri' : 'satilik-yaris-ati');
+  const parentSlug = draft.type?.parentSlug || null;
 
   const userMedia: PublicMediaItem[] = (draft.media ?? []).map((m, idx) => ({
     assetId: m.localId || String(idx),
@@ -220,7 +236,8 @@ function mapDraftToAdvertDetail(draft: ListingDraft): AdvertDetail {
     usage: m.isCover ? 'cover' : 'gallery',
   }));
 
-  const gallery = userMedia.length > 0 ? userMedia : SAMPLE_GALLERY;
+  const sampleFallback = isService ? SAMPLE_FACILITY_GALLERY : SAMPLE_HORSE_GALLERY;
+  const gallery = userMedia.length > 0 ? userMedia : sampleFallback;
   const cover = gallery.find((m) => m.isCover) ?? gallery[0] ?? null;
 
   const parseGender = (g?: string | null): HorseGender => {
@@ -232,68 +249,60 @@ function mapDraftToAdvertDetail(draft: ListingDraft): AdvertDetail {
     return g as HorseGender;
   };
 
-  const rawSiblings: HorseSibling[] =
-    (d as any).siblings && Array.isArray((d as any).siblings) && (d as any).siblings.length > 0
-      ? (d as any).siblings
-      : SAMPLE_SIBLINGS;
+  const horse: HorseProfile = (isService || (!isHorse && !isStud))
+    ? { ...EMPTY_HORSE }
+    : {
+        ...EMPTY_HORSE,
+        registeredName: d.registeredName || d.studHorseName || title,
+        tjkNumber: d.tjkNumber || '',
+        breed: d.breed || d.studBreed || '',
+        gender: isStud ? ('Erkek' as HorseGender) : parseGender(d.gender),
+        age: d.age || d.studAge || '',
+        birthDate: d.birthDate || '',
+        coatColor: d.coatColor || d.studCoatColor || '',
+        heightCm: d.heightCm ? Number(d.heightCm) : null,
+        sire: d.sire || d.studSire || '',
+        dam: d.dam || d.studDam || '',
+        damsire: d.damsire || d.studDamsire || '',
+        owners: d.ownersText ? [d.ownersText] : [],
+        breeder: d.breeder || '',
+        trainer: d.trainer || '',
+        career: (d as any).career || { starts: 0, first: 0, second: 0, third: 0, fourth: 0, fifth: 0 },
+        yearly: (d as any).yearly || [],
+        careerEarnings: (d as any).careerEarnings || { amountMinor: 0, currency: 'TRY' },
+        handicap: (d as any).handicap || 0,
+        races: (d as any).races || [],
+        offspring: null,
+        pedigree: (d as any).pedigree && Array.isArray((d as any).pedigree) ? (d as any).pedigree : [],
+        siblings: (d as any).siblings && Array.isArray((d as any).siblings) ? (d as any).siblings : [],
+        statistics: (d as any).statistics && Array.isArray((d as any).statistics) ? (d as any).statistics : [],
+      };
 
-  const rawStatistics: HorseStatistic[] =
-    (d as any).statistics && Array.isArray((d as any).statistics) && (d as any).statistics.length > 0
-      ? (d as any).statistics
-      : SAMPLE_STATISTICS;
+  const propMap = buildDraftProperties(draft);
+  if (isStud) {
+    (propMap as any)['__isStud'] = true;
+  }
 
-  const horse: HorseProfile = {
-    registeredName: d.registeredName || title,
-    tjkNumber: d.tjkNumber || '43',
-    breed: d.breed || 'İngiliz (Thoroughbred)',
-    gender: parseGender(d.gender),
-    age: d.age ? (String(d.age).includes('yaş') ? d.age : `${d.age} Yaş üzeri`) : '15 Yaş üzeri',
-    birthDate: d.birthDate || '',
-    coatColor: d.coatColor || 'Doru',
-    heightCm: d.heightCm ? Number(d.heightCm) : null,
-    sire: d.sire || 'SHINING STEEL (GB)',
-    dam: d.dam || 'SÜRSÜRÜ',
-    damsire: d.damsire || 'BACHELOR PARTY',
-    owners: d.ownersText ? [d.ownersText] : [],
-    breeder: d.breeder || '',
-    trainer: d.trainer || '',
-    career: { starts: 14, first: 5, second: 3, third: 2, fourth: 1, fifth: 0 },
-    yearly: [],
-    careerEarnings: { amountMinor: 40500000, currency: 'TRY' },
-    handicap: 68,
-    races: [],
-    offspring: null,
-    pedigree: (d as any).pedigree && Array.isArray((d as any).pedigree) ? (d as any).pedigree : [],
-    siblings: rawSiblings,
-    statistics: rawStatistics,
-  };
+  const breadcrumbs = [
+    { label: 'Ana sayfa', href: '/' },
+    ...(parentSlug && parentSlug !== categorySlug
+      ? [{
+          label:
+            parentSlug === 'at-hizmetleri'
+              ? 'At Hizmetleri'
+              : parentSlug === 'satilik-atlar'
+                ? 'Satılık Atlar'
+                : parentSlug === 'asim-hizmetleri'
+                  ? 'Aşım Hizmetleri'
+                  : parentSlug,
+          href: '#',
+        }]
+      : []),
+    { label: categoryName, href: '#' },
+    { label: title },
+  ];
 
-  const propMap: Record<string, unknown> = {
-    ...(d.properties ?? {}),
-    REGISTERED_NAME: d.registeredName || 'AÇELYA',
-    tjkNumber: d.tjkNumber || '43',
-    HORSE_NAME: d.registeredName || 'AÇELYA',
-    HORSE_BREED: d.breed || 'İngiliz (Thoroughbred)',
-    HORSE_GENDER: d.gender || 'Dişi',
-    HORSE_AGE: d.age || '15 Yaş üzeri',
-    BIRTH_DATE: d.birthDate,
-    COAT_COLOR: d.coatColor || 'Doru',
-    HEIGHT_CM: d.heightCm,
-    SIRE: d.sire || 'SHINING STEEL (GB)',
-    DAM: d.dam || 'SÜRSÜRÜ',
-    DAMSIRE: d.damsire || 'BACHELOR PARTY',
-    BREEDER: d.breeder,
-    TRAINER: d.trainer,
-    sellerPhone: d.sellerPhone,
-    inTraining: d.inTraining != null ? d.inTraining : true,
-    isRaceReady: d.isRaceReady != null ? d.isRaceReady : true,
-    isForRent: d.isForRent != null ? d.isForRent : false,
-    idmandami: d.inTraining != null ? d.inTraining : true,
-    kosardurumdami: d.isRaceReady != null ? d.isRaceReady : true,
-    kiralikmi: d.isForRent != null ? d.isForRent : false,
-  };
-
-  return {
+  const advertDetail: AdvertDetail = {
     id: draft.advertId ?? 43,
     title,
     description,
@@ -305,7 +314,7 @@ function mapDraftToAdvertDetail(draft: ListingDraft): AdvertDetail {
     provinceName: null,
     districtName: null,
     locationName,
-    horseId: null,
+    horseId: d.horseId ?? null,
     cover,
     gallery,
     isFavorite: false,
@@ -317,11 +326,7 @@ function mapDraftToAdvertDetail(draft: ListingDraft): AdvertDetail {
     sellerId: null,
     sellerPhone: d.sellerPhone || null,
     viewCount: 0,
-    breadcrumbs: [
-      { label: 'Ana sayfa', href: '/' },
-      { label: categoryName, href: '#' },
-      { label: title },
-    ],
+    breadcrumbs,
     horse,
     specs: buildSpecsFromDraft(draft),
     properties: propMap,
@@ -330,7 +335,7 @@ function mapDraftToAdvertDetail(draft: ListingDraft): AdvertDetail {
     rating: 0,
     reviewCount: 0,
     oldPrice: null,
-    brand: null,
+    brand: isTransport ? (d.companyName || null) : null,
     available: true,
     shipping: [],
     warranties: [],
@@ -341,6 +346,9 @@ function mapDraftToAdvertDetail(draft: ListingDraft): AdvertDetail {
     viewed: [],
     related: [],
   };
+  (advertDetail as any).category = { id: categoryId, name: categoryName, slug: categorySlug };
+
+  return advertDetail;
 }
 
 export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
@@ -365,6 +373,9 @@ export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
   const location = useAdvertLocation(detail);
   const [specsSubTab, setSpecsSubTab] = useState<SpecsSubTab>('specs');
 
+  const categoryKind = useMemo(() => getAdvertCategoryKind(detail), [detail]);
+  const isHorseOrStud = categoryKind === 'horse' || categoryKind === 'stud';
+
   const subTabs = useMemo(() => {
     const list: {
       key: SpecsSubTab;
@@ -375,16 +386,18 @@ export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
 
     list.push({ key: 'specs', label: 'Genel Bilgiler', icon: 'information-circle-outline' });
 
+    // Pedigri, İstatistikler ve Anne Kardeşleri sadece At veya Aşım kategorilerinde ve veri varsa gösterilir
     if (
-      (detail.horse?.pedigree && detail.horse.pedigree.length > 0) ||
-      Boolean(detail.horse?.sire || detail.horse?.dam)
+      isHorseOrStud &&
+      ((detail.horse?.pedigree && detail.horse.pedigree.length > 0) ||
+        Boolean(detail.horse?.sire || detail.horse?.dam))
     ) {
       list.push({ key: 'pedigree', label: 'Pedigri (Soyağacı)', icon: 'git-branch-outline' });
     }
-    if (detail.horse?.statistics && detail.horse.statistics.length > 0) {
+    if (isHorseOrStud && detail.horse?.statistics && detail.horse.statistics.length > 0) {
       list.push({ key: 'statistics', label: 'İstatistikler', icon: 'stats-chart-outline' });
     }
-    if (detail.horse?.siblings && detail.horse.siblings.length > 0) {
+    if (isHorseOrStud && detail.horse?.siblings && detail.horse.siblings.length > 0) {
       list.push({
         key: 'siblings',
         label: 'Anne Kardeşleri',
@@ -393,7 +406,14 @@ export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
       });
     }
     return list;
-  }, [detail.horse]);
+  }, [isHorseOrStud, detail.horse]);
+
+  // Alt sekmeler değiştiğinde specs'e geri dön (örneğin kategori değiştiğinde)
+  useEffect(() => {
+    if (!subTabs.some((t) => t.key === specsSubTab)) {
+      setSpecsSubTab('specs');
+    }
+  }, [subTabs, specsSubTab]);
 
   const galleryHeight = isWide ? 420 : 300;
 
@@ -429,69 +449,91 @@ export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
               contentContainerStyle={styles.wideScrollContent}
               showsVerticalScrollIndicator={false}
             >
+              {/* Ekmek kırıntısı (Breadcrumbs) — yayındaki ilan sayfasıyla birebir */}
+              <View style={styles.crumbs}>
+                {detail.breadcrumbs.map((crumb, i) => (
+                  <React.Fragment key={`${crumb.label}-${i}`}>
+                    {i > 0 ? (
+                      <Text style={{ color: textMuted, fontSize: 12 }}> › </Text>
+                    ) : null}
+                    <Text
+                      style={{
+                        color: i === detail.breadcrumbs.length - 1 ? text : textMuted,
+                        fontSize: 12.5,
+                        fontWeight: i === detail.breadcrumbs.length - 1 ? '600' : '400',
+                      }}
+                    >
+                      {crumb.label}
+                    </Text>
+                  </React.Fragment>
+                ))}
+              </View>
+
               <Text style={[styles.wideTitle, { color: text }]}>
-                {detail.title.toUpperCase()}
+                {detail.title}
               </Text>
 
-              {/* Sub Tabs Bar (Web ilanlarındaki gibi üstte) */}
-              <View style={styles.desktopSubTabsWrap}>
-                <View style={styles.subTabsContainer}>
-                  {subTabs.map((t) => {
-                    const isActive = t.key === specsSubTab;
-                    return (
-                      <Pressable
-                        key={t.key}
-                        onPress={() => setSpecsSubTab(t.key)}
-                        style={[
-                          styles.subTabButton,
-                          {
-                            backgroundColor: isActive ? primary : surface,
-                            borderColor: isActive ? primary : border,
-                          },
-                        ]}
-                      >
-                        <Ionicons
-                          name={t.icon}
-                          size={16}
-                          color={isActive ? '#ffffff' : textSecondary}
-                        />
-                        <Text
+              {/* Sub Tabs Bar (Sadece birden fazla sekme olduğunda gösterilir) */}
+              {subTabs.length > 1 ? (
+                <View style={styles.desktopSubTabsWrap}>
+                  <View style={styles.subTabsContainer}>
+                    {subTabs.map((t) => {
+                      const isActive = t.key === specsSubTab;
+                      return (
+                        <Pressable
+                          key={t.key}
+                          onPress={() => setSpecsSubTab(t.key)}
                           style={[
-                            styles.subTabButtonText,
+                            styles.subTabButton,
                             {
-                              color: isActive ? '#ffffff' : text,
-                              fontWeight: isActive ? '700' : '600',
+                              backgroundColor: isActive ? primary : surface,
+                              borderColor: isActive ? primary : border,
                             },
                           ]}
                         >
-                          {t.label}
-                        </Text>
-                        {t.badge ? (
-                          <View
+                          <Ionicons
+                            name={t.icon}
+                            size={16}
+                            color={isActive ? '#ffffff' : textSecondary}
+                          />
+                          <Text
                             style={[
-                              styles.subTabBadge,
+                              styles.subTabButtonText,
                               {
-                                backgroundColor: isActive
-                                  ? 'rgba(255, 255, 255, 0.25)'
-                                  : `${primary}15`,
+                                color: isActive ? '#ffffff' : text,
+                                fontWeight: isActive ? '700' : '600',
                               },
                             ]}
                           >
-                            <Text
+                            {t.label}
+                          </Text>
+                          {t.badge ? (
+                            <View
                               style={[
-                                styles.subTabBadgeText,
-                                { color: isActive ? '#ffffff' : primary },
+                                styles.subTabBadge,
+                                {
+                                  backgroundColor: isActive
+                                    ? 'rgba(255, 255, 255, 0.25)'
+                                    : `${primary}15`,
+                                },
                               ]}
                             >
-                              {t.badge}
-                            </Text>
-                          </View>
-                        ) : null}
-                      </Pressable>
-                    );
-                  })}
+                              <Text
+                                style={[
+                                  styles.subTabBadgeText,
+                                  { color: isActive ? '#ffffff' : primary },
+                                ]}
+                              >
+                                {t.badge}
+                              </Text>
+                            </View>
+                          ) : null}
+                        </Pressable>
+                      );
+                    })}
+                  </View>
                 </View>
-              </View>
+              ) : null}
 
               {/* Tab Content: Genel Bilgiler */}
               {specsSubTab === 'specs' && (
@@ -500,7 +542,7 @@ export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
                   <View style={styles.wideGalleryCol}>
                     <AdvertGallery items={detail.gallery} height={galleryHeight} accessToken={null} />
                   </View>
-                  {/* Sağ: BuyBox */}
+                  {/* Sağ: BuyBox (Kategoriye özel tablo + Fiyat + Konum + Açıklama) */}
                   <View style={styles.wideBuyCol}>
                     <AdvertBuyBox detail={detail} variant="default" favorite={false} isOwner onEdit={onEdit} />
                   </View>
@@ -561,7 +603,7 @@ export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
       ) : (
         /* ═══ MOBİL: Gerçek ilan sayfasıyla birebir tam ekran ═══ */
         <View style={[styles.container, { backgroundColor: bg }]}>
-          {/* Mobil Header — gerçek sayfadaki gibi geri + başlık + düzenle */}
+          {/* Mobil Header — geri + başlık */}
           <View style={[styles.header, { backgroundColor: surface, borderBottomColor: border }]}>
             <Pressable onPress={onClose} hitSlop={10} style={styles.backBtn}>
               <Ionicons name="arrow-back" size={22} color={text} />
@@ -606,7 +648,7 @@ export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
               </View>
             </View>
 
-            {/* AdvertSpecs sekmeli bölümü */}
+            {/* 3. AdvertSpecs (Kategoriye özel özellikler listesi) */}
             <View style={styles.mobileSpecsWrap}>
               <AdvertSpecs
                 groups={detail.specs}
@@ -616,6 +658,23 @@ export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
                 onSubTabChange={setSpecsSubTab}
               />
             </View>
+
+            {/* 4. İlan Açıklaması (Mobilde özelliklerin altında) */}
+            {detail.description ? (
+              <View style={styles.mobileDescWrap}>
+                <View style={[styles.mobileDescCard, { backgroundColor: surface, borderColor: border }]}>
+                  <View style={styles.descHeader}>
+                    <Ionicons name="document-text-outline" size={16} color={textMuted} />
+                    <Text style={[styles.blockLabel, { color: text }]}>
+                      İlan Açıklaması
+                    </Text>
+                  </View>
+                  <Text style={[styles.desc, { color: textSecondary }]}>
+                    {detail.description}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
           </ScrollView>
 
           {/* Sabit Alt Bar */}
@@ -699,10 +758,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backBtn: { padding: 6 },
-  editBtn: { padding: 6 },
-  editAction: { fontSize: 14, fontWeight: '600' },
   /* Scroll */
   scroll: { flex: 1 },
+  crumbs: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 2,
+    marginBottom: -Spacing.xs,
+  },
   /* Mobile layout */
   mobileGalleryWrap: { width: '100%' },
   mobileSummary: {
@@ -741,13 +805,34 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.4,
   },
-  mobileBuyBox: {
-    paddingHorizontal: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
   mobileSpecsWrap: {
     paddingHorizontal: Spacing.sm,
+    paddingBottom: Spacing.sm,
+  },
+  mobileDescWrap: {
+    paddingHorizontal: Spacing.sm,
     paddingBottom: Spacing.xl,
+  },
+  mobileDescCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    gap: 10,
+  },
+  descHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  blockLabel: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  desc: {
+    fontSize: 13.5,
+    lineHeight: 22,
+    fontWeight: '400',
   },
   /* Desktop layout */
   wideScrollContent: {

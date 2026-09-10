@@ -214,6 +214,9 @@ export function applyTjkProfile(
     tjkSkipped: false,
     title: details.title.trim() || horse.registeredName,
     properties: existingProps,
+    pedigree: horse.pedigree ?? [],
+    siblings: horse.siblings ?? [],
+    statistics: horse.statistics ?? [],
   };
 }
 

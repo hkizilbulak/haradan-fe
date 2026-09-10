@@ -120,6 +120,9 @@ export type ListingDraftDetails = {
   lastCoveringDate?: string;
   /** Dinamik Properties JSON Map */
   properties?: Record<string, unknown>;
+  pedigree?: PedigreeEntry[];
+  siblings?: HorseSibling[];
+  statistics?: HorseStatistic[];
 };
 
 /** BE PackageCode — kapalı enum değil. */
