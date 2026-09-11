@@ -156,6 +156,20 @@ export const AdvertBuyBox = memo(function AdvertBuyBox({
           </Text>
         </View>
       ) : null}
+
+      {detail.backendStatus === 'REJECTED' ? (
+        <View style={[styles.descCard, { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' }]}>
+          <View style={styles.descHeader}>
+            <Ionicons name="alert-circle" size={16} color="#DC2626" />
+            <Text style={[styles.blockLabel, { color: '#B91C1C' }]}>
+              Red Nedeni
+            </Text>
+          </View>
+          <Text style={[styles.desc, { color: '#991B1B' }]}>
+            {detail.rejectionReason || 'Bu ilan moderasyon tarafından onaylanmadı.'}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 });

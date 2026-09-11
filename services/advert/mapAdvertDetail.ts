@@ -320,6 +320,7 @@ function emptyDetailShell(
     | 'locationName'
     | 'backendStatus'
   > & {
+    rejectionReason?: string | null;
     properties?: Record<string, unknown>;
     rawProperties?: Record<string, unknown>;
   }
@@ -329,6 +330,7 @@ function emptyDetailShell(
     districtName: null,
     locationName: null,
     backendStatus: null,
+    rejectionReason: null,
     ...partial,
     properties: partial.properties ?? {},
     rawProperties: partial.rawProperties ?? partial.properties ?? {},
@@ -526,6 +528,7 @@ export function mapOwnerToAdvertDetail(
     urgentActivatedAt: null,
     sellerId,
     backendStatus: dto.status ?? null,
+    rejectionReason: (dto as any).rejectionReason ?? null,
     properties: propMap,
     rawProperties: propMap,
     sellerPhone:

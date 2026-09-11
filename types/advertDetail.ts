@@ -183,6 +183,8 @@ export type AdvertDetail = PublishedAdvertCard & {
   sellerId?: string | null;
   /** BE AdvertStatus — owner görünümünde doldurulur; public endpoint NULL bırakır. */
   backendStatus?: string | null;
+  /** Reddedilme gerekçesi / açıklaması */
+  rejectionReason?: string | null;
   gallery: PublicMediaItem[];
   breadcrumbs: { label: string; href?: string }[];
   horse: HorseProfile;
