@@ -669,9 +669,21 @@ export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
                       İlan Açıklaması
                     </Text>
                   </View>
-                  <Text style={[styles.desc, { color: textSecondary }]}>
-                    {detail.description}
-                  </Text>
+                  {Platform.OS === 'web' ? (
+                    <div
+                      style={{
+                        color: textSecondary,
+                        fontSize: 13.5,
+                        lineHeight: 1.6,
+                        wordBreak: 'break-word',
+                      }}
+                      dangerouslySetInnerHTML={{ __html: detail.description }}
+                    />
+                  ) : (
+                    <Text style={[styles.desc, { color: textSecondary }]}>
+                      {detail.description.replace(/<[^>]+>/g, '')}
+                    </Text>
+                  )}
                 </View>
               </View>
             ) : null}
