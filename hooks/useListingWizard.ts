@@ -20,6 +20,7 @@ import {
 } from '@/services/listing';
 import { locationLookup } from '@/services/location';
 import { tjkRepository, type ITjkRepository } from '@/services/tjk';
+import { AiRepository } from '@/services/ai/AiRepository';
 import type { AdvertId } from '@/types/advertId';
 import type {
   ListingDraft,
@@ -439,14 +440,35 @@ export function useListingWizard(deps: Deps = {}) {
   const applyTjk = useCallback(async (horseId: string) => {
     const horse = await tjk.getById(horseId);
     if (!horse) return;
+    
+    const updatedDetails = applyTjkProfile(getListingWizardState().draft.details, horse);
     setListingWizardState((prev) => ({
       ...prev,
       tjkPromptSeen: true,
       draft: {
         ...prev.draft,
-        details: applyTjkProfile(prev.draft.details, horse),
+        details: updatedDetails,
       },
     }));
+
+    try {
+      const aiResponse = await AiRepository.generateAdvert({ horseData: JSON.stringify(horse) });
+      if (aiResponse.title || aiResponse.description) {
+        setListingWizardState((prev) => ({
+          ...prev,
+          draft: {
+            ...prev.draft,
+            details: {
+              ...prev.draft.details,
+              title: aiResponse.title || prev.draft.details.title,
+              description: aiResponse.description || prev.draft.details.description,
+            },
+          },
+        }));
+      }
+    } catch (e) {
+      console.warn('AI generation failed silently', e);
+    }
   }, [tjk]);
 
   const skipTjk = useCallback(() => {

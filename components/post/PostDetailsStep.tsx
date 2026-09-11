@@ -9,6 +9,7 @@ import { PostTjkSheet } from './PostTjkSheet';
 import { formatTlGrouped } from '@/services/phone';
 import { locationLookup } from '@/services/location';
 import { useDistricts, useProvinces } from '@/hooks/useLocation';
+import { RichTextEditor } from './RichTextEditor';
 import {
   isPansiyonListing,
   isSaleHorseListing,
@@ -554,23 +555,25 @@ export function PostDetailsStep({
 
         {descConfig.isActive ? (
           <View
-            style={[styles.fieldRow, { borderTopColor: border }]}
+            style={[styles.fieldRow, { borderTopColor: border, flexDirection: 'column', gap: 6 }]}
             onLayout={(e) => updateFieldY('description', e.nativeEvent.layout.y)}
           >
-            <PostField
-              label={descConfig.title}
-              required={descConfig.isRequired}
-              value={d.description}
-              onChangeText={(description) => onUpdate({ description })}
+            <Text style={[styles.fieldLabel, { color: secondary }]}>
+              {descConfig.title}
+              {descConfig.isRequired ? <Text style={{ color: errorColor }}> *</Text> : null}
+            </Text>
+            <RichTextEditor
+              initialContentHTML={d.description}
+              onChange={(description) => onUpdate({ description })}
               placeholder={
                 descConfig.isRequired
                   ? 'Durum, bakım ve öne çıkan özellikler…'
                   : 'Durum, bakım ve öne çıkan özellikler… (opsiyonel)'
               }
-              multiline
-              error={errors.description}
-              stacked
             />
+            {errors.description ? (
+              <Text style={[styles.err, { color: errorColor }]}>{errors.description}</Text>
+            ) : null}
           </View>
         ) : null}
 
