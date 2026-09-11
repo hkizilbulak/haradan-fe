@@ -49,6 +49,25 @@ export const ImageLightboxModal = memo(function ImageLightboxModal({
   const lastTapRef = useRef<number>(0);
   const containerRef = useRef<View>(null);
 
+  const clampPanRef = useRef<(x: number, y: number, currentZoom: number) => { x: number; y: number }>(() => ({ x: 0, y: 0 }));
+
+  // Clamp pan movement based on current zoom and viewport so every edge/corner is reachable
+  const clampPan = useCallback(
+    (x: number, y: number, currentZoom: number) => {
+      if (currentZoom <= 1) return { x: 0, y: 0 };
+      const maxW = winWidth - 32;
+      const maxH = winHeight - 160;
+      const maxPanX = Math.max(0, (maxW * currentZoom - maxW) / 2 + 80);
+      const maxPanY = Math.max(0, (maxH * currentZoom - maxH) / 2 + 80);
+      return {
+        x: Math.min(maxPanX, Math.max(-maxPanX, x)),
+        y: Math.min(maxPanY, Math.max(-maxPanY, y)),
+      };
+    },
+    [winWidth, winHeight]
+  );
+  clampPanRef.current = clampPan;
+
   // Sync initial index whenever modal opens
   useEffect(() => {
     if (visible) {
@@ -63,19 +82,75 @@ export const ImageLightboxModal = memo(function ImageLightboxModal({
     setPan({ x: 0, y: 0 });
   }, []);
 
+  // Zoom focused on a specific viewport coordinate (e.g. mouse cursor or double click)
+  const zoomToPoint = useCallback(
+    (clientX: number, clientY: number, targetZoom: number) => {
+      const currentZoom = zoomRef.current;
+      const currentPan = panRef.current;
+      const clampedZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, +targetZoom.toFixed(2)));
+
+      if (clampedZoom <= 1) {
+        setZoom(1);
+        setPan({ x: 0, y: 0 });
+        return;
+      }
+
+      // Calculate center of stage
+      let centerX = winWidth / 2;
+      let centerY = winHeight / 2;
+      const stageEl = containerRef.current as unknown as HTMLElement | null;
+      if (stageEl && typeof stageEl.getBoundingClientRect === 'function') {
+        const rect = stageEl.getBoundingClientRect();
+        centerX = rect.left + rect.width / 2;
+        centerY = rect.top + rect.height / 2;
+      }
+
+      const mouseX = clientX - centerX;
+      const mouseY = clientY - centerY;
+
+      // Keep point under cursor fixed in viewport
+      const ratio = clampedZoom / currentZoom;
+      const newPanX = mouseX - (mouseX - currentPan.x) * ratio;
+      const newPanY = mouseY - (mouseY - currentPan.y) * ratio;
+
+      const clamped = clampPanRef.current(newPanX, newPanY, clampedZoom);
+      setZoom(clampedZoom);
+      setPan(clamped);
+    },
+    [winWidth, winHeight]
+  );
+
   const zoomIn = useCallback(() => {
-    setZoom((prev) => {
-      const next = Math.min(MAX_ZOOM, +(prev + 0.5).toFixed(1));
-      return next;
-    });
+    const currentZoom = zoomRef.current;
+    const nextZoom = Math.min(MAX_ZOOM, +(currentZoom + 0.5).toFixed(1));
+    if (nextZoom === currentZoom) return;
+    const ratio = nextZoom / currentZoom;
+    const newPan = clampPanRef.current(
+      panRef.current.x * ratio,
+      panRef.current.y * ratio,
+      nextZoom
+    );
+    setZoom(nextZoom);
+    setPan(newPan);
   }, []);
 
   const zoomOut = useCallback(() => {
-    setZoom((prev) => {
-      const next = Math.max(MIN_ZOOM, +(prev - 0.5).toFixed(1));
-      if (next === MIN_ZOOM) setPan({ x: 0, y: 0 });
-      return next;
-    });
+    const currentZoom = zoomRef.current;
+    const nextZoom = Math.max(MIN_ZOOM, +(currentZoom - 0.5).toFixed(1));
+    if (nextZoom === currentZoom) return;
+    if (nextZoom <= 1) {
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+    } else {
+      const ratio = nextZoom / currentZoom;
+      const newPan = clampPanRef.current(
+        panRef.current.x * ratio,
+        panRef.current.y * ratio,
+        nextZoom
+      );
+      setZoom(nextZoom);
+      setPan(newPan);
+    }
   }, []);
 
   const handlePrev = useCallback(() => {
@@ -90,69 +165,99 @@ export const ImageLightboxModal = memo(function ImageLightboxModal({
     resetZoom();
   }, [items.length, resetZoom]);
 
-  const handleDoubleTap = useCallback(() => {
-    if (zoomRef.current > 1) {
-      resetZoom();
-    } else {
-      setZoom(DOUBLE_TAP_ZOOM);
-      setPan({ x: 0, y: 0 });
-    }
-  }, [resetZoom]);
-
-  // Touch / Click handler to detect double tap
-  const handlePress = useCallback(() => {
-    const now = Date.now();
-    if (now - lastTapRef.current < 300) {
-      handleDoubleTap();
-      lastTapRef.current = 0;
-    } else {
-      lastTapRef.current = now;
-    }
-  }, [handleDoubleTap]);
-
-  // Clamp pan movement based on current zoom and viewport
-  const clampPan = useCallback(
-    (x: number, y: number, currentZoom: number) => {
-      if (currentZoom <= 1) return { x: 0, y: 0 };
-      const maxPanX = (winWidth * (currentZoom - 1)) / 2;
-      const maxPanY = (winHeight * (currentZoom - 1)) / 2;
-      return {
-        x: Math.min(maxPanX, Math.max(-maxPanX, x)),
-        y: Math.min(maxPanY, Math.max(-maxPanY, y)),
-      };
+  const handleDoubleTap = useCallback(
+    (clientX?: number, clientY?: number) => {
+      if (zoomRef.current > 1) {
+        resetZoom();
+      } else {
+        const x = clientX ?? winWidth / 2;
+        const y = clientY ?? winHeight / 2;
+        zoomToPoint(x, y, DOUBLE_TAP_ZOOM);
+      }
     },
-    [winWidth, winHeight]
+    [resetZoom, zoomToPoint, winWidth, winHeight]
   );
 
-  // React Native PanResponder for mobile & touch dragging when zoomed
+  // Touch handler for native platforms
+  const handlePress = useCallback(
+    (e: any) => {
+      if (Platform.OS === 'web') return;
+      const now = Date.now();
+      if (now - lastTapRef.current < 300) {
+        const locX = e?.nativeEvent?.pageX ?? winWidth / 2;
+        const locY = e?.nativeEvent?.pageY ?? winHeight / 2;
+        handleDoubleTap(locX, locY);
+        lastTapRef.current = 0;
+      } else {
+        lastTapRef.current = now;
+      }
+    },
+    [handleDoubleTap, winWidth, winHeight]
+  );
+
+  // Mobile Pinch & Pan Responder
   const panStartRef = useRef({ x: 0, y: 0 });
+  const pinchStartDistRef = useRef<number>(0);
+  const pinchStartZoomRef = useRef<number>(1);
+
+  const getTouchesDist = (touches: any[]) => {
+    if (!touches || touches.length < 2) return 0;
+    const dx = touches[0].pageX - touches[1].pageX;
+    const dy = touches[0].pageY - touches[1].pageY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => zoomRef.current > 1,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return zoomRef.current > 1 && (Math.abs(gestureState.dx) > 3 || Math.abs(gestureState.dy) > 3);
+      onStartShouldSetPanResponder: () => Platform.OS !== 'web' && zoomRef.current > 1,
+      onMoveShouldSetPanResponderCapture: (_, gestureState) => {
+        if (Platform.OS === 'web') return false;
+        return (
+          (zoomRef.current > 1 && (Math.abs(gestureState.dx) > 3 || Math.abs(gestureState.dy) > 3)) ||
+          gestureState.numberActiveTouches >= 2
+        );
       },
-      onPanResponderGrant: () => {
+      onPanResponderGrant: (e) => {
+        if (Platform.OS === 'web') return;
         panStartRef.current = { ...panRef.current };
         setIsDragging(true);
+        if (e.nativeEvent.touches && e.nativeEvent.touches.length >= 2) {
+          pinchStartDistRef.current = getTouchesDist(e.nativeEvent.touches);
+          pinchStartZoomRef.current = zoomRef.current;
+        }
       },
-      onPanResponderMove: (_, gestureState) => {
-        if (zoomRef.current <= 1) return;
-        const targetX = panStartRef.current.x + gestureState.dx;
-        const targetY = panStartRef.current.y + gestureState.dy;
-        const clamped = clampPan(targetX, targetY, zoomRef.current);
-        setPan(clamped);
+      onPanResponderMove: (e, gestureState) => {
+        if (Platform.OS === 'web') return;
+        if (e.nativeEvent.touches && e.nativeEvent.touches.length >= 2) {
+          const dist = getTouchesDist(e.nativeEvent.touches);
+          if (dist > 0 && pinchStartDistRef.current > 0) {
+            const factor = dist / pinchStartDistRef.current;
+            const nextZoom = Math.min(
+              MAX_ZOOM,
+              Math.max(MIN_ZOOM, +(pinchStartZoomRef.current * factor).toFixed(2))
+            );
+            setZoom(nextZoom);
+            setPan((p) => clampPanRef.current(p.x, p.y, nextZoom));
+          }
+        } else if (zoomRef.current > 1) {
+          const targetX = panStartRef.current.x + gestureState.dx;
+          const targetY = panStartRef.current.y + gestureState.dy;
+          const clamped = clampPanRef.current(targetX, targetY, zoomRef.current);
+          setPan(clamped);
+        }
       },
       onPanResponderRelease: () => {
         setIsDragging(false);
+        pinchStartDistRef.current = 0;
       },
       onPanResponderTerminate: () => {
         setIsDragging(false);
+        pinchStartDistRef.current = 0;
       },
     })
   ).current;
 
-  // Web mouse wheel zoom & keyboard listeners
+  // Web mouse drag, wheel focal zoom, and keyboard navigation
   useEffect(() => {
     if (Platform.OS !== 'web' || !visible) return;
 
@@ -160,45 +265,135 @@ export const ImageLightboxModal = memo(function ImageLightboxModal({
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
+    let isPointerDown = false;
+    let startX = 0;
+    let startY = 0;
+    let startPanX = 0;
+    let startPanY = 0;
+    let hasDragged = false;
+    let downTime = 0;
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+
+      const target = e.target as HTMLElement | null;
+      // Do not drag if clicked on top controls, nav arrows, or thumbnails
+      if (target?.closest('button, [role="button"], [data-no-drag="true"]')) {
+        return;
+      }
+
+      // Check if click was inside image stage
+      const stageEl = containerRef.current as unknown as HTMLElement | null;
+      if (stageEl && !stageEl.contains(target)) {
+        return;
+      }
+
+      e.preventDefault();
+      isPointerDown = true;
+      hasDragged = false;
+      downTime = Date.now();
+      startX = e.clientX;
+      startY = e.clientY;
+      startPanX = panRef.current.x;
+      startPanY = panRef.current.y;
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!isPointerDown) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        if (!hasDragged) {
+          hasDragged = true;
+          setIsDragging(true);
+        }
+      }
+
+      if (zoomRef.current > 1) {
+        const clamped = clampPanRef.current(startPanX + dx, startPanY + dy, zoomRef.current);
+        setPan(clamped);
+      }
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      if (!isPointerDown) return;
+      isPointerDown = false;
+      setIsDragging(false);
+
+      const elapsed = Date.now() - downTime;
+      // Quick click without drag -> trigger tap / double tap
+      if (!hasDragged && elapsed < 350) {
+        const now = Date.now();
+        if (now - lastTapRef.current < 350) {
+          if (zoomRef.current > 1) {
+            resetZoom();
+          } else {
+            zoomToPoint(e.clientX, e.clientY, DOUBLE_TAP_ZOOM);
+          }
+          lastTapRef.current = 0;
+        } else {
+          lastTapRef.current = now;
+        }
+      }
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
-      } else if (e.key === 'ArrowLeft') {
-        handlePrev();
-      } else if (e.key === 'ArrowRight') {
-        handleNext();
       } else if (e.key === '+' || e.key === '=') {
         zoomIn();
       } else if (e.key === '-') {
         zoomOut();
       } else if (e.key === '0' || e.key.toLowerCase() === 'r') {
         resetZoom();
+      } else if (e.key === 'ArrowLeft') {
+        if (zoomRef.current > 1) {
+          setPan((p) => clampPanRef.current(p.x + 60, p.y, zoomRef.current));
+        } else {
+          handlePrev();
+        }
+      } else if (e.key === 'ArrowRight') {
+        if (zoomRef.current > 1) {
+          setPan((p) => clampPanRef.current(p.x - 60, p.y, zoomRef.current));
+        } else {
+          handleNext();
+        }
+      } else if (e.key === 'ArrowUp') {
+        if (zoomRef.current > 1) {
+          setPan((p) => clampPanRef.current(p.x, p.y + 60, zoomRef.current));
+        }
+      } else if (e.key === 'ArrowDown') {
+        if (zoomRef.current > 1) {
+          setPan((p) => clampPanRef.current(p.x, p.y - 60, zoomRef.current));
+        }
       }
     };
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      setZoom((prev) => {
-        const delta = e.deltaY < 0 ? 0.35 : -0.35;
-        const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, +(prev + delta).toFixed(2)));
-        if (next === MIN_ZOOM) {
-          setPan({ x: 0, y: 0 });
-        } else {
-          setPan((p) => clampPan(p.x, p.y, next));
-        }
-        return next;
-      });
+      const delta = e.deltaY < 0 ? 0.35 : -0.35;
+      const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, +(zoomRef.current + delta).toFixed(2)));
+      zoomToPoint(e.clientX, e.clientY, next);
     };
 
+    window.addEventListener('pointerdown', onPointerDown, { passive: false });
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('wheel', handleWheel, { passive: false });
 
     return () => {
       document.body.style.overflow = prevOverflow;
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('wheel', handleWheel);
     };
-  }, [visible, onClose, handlePrev, handleNext, zoomIn, zoomOut, resetZoom, clampPan]);
+  }, [visible, onClose, handlePrev, handleNext, zoomIn, zoomOut, resetZoom, zoomToPoint]);
 
   if (!visible || !items || items.length === 0) return null;
 
@@ -276,17 +471,18 @@ export const ImageLightboxModal = memo(function ImageLightboxModal({
         <View
           ref={containerRef}
           style={styles.stage}
-          {...panResponder.panHandlers}
+          {...(Platform.OS !== 'web' ? panResponder.panHandlers : {})}
         >
           <Pressable
-            onPress={handlePress}
+            onPress={Platform.OS === 'web' ? undefined : handlePress}
             style={[
               styles.imageWrap,
               Platform.select({
                 web: {
                   cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'zoom-in',
-                  userSelect: 'none' as const,
-                },
+                  userSelect: 'none',
+                  touchAction: 'none',
+                } as any,
                 default: {},
               }),
             ]}
@@ -329,7 +525,7 @@ export const ImageLightboxModal = memo(function ImageLightboxModal({
           <View style={styles.hintBar} pointerEvents="none">
             <Text style={styles.hintText}>
               {zoom > 1
-                ? 'Sürükleyerek inceleyin • Çift tıkla sıfırlayın'
+                ? 'Sürükleyerek inceleyin • Çift tıkla sıfırlayın • Ok tuşlarıyla kaydırın'
                 : 'Fotoğrafa çift tıklayarak veya tekerlekle yakınlaştırabilirsiniz'}
             </Text>
           </View>
@@ -348,6 +544,7 @@ export const ImageLightboxModal = memo(function ImageLightboxModal({
                 return (
                   <Pressable
                     key={item.assetId || item.publicUrl || i}
+                    accessibilityRole="button"
                     onPress={() => {
                       setIndex(i);
                       resetZoom();
@@ -413,7 +610,18 @@ function LightboxImage({
     >
       <Image
         source={source}
-        style={styles.fullImg}
+        style={[
+          styles.fullImg,
+          Platform.select({
+            web: {
+              pointerEvents: 'none',
+              userSelect: 'none',
+              WebkitUserDrag: 'none',
+              userDrag: 'none',
+            } as any,
+            default: {},
+          }),
+        ]}
         contentFit="contain"
         transition={200}
         priority="high"
@@ -544,16 +752,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
     overflow: 'hidden',
+    ...Platform.select({
+      web: {
+        touchAction: 'none' as const,
+        userSelect: 'none' as const,
+      },
+      default: {},
+    }),
   },
   imageWrap: {
     flex: 1,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    ...Platform.select({
+      web: {
+        touchAction: 'none' as const,
+        userSelect: 'none' as const,
+      },
+      default: {},
+    }),
   },
   imgTransformContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    ...Platform.select({
+      web: {
+        touchAction: 'none' as const,
+        userSelect: 'none' as const,
+      },
+      default: {},
+    }),
   },
   fullImg: {
     width: '100%',
