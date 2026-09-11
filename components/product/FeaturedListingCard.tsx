@@ -107,6 +107,7 @@ function FeaturedListingCardComponent({
   }, [onMarkSold, product.id]);
 
   const isSold = (product as { backendStatus?: string }).backendStatus === 'SOLD';
+  const isArchived = (product as { backendStatus?: string }).backendStatus === 'ARCHIVED';
   const isRejected =
     (product as { backendStatus?: string }).backendStatus === 'REJECTED' ||
     (product as { status?: string }).status === 'rejected';
@@ -114,7 +115,6 @@ function FeaturedListingCardComponent({
     (product as { backendStatus?: string }).backendStatus === 'DRAFT' ||
     (product as { backendStatus?: string }).backendStatus === 'CHANGES_REQUESTED' ||
     (product as { backendStatus?: string }).backendStatus === 'SUSPENDED' ||
-    (product as { backendStatus?: string }).backendStatus === 'ARCHIVED' ||
     (product as { status?: string }).status === 'draft';
   const shouldShowFavorite =
     !isRejected &&
@@ -205,7 +205,11 @@ function FeaturedListingCardComponent({
             pointerEvents="none"
             style={[styles.scrim, { opacity: hovered ? 1 : 0 }]}
           />
-          {isSold ? <SoldOverlay /> : null}
+          {isSold ? (
+            <SoldOverlay />
+          ) : isArchived ? (
+            <SoldOverlay text="YAYINDAN KALDIRILDI" />
+          ) : null}
 
           {/* Sol Üst Rozet: ● ACİL veya ★ Öne Çıkan */}
           {resolvedBadge === 'urgent' ? (

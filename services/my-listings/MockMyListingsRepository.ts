@@ -2,6 +2,7 @@ import { MOCK_CATEGORIES } from '@/mocks/homepage';
 import { getMockAdvertDetail } from '@/mocks/advertDetail';
 import { MOCK_MY_LISTINGS } from '@/mocks/myListings';
 import { ApiError } from '@/services/http';
+import { advertRepository } from '@/services/advert';
 import type {
   ListingDraft,
   MyListingCard,
@@ -116,7 +117,14 @@ export class MockMyListingsRepository implements IMyListingsRepository {
     }
     const draft = this.getDraft(id, card);
     const version = this.getVersion(id, card.version ?? 1);
-    return { draft, version, mediaVersion: 1 };
+    return {
+      draft,
+      version,
+      mediaVersion: 1,
+      backendStatus:
+        card.backendStatus ??
+        (card.status === 'sold' ? 'ARCHIVED' : 'PUBLISHED'),
+    };
   }
 
   async update(
@@ -221,6 +229,72 @@ export class MockMyListingsRepository implements IMyListingsRepository {
     };
     items[index] = next;
     this.setItems(items);
+    return next;
+  }
+
+  async archive(
+    id: AdvertId,
+    expectedVersion: number,
+    _accessToken: string
+  ): Promise<MyListingCard> {
+    await wait(200);
+    const items = [...this.getItems()];
+    const index = items.findIndex((item) => item.id === id);
+    if (index < 0) {
+      throw new ApiError('İlan bulunamadı.', 404, 'NOT_FOUND');
+    }
+    const currentVersion = this.getVersion(id, items[index].version ?? 1);
+    if (expectedVersion !== currentVersion) {
+      throw new ApiError(
+        'İlan başka bir yerden güncellendi; sayfayı yenileyin.',
+        409,
+        'STALE_VERSION'
+      );
+    }
+    const now = new Date().toISOString();
+    const next: MyListingCard = {
+      ...items[index],
+      status: 'sold',
+      backendStatus: 'ARCHIVED',
+      updatedAt: now,
+      version: currentVersion + 1,
+    };
+    items[index] = next;
+    this.setItems(items);
+    advertRepository.invalidate(id);
+    return next;
+  }
+
+  async publish(
+    id: AdvertId,
+    expectedVersion: number,
+    _accessToken: string
+  ): Promise<MyListingCard> {
+    await wait(200);
+    const items = [...this.getItems()];
+    const index = items.findIndex((item) => item.id === id);
+    if (index < 0) {
+      throw new ApiError('İlan bulunamadı.', 404, 'NOT_FOUND');
+    }
+    const currentVersion = this.getVersion(id, items[index].version ?? 1);
+    if (expectedVersion !== currentVersion) {
+      throw new ApiError(
+        'İlan başka bir yerden güncellendi; sayfayı yenileyin.',
+        409,
+        'STALE_VERSION'
+      );
+    }
+    const now = new Date().toISOString();
+    const next: MyListingCard = {
+      ...items[index],
+      status: 'published',
+      backendStatus: 'PUBLISHED',
+      updatedAt: now,
+      version: currentVersion + 1,
+    };
+    items[index] = next;
+    this.setItems(items);
+    advertRepository.invalidate(id);
     return next;
   }
 }

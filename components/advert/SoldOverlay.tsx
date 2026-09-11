@@ -5,7 +5,7 @@ import { Platform, StyleSheet, Text, View } from 'react-native';
  * Satıldı filigranı — kart görselinin üzerine, köşeden köşeye uzanan
  * gri + blur arka planlı SATILDI yazısı.
  */
-export function SoldOverlay() {
+export function SoldOverlay({ text = 'SATILDI' }: { text?: string }) {
   return (
     <View style={styles.container} pointerEvents="none">
       {/* Gri yarı-saydam arka plan */}
@@ -13,7 +13,7 @@ export function SoldOverlay() {
       {/* Çapraz bant */}
       <View style={styles.band}>
         <Text style={styles.text} numberOfLines={1} adjustsFontSizeToFit>
-          SATILDI
+          {text}
         </Text>
       </View>
     </View>

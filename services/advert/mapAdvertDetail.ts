@@ -318,6 +318,7 @@ function emptyDetailShell(
     | 'provinceName'
     | 'districtName'
     | 'locationName'
+    | 'backendStatus'
   > & {
     properties?: Record<string, unknown>;
     rawProperties?: Record<string, unknown>;
@@ -327,6 +328,7 @@ function emptyDetailShell(
     provinceName: null,
     districtName: null,
     locationName: null,
+    backendStatus: null,
     ...partial,
     properties: partial.properties ?? {},
     rawProperties: partial.rawProperties ?? partial.properties ?? {},
@@ -447,6 +449,7 @@ export function mapPublishedDetailToAdvert(
     urgentActivatedAt: dto.urgentActivatedAt ?? null,
     sellerId: sellerId ?? null,
     sellerPhone: sellerPhone || null,
+    backendStatus: 'PUBLISHED',
     viewCount: dto.viewCount ?? 0,
     breadcrumbs: [
       { label: 'Ana sayfa', href: '/' },
@@ -522,6 +525,7 @@ export function mapOwnerToAdvertDetail(
     isUrgent: false,
     urgentActivatedAt: null,
     sellerId,
+    backendStatus: dto.status ?? null,
     properties: propMap,
     rawProperties: propMap,
     sellerPhone:

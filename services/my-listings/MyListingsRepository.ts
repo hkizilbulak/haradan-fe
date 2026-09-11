@@ -11,6 +11,7 @@ export type MyListingEditPayload = {
   draft: ListingDraft;
   version: number;
   mediaVersion: number;
+  backendStatus?: string;
 };
 
 /**
@@ -38,6 +39,16 @@ export interface IMyListingsRepository {
     accessToken: string
   ): Promise<void>;
   markSold(
+    id: AdvertId,
+    expectedVersion: number,
+    accessToken: string
+  ): Promise<MyListingCard>;
+  archive(
+    id: AdvertId,
+    expectedVersion: number,
+    accessToken: string
+  ): Promise<MyListingCard>;
+  publish(
     id: AdvertId,
     expectedVersion: number,
     accessToken: string

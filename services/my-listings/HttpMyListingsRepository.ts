@@ -98,6 +98,7 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
       draft,
       version: dto.version,
       mediaVersion: dto.mediaVersion,
+      backendStatus: dto.status,
     };
   }
 
@@ -193,6 +194,48 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
         body: JSON.stringify({ expectedVersion }),
       }
     );
+    const sellerId = getAuthSession()?.user.id ?? '';
+    return mapOwnerAdvertToCard(dto, { apiBase: this.baseUrl, sellerId });
+  }
+
+  async archive(
+    id: AdvertId,
+    expectedVersion: number,
+    accessToken: string
+  ): Promise<MyListingCard> {
+    if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+      throw new ApiError('İlan sürümü geçersiz.', 400, 'VALIDATION_ERROR');
+    }
+    const dto = await this.http.request<OwnerAdvertDto>(
+      `/v1/me/adverts/${encodeURIComponent(id)}/archive`,
+      {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify({ expectedVersion }),
+      }
+    );
+    advertRepository.invalidate(id);
+    const sellerId = getAuthSession()?.user.id ?? '';
+    return mapOwnerAdvertToCard(dto, { apiBase: this.baseUrl, sellerId });
+  }
+
+  async publish(
+    id: AdvertId,
+    expectedVersion: number,
+    accessToken: string
+  ): Promise<MyListingCard> {
+    if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+      throw new ApiError('İlan sürümü geçersiz.', 400, 'VALIDATION_ERROR');
+    }
+    const dto = await this.http.request<OwnerAdvertDto>(
+      `/v1/me/adverts/${encodeURIComponent(id)}/publish`,
+      {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify({ expectedVersion }),
+      }
+    );
+    advertRepository.invalidate(id);
     const sellerId = getAuthSession()?.user.id ?? '';
     return mapOwnerAdvertToCard(dto, { apiBase: this.baseUrl, sellerId });
   }

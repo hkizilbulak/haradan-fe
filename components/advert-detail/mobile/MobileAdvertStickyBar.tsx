@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MOBILE_DOCK_BAR_HEIGHT } from '@/constants/Layout';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
@@ -10,9 +10,12 @@ import type { AdvertDetail } from '@/types';
 type MobileAdvertStickyBarProps = {
   detail: AdvertDetail;
   isOwner?: boolean;
+  isPublished?: boolean;
   onCall?: () => void;
   onWhatsApp?: () => void;
   onEdit?: () => void;
+  onTogglePublish?: () => void;
+  isTogglingPublish?: boolean;
 };
 
 /**
@@ -22,9 +25,12 @@ type MobileAdvertStickyBarProps = {
 export const MobileAdvertStickyBar = memo(function MobileAdvertStickyBar({
   detail,
   isOwner = false,
+  isPublished = true,
   onCall,
   onWhatsApp,
   onEdit,
+  onTogglePublish,
+  isTogglingPublish = false,
 }: MobileAdvertStickyBarProps) {
   const insets = useSafeInsets();
   const header = useThemeColor('header');
@@ -51,19 +57,60 @@ export const MobileAdvertStickyBar = memo(function MobileAdvertStickyBar({
       pointerEvents="box-none"
     >
       {isOwner ? (
-        <Pressable
-          onPress={onEdit}
-          accessibilityRole="button"
-          accessibilityLabel="İlanı düzenle"
-          style={({ pressed }) => [
-            styles.editBtn,
-            { borderColor: header },
-            pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
-          ]}
-        >
-          <Ionicons name="create-outline" size={18} color={header} />
-          <Text style={[styles.editText, { color: header }]}>İlanı Düzenle</Text>
-        </Pressable>
+        <View style={styles.actions}>
+          <Pressable
+            onPress={onEdit}
+            accessibilityRole="button"
+            accessibilityLabel="İlanı Düzenle"
+            style={({ pressed }) => [
+              styles.editBtn,
+              { borderColor: header },
+              pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
+            ]}
+          >
+            <Ionicons name="create-outline" size={17} color={header} />
+            <Text style={[styles.editText, { color: header }]}>İlanı Düzenle</Text>
+          </Pressable>
+
+          {onTogglePublish ? (
+            <Pressable
+              onPress={onTogglePublish}
+              disabled={isTogglingPublish}
+              accessibilityRole="button"
+              accessibilityLabel={isPublished ? 'Yayından Kaldır' : 'Yayınla'}
+              style={({ pressed }) => [
+                styles.publishBtn,
+                isPublished
+                  ? { borderColor: '#ef444450', backgroundColor: '#ef444414' }
+                  : { borderColor: '#10b98150', backgroundColor: '#10b98118' },
+                pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
+              ]}
+            >
+              {isTogglingPublish ? (
+                <ActivityIndicator
+                  size="small"
+                  color={isPublished ? '#ef4444' : '#10b981'}
+                />
+              ) : (
+                <>
+                  <Ionicons
+                    name={isPublished ? 'eye-off-outline' : 'eye-outline'}
+                    size={17}
+                    color={isPublished ? '#ef4444' : '#10b981'}
+                  />
+                  <Text
+                    style={[
+                      styles.publishText,
+                      { color: isPublished ? '#ef4444' : '#10b981' },
+                    ]}
+                  >
+                    {isPublished ? 'Yayından Kaldır' : 'Yayınla'}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+          ) : null}
+        </View>
       ) : (
         <View style={styles.actions}>
           <Pressable
@@ -160,5 +207,20 @@ const styles = StyleSheet.create({
   editText: {
     fontWeight: '700',
     fontSize: 15,
+  },
+  publishBtn: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 8,
+  },
+  publishText: {
+    fontWeight: '700',
+    fontSize: 14,
   },
 });

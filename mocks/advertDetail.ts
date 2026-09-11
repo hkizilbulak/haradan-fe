@@ -372,6 +372,7 @@ function buildDetail(base: CatalogProductCard): AdvertDetail {
     available: true,
     sellerPhone: '+90 555 123 45 67',
     sellerId: MY_LISTING_IDS.has(base.id) ? DEMO_SELLER_ID : 'user-other',
+    backendStatus: 'PUBLISHED',
     gallery: galleryUrls.map((url, i) => media(url, `${base.id}-g${i}`, i)),
     breadcrumbs: [
       { label: 'Ana sayfa', href: '/' },
@@ -550,6 +551,9 @@ function buildDetailFromStored(id: AdvertId): AdvertDetail | null {
         ? `+90 ${draft.details.sellerPhone}`
         : '+90 555 123 45 67',
       sellerId: card?.sellerId ?? DEMO_SELLER_ID,
+      backendStatus:
+        card?.backendStatus ??
+        (card?.status === 'sold' ? 'ARCHIVED' : 'PUBLISHED'),
       breadcrumbs: [
         { label: 'Ana sayfa', href: '/' },
         { label: 'İlanlar', href: '/listings' },

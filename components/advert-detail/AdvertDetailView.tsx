@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
@@ -24,8 +25,11 @@ import {
   AdvertStickyCta,
   AdvertViewedRail,
   MobileAdvertStickyBar,
+  PublishToggleConfirmModal,
   type SpecsSubTab,
 } from '@/components/advert-detail';
+import { myListingsRepository } from '@/services/my-listings';
+import { advertRepository } from '@/services/advert';
 import { MobileAdvertTopBar } from '@/components/advert-detail/mobile/MobileAdvertTopBar';
 import { getAdvertCategoryKind } from './advertCategoryHelper';
 import { LazySection } from '@/components/ui/LazySection';
@@ -81,6 +85,70 @@ export function AdvertDetailView({
 
   const [specsSubTab, setSpecsSubTab] = useState<SpecsSubTab>('specs');
   const [showTop, setShowTop] = useState(false);
+  const [backendStatus, setBackendStatus] = useState<string>(
+    detail.backendStatus || 'PUBLISHED'
+  );
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isTogglingPublish, setIsTogglingPublish] = useState(false);
+
+  useEffect(() => {
+    if (detail.backendStatus) {
+      setBackendStatus(detail.backendStatus);
+    }
+  }, [detail.backendStatus]);
+
+  // İlan sahibi görüntülüyorsa, güncel statüyü teyit etmek için owner draft'ından oku
+  useEffect(() => {
+    if (!isOwner || !accessToken || !detail.id) return;
+    myListingsRepository
+      .getEditDraft(detail.id, accessToken)
+      .then((payload) => {
+        if (payload?.backendStatus) {
+          setBackendStatus(payload.backendStatus);
+        }
+      })
+      .catch(() => {
+        // Sessizce yutulabilir
+      });
+  }, [detail.id, isOwner, accessToken]);
+
+  const isPublished = backendStatus === 'PUBLISHED';
+
+  const onTogglePublish = useCallback(() => {
+    setIsConfirmOpen(true);
+  }, []);
+
+  const handleConfirmTogglePublish = useCallback(async () => {
+    if (!accessToken) {
+      toast.error('Oturum bilgisi bulunamadı. Lütfen giriş yapın.');
+      setIsConfirmOpen(false);
+      return;
+    }
+
+    setIsTogglingPublish(true);
+    try {
+      const draftPayload = await myListingsRepository.getEditDraft(detail.id, accessToken);
+      const expectedVersion = draftPayload.version;
+
+      if (isPublished) {
+        await myListingsRepository.archive(detail.id, expectedVersion, accessToken);
+        setBackendStatus('ARCHIVED');
+        advertRepository.invalidate(detail.id);
+        toast.success('İlan yayından kaldırıldı.');
+      } else {
+        await myListingsRepository.publish(detail.id, expectedVersion, accessToken);
+        setBackendStatus('PUBLISHED');
+        advertRepository.invalidate(detail.id);
+        toast.success('İlan başarıyla yayına alındı.');
+      }
+      setIsConfirmOpen(false);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'İşlem sırasında bir hata oluştu.';
+      toast.error(msg);
+    } finally {
+      setIsTogglingPublish(false);
+    }
+  }, [accessToken, detail.id, isPublished]);
 
   const favoriteCard = useMemo((): CatalogProductCard => {
     return {
@@ -428,6 +496,20 @@ export function AdvertDetailView({
             }}
           >
             <View style={styles.mobileSummary}>
+              {isOwner && !isPublished ? (
+                <View style={styles.unpublishedNoticeBannerMobile}>
+                  <Ionicons name="eye-off" size={17} color="#f87171" style={{ marginTop: 1 }} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={styles.unpublishedNoticeTitleMobile}>
+                      Bu İlan Yayından Kaldırılmıştır
+                    </Text>
+                    <Text style={styles.unpublishedNoticeSubtitleMobile}>
+                      Diğer kullanıcılara ve aramalara tamamen kapalıdır. Yalnızca siz görüntüleyebilirsiniz.
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
+
               <Text style={[styles.mobileTitle, { color: text }]}>
                 {detail.title}
               </Text>
@@ -485,9 +567,12 @@ export function AdvertDetailView({
         <MobileAdvertStickyBar
           detail={detail}
           isOwner={isOwner}
+          isPublished={isPublished}
           onCall={onCall}
           onWhatsApp={onWhatsApp}
           onEdit={onEdit}
+          onTogglePublish={onTogglePublish}
+          isTogglingPublish={isTogglingPublish}
         />
 
         {showTop ? (
@@ -554,6 +639,24 @@ export function AdvertDetailView({
 
           <Text style={[styles.title, { color: text }]}>{detail.title}</Text>
 
+          {isOwner && !isPublished ? (
+            <View style={styles.unpublishedNoticeBanner}>
+              <View style={styles.unpublishedNoticeLeft}>
+                <View style={styles.unpublishedNoticeIconCircle}>
+                  <Ionicons name="eye-off" size={20} color="#ef4444" />
+                </View>
+                <View style={styles.unpublishedNoticeTextWrap}>
+                  <Text style={styles.unpublishedNoticeTitle}>
+                    Bu İlan Yayından Kaldırılmıştır
+                  </Text>
+                  <Text style={styles.unpublishedNoticeSubtitle}>
+                    İlan şu an tamamen gizlidir; arama sonuçlarında, vitrinde ve kategori listelerinde kimseye görünmez. Yalnızca siz görüntüleyebilirsiniz.
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ) : null}
+
           {/* Sub Tabs & Desktop Action Bar (Üst Bar - Kolon Hizalı) */}
           <View style={styles.desktopTopNavRow}>
             {/* Sol: Sekmeler (Galeri Kolonu Hizası) */}
@@ -619,17 +722,64 @@ export function AdvertDetailView({
             {/* Sağ: Ara & WhatsApp & Favori Butonları (Detay Kolonu Hizası) */}
             <View style={styles.desktopTopActionsCol}>
               {isOwner ? (
-                <Pressable
-                  onPress={onEdit}
-                  style={({ pressed }) => [
-                    styles.desktopTopEditBtn,
-                    { borderColor: border, backgroundColor: surface },
-                    pressed && { opacity: 0.88 },
-                  ]}
-                >
-                  <Ionicons name="create-outline" size={16} color={text} />
-                  <Text style={[styles.desktopTopEditText, { color: text }]}>İlanı Düzenle</Text>
-                </Pressable>
+                <>
+                  <Pressable
+                    onPress={onEdit}
+                    accessibilityRole="button"
+                    accessibilityLabel="İlanı Düzenle"
+                    style={({ pressed }) => [
+                      styles.desktopTopEditBtn,
+                      { borderColor: border, backgroundColor: surface },
+                      pressed && { opacity: 0.88 },
+                    ]}
+                  >
+                    <Ionicons name="create-outline" size={16} color={text} />
+                    <Text style={[styles.desktopTopEditText, { color: text }]}>İlanı Düzenle</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={onTogglePublish}
+                    disabled={isTogglingPublish}
+                    accessibilityRole="button"
+                    accessibilityLabel={isPublished ? 'Yayından Kaldır' : 'Yayınla'}
+                    style={({ pressed }) => [
+                      styles.desktopTopPublishBtn,
+                      isPublished
+                        ? {
+                            borderColor: '#ef444445',
+                            backgroundColor: '#ef444414',
+                          }
+                        : {
+                            borderColor: '#10b98145',
+                            backgroundColor: '#10b98118',
+                          },
+                      pressed && { opacity: 0.88 },
+                    ]}
+                  >
+                    {isTogglingPublish ? (
+                      <ActivityIndicator
+                        size="small"
+                        color={isPublished ? '#ef4444' : '#10b981'}
+                      />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name={isPublished ? 'eye-off-outline' : 'eye-outline'}
+                          size={16}
+                          color={isPublished ? '#ef4444' : '#10b981'}
+                        />
+                        <Text
+                          style={[
+                            styles.desktopTopPublishText,
+                            { color: isPublished ? '#ef4444' : '#10b981' },
+                          ]}
+                        >
+                          {isPublished ? 'Yayından Kaldır' : 'Yayınla'}
+                        </Text>
+                      </>
+                    )}
+                  </Pressable>
+                </>
               ) : (
                 <>
                   <Pressable
@@ -805,6 +955,15 @@ export function AdvertDetailView({
           <Text style={[styles.topLabel, { color: text }]}>TOP</Text>
         </Pressable>
       ) : null}
+
+      <PublishToggleConfirmModal
+        visible={isConfirmOpen}
+        isPublished={isPublished}
+        title={detail.title}
+        loading={isTogglingPublish}
+        onCancel={() => setIsConfirmOpen(false)}
+        onConfirm={handleConfirmTogglePublish}
+      />
     </View>
   );
 }
@@ -971,6 +1130,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  desktopTopPublishBtn: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    paddingHorizontal: 12,
+    ...Platform.select({
+      web: { cursor: 'pointer', transition: 'all 0.15s ease' } as any,
+      default: {},
+    }),
+  },
+  desktopTopPublishText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
   subTabsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1041,4 +1219,69 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   topLabel: { fontSize: 9, fontWeight: '700' },
+  unpublishedNoticeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.28)',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.md,
+    gap: 16,
+  },
+  unpublishedNoticeLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  unpublishedNoticeIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(239, 68, 68, 0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unpublishedNoticeTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  unpublishedNoticeTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#f87171',
+    letterSpacing: -0.2,
+  },
+  unpublishedNoticeSubtitle: {
+    fontSize: 13,
+    color: '#9ca3af',
+    lineHeight: 18,
+  },
+  unpublishedNoticeBannerMobile: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 9,
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
+  },
+  unpublishedNoticeTitleMobile: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#f87171',
+  },
+  unpublishedNoticeSubtitleMobile: {
+    fontSize: 12,
+    color: '#9ca3af',
+    lineHeight: 16,
+  },
 });

@@ -280,6 +280,17 @@ async function main(): Promise<void> {
     'stale delete does not drop draft'
   );
 
+  // Archive & Publish tests
+  const repoForArchive = new MockMyListingsRepository();
+  const pubItem = (await repoForArchive.list('published', 'tok')).items[0];
+  const archived = await repoForArchive.archive(pubItem.id, pubItem.version, 'tok');
+  assertEqual(archived.backendStatus, 'ARCHIVED', 'archive transitions to ARCHIVED');
+  assertEqual(archived.status, 'sold', 'archive mapped to sold tab (Yayından Kaldırılanlar)');
+
+  const republished = await repoForArchive.publish(pubItem.id, archived.version, 'tok');
+  assertEqual(republished.backendStatus, 'PUBLISHED', 'publish transitions back to PUBLISHED');
+  assertEqual(republished.status, 'published', 'publish mapped to published tab');
+
   const http = new HttpMyListingsRepository('http://localhost:8080/api');
   responses['DELETE /api/v1/me/adverts/9102?expectedVersion=3'] = {
     status: 200,

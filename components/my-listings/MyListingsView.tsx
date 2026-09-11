@@ -54,8 +54,8 @@ const EMPTY: Record<MyListingStatus, { title: string; hint: string }> = {
     hint: 'Yarım kalan veya düzeltme bekleyen ilanlarınız burada durur.',
   },
   sold: {
-    title: 'Satılmış ilan yok',
-    hint: 'Satışı tamamlanan ilanlar bu sekmede listelenir.',
+    title: 'Yayından kaldırılan ilan yok',
+    hint: 'Yayından kaldırdığınız ilanlar bu sekmede listelenir.',
   },
 };
 
@@ -300,8 +300,7 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
       item.status === 'draft' ||
       item.backendStatus === 'DRAFT' ||
       item.backendStatus === 'CHANGES_REQUESTED' ||
-      item.backendStatus === 'SUSPENDED' ||
-      item.backendStatus === 'ARCHIVED';
+      item.backendStatus === 'SUSPENDED';
     const isRejected =
       isRejectedTab ||
       item.status === 'rejected' ||
@@ -454,7 +453,7 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
               <Text style={[styles.kicker, { color: muted }]}>Hesap</Text>
               <Text style={[styles.title, { color: text }]}>İlanlarım</Text>
               <Text style={[styles.lead, { color: muted }]}>
-                Yayındaki, incelemedeki, reddedilen, taslak ve satılmış ilanlarınız.
+                Yayındaki, yayından kaldırılan, incelemedeki, reddedilen ve taslak ilanlarınız.
               </Text>
             </View>
             <View style={styles.headerBtnWrapper}>
