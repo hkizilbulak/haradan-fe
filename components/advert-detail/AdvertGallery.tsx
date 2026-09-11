@@ -7,14 +7,17 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
 import { useMediaImageSource } from '@/hooks/useMediaImageSource';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { PublicMediaItem } from '@/types';
+import { ImageLightboxModal } from './ImageLightboxModal';
 
 type AdvertGalleryProps = {
   items: PublicMediaItem[];
@@ -38,6 +41,13 @@ export const AdvertGallery = memo(function AdvertGallery({
   const [slideWidth, setSlideWidth] = useState<number>(() => {
     return Dimensions.get('window').width || 390;
   });
+  const [lightboxVisible, setLightboxVisible] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const openLightbox = useCallback((targetIndex: number) => {
+    setLightboxIndex(targetIndex);
+    setLightboxVisible(true);
+  }, []);
   const containerWidthRef = useRef<number>(slideWidth);
   const scrollRef = useRef<ScrollView>(null);
   const userInteractingRef = useRef<boolean>(false);
@@ -153,11 +163,18 @@ export const AdvertGallery = memo(function AdvertGallery({
           contentContainerStyle={styles.scrollerContent}
         >
           {items.map((item, i) => (
-            <View
+            <Pressable
               key={item.assetId || item.publicUrl || i}
+              onPress={() => openLightbox(i)}
+              accessibilityRole="button"
+              accessibilityLabel="Fotoğrafı büyüt ve incele"
               style={[
                 styles.slide,
                 { width: slideWidth, height: '100%' },
+                Platform.select({
+                  web: { cursor: 'zoom-in' as const },
+                  default: {},
+                }),
               ]}
             >
               <AuthMediaImage
@@ -167,9 +184,20 @@ export const AdvertGallery = memo(function AdvertGallery({
                 transition={280}
                 priority={i === 0 ? 'high' : 'low'}
               />
-            </View>
+            </Pressable>
           ))}
         </ScrollView>
+
+        {/* Büyütme / Tam Ekran Butonu */}
+        <Pressable
+          onPress={() => openLightbox(index)}
+          style={styles.expandBadge}
+          accessibilityRole="button"
+          accessibilityLabel="Büyük ekran ve yakınlaştır"
+        >
+          <Ionicons name="scan-outline" size={15} color="#ffffff" />
+          <Text style={styles.expandText}>Büyüt</Text>
+        </Pressable>
 
         {/* Noktalar göstergesi */}
         {items.length > 1 ? (
@@ -227,6 +255,15 @@ export const AdvertGallery = memo(function AdvertGallery({
           })}
         </ScrollView>
       ) : null}
+
+      {/* Tam Ekran ve Yakınlaştırma Modalı */}
+      <ImageLightboxModal
+        visible={lightboxVisible}
+        items={items}
+        initialIndex={lightboxIndex}
+        accessToken={accessToken}
+        onClose={() => setLightboxVisible(false)}
+      />
     </View>
   );
 });
@@ -320,5 +357,33 @@ const styles = StyleSheet.create({
   dotIdle: {
     width: 6,
     backgroundColor: 'rgba(255,255,255,0.45)',
+  },
+  expandBadge: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    zIndex: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.22)',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer' as const,
+        transition: 'background-color 150ms ease, transform 150ms ease',
+      },
+      default: {},
+    }),
+  },
+  expandText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
 });

@@ -125,16 +125,16 @@ export function HomeCategoriesSkeleton({ isWide = true }: { isWide?: boolean }) 
 }
 
 export function HomeUrgentSkeleton({ isWide }: { isWide: boolean }) {
-  const count = isWide ? 5 : 2;
+  const count = isWide ? 4 : 2;
 
   return (
     <View style={styles.section}>
       <SectionTitleSkeleton titleWidth={190} />
-      <View style={[styles.grid, { gap: isWide ? Spacing.lg : 10 }]}>
+      <View style={[styles.grid, { gap: isWide ? Spacing.lg : Spacing.md }]}>
         {Array.from({ length: count }).map((_, i) => (
           <ListingCardSkeleton
             key={i}
-            width={isWide ? 220 : '48%'}
+            width={isWide ? '23%' : '48%'}
           />
         ))}
       </View>

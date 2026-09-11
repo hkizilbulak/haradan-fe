@@ -57,7 +57,7 @@ export const TrendingProductsSection = memo(function TrendingProductsSection({
         actionLabel="Tümünü gör"
         onActionPress={onViewAll}
       />
-      <View style={[styles.grid, { gap }]}>
+      <View style={[styles.grid, { gap, rowGap: isWide ? 28 : Spacing.md }]}>
         {items.map((p) => (
           <FeaturedListingCard
             key={p.id}

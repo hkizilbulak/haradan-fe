@@ -1,14 +1,13 @@
 import React, { memo, useCallback, useMemo } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { UrgentListingCard } from '@/components/product/UrgentListingCard';
+import { FeaturedListingCard } from '@/components/product/FeaturedListingCard';
 import {
+  HOME_CONTENT_MAX_WIDTH,
   HOME_DESKTOP_BREAKPOINT,
   homeContentPadding,
 } from '@/constants/Layout';
 import { Spacing } from '@/constants/Spacing';
-import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { prepareListingWizardEntry } from '@/services/listing';
 import type { CatalogProductCard } from '@/types';
 import type { AdvertId } from '@/types/advertId';
@@ -21,11 +20,9 @@ type NewArrivalsSectionProps = {
   onViewAll?: () => void;
 };
 
-const MOBILE_GRID_GAP = 10;
-
 /**
  * Acil Satılık İlanlar — Acil ilan yoksa HİÇ GELMEZ.
- * İlan varsa en sonuna "İlanınız burada yayınlansın" banner'ı yerleştirilir.
+ * Web'de 4'lü, mobilde 2'li vitrin kartı düzeniyle gösterilir.
  */
 export const NewArrivalsSection = memo(function NewArrivalsSection({
   products,
@@ -34,19 +31,18 @@ export const NewArrivalsSection = memo(function NewArrivalsSection({
   onViewAll,
 }: NewArrivalsSectionProps) {
   const router = useRouter();
-  const width = useLayoutWidth();
+  const { width } = useWindowDimensions();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
+  const cols = isWide ? 4 : 2;
+  const gap = isWide ? Spacing.lg : Spacing.md;
+  const pad = homeContentPadding(isWide);
+  const contentWidth = Math.min(width, HOME_CONTENT_MAX_WIDTH) - pad * 2;
+  const colWidth = (contentWidth - gap * (cols - 1)) / cols;
 
   // STRICT check for urgent products: DO NOT show section if empty!
   const urgentItems = useMemo(() => {
     return products.filter((p) => p.isUrgent);
   }, [products]);
-
-  const mobileColWidth = useMemo(() => {
-    const pad = homeContentPadding(false);
-    const contentWidth = width - pad * 2;
-    return (contentWidth - MOBILE_GRID_GAP) / 2;
-  }, [width]);
 
   const handlePostAd = useCallback(() => {
     prepareListingWizardEntry();
@@ -64,13 +60,14 @@ export const NewArrivalsSection = memo(function NewArrivalsSection({
         onActionPress={onViewAll}
       />
 
-      <View style={[styles.grid, { gap: isWide ? Spacing.lg : MOBILE_GRID_GAP }]}>
+      <View style={[styles.grid, { gap, rowGap: isWide ? 28 : Spacing.md }]}>
         {urgentItems.map((p) => (
-          <UrgentListingCard
+          <FeaturedListingCard
             key={p.id}
             product={p}
-            variant="tile"
-            width={isWide ? 220 : mobileColWidth}
+            width={colWidth}
+            compact={!isWide}
+            badge="urgent"
             onPress={onProductPress}
             onToggleFavorite={onToggleFavorite}
           />
@@ -85,66 +82,5 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-  },
-  bannerCard: {
-    borderRadius: 20,
-    backgroundColor: '#fff1f2',
-    borderWidth: 1.5,
-    borderColor: '#fecdd3',
-    borderStyle: 'dashed',
-    padding: 16,
-    justifyContent: 'space-between',
-    minHeight: 280,
-    ...Platform.select({
-      web: {
-        boxShadow: '0 4px 14px rgba(239, 68, 68, 0.08)',
-        cursor: 'pointer',
-      },
-      default: {},
-    }),
-  },
-  bannerBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-  },
-  bannerBadgeText: {
-    color: '#ef4444',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  bannerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#9f1239',
-    lineHeight: 20,
-    marginTop: 10,
-  },
-  bannerSub: {
-    fontSize: 12,
-    color: '#be123c',
-    lineHeight: 16,
-    marginVertical: 8,
-  },
-  bannerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#ef4444',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    marginTop: 10,
-  },
-  bannerBtnText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
   },
 });
