@@ -47,6 +47,7 @@ export type ListingsFiltersState = {
   categorySlug: string | null;
   breed: string | null;
   urgentOnly: boolean;
+  showcaseOnly?: boolean;
   provinceIds: string[];
   districtId: string | null;
   priceMinTl: number | null;
@@ -255,6 +256,7 @@ export const EMPTY_LISTINGS_FILTERS: ListingsFiltersState = {
   categorySlug: null,
   breed: null,
   urgentOnly: false,
+  showcaseOnly: false,
   provinceIds: [],
   districtId: null,
   priceMinTl: null,
@@ -417,7 +419,8 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
       value.districtId != null ||
       value.priceMinTl != null ||
       value.priceMaxTl != null ||
-      value.urgentOnly;
+      value.urgentOnly ||
+      Boolean(value.showcaseOnly);
     if (hasAdvanced) {
       setOpenGroups((p) => ({ ...p, advanced: true }));
     }
@@ -455,6 +458,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     value.priceMinTl,
     value.priceMaxTl,
     value.urgentOnly,
+    value.showcaseOnly,
   ]);
 
 
@@ -518,6 +522,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
     value.categorySlug != null ||
     value.breed != null ||
     value.urgentOnly ||
+    Boolean(value.showcaseOnly) ||
     value.provinceIds.length > 0 ||
     value.districtId != null ||
     value.priceMinTl != null ||
@@ -541,6 +546,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
       value.districtId ? locationLookup.getDistrictName(value.districtId) : null,
       priceHint(value.priceMinTl, value.priceMaxTl),
       value.urgentOnly ? 'Acil' : null,
+      value.showcaseOnly ? 'Vitrin' : null,
     ]
       .filter(Boolean)
       .join(' · ') || null;
@@ -949,7 +955,7 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
               },
             ]}
           >
-            Yalnızca acil
+            Acil ilanlar
           </Text>
           <View
             style={[
@@ -957,6 +963,40 @@ export const ListingsFilterSidebar = memo(function ListingsFilterSidebar({
               {
                 backgroundColor: value.urgentOnly ? header : border,
                 justifyContent: value.urgentOnly ? 'flex-end' : 'flex-start',
+              },
+            ]}
+          >
+            <View style={styles.switchKnob} />
+          </View>
+        </Pressable>
+
+        <Pressable
+          onPress={() => onChange({ ...value, showcaseOnly: !value.showcaseOnly })}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: Boolean(value.showcaseOnly) }}
+          style={({ pressed }) => [
+            styles.toggleRow,
+            { opacity: pressed ? 0.7 : 1, marginTop: 8 },
+          ]}
+        >
+          <Text
+            style={[
+              styles.rowText,
+              {
+                color: value.showcaseOnly ? text : textSecondary,
+                fontWeight: value.showcaseOnly ? '600' : '400',
+                flex: 1,
+              },
+            ]}
+          >
+            Vitrin ilanlar
+          </Text>
+          <View
+            style={[
+              styles.switch,
+              {
+                backgroundColor: value.showcaseOnly ? header : border,
+                justifyContent: value.showcaseOnly ? 'flex-end' : 'flex-start',
               },
             ]}
           >

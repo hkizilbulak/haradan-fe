@@ -160,9 +160,15 @@ function applyClientFilters(
     list = list.filter((p) => p.districtId === filters.districtId);
   }
 
-  // 4. Durum (Acil)
+  // 4. Durum (Acil & Vitrin)
   if (filters.urgentOnly) {
     list = list.filter((p) => p.isUrgent);
+  }
+  if (filters.showcaseOnly) {
+    list = list.filter(
+      (p) =>
+        Boolean(p.isFeatured || p.packageCode === 'ultimate' || p.packageCode === 'premium')
+    );
   }
 
   // 5. İlan Tarihi (Periyot)
@@ -370,6 +376,7 @@ export const ListingsView = memo(function ListingsView({
     categorySlug: query.category ?? null,
     breed: query.breed ?? null,
     urgentOnly: query.urgent === '1',
+    showcaseOnly: query.showcase === '1' || query.showcase === 'true',
     provinceIds: parseProvinceParam(query.province),
     districtId: query.district ?? null,
     priceMinTl: parseTlParam(query.min),
@@ -402,6 +409,7 @@ export const ListingsView = memo(function ListingsView({
       priceMinTl: parseTlParam(query.min),
       priceMaxTl: parseTlParam(query.max),
       urgentOnly: query.urgent === '1',
+      showcaseOnly: query.showcase === '1' || query.showcase === 'true',
       period: (query.period as ListingPeriodFilter) ?? null,
       facilities: parseFacilities(query.facilities),
       breeds: parseArrayParam(query.breeds),
@@ -421,6 +429,7 @@ export const ListingsView = memo(function ListingsView({
     query.min,
     query.max,
     query.urgent,
+    query.showcase,
     query.period,
     query.facilities,
     query.breeds,
@@ -466,6 +475,7 @@ export const ListingsView = memo(function ListingsView({
       if (next.priceMinTl != null) params.set('min', String(next.priceMinTl));
       if (next.priceMaxTl != null) params.set('max', String(next.priceMaxTl));
       if (next.urgentOnly) params.set('urgent', '1');
+      if (next.showcaseOnly) params.set('showcase', '1');
       if (next.period) params.set('period', next.period);
       const facStr = serializeFacilities(next.facilities);
       if (facStr) params.set('facilities', facStr);
@@ -507,6 +517,7 @@ export const ListingsView = memo(function ListingsView({
       if (filters.priceMinTl != null) params.set('min', String(filters.priceMinTl));
       if (filters.priceMaxTl != null) params.set('max', String(filters.priceMaxTl));
       if (filters.urgentOnly) params.set('urgent', '1');
+      if (filters.showcaseOnly) params.set('showcase', '1');
       if (filters.period) params.set('period', filters.period);
       const facStr = serializeFacilities(filters.facilities);
       if (facStr) params.set('facilities', facStr);
@@ -628,20 +639,6 @@ export const ListingsView = memo(function ListingsView({
     </Pressable>
   );
 
-  const mobileSearchBar = (
-    <Pressable onPress={consumePress}>
-      <HomeSearchBar
-        initialQuery={liveQuery}
-        onQueryChange={onLiveQueryChange}
-        live
-        fullWidth
-        compact
-        variant="glass"
-        placeholder="İsim, cins, konum ara…"
-      />
-    </Pressable>
-  );
-
   const resultsBlock = search.loading ? (
     <View style={styles.loader}>
       <ActivityIndicator size="large" color={textMuted} />
@@ -703,8 +700,6 @@ export const ListingsView = memo(function ListingsView({
           keyboardDismissMode="on-drag"
         >
           <HomeContentContainer>
-            {mobileSearchBar}
-
             <MobileListingsQuickFilters
               categories={categoryRoots}
               categorySlug={filters.categorySlug}

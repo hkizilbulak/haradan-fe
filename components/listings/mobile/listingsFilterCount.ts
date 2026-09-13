@@ -6,6 +6,7 @@ export function countActiveListingsFilters(f: ListingsFiltersState): number {
   if (f.categorySlug) n += 1;
   if (f.breed) n += 1;
   if (f.urgentOnly) n += 1;
+  if (f.showcaseOnly) n += 1;
   if (f.provinceIds?.length) n += 1;
   if (f.districtId) n += 1;
   if (f.priceMinTl != null) n += 1;
@@ -29,6 +30,7 @@ export function emptyListingsFilters(): ListingsFiltersState {
     categorySlug: null,
     breed: null,
     urgentOnly: false,
+    showcaseOnly: false,
     provinceIds: [],
     districtId: null,
     priceMinTl: null,
