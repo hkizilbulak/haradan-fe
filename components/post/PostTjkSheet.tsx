@@ -81,9 +81,21 @@ export function PostTjkSheet({
       <View style={styles.backdrop}>
         <Pressable
           style={StyleSheet.absoluteFill}
-          onPress={mode === 'search' ? () => setMode('ask') : undefined}
+          onPress={mode === 'search' ? () => setMode('ask') : handleClose}
         />
         <View style={[styles.sheet, { backgroundColor: surface }]}>
+          <Pressable
+            onPress={handleClose}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Kapat"
+            style={({ pressed }) => [
+              styles.closeBtn,
+              pressed && { opacity: 0.6, transform: [{ scale: 0.94 }] },
+            ]}
+          >
+            <Ionicons name="close" size={22} color={secondary} />
+          </Pressable>
           {mode === 'ask' ? (
             <>
               <View style={[styles.iconCircle, { backgroundColor: header }]}>
@@ -194,6 +206,7 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
   },
   sheet: {
+    position: 'relative',
     width: '100%',
     maxWidth: 420,
     borderRadius: 28,
@@ -202,6 +215,21 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: { boxShadow: '0 24px 64px rgba(12, 12, 14, 0.28)' },
       default: { elevation: 12 },
+    }),
+  },
+  closeBtn: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+    ...Platform.select({
+      web: { cursor: 'pointer' } as any,
+      default: {},
     }),
   },
   iconCircle: {

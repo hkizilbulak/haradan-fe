@@ -14,6 +14,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
+import { useIsWideLayout } from '@/hooks/useLayoutWidth';
 import { useMediaImageSource } from '@/hooks/useMediaImageSource';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import type { PublicMediaItem } from '@/types';
@@ -28,6 +29,8 @@ type AdvertGalleryProps = {
   showThumbs?: boolean;
   /** Sahip önizlemesi — yayınlanmamış ilan görselleri için Bearer. */
   accessToken?: string | null;
+  /** Büyütme butonunu göster/gizle (mobilde varsayılan false) */
+  showExpandButton?: boolean;
 };
 
 export const AdvertGallery = memo(function AdvertGallery({
@@ -36,7 +39,11 @@ export const AdvertGallery = memo(function AdvertGallery({
   fullBleed = false,
   showThumbs = true,
   accessToken,
+  showExpandButton,
 }: AdvertGalleryProps) {
+  const isWide = useIsWideLayout();
+  const isMobile = fullBleed || !isWide;
+  const shouldShowExpandButton = showExpandButton ?? !isMobile;
   const [index, setIndex] = useState(0);
   const [slideWidth, setSlideWidth] = useState<number>(() => {
     return Dimensions.get('window').width || 390;
@@ -188,16 +195,18 @@ export const AdvertGallery = memo(function AdvertGallery({
           ))}
         </ScrollView>
 
-        {/* Büyütme / Tam Ekran Butonu */}
-        <Pressable
-          onPress={() => openLightbox(index)}
-          style={styles.expandBadge}
-          accessibilityRole="button"
-          accessibilityLabel="Büyük ekran ve yakınlaştır"
-        >
-          <Ionicons name="scan-outline" size={15} color="#ffffff" />
-          <Text style={styles.expandText}>Büyüt</Text>
-        </Pressable>
+        {/* Büyütme / Tam Ekran Butonu (yalnızca masaüstünde) */}
+        {shouldShowExpandButton && (
+          <Pressable
+            onPress={() => openLightbox(index)}
+            style={styles.expandBadge}
+            accessibilityRole="button"
+            accessibilityLabel="Büyük ekran ve yakınlaştır"
+          >
+            <Ionicons name="scan-outline" size={15} color="#ffffff" />
+            <Text style={styles.expandText}>Büyüt</Text>
+          </Pressable>
+        )}
 
         {/* Noktalar göstergesi */}
         {items.length > 1 ? (
