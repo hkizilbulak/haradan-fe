@@ -360,7 +360,28 @@ export function mapPublishedDetailToAdvert(
   tjkHorse?: TjkHorseProfile | null
 ): AdvertDetail {
   const propMap = buildPropertiesMap(dto.properties);
-  const gallery = absolutizeMedia(dto.media ?? [], apiBase);
+  let gallery = absolutizeMedia(dto.media ?? [], apiBase);
+  if (gallery.length === 0) {
+    const rawCover = (dto as any).cover;
+    const rawImg = (dto as any).imageUrl || propMap.imageUrl || propMap.coverUrl;
+    if (rawCover?.publicUrl || rawCover?.assetId) {
+      gallery = [{
+        assetId: rawCover.assetId || 'cover',
+        displayOrder: 0,
+        isCover: true,
+        publicUrl: resolvePublicMediaUrl(rawCover.publicUrl || rawCover.assetId, apiBase),
+        usage: 'cover',
+      }];
+    } else if (typeof rawImg === 'string' && rawImg.trim()) {
+      gallery = [{
+        assetId: 'prop-cover',
+        displayOrder: 0,
+        isCover: true,
+        publicUrl: resolvePublicMediaUrl(rawImg.trim(), apiBase),
+        usage: 'cover',
+      }];
+    }
+  }
   const cover =
     gallery.find((m) => m.isCover) ?? gallery[0] ?? null;
   const catText = `${dto.category?.name || ''} ${dto.category?.slug || ''} ${(dto as any).categoryId || ''}`.toLowerCase();
@@ -476,13 +497,35 @@ export function mapOwnerToAdvertDetail(
   const media = filterDeliverableMedia(dto.media).sort(
     (a, b) => a.displayOrder - b.displayOrder
   );
-  const gallery: PublicMediaItem[] = media.map((m) => ({
+  let gallery: PublicMediaItem[] = media.map((m) => ({
     assetId: m.assetId,
     displayOrder: m.displayOrder,
     isCover: m.isCover,
     publicUrl: mediaDeliveryUrl(m.assetId, 'DETAIL', apiBase),
     usage: m.isCover ? 'cover' : 'gallery',
   }));
+  const propMap = buildPropertiesMap(dto.properties);
+  if (gallery.length === 0) {
+    const rawCover = (dto as any).cover;
+    const rawImg = (dto as any).imageUrl || propMap.imageUrl || propMap.coverUrl;
+    if (rawCover?.publicUrl || rawCover?.assetId) {
+      gallery = [{
+        assetId: rawCover.assetId || 'cover',
+        displayOrder: 0,
+        isCover: true,
+        publicUrl: resolvePublicMediaUrl(rawCover.publicUrl || rawCover.assetId, apiBase),
+        usage: 'cover',
+      }];
+    } else if (typeof rawImg === 'string' && rawImg.trim()) {
+      gallery = [{
+        assetId: 'prop-cover',
+        displayOrder: 0,
+        isCover: true,
+        publicUrl: resolvePublicMediaUrl(rawImg.trim(), apiBase),
+        usage: 'cover',
+      }];
+    }
+  }
   const cover = gallery.find((m) => m.isCover) ?? gallery[0] ?? null;
   const title = (dto.title ?? '').trim() || 'Başlıksız ilan';
   const publishedAt =
@@ -491,7 +534,6 @@ export function mapOwnerToAdvertDetail(
   const districtId = dto.districtId ?? '';
   const provinceId = dto.provinceId ?? '';
   const locationName = formatAdvertLocation({ districtId, provinceId });
-  const propMap = buildPropertiesMap(dto.properties);
   const catText = `${dto.categoryId || ''}`.toLowerCase();
   const isNonHorse =
     catText.includes('nalbant') ||
