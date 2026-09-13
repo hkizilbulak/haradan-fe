@@ -5,10 +5,11 @@ import type {
 } from '@/types/listing';
 import type { AdvertId } from '@/types/advertId';
 import type { PaytrChargeStatus, PaytrCheckoutResult } from '@/types/paytr';
+import type { PublicCoupon, PublicCampaign, CouponValidationResult } from '@/types/coupon';
 import type { DraftPersistResult } from './HttpListingRepository';
 
 /**
- * İlan taslağı + paketler + PayTR checkout.
+ * İlan taslağı + paketler + PayTR checkout + kupon / kampanya.
  * Wizard: persistDraftShell (details→package) → background media → finalize.
  */
 export interface IListingRepository {
@@ -27,10 +28,19 @@ export interface IListingRepository {
     draft: ListingDraft,
     accessToken: string
   ): Promise<DraftPersistResult>;
+  validateCoupon?(
+    code: string,
+    spendAmountMinor: number,
+    packageCode?: string,
+    accessToken?: string
+  ): Promise<CouponValidationResult>;
+  getActiveCoupons?(): Promise<PublicCoupon[]>;
+  getActiveCampaigns?(): Promise<PublicCampaign[]>;
   startPaytrCheckout?(
     advertId: AdvertId,
     packageCode: string,
-    accessToken: string
+    accessToken: string,
+    couponCode?: string
   ): Promise<PaytrCheckoutResult>;
   getPaytrChargeStatus?(
     advertId: AdvertId,
@@ -42,3 +52,4 @@ export interface IListingRepository {
     accessToken: string
   ): Promise<PublishListingResult>;
 }
+

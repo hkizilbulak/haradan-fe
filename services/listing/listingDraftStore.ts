@@ -1,5 +1,6 @@
 import type { CategoryPropertyPublic } from '@/types';
 import type { AdvertId } from '@/types/advertId';
+import type { CouponValidationResult } from '@/types/coupon';
 import type {
   ListingDraft,
   ListingDraftDetails,
@@ -26,6 +27,7 @@ export type ListingWizardState = {
   paytrMerchantOid: string | null;
   paytrIframeUrl: string | null;
   paytrAmountMinor: number | null;
+  appliedCoupon: CouponValidationResult | null;
   /** Background media upload while on package step. */
   mediaSyncStatus: 'idle' | 'uploading' | 'ready' | 'error';
   mediaSyncError: string | null;
@@ -106,6 +108,7 @@ function createInitialState(): ListingWizardState {
     paytrMerchantOid: null,
     paytrIframeUrl: null,
     paytrAmountMinor: null,
+    appliedCoupon: null,
     mediaSyncStatus: 'idle',
     mediaSyncError: null,
   };
@@ -173,6 +176,7 @@ function hydrate(): ListingWizardState {
       paytrMerchantOid: parsed.paytrMerchantOid ?? null,
       paytrIframeUrl: parsed.paytrIframeUrl ?? null,
       paytrAmountMinor: parsed.paytrAmountMinor ?? null,
+      appliedCoupon: parsed.appliedCoupon ?? null,
       mediaSyncStatus: parsed.mediaSyncStatus ?? 'idle',
       mediaSyncError: parsed.mediaSyncError ?? null,
       detailsAttempted: parsed.detailsAttempted === true,

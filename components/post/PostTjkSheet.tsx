@@ -132,7 +132,7 @@ export function PostTjkSheet({
             <>
               <Text style={[styles.title, { color: text }]}>TJK kaydı</Text>
               <Text style={[styles.lead, { color: secondary }]}>
-                At adı veya TJK sicil numarası ile arayın.
+                TJK'dan at seçildiğinde bilgiler otomatik doldurulur. At adı veya sicil numarası ile arayın.
               </Text>
               <View style={[styles.search, { borderColor: border }]}>
                 <Ionicons name="search-outline" size={18} color={muted} />

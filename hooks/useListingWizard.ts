@@ -245,6 +245,7 @@ export function useListingWizard(deps: Deps = {}) {
     paytrMerchantOid,
     paytrIframeUrl,
     paytrAmountMinor,
+    appliedCoupon,
     mediaSyncStatus,
     mediaSyncError,
   } = state;
@@ -756,8 +757,25 @@ export function useListingWizard(deps: Deps = {}) {
       const checkout = await listingRepo.startPaytrCheckout(
         advertId,
         packageCode,
-        accessToken
+        accessToken,
+        current.appliedCoupon?.coupon?.code
       );
+
+      if (checkout.amountMinor === 0 || checkout.status === 'SUCCEEDED') {
+        setListingWizardState((prev) => ({
+          ...prev,
+          draftAdvertId: advertId,
+          submittedDraftId: advertId,
+          submittedStatus: 'PENDING_REVIEW',
+          paytrMerchantOid: checkout.merchantOid,
+          paytrIframeUrl: null,
+          paytrAmountMinor: 0,
+          step: 'payment',
+          draft: { ...prev.draft, advertId },
+        }));
+        return checkout;
+      }
+
       setListingWizardState((prev) => ({
         ...prev,
         draftAdvertId: advertId,
@@ -773,6 +791,40 @@ export function useListingWizard(deps: Deps = {}) {
     },
     [listingRepo, publishListing, persistDraftAndStartMedia]
   );
+
+  const applyCoupon = useCallback(
+    async (
+      code: string,
+      packageCode: string,
+      spendAmountMinor: number,
+      accessToken?: string
+    ) => {
+      if (!listingRepo.validateCoupon) {
+        throw new Error('Kupon doğrulama servisi bulunamadı.');
+      }
+      const res = await listingRepo.validateCoupon(
+        code,
+        spendAmountMinor,
+        packageCode,
+        accessToken
+      );
+      if (res.valid) {
+        setListingWizardState((prev) => ({
+          ...prev,
+          appliedCoupon: res,
+        }));
+      }
+      return res;
+    },
+    [listingRepo]
+  );
+
+  const removeCoupon = useCallback(() => {
+    setListingWizardState((prev) => ({
+      ...prev,
+      appliedCoupon: null,
+    }));
+  }, []);
 
   const markPaymentSucceeded = useCallback((status = 'PENDING_REVIEW') => {
     setListingWizardState((prev) => ({
@@ -820,6 +872,9 @@ export function useListingWizard(deps: Deps = {}) {
     persistDraftAndStartMedia,
     publishListing,
     startPaidCheckout,
+    appliedCoupon,
+    applyCoupon,
+    removeCoupon,
     markPaymentSucceeded,
     loadDraft,
   };

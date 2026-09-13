@@ -370,6 +370,14 @@ export function PostWizardView() {
               draft={wizard.draft}
               error={submitError ?? packageError ?? catalogError}
               onSelect={wizard.selectPackage}
+              appliedCoupon={wizard.appliedCoupon}
+              onApplyCoupon={async (code: string) => {
+                const pkg = packages.find((p) => p.code === wizard.draft.packageCode) ?? packages[0];
+                const spendAmountMinor = pkg ? pkg.price.amountMinor : 0;
+                const token = session?.accessToken;
+                return wizard.applyCoupon(code, pkg?.code ?? '', spendAmountMinor, token);
+              }}
+              onRemoveCoupon={wizard.removeCoupon}
             />
           </View>
         ) : null}
@@ -381,10 +389,14 @@ export function PostWizardView() {
               wizard.draft.packageCode
             }
             amountMinor={wizard.paytrAmountMinor}
+            appliedCoupon={wizard.appliedCoupon}
             error={submitError}
             onRetry={() => {
               setSubmitError(null);
               void submitListing();
+            }}
+            onSuccessClick={() => {
+              wizard.setStep('review');
             }}
           />
         ) : null}

@@ -83,46 +83,12 @@ export function PostTypeStep({
     phase === 'category' && Boolean(selectedRootSlug || activeParentNode);
 
   if (isCategoryPhase) {
-    const parentName = activeParentNode?.name ?? 'Kategori';
     return (
       <View style={styles.wrap}>
-        <View style={styles.navRow}>
-          <Pressable
-            onPress={() => {
-              if (activeParentNode && selectedRootSlug && activeParentNode.slug !== selectedRootSlug) {
-                const parent = findCategoryParent(categoryTree, activeParentNode.id);
-                setActiveParentNode(parent);
-              } else {
-                setActiveParentNode(null);
-                if (onBack) {
-                  onBack();
-                } else {
-                  onSelectRoot({
-                    categoryId: '',
-                    categorySlug: '',
-                    categoryName: '',
-                    parentSlug: null,
-                  });
-                }
-              }
-            }}
-            style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
-          >
-            <Ionicons name="arrow-back" size={18} color={primary} />
-            <Text style={[styles.backText, { color: primary }]}>Geri</Text>
-          </Pressable>
-          <Text style={[styles.breadcrumbText, { color: secondary }]} numberOfLines={1}>
-            {parentName}
-          </Text>
-        </View>
-
         <Text style={[styles.kicker, { color: secondary }]}>
           Adım 1 · İlan türü
         </Text>
         <Text style={[styles.title, { color: text }]}>İlan türünü seçin</Text>
-        <Text style={[styles.lead, { color: secondary }]}>
-          {`${parentName} kategorisinde hangi türde ilan vereceksiniz?`}
-        </Text>
         <View style={styles.list}>
           {currentChildren.length === 0 ? (
             <Text style={[styles.lead, { color: secondary }]}>
@@ -159,9 +125,6 @@ export function PostTypeStep({
       <Text style={[styles.kicker, { color: secondary }]}>Adım 1 · Kategori</Text>
       <Text style={[styles.title, { color: text }]}>
         Ne ilan vermek istiyorsunuz?
-      </Text>
-      <Text style={[styles.lead, { color: secondary }]}>
-        Önce ana kategoriyi seçin.
       </Text>
       <View style={styles.list}>
         {loading ? (
@@ -211,28 +174,5 @@ const styles = StyleSheet.create({
   title: { ...Typography.h2 },
   lead: { ...Typography.body },
   list: { gap: Spacing.sm, marginTop: Spacing.sm },
-  navRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginBottom: Spacing.xs,
-  },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-  },
-  backText: {
-    ...Typography.body,
-    fontWeight: '600',
-  },
-  breadcrumbText: {
-    ...Typography.body,
-    fontWeight: '500',
-    flex: 1,
-  },
 });
 

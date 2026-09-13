@@ -291,7 +291,7 @@ export function PostDetailsStep({
     '';
 
   const defaultLead = isSaleHorse
-    ? 'TJK kaydı varsa alanlar dolar. Zorunlu alanları siz tamamlayın.'
+    ? ''
     : isStud
       ? 'Aygır bilgileri ve soy kütüğünü tamamlayın.'
       : isPansiyon
@@ -379,9 +379,11 @@ export function PostDetailsStep({
       <View style={styles.intro}>
         <Text style={[styles.kicker, { color: muted }]}>{kicker}</Text>
         <Text style={[styles.title, { color: text }]}>{heading}</Text>
-        <Text style={[styles.lead, { color: secondary }]}>
-          {lead ?? defaultLead}
-        </Text>
+        {lead ?? defaultLead ? (
+          <Text style={[styles.lead, { color: secondary }]}>
+            {lead ?? defaultLead}
+          </Text>
+        ) : null}
       </View>
 
       {isTjkEligible ? (

@@ -6,6 +6,7 @@ import type {
   PublishListingResult,
 } from '@/types/listing';
 import type { AdvertId } from '@/types/advertId';
+import type { PublicCoupon, PublicCampaign, CouponValidationResult } from '@/types/coupon';
 import type { IListingRepository } from './ListingRepository';
 import type { DraftPersistResult } from './HttpListingRepository';
 import { LISTING_PACKAGES } from './listingPackages';
@@ -95,5 +96,63 @@ export class MockListingRepository implements IListingRepository {
     }
     await wait(80);
     return addMockListingFromDraft({ ...draft, advertId });
+  }
+
+  async validateCoupon(
+    code: string,
+    spendAmountMinor: number,
+    _packageCode?: string
+  ): Promise<CouponValidationResult> {
+    await wait(80);
+    const upper = code.trim().toUpperCase();
+    if (upper === 'INDIRIM20' || upper === 'FIRSAT-1TVL') {
+      const discountAmountMinor = Math.round(spendAmountMinor * 0.2);
+      return {
+        valid: true,
+        coupon: {
+          id: 'mock-coupon-1',
+          code: upper,
+          name: 'Özel %20 İndirim',
+          discountType: 'PERCENTAGE',
+          discountValue: 20,
+        },
+        discountAmountMinor,
+        finalAmountMinor: Math.max(0, spendAmountMinor - discountAmountMinor),
+      };
+    }
+    return {
+      valid: false,
+      discountAmountMinor: 0,
+      finalAmountMinor: spendAmountMinor,
+      message: 'Geçersiz veya süresi dolmuş kupon kodu.',
+    };
+  }
+
+  async getActiveCoupons(): Promise<PublicCoupon[]> {
+    await wait(50);
+    return [
+      {
+        code: 'INDIRIM20',
+        name: 'Hoşgeldin %20 İndirimi',
+        discountType: 'PERCENTAGE',
+        discountValue: 20,
+      },
+    ];
+  }
+
+  async getActiveCampaigns(): Promise<PublicCampaign[]> {
+    await wait(50);
+    return [
+      {
+        code: 'YAZ_FIRSATI',
+        name: 'Yaz Fırsatı',
+        title: 'Özel Paket İndirimi',
+        badgeText: '%20 İndirim',
+        targetPackageCode: 'PREMIUM',
+        displayOriginalPriceAmountMinor: 65000,
+        displayCampaignPriceAmountMinor: 52000,
+        currencyCode: 'TRY',
+      },
+    ];
   }
 }

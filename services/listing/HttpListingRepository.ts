@@ -10,6 +10,7 @@ import type {
 } from '@/types/listing';
 import type { PaytrChargeStatus, PaytrCheckoutResult } from '@/types/paytr';
 import type { AdvertId } from '@/types/advertId';
+import type { PublicCoupon, PublicCampaign, CouponValidationResult } from '@/types/coupon';
 import type { IListingRepository } from './ListingRepository';
 import { buildDraftProperties, mapDraftToCreateAdvert } from './mapDraftToRequest';
 import { locationLookup } from '@/services/location';
@@ -133,7 +134,8 @@ export class HttpListingRepository implements IListingRepository {
   async startPaytrCheckout(
     advertId: AdvertId,
     packageCode: string,
-    accessToken: string
+    accessToken: string,
+    couponCode?: string
   ): Promise<PaytrCheckoutResult> {
     await this.awaitMediaPipeline(advertId);
     return this.http.request<PaytrCheckoutResult>(
@@ -141,9 +143,48 @@ export class HttpListingRepository implements IListingRepository {
       {
         method: 'POST',
         accessToken,
-        body: JSON.stringify({ packageCode }),
+        body: JSON.stringify({
+          packageCode,
+          ...(couponCode ? { couponCode } : {}),
+        }),
       }
     );
+  }
+
+  async validateCoupon(
+    code: string,
+    spendAmountMinor: number,
+    packageCode?: string,
+    accessToken?: string
+  ): Promise<CouponValidationResult> {
+    return this.http.request<CouponValidationResult>(
+      '/v1/coupons/validate',
+      {
+        method: 'POST',
+        ...(accessToken ? { accessToken } : {}),
+        body: JSON.stringify({
+          code,
+          spendAmountMinor,
+          ...(packageCode ? { packageCode } : {}),
+        }),
+      }
+    );
+  }
+
+  async getActiveCoupons(): Promise<PublicCoupon[]> {
+    const res = await this.http.request<{ items: PublicCoupon[] }>(
+      '/v1/coupons/active',
+      { method: 'GET' }
+    );
+    return res.items ?? [];
+  }
+
+  async getActiveCampaigns(): Promise<PublicCampaign[]> {
+    const res = await this.http.request<{ items: PublicCampaign[] }>(
+      '/v1/campaigns',
+      { method: 'GET' }
+    );
+    return res.items ?? [];
   }
 
   async getPaytrChargeStatus(

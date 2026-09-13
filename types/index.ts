@@ -110,4 +110,12 @@ export type {
   CreateCommentPayload,
   CommentListResponse,
 } from './comment';
+export type {
+  DiscountType,
+  PublicCoupon,
+  PublicCampaign,
+  CouponValidationResult,
+  CouponValidationDetails,
+} from './coupon';
+
 

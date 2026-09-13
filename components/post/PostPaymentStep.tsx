@@ -14,13 +14,17 @@ import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
+import type { CouponValidationResult } from '@/types/coupon';
+
 type PostPaymentStepProps = {
   iframeUrl: string | null;
   packageName?: string | null;
   amountMinor?: number | null;
   currencyCode?: string | null;
+  appliedCoupon?: CouponValidationResult | null;
   error?: string | null;
   onRetry?: () => void;
+  onSuccessClick?: () => void;
 };
 
 /**
@@ -32,21 +36,27 @@ export function PostPaymentStep({
   packageName,
   amountMinor,
   currencyCode = 'TRY',
+  appliedCoupon,
   error,
   onRetry,
+  onSuccessClick,
 }: PostPaymentStepProps) {
   const text = useThemeColor('text');
   const muted = useThemeColor('textMuted');
   const secondary = useThemeColor('textSecondary');
   const border = useThemeColor('border');
   const surface = useThemeColor('surface');
+  const primary = useThemeColor('primary');
   const errorColor = useThemeColor('error');
   const success = useThemeColor('success');
+  const successLight = useThemeColor('successLight');
 
   useEffect(() => {
     if (Platform.OS === 'web' || !iframeUrl) return;
     void Linking.openURL(iframeUrl);
   }, [iframeUrl]);
+
+  const isFreeWithCoupon = amountMinor === 0;
 
   const amountLabel =
     amountMinor != null && amountMinor > 0
@@ -57,14 +67,40 @@ export function PostPaymentStep({
     <View style={styles.wrap}>
       <View style={styles.intro}>
         <Text style={[styles.kicker, { color: muted }]}>Adım 4 · Ödeme</Text>
-        <Text style={[styles.title, { color: text }]}>Ödeme Sayfası</Text>
+        <Text style={[styles.title, { color: text }]}>
+          {isFreeWithCoupon ? 'İlanınız Onaylandı' : 'Ödeme Sayfası'}
+        </Text>
         <Text style={[styles.lead, { color: secondary }]}>
-          Güvenli ödeme PayTR altyapısı ile alınır. Ödeme tamamlanınca ilanınız
-          otomatik olarak incelemeye gönderilir.
+          {isFreeWithCoupon
+            ? 'Kuponunuz sayesinde bu paket için herhangi bir ücret ödemeniz gerekmemektedir.'
+            : 'Güvenli ödeme PayTR altyapısı ile alınır. Ödeme tamamlanınca ilanınız otomatik olarak incelemeye gönderilir.'}
         </Text>
       </View>
 
-      {(packageName || amountLabel) && (
+      {/* 100% Free Coupon Card */}
+      {isFreeWithCoupon ? (
+        <View style={[styles.freeSuccessCard, { backgroundColor: successLight, borderColor: success }]}>
+          <Ionicons name="checkmark-circle" size={48} color={success} />
+          <Text style={[styles.freeSuccessTitle, { color: text }]}>
+            %100 Kupon İndirimi Uygulandı!
+          </Text>
+          <Text style={[styles.freeSuccessDesc, { color: secondary }]}>
+            {packageName ? `${packageName} paketi ` : ''}ücretsiz olarak hesabınıza tanımlandı ve ilanınız incelemeye gönderildi.
+          </Text>
+          {onSuccessClick ? (
+            <Pressable
+              onPress={onSuccessClick}
+              style={[styles.continueBtn, { backgroundColor: primary }]}
+              accessibilityRole="button"
+            >
+              <Text style={styles.continueBtnText}>İlan Özetime Git</Text>
+              <Ionicons name="arrow-forward" size={18} color="#ffffff" />
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+
+      {(packageName || amountLabel) && !isFreeWithCoupon && (
         <View style={[styles.summary, { backgroundColor: surface, borderColor: border }]}>
           <View style={styles.summaryRow}>
             <Text style={[styles.summaryLabel, { color: muted }]}>Paket</Text>
@@ -72,9 +108,22 @@ export function PostPaymentStep({
               {packageName || 'İlan paketi'}
             </Text>
           </View>
+          {appliedCoupon?.valid && appliedCoupon.coupon ? (
+            <View style={styles.summaryRow}>
+              <View style={styles.couponBadgeRow}>
+                <Ionicons name="ticket" size={15} color={success} />
+                <Text style={[styles.summaryLabel, { color: success, fontWeight: '600' }]}>
+                  Kupon İndirimi ({appliedCoupon.coupon.code})
+                </Text>
+              </View>
+              <Text style={[styles.summaryDiscountValue, { color: success }]}>
+                -{formatMoney({ amountMinor: appliedCoupon.discountAmountMinor, currency: currencyCode || 'TRY' })}
+              </Text>
+            </View>
+          ) : null}
           {amountLabel ? (
             <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: muted }]}>Tutar</Text>
+              <Text style={[styles.summaryLabel, { color: muted }]}>Ödenecek Tutar</Text>
               <Text style={[styles.summaryAmount, { color: text }]}>
                 {amountLabel}
               </Text>
@@ -100,7 +149,7 @@ export function PostPaymentStep({
         </View>
       ) : null}
 
-      {!iframeUrl && !error ? (
+      {!iframeUrl && !error && !isFreeWithCoupon ? (
         <Text style={{ color: muted }}>Ödeme ekranı hazırlanıyor…</Text>
       ) : null}
 
@@ -187,5 +236,49 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Radius.card,
     padding: Spacing.md,
+  },
+  couponBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  summaryDiscountValue: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  freeSuccessCard: {
+    borderRadius: Radius.card,
+    borderWidth: 1.5,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    textAlign: 'center',
+    gap: Spacing.md,
+    marginVertical: Spacing.md,
+  },
+  freeSuccessTitle: {
+    ...Typography.h2,
+    fontSize: 22,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  freeSuccessDesc: {
+    ...Typography.body,
+    textAlign: 'center',
+    maxWidth: 440,
+    lineHeight: 22,
+  },
+  continueBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: Spacing.sm,
+  },
+  continueBtnText: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 15,
   },
 });
