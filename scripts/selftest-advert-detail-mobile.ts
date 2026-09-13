@@ -47,6 +47,8 @@ assert(viewSrc.includes('MobileAdvertStickyBar'), 'detail view uses sticky bar')
 assert(viewSrc.includes('fullBleed'), 'detail view uses full-bleed gallery');
 assert(viewSrc.includes('variant="mobile"'), 'detail view mobile buy box');
 assert(viewSrc.includes('mobileDetailScrollInset'), 'detail dynamic scroll inset');
+const mobileReturnBlock = viewSrc.split(/return \(\s*<View style={\[styles\.root/)[1] ?? '';
+assert(mobileReturnBlock.includes('PublishToggleConfirmModal'), 'mobile view renders PublishToggleConfirmModal');
 
 const screenSrc = readFileSync(
   join(process.cwd(), 'app/advert/[id].tsx'),

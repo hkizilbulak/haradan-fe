@@ -54,7 +54,6 @@ export const MobileAdvertStickyBar = memo(function MobileAdvertStickyBar({
           borderColor: border,
         },
       ]}
-      pointerEvents="box-none"
     >
       {isOwner ? (
         <View style={styles.actions}>

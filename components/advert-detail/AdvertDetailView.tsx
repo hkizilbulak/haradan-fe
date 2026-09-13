@@ -590,6 +590,15 @@ export function AdvertDetailView({
             <Ionicons name="chevron-up" size={16} color={text} />
           </Pressable>
         ) : null}
+
+        <PublishToggleConfirmModal
+          visible={isConfirmOpen}
+          isPublished={isPublished}
+          title={detail.title}
+          loading={isTogglingPublish}
+          onCancel={() => setIsConfirmOpen(false)}
+          onConfirm={handleConfirmTogglePublish}
+        />
       </View>
     );
   }
