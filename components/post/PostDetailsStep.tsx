@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View, Modal, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PostField } from './PostField';
 import { PostMediaGrid } from './PostMediaGrid';
@@ -10,6 +10,7 @@ import { formatTlGrouped } from '@/services/phone';
 import { locationLookup } from '@/services/location';
 import { useDistricts, useProvinces } from '@/hooks/useLocation';
 import { RichTextEditor } from './RichTextEditor';
+import { AiRepository } from '@/services/ai/AiRepository';
 import {
   isPansiyonListing,
   isSaleHorseListing,
@@ -85,6 +86,7 @@ export function PostDetailsStep({
   onCategoryPropertiesLoaded,
 }: PostDetailsStepProps) {
   const text = useThemeColor('text');
+  const primary = useThemeColor('primary');
   const secondary = useThemeColor('textSecondary');
   const muted = useThemeColor('textMuted');
   const surface = useThemeColor('surface');
@@ -100,6 +102,38 @@ export function PostDetailsStep({
   const [provinceOpen, setProvinceOpen] = useState(false);
   const [districtOpen, setDistrictOpen] = useState(false);
   const [fallbackConfigs, setFallbackConfigs] = useState(getGlobalPropertiesConfig());
+  
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<{ title: string; description: string } | null>(null);
+  const [aiModalVisible, setAiModalVisible] = useState(false);
+  const [editingAiTitle, setEditingAiTitle] = useState('');
+  const [editingAiDesc, setEditingAiDesc] = useState('');
+  const [aiTitleSelected, setAiTitleSelected] = useState(true);
+  const [aiDescSelected, setAiDescSelected] = useState(true);
+
+  const handleApplyTjk = async (horseId: string, item?: any) => {
+    onApplyTjk(horseId);
+    setAiLoading(true);
+    try {
+      const horseDataToPass = item ? JSON.stringify(item) : horseId;
+      const response = await AiRepository.generateAdvert({ horseData: horseDataToPass });
+      if (response && (response.title || response.description)) {
+        setAiSuggestion(response);
+        setEditingAiTitle(response.title || '');
+        
+        setEditingAiDesc(response.description || '');
+        setAiTitleSelected(true);
+        setAiDescSelected(true);
+        setAiModalVisible(true);
+      } else {
+        Alert.alert('Bilgi', 'Yapay zeka önerisi oluşturulamadı. (Kota sınırı veya bağlantı hatası olabilir). Lütfen bilgileri manuel giriniz.');
+      }
+    } catch (e) {
+      // sessizce yut, formu bloklama
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   // TJK verisi yüklendiğinde cinsiyet boşsa otomatik olarak düzenleme moduna geç
   useEffect(() => {
@@ -882,9 +916,9 @@ export function PostDetailsStep({
           setTjkOpen(false);
           onSkipTjk();
         }}
-        onSelect={(id) => {
+        onSelect={(id, item) => {
           setTjkOpen(false);
-          void onApplyTjk(id);
+          void handleApplyTjk(id, item);
         }}
       />
       <PostPlaceSheet
@@ -907,11 +941,125 @@ export function PostDetailsStep({
         onClose={() => setDistrictOpen(false)}
         onSelect={(id) => onUpdate({ districtId: id })}
       />
+
+      <Modal
+        visible={aiModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAiModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalContent, { backgroundColor: surface }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <Ionicons name="sparkles" size={20} color={primary} />
+              <Text style={[styles.modalTitle, { color: text }]}>Yapay Zeka Önerisi</Text>
+            </View>
+            <Text style={[styles.modalDesc, { color: secondary }]}>
+              Seçtiğiniz at için aşağıdaki ilan detayları oluşturuldu. İstediğiniz gibi düzenleyebilir veya doğrudan kullanabilirsiniz.
+            </Text>
+            
+            <View style={{ gap: 12, marginTop: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={[styles.fieldLabel, { color: text, marginBottom: 0 }]}>Başlık</Text>
+                <Pressable onPress={() => setAiTitleSelected(!aiTitleSelected)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={{ color: muted, fontSize: 13 }}>Seç</Text>
+                  <Ionicons name={aiTitleSelected ? "checkmark-circle" : "ellipse-outline"} size={22} color={aiTitleSelected ? primary : muted} />
+                </Pressable>
+              </View>
+              <TextInput
+                style={[styles.modalInput, { color: text, borderColor: border, opacity: aiTitleSelected ? 1 : 0.5 }]}
+                value={editingAiTitle}
+                onChangeText={setEditingAiTitle}
+                editable={aiTitleSelected}
+              />
+              
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                <Text style={[styles.fieldLabel, { color: text, marginBottom: 0 }]}>Açıklama</Text>
+                <Pressable onPress={() => setAiDescSelected(!aiDescSelected)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={{ color: muted, fontSize: 13 }}>Seç</Text>
+                  <Ionicons name={aiDescSelected ? "checkmark-circle" : "ellipse-outline"} size={22} color={aiDescSelected ? primary : muted} />
+                </Pressable>
+              </View>
+              <View style={{ flex: 1, minHeight: 250, zIndex: 9999, opacity: aiDescSelected ? 1 : 0.5 }} pointerEvents={aiDescSelected ? 'auto' : 'none'}>
+                <RichTextEditor
+                  initialContentHTML={editingAiDesc}
+                  onChange={setEditingAiDesc}
+                />
+              </View>
+            </View>
+
+            <View style={styles.modalActions}>
+              <Pressable
+                onPress={() => setAiModalVisible(false)}
+                style={[styles.modalBtn, styles.modalBtnGhost, { borderColor: border }]}
+              >
+                <Text style={[styles.modalBtnLabel, { color: text }]}>Vazgeç</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  const updates: any = {};
+                  if (aiTitleSelected) updates.title = editingAiTitle;
+                  if (aiDescSelected) updates.description = editingAiDesc;
+                  onUpdate(updates);
+                  setAiModalVisible(false);
+                }}
+                style={[styles.modalBtn, styles.modalBtnPrimary, { backgroundColor: primary }]}
+              >
+                <Text style={styles.modalBtnLabelPrimary}>Uygula</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(12, 12, 14, 0.55)',
+    justifyContent: 'center',
+    padding: Spacing.lg,
+  },
+  modalContent: {
+    borderRadius: 24,
+    padding: Spacing.xl,
+    width: '100%',
+    maxWidth: 600,
+    alignSelf: 'center',
+    ...Platform.select({
+      web: { boxShadow: '0 24px 64px rgba(12, 12, 14, 0.28)' } as any,
+      default: { elevation: 12 },
+    }),
+  },
+  modalTitle: { ...Typography.h5, fontSize: 18 },
+  modalDesc: { ...Typography.body, fontSize: 14, lineHeight: 20 },
+  modalInput: {
+    ...Typography.body,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as any : {}),
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    marginTop: 24,
+  },
+  modalBtn: {
+    minHeight: 44,
+    paddingHorizontal: 20,
+    borderRadius: 999,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBtnGhost: { borderWidth: 1 },
+  modalBtnPrimary: {},
+  modalBtnLabel: { ...Typography.small, fontWeight: '600' },
+  modalBtnLabelPrimary: { ...Typography.small, fontWeight: '600', color: '#fff' },
   wrap: { gap: Spacing.md },
   intro: { gap: 6, marginBottom: 4 },
   kicker: {

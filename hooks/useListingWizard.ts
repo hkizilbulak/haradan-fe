@@ -451,25 +451,6 @@ export function useListingWizard(deps: Deps = {}) {
         details: updatedDetails,
       },
     }));
-
-    try {
-      const aiResponse = await AiRepository.generateAdvert({ horseData: JSON.stringify(horse) });
-      if (aiResponse.title || aiResponse.description) {
-        setListingWizardState((prev) => ({
-          ...prev,
-          draft: {
-            ...prev.draft,
-            details: {
-              ...prev.draft.details,
-              title: aiResponse.title || prev.draft.details.title,
-              description: aiResponse.description || prev.draft.details.description,
-            },
-          },
-        }));
-      }
-    } catch (e) {
-      console.warn('AI generation failed silently', e);
-    }
   }, [tjk]);
 
   const skipTjk = useCallback(() => {

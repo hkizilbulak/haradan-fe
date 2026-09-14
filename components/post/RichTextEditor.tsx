@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, StyleSheet, Platform, TextInput } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { RichEditor, RichToolbar, actions } from 'react-native-pell-rich-editor';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
@@ -20,25 +20,81 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const border = useThemeColor('border');
   const surface = useThemeColor('surface');
   const muted = useThemeColor('textMuted');
-  const primary = useThemeColor('primary');
 
   return (
-    <View style={[styles.container, { borderColor: border }]}>
-      <RichToolbar
-        editor={richText}
-        actions={[
-          actions.setBold,
-          actions.setItalic,
-          actions.setUnderline,
-          actions.insertOrderedList,
-          actions.insertBulletsList,
-          actions.undo,
-          actions.redo,
-        ]}
-        iconTint={text}
-        selectedIconTint={primary}
-        style={styles.toolbar}
-      />
+    <View style={[styles.container, { borderColor: border, backgroundColor: surface }]}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        keyboardShouldPersistTaps="always"
+        style={styles.toolbarScroll}
+        contentContainerStyle={styles.toolbarContent}
+      >
+        <View style={styles.toolbarGroup}>
+          <RichToolbar
+            editor={richText}
+            actions={[
+              actions.heading1,
+              actions.heading2,
+            ]}
+            iconTint="#333333"
+            selectedIconTint="#0066cc"
+            selectedButtonStyle={styles.selectedButton}
+            style={styles.toolbar}
+            unselectedButtonStyle={styles.unselectedButton}
+          />
+        </View>
+        
+        <View style={styles.toolbarGroup}>
+          <RichToolbar
+            editor={richText}
+            actions={[
+              actions.setBold,
+              actions.setItalic,
+              actions.setUnderline,
+              actions.setStrikethrough,
+            ]}
+            iconTint="#333333"
+            selectedIconTint="#0066cc"
+            selectedButtonStyle={styles.selectedButton}
+            style={styles.toolbar}
+            unselectedButtonStyle={styles.unselectedButton}
+          />
+        </View>
+
+        <View style={styles.toolbarGroup}>
+          <RichToolbar
+            editor={richText}
+            actions={[
+              actions.insertOrderedList,
+              actions.insertBulletsList,
+              actions.alignLeft,
+              actions.alignCenter,
+              actions.alignRight,
+            ]}
+            iconTint="#333333"
+            selectedIconTint="#0066cc"
+            selectedButtonStyle={styles.selectedButton}
+            style={styles.toolbar}
+            unselectedButtonStyle={styles.unselectedButton}
+          />
+        </View>
+        
+        <View style={styles.toolbarGroup}>
+          <RichToolbar
+            editor={richText}
+            actions={[
+              actions.undo,
+              actions.redo,
+            ]}
+            iconTint="#333333"
+            selectedIconTint="#0066cc"
+            selectedButtonStyle={styles.selectedButton}
+            style={styles.toolbar}
+            unselectedButtonStyle={styles.unselectedButton}
+          />
+        </View>
+      </ScrollView>
       <View style={styles.editorContainer}>
         <RichEditor
           ref={richText}
@@ -46,11 +102,12 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           onChange={onChange}
           placeholder={placeholder}
           useContainer={true}
-          initialHeight={200}
+          initialHeight={250}
           editorStyle={{
             backgroundColor: surface,
             color: text,
             placeholderColor: muted,
+            contentCSSText: 'font-size: 15px; font-family: sans-serif;',
           }}
         />
       </View>
@@ -64,20 +121,47 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
     minHeight: 250,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  toolbarScroll: {
+    backgroundColor: '#f7f7f7',
+    borderBottomWidth: 1,
+    borderBottomColor: '#d1d1d1',
+  },
+  toolbarContent: {
+    padding: 8,
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  toolbarGroup: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e1e1e1',
+    borderRadius: 4,
+    marginRight: 8,
+    paddingHorizontal: 2,
   },
   toolbar: {
-    backgroundColor: '#f5f5f5',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    backgroundColor: 'transparent',
+    height: 36,
+  },
+  selectedButton: {
+    backgroundColor: '#cce0f5',
+    borderRadius: 4,
+    margin: 2,
+  },
+  unselectedButton: {
+    backgroundColor: 'transparent',
+    borderRadius: 4,
+    margin: 2,
   },
   editorContainer: {
     flex: 1,
-    padding: 8,
-  },
-  webInput: {
-    minHeight: 200,
-    padding: 16,
-    textAlignVertical: 'top',
-    outlineStyle: 'none' as any,
+    minHeight: 250,
   }
 });

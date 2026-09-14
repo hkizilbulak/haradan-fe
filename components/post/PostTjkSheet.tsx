@@ -25,7 +25,7 @@ type PostTjkSheetProps = {
   initialMode?: TjkSheetMode;
   onClose: () => void;
   onSkip: () => void;
-  onSelect: (horseId: string) => void;
+  onSelect: (horseId: string, item?: any) => void;
 };
 
 export function PostTjkSheet({
@@ -68,7 +68,7 @@ export function PostTjkSheet({
   const handlePick = (item: TjkHorseSummary) => {
     setMode('ask');
     setQuery('');
-    onSelect(item.horseId);
+    onSelect(item.horseId, item);
   };
 
   return (
