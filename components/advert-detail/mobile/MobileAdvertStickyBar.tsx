@@ -14,6 +14,7 @@ type MobileAdvertStickyBarProps = {
   onCall?: () => void;
   onWhatsApp?: () => void;
   onEdit?: () => void;
+  onPromote?: () => void;
   onTogglePublish?: () => void;
   isTogglingPublish?: boolean;
 };
@@ -29,6 +30,7 @@ export const MobileAdvertStickyBar = memo(function MobileAdvertStickyBar({
   onCall,
   onWhatsApp,
   onEdit,
+  onPromote,
   onTogglePublish,
   isTogglingPublish = false,
 }: MobileAdvertStickyBarProps) {
@@ -67,8 +69,22 @@ export const MobileAdvertStickyBar = memo(function MobileAdvertStickyBar({
               pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
             ]}
           >
-            <Ionicons name="create-outline" size={17} color={header} />
-            <Text style={[styles.editText, { color: header }]}>İlanı Düzenle</Text>
+            <Ionicons name="create-outline" size={16} color={header} />
+            <Text style={[styles.editText, { color: header }]} numberOfLines={1}>Düzenle</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={onPromote}
+            accessibilityRole="button"
+            accessibilityLabel="Öne Çıkar"
+            style={({ pressed }) => [
+              styles.editBtn,
+              { borderColor: '#f59e0b50', backgroundColor: '#f59e0b14' },
+              pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
+            ]}
+          >
+            <Ionicons name="star-outline" size={16} color="#f59e0b" />
+            <Text style={[styles.editText, { color: '#f59e0b' }]} numberOfLines={1}>Öne Çıkar</Text>
           </Pressable>
 
           {onTogglePublish ? (

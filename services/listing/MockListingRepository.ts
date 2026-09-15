@@ -85,7 +85,8 @@ export class MockListingRepository implements IListingRepository {
 
   async publish(
     draft: ListingDraft,
-    accessToken: string
+    accessToken: string,
+    backendStatus?: string | null
   ): Promise<PublishListingResult> {
     let advertId = draft.advertId;
     if (!advertId) {

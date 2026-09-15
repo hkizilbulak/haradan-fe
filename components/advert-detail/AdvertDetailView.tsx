@@ -52,7 +52,7 @@ import { usePlacementBanners } from '@/hooks/usePlacementBanners';
 import { useAdvertLocation } from '@/services/location';
 import { openPhoneCall, openWhatsApp, WHATSAPP_GREEN } from '@/utils/contactLinks';
 import { formatMoney } from '@/utils/formatMoney';
-import { prepareListingWizardEntry } from '@/services/listing';
+import { prepareListingWizardEntry, loadDraftIntoWizard, setListingWizardState } from '@/services/listing';
 import type { AdvertDetail, CatalogProductCard } from '@/types';
 
 type AdvertDetailViewProps = {
@@ -295,6 +295,24 @@ export function AdvertDetailView({
     }
     router.push(`/my-listings/edit/${detail.id}`);
   }, [router, detail.id, detail.sellerPhone]);
+
+  const onPromote = useCallback(async () => {
+    if (!accessToken) {
+      toast.error('Oturum bilgisi bulunamadı. Lütfen giriş yapın.');
+      return;
+    }
+    try {
+      const payload = await myListingsRepository.getEditDraft(detail.id, accessToken);
+      if (payload?.draft) {
+        loadDraftIntoWizard(payload.draft, detail.id);
+        setListingWizardState((prev) => ({ ...prev, step: 'package' }));
+        router.push('/post');
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'İlan bilgileri alınamadı.';
+      toast.error(msg);
+    }
+  }, [detail.id, accessToken, router]);
 
   const scrollToAnchor = useCallback(
     (anchor: React.RefObject<View | null>, nativeId: string, attempt = 0) => {
@@ -571,6 +589,7 @@ export function AdvertDetailView({
           onCall={onCall}
           onWhatsApp={onWhatsApp}
           onEdit={onEdit}
+          onPromote={onPromote}
           onTogglePublish={onTogglePublish}
           isTogglingPublish={isTogglingPublish}
         />
@@ -744,6 +763,20 @@ export function AdvertDetailView({
                   >
                     <Ionicons name="create-outline" size={16} color={text} />
                     <Text style={[styles.desktopTopEditText, { color: text }]}>İlanı Düzenle</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={onPromote}
+                    accessibilityRole="button"
+                    accessibilityLabel="Öne Çıkar"
+                    style={({ pressed }) => [
+                      styles.desktopTopEditBtn,
+                      { borderColor: '#f59e0b45', backgroundColor: '#f59e0b14' },
+                      pressed && { opacity: 0.88 },
+                    ]}
+                  >
+                    <Ionicons name="star-outline" size={16} color="#f59e0b" />
+                    <Text style={[styles.desktopTopEditText, { color: '#f59e0b' }]}>Öne Çıkar</Text>
                   </Pressable>
 
                   <Pressable

@@ -204,7 +204,8 @@ export class HttpListingRepository implements IListingRepository {
    */
   async publish(
     draft: ListingDraft,
-    accessToken: string
+    accessToken: string,
+    backendStatus?: string | null
   ): Promise<PublishListingResult> {
     let advertId = draft.advertId;
     let version: number;
@@ -214,18 +215,22 @@ export class HttpListingRepository implements IListingRepository {
       advertId = created.advertId;
       version = created.version;
     } else {
-      const media = await this.awaitMediaPipeline(advertId);
-      if (media) {
-        version = media.version;
+      if (backendStatus && backendStatus !== 'DRAFT' && backendStatus !== 'CHANGES_REQUESTED') {
+        version = draft.serverVersion ?? 1;
       } else {
-        // Pipeline missing (reload) — sync media now.
-        const synced = await this.syncMediaNow(draft, accessToken, {
-          advertId,
-          version: draft.serverVersion ?? 1,
-          mediaVersion: draft.mediaVersion ?? 1,
-          status: 'DRAFT',
-        });
-        version = synced.version;
+        const media = await this.awaitMediaPipeline(advertId);
+        if (media) {
+          version = media.version;
+        } else {
+          // Pipeline missing (reload) — sync media now.
+          const synced = await this.syncMediaNow(draft, accessToken, {
+            advertId,
+            version: draft.serverVersion ?? 1,
+            mediaVersion: draft.mediaVersion ?? 1,
+            status: 'DRAFT',
+          });
+          version = synced.version;
+        }
       }
     }
 
@@ -236,6 +241,10 @@ export class HttpListingRepository implements IListingRepository {
         accessToken,
         body: JSON.stringify({ packageCode }),
       });
+    }
+
+    if (backendStatus && backendStatus !== 'DRAFT' && backendStatus !== 'CHANGES_REQUESTED') {
+      return { advertId, status: backendStatus };
     }
 
     const submitted = await this.http.request<OwnerAdvertResponse>(

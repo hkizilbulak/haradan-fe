@@ -580,7 +580,7 @@ export function useListingWizard(deps: Deps = {}) {
         mediaSyncError: null,
       }));
       try {
-        const created = await listingRepo.publish(draft, accessToken);
+        const created = await listingRepo.publish(draft, accessToken, current.submittedStatus);
         setListingWizardState((prev) => ({
           ...prev,
           draftAdvertId: created.advertId,
@@ -706,10 +706,10 @@ export function useListingWizard(deps: Deps = {}) {
   /** Create draft then open PayTR iframe checkout (only when flag enabled). */
   const startPaidCheckout = useCallback(
     async (accessToken: string) => {
+      const current = getListingWizardState();
       if (!isPaytrCheckoutEnabled()) {
         return publishListing(accessToken);
       }
-      const current = getListingWizardState();
       const packageCode = current.draft.packageCode?.trim();
       if (!packageCode) {
         throw new Error('Paket seçilmedi.');
@@ -728,7 +728,11 @@ export function useListingWizard(deps: Deps = {}) {
         mediaSyncStatus:
           prev.mediaSyncStatus === 'ready' ? 'ready' : 'uploading',
       }));
-      await listingRepo.awaitMediaPipeline?.(advertId);
+
+      if (current.submittedStatus === 'DRAFT' || current.submittedStatus === 'CHANGES_REQUESTED' || !current.submittedStatus) {
+        await listingRepo.awaitMediaPipeline?.(advertId);
+      }
+      
       setListingWizardState((prev) => ({
         ...prev,
         mediaSyncStatus: 'ready',

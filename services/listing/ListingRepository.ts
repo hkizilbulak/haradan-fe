@@ -49,7 +49,8 @@ export interface IListingRepository {
   ): Promise<PaytrChargeStatus>;
   publish(
     draft: ListingDraft,
-    accessToken: string
+    accessToken: string,
+    backendStatus?: string | null
   ): Promise<PublishListingResult>;
 }
 
