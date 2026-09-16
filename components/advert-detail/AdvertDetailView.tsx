@@ -26,6 +26,7 @@ import {
   AdvertViewedRail,
   MobileAdvertStickyBar,
   PublishToggleConfirmModal,
+  AdvertShareModal,
   type SpecsSubTab,
 } from '@/components/advert-detail';
 import { myListingsRepository } from '@/services/my-listings';
@@ -90,6 +91,7 @@ export function AdvertDetailView({
   );
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isTogglingPublish, setIsTogglingPublish] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   useEffect(() => {
     if (detail.backendStatus) {
@@ -504,6 +506,7 @@ export function AdvertDetailView({
               showFavorite={detail.backendStatus !== 'REJECTED' && !isOwner}
               favorite={favorite}
               onToggleFavorite={() => toggle(favoriteCard)}
+              onShare={() => setIsShareModalOpen(true)}
             />
           </View>
 
@@ -617,6 +620,12 @@ export function AdvertDetailView({
           loading={isTogglingPublish}
           onCancel={() => setIsConfirmOpen(false)}
           onConfirm={handleConfirmTogglePublish}
+        />
+
+        <AdvertShareModal
+          visible={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          detail={detail}
         />
       </View>
     );
@@ -821,6 +830,20 @@ export function AdvertDetailView({
                       </>
                     )}
                   </Pressable>
+
+                  <Pressable
+                    onPress={() => setIsShareModalOpen(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel="İlanı Paylaş"
+                    style={({ pressed }) => [
+                      styles.desktopTopEditBtn,
+                      { borderColor: border, backgroundColor: surface },
+                      pressed && { opacity: 0.88 },
+                    ]}
+                  >
+                    <Ionicons name="share-social-outline" size={16} color={text} />
+                    <Text style={[styles.desktopTopEditText, { color: text }]}>Paylaş</Text>
+                  </Pressable>
                 </>
               ) : (
                 <>
@@ -863,6 +886,23 @@ export function AdvertDetailView({
                       name={favorite ? 'heart' : 'heart-outline'}
                       size={19}
                       color={favorite ? '#ef4444' : textSecondary}
+                    />
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => setIsShareModalOpen(true)}
+                    style={({ pressed }) => [
+                      styles.desktopTopShareBtn,
+                      { borderColor: border, backgroundColor: surface },
+                      pressed && { opacity: 0.8 },
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel="İlanı Paylaş"
+                  >
+                    <Ionicons
+                      name="share-social-outline"
+                      size={19}
+                      color={textSecondary}
                     />
                   </Pressable>
                 </>
@@ -1006,6 +1046,12 @@ export function AdvertDetailView({
         onCancel={() => setIsConfirmOpen(false)}
         onConfirm={handleConfirmTogglePublish}
       />
+
+      <AdvertShareModal
+        visible={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        detail={detail}
+      />
     </View>
   );
 }
@@ -1136,6 +1182,18 @@ const styles = StyleSheet.create({
     }),
   },
   desktopTopFavBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      web: { cursor: 'pointer', transition: 'all 0.15s ease' } as any,
+      default: {},
+    }),
+  },
+  desktopTopShareBtn: {
     width: 46,
     height: 46,
     borderRadius: 12,

@@ -18,5 +18,6 @@ export { MobileAdvertTopBar } from './mobile/MobileAdvertTopBar';
 export { MobileAdvertStickyBar } from './mobile/MobileAdvertStickyBar';
 export { ImageLightboxModal } from './ImageLightboxModal';
 export { PublishToggleConfirmModal } from './PublishToggleConfirmModal';
+export { AdvertShareModal } from './AdvertShareModal';
 
 

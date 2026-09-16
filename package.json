@@ -32,6 +32,7 @@
     "selftest:advert-properties": "npx --yes tsx scripts/selftest-advert-properties.ts",
     "selftest:advert-detail-specs": "npx --yes tsx scripts/selftest-advert-detail-specs.ts",
     "selftest:advert-detail-mobile": "npx --yes tsx scripts/selftest-advert-detail-mobile.ts",
+    "selftest:advert-detail-share": "npx --yes tsx scripts/selftest-advert-detail-share.ts",
     "selftest:live-search": "npx --yes tsx scripts/selftest-live-search.ts",
     "selftest:media": "npx --yes tsx scripts/selftest-media.ts",
     "selftest:banners": "npx --yes tsx scripts/selftest-banners.ts",
