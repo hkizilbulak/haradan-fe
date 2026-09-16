@@ -38,6 +38,7 @@ export type OwnerAdvertDto = {
   urgentActivatedAt?: string | null;
   isFeatured?: boolean;
   featuredUntil?: string | null;
+  rejectionReason?: string | null;
 };
 
 export type OwnerAdvertListDto = {
@@ -72,6 +73,12 @@ export function mapOwnerAdvertToCard(
   const publishedAt =
     dto.publishedAt ?? dto.updatedAt ?? new Date(0).toISOString();
   const updatedAt = dto.updatedAt ?? publishedAt;
+  const rejectionReason =
+    dto.rejectionReason ??
+    (dto.properties as any)?.rejectionReason ??
+    (dto.properties as any)?.rejection_reason ??
+    (dto.properties as any)?.rejectReason ??
+    null;
   return {
     id: dto.id,
     title: (dto.title ?? '').trim() || 'Başlıksız ilan',
@@ -102,5 +109,6 @@ export function mapOwnerAdvertToCard(
     sellerId: opts.sellerId,
     updatedAt,
     soldAt: dto.soldAt ?? (dto.status === 'SOLD' ? updatedAt : null),
+    rejectionReason,
   };
 }

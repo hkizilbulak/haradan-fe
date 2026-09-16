@@ -12,6 +12,7 @@ export type MyListingEditPayload = {
   version: number;
   mediaVersion: number;
   backendStatus?: string;
+  rejectionReason?: string | null;
 };
 
 /**
@@ -53,4 +54,10 @@ export interface IMyListingsRepository {
     expectedVersion: number,
     accessToken: string
   ): Promise<MyListingCard>;
+  resubmit(
+    id: AdvertId,
+    expectedVersion: number,
+    accessToken: string
+  ): Promise<MyListingCard>;
 }
+

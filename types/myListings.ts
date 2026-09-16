@@ -16,6 +16,7 @@ export type MyListingCard = CatalogProductCard & {
   sellerId: string;
   updatedAt: string;
   soldAt?: string | null;
+  rejectionReason?: string | null;
 };
 
 export type MyListingListResponse = {

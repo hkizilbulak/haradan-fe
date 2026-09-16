@@ -335,6 +335,57 @@ async function main(): Promise<void> {
   const pubDel = calls.find((c) => c.url.includes('/9103'));
   assert(pubDel != null, 'http DELETE for published listing called');
 
+  // Test resubmit on HttpMyListingsRepository
+  responses['POST /api/v1/me/adverts/9105/resubmit'] = {
+    status: 200,
+    body: {
+      id: 9105,
+      status: 'PENDING_REVIEW',
+      version: 2,
+      mediaVersion: 1,
+      categoryId: 'cat-horse',
+      districtId: 'dist-1',
+      provinceId: 'prov-1',
+      horseId: null,
+      title: 'Resubmitted Listing',
+      description: 'Açıklama',
+      price: null,
+      properties: {},
+      media: [],
+      publishedAt: null,
+      deletedAt: null,
+      rejectionReason: null,
+      viewCount: 0,
+      favoriteCount: 0,
+      createdAt: '2026-09-16T12:00:00Z',
+      updatedAt: '2026-09-16T13:00:00Z',
+    },
+  };
+  const resubmittedCard = await http.resubmit(9105, 1, 'tok');
+  const resubmitCall = calls.find((c) => c.url.endsWith('/v1/me/adverts/9105/resubmit'));
+  assert(resubmitCall != null, 'http resubmit called');
+  assertEqual(
+    JSON.parse(resubmitCall?.init.body as string).expectedVersion,
+    1,
+    'resubmit sends expectedVersion'
+  );
+  assertEqual(resubmittedCard.backendStatus, 'PENDING_REVIEW', 'resubmit card backendStatus is PENDING_REVIEW');
+  assertEqual(resubmittedCard.status, 'pending', 'resubmit card tab status is pending');
+
+  const badResubmitVersion = await http
+    .resubmit(9105, 0, 'tok')
+    .then(() => null)
+    .catch((err: unknown) => err);
+  assert(
+    badResubmitVersion instanceof ApiError && badResubmitVersion.code === 'VALIDATION_ERROR',
+    'resubmit expectedVersion < 1 is VALIDATION_ERROR'
+  );
+
+  // Test resubmit on MockMyListingsRepository
+  const mockResubmitItem = await mock.resubmit(1009, 1, 'mock-tok');
+  assertEqual(mockResubmitItem.backendStatus, 'PENDING_REVIEW', 'mock resubmit sets PENDING_REVIEW');
+  assertEqual(mockResubmitItem.status, 'pending', 'mock resubmit sets status to pending');
+
   // Test mapOwnerToListingDraft phone mapping and single-field edit validation
   const mockTree = [
     {

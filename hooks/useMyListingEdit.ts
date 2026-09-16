@@ -12,6 +12,11 @@ import type { ListingDraft, ListingDraftDetails, ListingMediaSlot } from '@/type
 import type { AdvertId } from '@/types/advertId';
 import { parseAdvertId } from '@/types/advertId';
 
+export type SaveResult = {
+  ok: boolean;
+  error?: string;
+};
+
 export function useMyListingEdit(
   rawId: string | undefined,
   accessToken: string | null,
@@ -22,6 +27,8 @@ export function useMyListingEdit(
   const [draft, setDraft] = useState<ListingDraft | null>(null);
   const [initialDraft, setInitialDraft] = useState<ListingDraft | null>(null);
   const [version, setVersion] = useState(1);
+  const [backendStatus, setBackendStatus] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +49,8 @@ export function useMyListingEdit(
         setDraft(next.draft);
         setInitialDraft(JSON.parse(JSON.stringify(next.draft)));
         setVersion(next.version);
+        setBackendStatus(next.backendStatus ?? null);
+        setRejectionReason(next.rejectionReason ?? null);
         setError(null);
       } catch (err) {
         if (cancelled) return;
@@ -54,6 +63,12 @@ export function useMyListingEdit(
       cancelled = true;
     };
   }, [id, accessToken, repo]);
+
+  const isResubmittable =
+    backendStatus === 'REJECTED' ||
+    backendStatus === 'CHANGES_REQUESTED' ||
+    backendStatus === 'rejected' ||
+    backendStatus === 'changes_requested';
 
   const isDirty = useMemo(() => {
     return isListingDraftDirty(draft, initialDraft);
@@ -106,31 +121,59 @@ export function useMyListingEdit(
     [tjk]
   );
 
-  const save = useCallback(async () => {
-    if (!id || !accessToken || !draft) return false;
-    if (!isDirty) return false;
-    if (!detailsStepComplete(draft)) {
-      setAttempted(true);
-      return false;
-    }
-    setSaving(true);
-    setError(null);
-    try {
-      const updated = await repo.update(
-        id,
-        mapDraftToUpdate(draft, version),
-        accessToken
-      );
-      setVersion(typeof updated?.version === 'number' ? updated.version : (v) => v + 1);
-      setInitialDraft(JSON.parse(JSON.stringify(draft)));
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Kayıt başarısız.');
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  }, [id, accessToken, draft, repo, version, isDirty]);
+  const save = useCallback(
+    async (options?: { andSubmit?: boolean }): Promise<SaveResult> => {
+      if (!id || !accessToken || !draft) {
+        return { ok: false, error: 'Oturum veya ilan bulunamadı.' };
+      }
+      const shouldSubmit = options?.andSubmit ?? isResubmittable;
+      if (!isDirty && !shouldSubmit) {
+        return { ok: false, error: 'Herhangi bir değişiklik yapılmadı.' };
+      }
+      if (!detailsStepComplete(draft)) {
+        setAttempted(true);
+        const errs = detailsErrors(draft);
+        const firstErr =
+          Object.values(errs)[0] ||
+          'Lütfen tüm zorunlu alanları eksiksiz doldurun.';
+        setError(firstErr);
+        return { ok: false, error: firstErr };
+      }
+      setSaving(true);
+      setError(null);
+      try {
+        let currentVer = version;
+        if (isDirty) {
+          const updated = await repo.update(
+            id,
+            mapDraftToUpdate(draft, currentVer),
+            accessToken
+          );
+          currentVer =
+            typeof updated?.version === 'number'
+              ? updated.version
+              : currentVer + 1;
+          setVersion(currentVer);
+          setInitialDraft(JSON.parse(JSON.stringify(draft)));
+        }
+        if (shouldSubmit) {
+          const resubmitted = await repo.resubmit(id, currentVer, accessToken);
+          if (typeof resubmitted?.version === 'number') {
+            setVersion(resubmitted.version);
+          }
+          setBackendStatus('PENDING_REVIEW');
+        }
+        return { ok: true };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Kayıt başarısız.';
+        setError(msg);
+        return { ok: false, error: msg };
+      } finally {
+        setSaving(false);
+      }
+    },
+    [id, accessToken, draft, repo, version, isDirty, isResubmittable]
+  );
 
   return {
     draft,
@@ -139,8 +182,11 @@ export function useMyListingEdit(
     saving,
     error,
     fieldErrors: draft && attempted ? detailsErrors(draft) : {},
-    canSave: Boolean(draft && !saving && isDirty),
+    canSave: Boolean(draft && !saving && (isDirty || isResubmittable)),
     isDirty,
+    backendStatus,
+    rejectionReason,
+    isResubmittable,
     markClean,
     updateDetails,
     setMedia,

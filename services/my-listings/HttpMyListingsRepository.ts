@@ -5,6 +5,7 @@ import { getAuthSession } from '@/services/auth/sessionStore';
 import { applyTjkProfile } from '@/hooks/useListingWizard';
 import { HttpTjkRepository } from '@/services/tjk/HttpTjkRepository';
 import type { ITjkRepository } from '@/services/tjk/TjkRepository';
+import { HttpMediaUploader } from '@/services/media/HttpMediaUploader';
 import type {
   MyListingCard,
   MyListingListResponse,
@@ -99,6 +100,12 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
       version: dto.version,
       mediaVersion: dto.mediaVersion,
       backendStatus: dto.status,
+      rejectionReason:
+        (dto as any).rejectionReason ??
+        (dto.properties as any)?.rejectionReason ??
+        (dto.properties as any)?.rejection_reason ??
+        (dto.properties as any)?.rejectReason ??
+        null,
     };
   }
 
@@ -148,6 +155,96 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
             }),
           }
         );
+      }
+
+      // Medya değişikliklerini senkronize et (yeni eklenenler, silinenler, kapak görseli)
+      if (Array.isArray(payload.draft.media) && payload.draft.media.length > 0) {
+        let mediaVer = dto.mediaVersion ?? 1;
+        const currentAssetIds = new Set(
+          payload.draft.media
+            .map((s) => s.assetId)
+            .filter((x): x is string => Boolean(x))
+        );
+
+        // Silinen görselleri sunucudan kaldır
+        if (Array.isArray(dto.media)) {
+          for (const existing of dto.media) {
+            if (!currentAssetIds.has(existing.assetId)) {
+              try {
+                const res = await this.http.request<{ mediaVersion: number }>(
+                  `/v1/me/adverts/${encodeURIComponent(String(id))}/media/${encodeURIComponent(existing.assetId)}?expectedMediaVersion=${mediaVer}`,
+                  {
+                    method: 'DELETE',
+                    accessToken,
+                  }
+                );
+                if (res && typeof res.mediaVersion === 'number') {
+                  mediaVer = res.mediaVersion;
+                }
+              } catch {
+                // yoksay
+              }
+            }
+          }
+        }
+
+        // Yeni eklenen yerel görselleri yükle ve ilana bağla
+        let uploader: HttpMediaUploader | null = null;
+        for (const slot of payload.draft.media) {
+          if (!slot.assetId && slot.uri) {
+            if (!uploader) uploader = new HttpMediaUploader(this.baseUrl);
+            try {
+              const uploaded = await uploader.upload(
+                {
+                  uri: slot.uri,
+                  mimeType: slot.mimeType,
+                  fileName: slot.fileName,
+                },
+                accessToken
+              );
+              slot.assetId = uploaded.assetId;
+              const res = await this.http.request<{ mediaVersion: number }>(
+                `/v1/me/adverts/${encodeURIComponent(String(id))}/media`,
+                {
+                  method: 'POST',
+                  accessToken,
+                  body: JSON.stringify({
+                    assetId: uploaded.assetId,
+                    expectedMediaVersion: mediaVer,
+                  }),
+                }
+              );
+              if (res && typeof res.mediaVersion === 'number') {
+                mediaVer = res.mediaVersion;
+              }
+            } catch {
+              // yoksay
+            }
+          }
+        }
+
+        // Kapak görselini güncelle
+        const coverSlot = payload.draft.media.find((m) => m.isCover);
+        if (coverSlot?.assetId) {
+          try {
+            const res = await this.http.request<{ mediaVersion: number }>(
+              `/v1/me/adverts/${encodeURIComponent(String(id))}/media/cover`,
+              {
+                method: 'PUT',
+                accessToken,
+                body: JSON.stringify({
+                  assetId: coverSlot.assetId,
+                  expectedMediaVersion: mediaVer,
+                }),
+              }
+            );
+            if (res && typeof res.mediaVersion === 'number') {
+              mediaVer = res.mediaVersion;
+            }
+          } catch {
+            // yoksay
+          }
+        }
       }
     }
 
@@ -229,6 +326,27 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
     }
     const dto = await this.http.request<OwnerAdvertDto>(
       `/v1/me/adverts/${encodeURIComponent(id)}/publish`,
+      {
+        method: 'POST',
+        accessToken,
+        body: JSON.stringify({ expectedVersion }),
+      }
+    );
+    advertRepository.invalidate(id);
+    const sellerId = getAuthSession()?.user.id ?? '';
+    return mapOwnerAdvertToCard(dto, { apiBase: this.baseUrl, sellerId });
+  }
+
+  async resubmit(
+    id: AdvertId,
+    expectedVersion: number,
+    accessToken: string
+  ): Promise<MyListingCard> {
+    if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+      throw new ApiError('İlan sürümü geçersiz.', 400, 'VALIDATION_ERROR');
+    }
+    const dto = await this.http.request<OwnerAdvertDto>(
+      `/v1/me/adverts/${encodeURIComponent(String(id))}/resubmit`,
       {
         method: 'POST',
         accessToken,

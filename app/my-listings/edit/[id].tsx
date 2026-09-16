@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Head from 'expo-router/head';
+import { Ionicons } from '@expo/vector-icons';
 import { PostDetailsStep, PostFormShell } from '@/components/post';
+import { toast } from '@/components/ui';
 import { parseInternationalPhone } from '@/services/phone';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useMyListingEdit } from '@/hooks/useMyListingEdit';
@@ -55,19 +57,31 @@ export default function EditListingScreen() {
     }
   }, [edit.draft, session?.user?.phone, edit.updateDetails, edit.markClean]);
 
-
   const close = useCallback(() => {
     if (router.canGoBack()) router.back();
     else router.replace('/my-listings');
   }, [router]);
 
   const onSave = useCallback(async () => {
-    const ok = await edit.save();
-    if (!ok) {
+    const isResubmit = edit.isResubmittable;
+    const res = await edit.save({ andSubmit: isResubmit });
+    if (!res.ok) {
       setScrollTrigger((v) => v + 1);
+      toast.error(
+        res.error || 'Lütfen zorunlu alanları kontrol edin.',
+        'Kayıt Yapılamadı'
+      );
       return;
     }
-    if (ok && id) {
+    if (isResubmit) {
+      toast.success(
+        'İlanınız güncellendi ve onay için incelemeye gönderildi.',
+        'Başarılı'
+      );
+    } else {
+      toast.success('Değişiklikler kaydedildi.', 'Başarılı');
+    }
+    if (id) {
       router.replace(`/advert/${id}`);
     }
   }, [edit, id, router]);
@@ -98,7 +112,11 @@ export default function EditListingScreen() {
           title="İlanı düzenle"
           canSave={edit.canSave}
           saving={edit.saving}
-          saveLabel="Değişiklikleri kaydet"
+          saveLabel={
+            edit.isResubmittable
+              ? 'Kaydet ve İncelemeye Gönder'
+              : 'Değişiklikleri kaydet'
+          }
           scrollViewRef={scrollViewRef}
           onClose={close}
           onSave={() => void onSave()}
@@ -106,6 +124,71 @@ export default function EditListingScreen() {
           {edit.error ? (
             <Text style={[styles.error, { color: text }]}>{edit.error}</Text>
           ) : null}
+
+          {edit.isResubmittable ? (
+            <View
+              style={[
+                styles.resubmitBanner,
+                {
+                  borderColor:
+                    edit.backendStatus === 'REJECTED' ||
+                    edit.backendStatus === 'rejected'
+                      ? 'rgba(239, 68, 68, 0.4)'
+                      : 'rgba(245, 158, 11, 0.4)',
+                  backgroundColor:
+                    edit.backendStatus === 'REJECTED' ||
+                    edit.backendStatus === 'rejected'
+                      ? 'rgba(239, 68, 68, 0.08)'
+                      : 'rgba(245, 158, 11, 0.08)',
+                },
+              ]}
+            >
+              <Ionicons
+                name={
+                  edit.backendStatus === 'REJECTED' ||
+                  edit.backendStatus === 'rejected'
+                    ? 'alert-circle-outline'
+                    : 'warning-outline'
+                }
+                size={22}
+                color={
+                  edit.backendStatus === 'REJECTED' ||
+                  edit.backendStatus === 'rejected'
+                    ? '#ef4444'
+                    : '#f59e0b'
+                }
+                style={{ marginTop: 2 }}
+              />
+              <View style={styles.resubmitBannerBody}>
+                <Text
+                  style={[
+                    styles.resubmitBannerTitle,
+                    {
+                      color:
+                        edit.backendStatus === 'REJECTED' ||
+                        edit.backendStatus === 'rejected'
+                          ? '#ef4444'
+                          : '#f59e0b',
+                    },
+                  ]}
+                >
+                  {edit.backendStatus === 'REJECTED' ||
+                  edit.backendStatus === 'rejected'
+                    ? 'Bu İlan Reddedilmiştir'
+                    : 'İlanınız İçin Düzeltme İstenmiştir'}
+                </Text>
+                <Text style={[styles.resubmitBannerSubtitle, { color: text }]}>
+                  {edit.rejectionReason
+                    ? edit.backendStatus === 'REJECTED' ||
+                      edit.backendStatus === 'rejected'
+                      ? `Reddedilme Nedeni: ${edit.rejectionReason}`
+                      : `Düzeltme Talebi: ${edit.rejectionReason}`
+                    : 'İlan detaylarını düzenledikten sonra "Kaydet ve İncelemeye Gönder" butonuna tıklayarak tekrar onaya gönderebilirsiniz.'}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
           <PostDetailsStep
             draft={edit.draft}
             errors={edit.fieldErrors}
@@ -137,4 +220,27 @@ export default function EditListingScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   error: { marginBottom: 12 },
+  resubmitBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  resubmitBannerBody: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  resubmitBannerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  resubmitBannerSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    opacity: 0.9,
+  },
 });
+

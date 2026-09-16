@@ -89,6 +89,9 @@ export function AdvertDetailView({
   const [backendStatus, setBackendStatus] = useState<string>(
     detail.backendStatus || 'PUBLISHED'
   );
+  const [rejectionReason, setRejectionReason] = useState<string | null>(
+    detail.rejectionReason ?? null
+  );
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isTogglingPublish, setIsTogglingPublish] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -99,6 +102,12 @@ export function AdvertDetailView({
     }
   }, [detail.backendStatus]);
 
+  useEffect(() => {
+    if (detail.rejectionReason) {
+      setRejectionReason(detail.rejectionReason);
+    }
+  }, [detail.rejectionReason]);
+
   // İlan sahibi görüntülüyorsa, güncel statüyü teyit etmek için owner draft'ından oku
   useEffect(() => {
     if (!isOwner || !accessToken || !detail.id) return;
@@ -108,6 +117,9 @@ export function AdvertDetailView({
         if (payload?.backendStatus) {
           setBackendStatus(payload.backendStatus);
         }
+        if (payload?.rejectionReason) {
+          setRejectionReason(payload.rejectionReason);
+        }
       })
       .catch(() => {
         // Sessizce yutulabilir
@@ -115,6 +127,17 @@ export function AdvertDetailView({
   }, [detail.id, isOwner, accessToken]);
 
   const isPublished = backendStatus === 'PUBLISHED';
+  const isRejected = backendStatus === 'REJECTED';
+  const isPendingReview = backendStatus === 'PENDING_REVIEW';
+  const isChangesRequested = backendStatus === 'CHANGES_REQUESTED';
+  const isArchived = backendStatus === 'ARCHIVED';
+  const isSoldStatus = backendStatus === 'SOLD';
+  const canTogglePublish =
+    (isPublished || isArchived) &&
+    !isRejected &&
+    !isPendingReview &&
+    !isChangesRequested &&
+    !isSoldStatus;
 
   const onTogglePublish = useCallback(() => {
     setIsConfirmOpen(true);
@@ -191,7 +214,89 @@ export function AdvertDetailView({
   const header = useThemeColor('header');
   const bg = useThemeColor('background');
 
-  const isSold = detail.backendStatus === 'SOLD';
+  const isSold = isSoldStatus;
+
+  const noticeBannerConfig = useMemo(() => {
+    if (!isOwner || isPublished) return null;
+
+    if (isRejected) {
+      return {
+        type: 'rejected',
+        title: 'Bu İlan Reddedilmiştir',
+        subtitle: rejectionReason
+          ? `Reddedilme Nedeni: ${rejectionReason}`
+          : 'İlanınız moderasyon incelemesinde kurallara uygun bulunmadığı için onaylanmamıştır. İlan detaylarını düzenleyerek tekrar onaya gönderebilirsiniz.',
+        icon: 'close-circle' as const,
+        iconColor: '#ef4444',
+        accentColor: '#ef4444',
+        borderColor: 'rgba(239, 68, 68, 0.35)',
+        bgColor: 'rgba(239, 68, 68, 0.08)',
+        iconCircleBg: 'rgba(239, 68, 68, 0.16)',
+        showEditAction: true,
+      };
+    }
+
+    if (isChangesRequested) {
+      return {
+        type: 'changes_requested',
+        title: 'İlanınız İçin Düzeltme İstendi',
+        subtitle: rejectionReason
+          ? `Talep Edilen Düzeltme: ${rejectionReason}`
+          : 'Moderatörlerimiz ilanınızda bazı değişiklikler yapmanızı istedi. Lütfen ilanı düzenleyip tekrar onaya gönderin.',
+        icon: 'alert-circle' as const,
+        iconColor: '#f59e0b',
+        accentColor: '#f59e0b',
+        borderColor: 'rgba(245, 158, 11, 0.35)',
+        bgColor: 'rgba(245, 158, 11, 0.08)',
+        iconCircleBg: 'rgba(245, 158, 11, 0.16)',
+        showEditAction: true,
+      };
+    }
+
+    if (isPendingReview) {
+      return {
+        type: 'pending_review',
+        title: 'İlanınız İncelemede',
+        subtitle: 'İlanınız moderatörlerimiz tarafından incelenmektedir. Onaylandıktan sonra otomatik olarak yayına alınacaktır.',
+        icon: 'time' as const,
+        iconColor: '#f59e0b',
+        accentColor: '#f59e0b',
+        borderColor: 'rgba(245, 158, 11, 0.35)',
+        bgColor: 'rgba(245, 158, 11, 0.08)',
+        iconCircleBg: 'rgba(245, 158, 11, 0.16)',
+        showEditAction: false,
+      };
+    }
+
+    if (isSoldStatus) {
+      return {
+        type: 'sold',
+        title: 'Bu İlan Satıldı Olarak İşaretlenmiştir',
+        subtitle: 'İlanınız satıldı olarak işaretlendiği için yayından kaldırılmıştır.',
+        icon: 'checkmark-circle' as const,
+        iconColor: '#10b981',
+        accentColor: '#10b981',
+        borderColor: 'rgba(16, 185, 129, 0.35)',
+        bgColor: 'rgba(16, 185, 129, 0.08)',
+        iconCircleBg: 'rgba(16, 185, 129, 0.16)',
+        showEditAction: false,
+      };
+    }
+
+    // ARCHIVED / Yayından Kaldırılmıştır
+    return {
+      type: 'archived',
+      title: 'Bu İlan Yayından Kaldırılmıştır',
+      subtitle: 'İlan şu an tamamen gizlidir; arama sonuçlarında, vitrinde ve kategori listelerinde kimseye görünmez. Yalnızca siz görüntüleyebilirsiniz.',
+      icon: 'eye-off' as const,
+      iconColor: '#ef4444',
+      accentColor: '#ef4444',
+      borderColor: 'rgba(239, 68, 68, 0.28)',
+      bgColor: 'rgba(239, 68, 68, 0.08)',
+      iconCircleBg: 'rgba(239, 68, 68, 0.16)',
+      showEditAction: false,
+    };
+  }, [isOwner, isPublished, isRejected, isChangesRequested, isPendingReview, isSoldStatus, rejectionReason]);
 
   const galleryHeight = isWide
     ? 440
@@ -506,7 +611,7 @@ export function AdvertDetailView({
               showFavorite={detail.backendStatus !== 'REJECTED' && !isOwner}
               favorite={favorite}
               onToggleFavorite={() => toggle(favoriteCard)}
-              onShare={() => setIsShareModalOpen(true)}
+              onShare={isPublished ? () => setIsShareModalOpen(true) : undefined}
             />
           </View>
 
@@ -517,16 +622,61 @@ export function AdvertDetailView({
             }}
           >
             <View style={styles.mobileSummary}>
-              {isOwner && !isPublished ? (
-                <View style={styles.unpublishedNoticeBannerMobile}>
-                  <Ionicons name="eye-off" size={17} color="#f87171" style={{ marginTop: 1 }} />
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <Text style={styles.unpublishedNoticeTitleMobile}>
-                      Bu İlan Yayından Kaldırılmıştır
+              {noticeBannerConfig ? (
+                <View
+                  style={[
+                    styles.unpublishedNoticeBannerMobile,
+                    {
+                      borderColor: noticeBannerConfig.borderColor,
+                      backgroundColor: noticeBannerConfig.bgColor,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={noticeBannerConfig.icon}
+                    size={18}
+                    color={noticeBannerConfig.iconColor}
+                    style={{ marginTop: 1 }}
+                  />
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Text
+                      style={[
+                        styles.unpublishedNoticeTitleMobile,
+                        { color: noticeBannerConfig.accentColor },
+                      ]}
+                    >
+                      {noticeBannerConfig.title}
                     </Text>
                     <Text style={styles.unpublishedNoticeSubtitleMobile}>
-                      Diğer kullanıcılara ve aramalara tamamen kapalıdır. Yalnızca siz görüntüleyebilirsiniz.
+                      {noticeBannerConfig.subtitle}
                     </Text>
+                    {noticeBannerConfig.showEditAction ? (
+                      <Pressable
+                        onPress={onEdit}
+                        style={({ pressed }) => [
+                          styles.bannerEditBtnMobile,
+                          {
+                            borderColor: noticeBannerConfig.accentColor,
+                            backgroundColor: `${noticeBannerConfig.accentColor}20`,
+                          },
+                          pressed && { opacity: 0.8 },
+                        ]}
+                      >
+                        <Ionicons
+                          name="create-outline"
+                          size={14}
+                          color={noticeBannerConfig.accentColor}
+                        />
+                        <Text
+                          style={[
+                            styles.bannerEditBtnTextMobile,
+                            { color: noticeBannerConfig.accentColor },
+                          ]}
+                        >
+                          İlanı Düzenle
+                        </Text>
+                      </Pressable>
+                    ) : null}
                   </View>
                 </View>
               ) : null}
@@ -586,7 +736,7 @@ export function AdvertDetailView({
 
         {/* Sabit Alt İletişim Çubuğu (Ara & WhatsApp) */}
         <MobileAdvertStickyBar
-          detail={detail}
+          detail={{ ...detail, backendStatus }}
           isOwner={isOwner}
           isPublished={isPublished}
           onCall={onCall}
@@ -676,21 +826,72 @@ export function AdvertDetailView({
 
           <Text style={[styles.title, { color: text }]}>{detail.title}</Text>
 
-          {isOwner && !isPublished ? (
-            <View style={styles.unpublishedNoticeBanner}>
+          {noticeBannerConfig ? (
+            <View
+              style={[
+                styles.unpublishedNoticeBanner,
+                {
+                  borderColor: noticeBannerConfig.borderColor,
+                  backgroundColor: noticeBannerConfig.bgColor,
+                },
+              ]}
+            >
               <View style={styles.unpublishedNoticeLeft}>
-                <View style={styles.unpublishedNoticeIconCircle}>
-                  <Ionicons name="eye-off" size={20} color="#ef4444" />
+                <View
+                  style={[
+                    styles.unpublishedNoticeIconCircle,
+                    { backgroundColor: noticeBannerConfig.iconCircleBg },
+                  ]}
+                >
+                  <Ionicons
+                    name={noticeBannerConfig.icon}
+                    size={20}
+                    color={noticeBannerConfig.iconColor}
+                  />
                 </View>
                 <View style={styles.unpublishedNoticeTextWrap}>
-                  <Text style={styles.unpublishedNoticeTitle}>
-                    Bu İlan Yayından Kaldırılmıştır
+                  <Text
+                    style={[
+                      styles.unpublishedNoticeTitle,
+                      { color: noticeBannerConfig.accentColor },
+                    ]}
+                  >
+                    {noticeBannerConfig.title}
                   </Text>
                   <Text style={styles.unpublishedNoticeSubtitle}>
-                    İlan şu an tamamen gizlidir; arama sonuçlarında, vitrinde ve kategori listelerinde kimseye görünmez. Yalnızca siz görüntüleyebilirsiniz.
+                    {noticeBannerConfig.subtitle}
                   </Text>
                 </View>
               </View>
+              {noticeBannerConfig.showEditAction ? (
+                <Pressable
+                  onPress={onEdit}
+                  style={({ pressed }) => [
+                    styles.bannerEditBtn,
+                    {
+                      borderColor: noticeBannerConfig.accentColor,
+                      backgroundColor: `${noticeBannerConfig.accentColor}20`,
+                    },
+                    pressed && { opacity: 0.8 },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="İlanı Düzenle"
+                >
+                  <Ionicons
+                    name="create-outline"
+                    size={15}
+                    color={noticeBannerConfig.accentColor}
+                  />
+                  <Text
+                    style={[
+                      styles.bannerEditBtnText,
+                      { color: noticeBannerConfig.accentColor },
+                    ]}
+                  >
+                    İlanı Düzenle
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           ) : null}
 
@@ -760,62 +961,66 @@ export function AdvertDetailView({
             <View style={styles.desktopTopActionsCol}>
               {isOwner ? (
                 <>
-                  <Pressable
-                    onPress={onTogglePublish}
-                    disabled={isTogglingPublish}
-                    accessibilityRole="button"
-                    accessibilityLabel={isPublished ? 'Yayından Kaldır' : 'Yayınla'}
-                    style={({ pressed }) => [
-                      styles.desktopTopPublishBtn,
-                      isPublished
-                        ? {
-                            borderColor: '#ef444445',
-                            backgroundColor: '#ef444414',
-                          }
-                        : {
-                            borderColor: '#10b98145',
-                            backgroundColor: '#10b98118',
-                          },
-                      pressed && { opacity: 0.88 },
-                    ]}
-                  >
-                    {isTogglingPublish ? (
-                      <ActivityIndicator
-                        size="small"
-                        color={isPublished ? '#ef4444' : '#10b981'}
-                      />
-                    ) : (
-                      <>
-                        <Ionicons
-                          name={isPublished ? 'eye-off-outline' : 'eye-outline'}
-                          size={16}
+                  {canTogglePublish ? (
+                    <Pressable
+                      onPress={onTogglePublish}
+                      disabled={isTogglingPublish}
+                      accessibilityRole="button"
+                      accessibilityLabel={isPublished ? 'Yayından Kaldır' : 'Yayınla'}
+                      style={({ pressed }) => [
+                        styles.desktopTopPublishBtn,
+                        isPublished
+                          ? {
+                              borderColor: '#ef444445',
+                              backgroundColor: '#ef444414',
+                            }
+                          : {
+                              borderColor: '#10b98145',
+                              backgroundColor: '#10b98118',
+                            },
+                        pressed && { opacity: 0.88 },
+                      ]}
+                    >
+                      {isTogglingPublish ? (
+                        <ActivityIndicator
+                          size="small"
                           color={isPublished ? '#ef4444' : '#10b981'}
                         />
-                        <Text
-                          style={[
-                            styles.desktopTopPublishText,
-                            { color: isPublished ? '#ef4444' : '#10b981' },
-                          ]}
-                        >
-                          {isPublished ? 'Yayından Kaldır' : 'Yayınla'}
-                        </Text>
-                      </>
-                    )}
-                  </Pressable>
+                      ) : (
+                        <>
+                          <Ionicons
+                            name={isPublished ? 'eye-off-outline' : 'eye-outline'}
+                            size={16}
+                            color={isPublished ? '#ef4444' : '#10b981'}
+                          />
+                          <Text
+                            style={[
+                              styles.desktopTopPublishText,
+                              { color: isPublished ? '#ef4444' : '#10b981' },
+                            ]}
+                          >
+                            {isPublished ? 'Yayından Kaldır' : 'Yayınla'}
+                          </Text>
+                        </>
+                      )}
+                    </Pressable>
+                  ) : null}
 
-                  <Pressable
-                    onPress={onPromote}
-                    accessibilityRole="button"
-                    accessibilityLabel="Öne Çıkar"
-                    style={({ pressed }) => [
-                      styles.desktopTopEditBtn,
-                      { borderColor: '#f59e0b45', backgroundColor: '#f59e0b14' },
-                      pressed && { opacity: 0.88 },
-                    ]}
-                  >
-                    <Ionicons name="star-outline" size={16} color="#f59e0b" />
-                    <Text style={[styles.desktopTopEditText, { color: '#f59e0b' }]}>Öne Çıkar</Text>
-                  </Pressable>
+                  {isPublished ? (
+                    <Pressable
+                      onPress={onPromote}
+                      accessibilityRole="button"
+                      accessibilityLabel="Öne Çıkar"
+                      style={({ pressed }) => [
+                        styles.desktopTopEditBtn,
+                        { borderColor: '#f59e0b45', backgroundColor: '#f59e0b14' },
+                        pressed && { opacity: 0.88 },
+                      ]}
+                    >
+                      <Ionicons name="star-outline" size={16} color="#f59e0b" />
+                      <Text style={[styles.desktopTopEditText, { color: '#f59e0b' }]}>Öne Çıkar</Text>
+                    </Pressable>
+                  ) : null}
 
                   <Pressable
                     onPress={onEdit}
@@ -823,26 +1028,48 @@ export function AdvertDetailView({
                     accessibilityLabel="İlanı Düzenle"
                     style={({ pressed }) => [
                       styles.desktopTopEditBtn,
-                      { borderColor: border, backgroundColor: surface },
+                      isRejected
+                        ? {
+                            borderColor: '#ef4444',
+                            backgroundColor: '#ef444418',
+                            paddingHorizontal: 16,
+                          }
+                        : { borderColor: border, backgroundColor: surface },
                       pressed && { opacity: 0.88 },
                     ]}
                   >
-                    <Ionicons name="create-outline" size={16} color={text} />
-                    <Text style={[styles.desktopTopEditText, { color: text }]}>İlanı Düzenle</Text>
+                    <Ionicons
+                      name="create-outline"
+                      size={16}
+                      color={isRejected ? '#ef4444' : text}
+                    />
+                    <Text
+                      style={[
+                        styles.desktopTopEditText,
+                        {
+                          color: isRejected ? '#ef4444' : text,
+                          fontWeight: isRejected ? '700' : '600',
+                        },
+                      ]}
+                    >
+                      {isRejected ? 'İlanı Düzenle ve Tekrar Gönder' : 'İlanı Düzenle'}
+                    </Text>
                   </Pressable>
 
-                  <Pressable
-                    onPress={() => setIsShareModalOpen(true)}
-                    accessibilityRole="button"
-                    accessibilityLabel="İlanı Paylaş"
-                    style={({ pressed }) => [
-                      styles.desktopTopShareBtn,
-                      { borderColor: border, backgroundColor: surface, borderWidth: 1.5 },
-                      pressed && { opacity: 0.88 },
-                    ]}
-                  >
-                    <Ionicons name="share-social-outline" size={18} color={text} />
-                  </Pressable>
+                  {isPublished ? (
+                    <Pressable
+                      onPress={() => setIsShareModalOpen(true)}
+                      accessibilityRole="button"
+                      accessibilityLabel="İlanı Paylaş"
+                      style={({ pressed }) => [
+                        styles.desktopTopShareBtn,
+                        { borderColor: border, backgroundColor: surface, borderWidth: 1.5 },
+                        pressed && { opacity: 0.88 },
+                      ]}
+                    >
+                      <Ionicons name="share-social-outline" size={18} color={text} />
+                    </Pressable>
+                  ) : null}
                 </>
               ) : (
                 <>
@@ -1383,5 +1610,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#9ca3af',
     lineHeight: 16,
+  },
+  bannerEditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  bannerEditBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  bannerEditBtnMobile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  bannerEditBtnTextMobile: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

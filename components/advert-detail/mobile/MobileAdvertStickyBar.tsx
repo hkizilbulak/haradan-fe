@@ -37,9 +37,18 @@ export const MobileAdvertStickyBar = memo(function MobileAdvertStickyBar({
   const insets = useSafeInsets();
   const header = useThemeColor('header');
   const surface = useThemeColor('surface');
-  const border = useThemeColor('border');
-
-  const isSold = detail.backendStatus === 'SOLD';
+  const backendStatus = detail.backendStatus;
+  const isRejected = backendStatus === 'REJECTED';
+  const isPendingReview = backendStatus === 'PENDING_REVIEW';
+  const isChangesRequested = backendStatus === 'CHANGES_REQUESTED';
+  const isArchived = backendStatus === 'ARCHIVED';
+  const isSold = backendStatus === 'SOLD';
+  const canTogglePublish =
+    (isPublished || isArchived) &&
+    !isRejected &&
+    !isPendingReview &&
+    !isChangesRequested &&
+    !isSold;
 
   // Alt dock yüksekliği + safe area payı
   const dockHeight = MOBILE_DOCK_BAR_HEIGHT + Math.max(insets.bottom, 8);
@@ -59,7 +68,7 @@ export const MobileAdvertStickyBar = memo(function MobileAdvertStickyBar({
     >
       {isOwner ? (
         <View style={styles.actions}>
-          {onTogglePublish ? (
+          {canTogglePublish && onTogglePublish ? (
             <Pressable
               onPress={onTogglePublish}
               disabled={isTogglingPublish}
@@ -98,19 +107,21 @@ export const MobileAdvertStickyBar = memo(function MobileAdvertStickyBar({
             </Pressable>
           ) : null}
 
-          <Pressable
-            onPress={onPromote}
-            accessibilityRole="button"
-            accessibilityLabel="Öne Çıkar"
-            style={({ pressed }) => [
-              styles.editBtn,
-              { borderColor: '#f59e0b50', backgroundColor: '#f59e0b14' },
-              pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
-            ]}
-          >
-            <Ionicons name="star-outline" size={16} color="#f59e0b" />
-            <Text style={[styles.editText, { color: '#f59e0b' }]} numberOfLines={1}>Öne Çıkar</Text>
-          </Pressable>
+          {isPublished && onPromote ? (
+            <Pressable
+              onPress={onPromote}
+              accessibilityRole="button"
+              accessibilityLabel="Öne Çıkar"
+              style={({ pressed }) => [
+                styles.editBtn,
+                { borderColor: '#f59e0b50', backgroundColor: '#f59e0b14' },
+                pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
+              ]}
+            >
+              <Ionicons name="star-outline" size={16} color="#f59e0b" />
+              <Text style={[styles.editText, { color: '#f59e0b' }]} numberOfLines={1}>Öne Çıkar</Text>
+            </Pressable>
+          ) : null}
 
           <Pressable
             onPress={onEdit}
@@ -118,12 +129,26 @@ export const MobileAdvertStickyBar = memo(function MobileAdvertStickyBar({
             accessibilityLabel="İlanı Düzenle"
             style={({ pressed }) => [
               styles.editBtn,
-              { borderColor: header },
+              isRejected
+                ? { borderColor: '#ef4444', backgroundColor: '#ef444415' }
+                : { borderColor: header },
               pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
             ]}
           >
-            <Ionicons name="create-outline" size={16} color={header} />
-            <Text style={[styles.editText, { color: header }]} numberOfLines={1}>Düzenle</Text>
+            <Ionicons
+              name="create-outline"
+              size={16}
+              color={isRejected ? '#ef4444' : header}
+            />
+            <Text
+              style={[
+                styles.editText,
+                { color: isRejected ? '#ef4444' : header },
+              ]}
+              numberOfLines={1}
+            >
+              {isRejected ? 'İlanı Düzenle' : 'Düzenle'}
+            </Text>
           </Pressable>
         </View>
       ) : (

@@ -65,30 +65,8 @@ export function getAdvertCategoryKind(detail: AdvertDetail): AdvertCategoryKind 
   return 'horse';
 }
 
-export const CATEGORY_NAMES_BY_ID_OR_SLUG: Record<string, string> = {
-  'c1000000-0000-4000-8000-000000000011': 'Satılık Yarış Atı',
-  'satilik-yaris-ati': 'Satılık Yarış Atı',
-  'cat-satilik-yaris-ati': 'Satılık Yarış Atı',
-  'c-satilik-yaris': 'Satılık Yarış Atı',
-  'c1000000-0000-4000-8000-000000000012': 'Satılık Kısrak',
-  'satilik-kisrak': 'Satılık Kısrak',
-  'c-satilik-kisrak': 'Satılık Kısrak',
-  'c1000000-0000-4000-8000-000000000013': 'Satılık Aygır',
-  'satilik-aygir': 'Satılık Aygır',
-  'c-satilik-aygir': 'Satılık Aygır',
-  'c1000000-0000-4000-8000-000000000014': 'Satılık Binek Atı',
-  'satilik-binek-ati': 'Satılık Binek Atı',
-  'c-satilik-binek': 'Satılık Binek Atı',
-  'c1000000-0000-4000-8000-000000000015': 'Satılık Pony',
-  'satilik-pony': 'Satılık Pony',
-  'c-satilik-pony': 'Satılık Pony',
-  'c1000000-0000-4000-8000-000000000021': 'Pansiyon Haralar',
-  'pansiyon-haralar': 'Pansiyon Haralar',
-  'c1000000-0000-4000-8000-000000000022': 'At Nakliyesi',
-  'at-nakliyesi': 'At Nakliyesi',
-  'c1000000-0000-4000-8000-000000000023': 'Nalbantlar',
-  'nalbantlar': 'Nalbantlar',
-};
+import { CATEGORY_NAMES_BY_ID_OR_SLUG } from '@/constants/listingCatalog';
+export { CATEGORY_NAMES_BY_ID_OR_SLUG };
 
 export function getAdvertCategoryName(detail?: AdvertDetail | null): string {
   if (!detail) return '';
@@ -97,15 +75,41 @@ export function getAdvertCategoryName(detail?: AdvertDetail | null): string {
     CATEGORY_NAMES_BY_ID_OR_SLUG[rawCatId] ||
     CATEGORY_NAMES_BY_ID_OR_SLUG[rawCatId.toLowerCase()];
 
-  return (
-    (detail.breadcrumbs && detail.breadcrumbs.length > 1
-      ? detail.breadcrumbs[detail.breadcrumbs.length - 2]?.label
-      : '') ||
+  // Filter breadcrumbs to find real category label, skipping root, 'İlanlarım', and the advert title
+  const categoryCrumb = (detail.breadcrumbs ?? [])
+    .filter((b) => {
+      const href = (b.href ?? '').toLowerCase();
+      const label = (b.label ?? '').trim().toLowerCase();
+      return (
+        href !== '/' &&
+        href !== '/my-listings' &&
+        label !== 'ana sayfa' &&
+        label !== 'ilanlarım' &&
+        label !== 'ilanlarim' &&
+        label !== (detail.title ?? '').trim().toLowerCase()
+      );
+    })
+    .pop()?.label;
+
+  const resolvedName =
     (detail as any)?.category?.name ||
     knownName ||
-    detail.horse?.breed ||
-    (getAdvertCategoryKind(detail) === 'farrier' ? 'Nalbantlar' : 'Satılık Yarış Atı')
-  );
+    categoryCrumb;
+
+  if (
+    resolvedName &&
+    resolvedName.toLowerCase() !== 'ilanlarım' &&
+    resolvedName.toLowerCase() !== 'ilanlarim'
+  ) {
+    return resolvedName;
+  }
+
+  const kind = getAdvertCategoryKind(detail);
+  if (kind === 'farrier') return 'Nalbantlar';
+  if (kind === 'transport') return 'At Nakliyesi';
+  if (kind === 'pansiyon') return 'Pansiyon Haralar';
+  if (kind === 'stud') return 'Aşım Hizmetleri';
+  return 'Satılık Yarış Atı';
 }
 
 export function isRaceHorseAdvert(

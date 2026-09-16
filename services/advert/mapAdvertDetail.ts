@@ -14,6 +14,7 @@ import type {
 } from '@/types';
 import type { TjkHorseProfile } from '@/types/listing';
 import { parseAdvertId, type AdvertId } from '@/types/advertId';
+import { CATEGORY_NAMES_BY_ID_OR_SLUG } from '@/constants/listingCatalog';
 
 function normalizeAdvertId(id: AdvertId | string): AdvertId {
   return typeof id === 'number' ? id : (parseAdvertId(id) ?? 0);
@@ -320,6 +321,7 @@ function emptyDetailShell(
     | 'locationName'
     | 'backendStatus'
   > & {
+    category?: { id: string; name: string; slug?: string } | null;
     rejectionReason?: string | null;
     properties?: Record<string, unknown>;
     rawProperties?: Record<string, unknown>;
@@ -331,6 +333,7 @@ function emptyDetailShell(
     locationName: null,
     backendStatus: null,
     rejectionReason: null,
+    category: partial.category ?? null,
     ...partial,
     properties: partial.properties ?? {},
     rawProperties: partial.rawProperties ?? partial.properties ?? {},
@@ -547,13 +550,26 @@ export function mapOwnerToAdvertDetail(
     !isNonHorse
   );
 
+  const rawCatId = (dto.categoryId ?? '').trim();
+  const catName =
+    CATEGORY_NAMES_BY_ID_OR_SLUG[rawCatId] ||
+    CATEGORY_NAMES_BY_ID_OR_SLUG[rawCatId.toLowerCase()] ||
+    '';
+
+  const rejectionReason =
+    (dto as any).rejectionReason ??
+    (dto.properties as any)?.rejectionReason ??
+    (dto.properties as any)?.rejection_reason ??
+    (dto.properties as any)?.rejectReason ??
+    null;
+
   return emptyDetailShell({
     id: normalizeAdvertId(dto.id),
     title,
     description: (dto.description ?? '').trim(),
     publishedAt,
     price: dto.price,
-    categoryId: dto.categoryId ?? '',
+    categoryId: rawCatId,
     districtId,
     provinceId,
     provinceName: null,
@@ -570,7 +586,8 @@ export function mapOwnerToAdvertDetail(
     urgentActivatedAt: null,
     sellerId,
     backendStatus: dto.status ?? null,
-    rejectionReason: (dto as any).rejectionReason ?? null,
+    rejectionReason,
+    category: catName ? { id: rawCatId, name: catName, slug: rawCatId } : ((dto as any).category ?? null),
     properties: propMap,
     rawProperties: propMap,
     sellerPhone:
@@ -583,6 +600,7 @@ export function mapOwnerToAdvertDetail(
     breadcrumbs: [
       { label: 'Ana sayfa', href: '/' },
       { label: 'İlanlarım', href: '/my-listings' },
+      ...(catName ? [{ label: catName }] : []),
       { label: title },
     ],
     horse,

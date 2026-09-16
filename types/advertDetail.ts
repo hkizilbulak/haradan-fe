@@ -185,6 +185,11 @@ export type AdvertDetail = PublishedAdvertCard & {
   backendStatus?: string | null;
   /** Reddedilme gerekçesi / açıklaması */
   rejectionReason?: string | null;
+  category?: {
+    id: string;
+    name: string;
+    slug?: string;
+  } | null;
   gallery: PublicMediaItem[];
   breadcrumbs: { label: string; href?: string }[];
   horse: HorseProfile;
