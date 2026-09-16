@@ -59,34 +59,6 @@ export const MobileAdvertStickyBar = memo(function MobileAdvertStickyBar({
     >
       {isOwner ? (
         <View style={styles.actions}>
-          <Pressable
-            onPress={onEdit}
-            accessibilityRole="button"
-            accessibilityLabel="İlanı Düzenle"
-            style={({ pressed }) => [
-              styles.editBtn,
-              { borderColor: header },
-              pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
-            ]}
-          >
-            <Ionicons name="create-outline" size={16} color={header} />
-            <Text style={[styles.editText, { color: header }]} numberOfLines={1}>Düzenle</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={onPromote}
-            accessibilityRole="button"
-            accessibilityLabel="Öne Çıkar"
-            style={({ pressed }) => [
-              styles.editBtn,
-              { borderColor: '#f59e0b50', backgroundColor: '#f59e0b14' },
-              pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
-            ]}
-          >
-            <Ionicons name="star-outline" size={16} color="#f59e0b" />
-            <Text style={[styles.editText, { color: '#f59e0b' }]} numberOfLines={1}>Öne Çıkar</Text>
-          </Pressable>
-
           {onTogglePublish ? (
             <Pressable
               onPress={onTogglePublish}
@@ -125,6 +97,34 @@ export const MobileAdvertStickyBar = memo(function MobileAdvertStickyBar({
               )}
             </Pressable>
           ) : null}
+
+          <Pressable
+            onPress={onPromote}
+            accessibilityRole="button"
+            accessibilityLabel="Öne Çıkar"
+            style={({ pressed }) => [
+              styles.editBtn,
+              { borderColor: '#f59e0b50', backgroundColor: '#f59e0b14' },
+              pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
+            ]}
+          >
+            <Ionicons name="star-outline" size={16} color="#f59e0b" />
+            <Text style={[styles.editText, { color: '#f59e0b' }]} numberOfLines={1}>Öne Çıkar</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={onEdit}
+            accessibilityRole="button"
+            accessibilityLabel="İlanı Düzenle"
+            style={({ pressed }) => [
+              styles.editBtn,
+              { borderColor: header },
+              pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
+            ]}
+          >
+            <Ionicons name="create-outline" size={16} color={header} />
+            <Text style={[styles.editText, { color: header }]} numberOfLines={1}>Düzenle</Text>
+          </Pressable>
         </View>
       ) : (
         <View style={styles.actions}>

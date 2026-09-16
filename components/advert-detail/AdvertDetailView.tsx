@@ -761,34 +761,6 @@ export function AdvertDetailView({
               {isOwner ? (
                 <>
                   <Pressable
-                    onPress={onEdit}
-                    accessibilityRole="button"
-                    accessibilityLabel="İlanı Düzenle"
-                    style={({ pressed }) => [
-                      styles.desktopTopEditBtn,
-                      { borderColor: border, backgroundColor: surface },
-                      pressed && { opacity: 0.88 },
-                    ]}
-                  >
-                    <Ionicons name="create-outline" size={16} color={text} />
-                    <Text style={[styles.desktopTopEditText, { color: text }]}>İlanı Düzenle</Text>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={onPromote}
-                    accessibilityRole="button"
-                    accessibilityLabel="Öne Çıkar"
-                    style={({ pressed }) => [
-                      styles.desktopTopEditBtn,
-                      { borderColor: '#f59e0b45', backgroundColor: '#f59e0b14' },
-                      pressed && { opacity: 0.88 },
-                    ]}
-                  >
-                    <Ionicons name="star-outline" size={16} color="#f59e0b" />
-                    <Text style={[styles.desktopTopEditText, { color: '#f59e0b' }]}>Öne Çıkar</Text>
-                  </Pressable>
-
-                  <Pressable
                     onPress={onTogglePublish}
                     disabled={isTogglingPublish}
                     accessibilityRole="button"
@@ -832,17 +804,44 @@ export function AdvertDetailView({
                   </Pressable>
 
                   <Pressable
-                    onPress={() => setIsShareModalOpen(true)}
+                    onPress={onPromote}
                     accessibilityRole="button"
-                    accessibilityLabel="İlanı Paylaş"
+                    accessibilityLabel="Öne Çıkar"
+                    style={({ pressed }) => [
+                      styles.desktopTopEditBtn,
+                      { borderColor: '#f59e0b45', backgroundColor: '#f59e0b14' },
+                      pressed && { opacity: 0.88 },
+                    ]}
+                  >
+                    <Ionicons name="star-outline" size={16} color="#f59e0b" />
+                    <Text style={[styles.desktopTopEditText, { color: '#f59e0b' }]}>Öne Çıkar</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={onEdit}
+                    accessibilityRole="button"
+                    accessibilityLabel="İlanı Düzenle"
                     style={({ pressed }) => [
                       styles.desktopTopEditBtn,
                       { borderColor: border, backgroundColor: surface },
                       pressed && { opacity: 0.88 },
                     ]}
                   >
-                    <Ionicons name="share-social-outline" size={16} color={text} />
-                    <Text style={[styles.desktopTopEditText, { color: text }]}>Paylaş</Text>
+                    <Ionicons name="create-outline" size={16} color={text} />
+                    <Text style={[styles.desktopTopEditText, { color: text }]}>İlanı Düzenle</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => setIsShareModalOpen(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel="İlanı Paylaş"
+                    style={({ pressed }) => [
+                      styles.desktopTopShareBtn,
+                      { borderColor: border, backgroundColor: surface, borderWidth: 1.5 },
+                      pressed && { opacity: 0.88 },
+                    ]}
+                  >
+                    <Ionicons name="share-social-outline" size={18} color={text} />
                   </Pressable>
                 </>
               ) : (

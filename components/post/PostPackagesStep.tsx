@@ -373,7 +373,7 @@ export function PostPackagesStep({
                     setCouponInput(val.toUpperCase());
                     if (couponError) setCouponError(null);
                   }}
-                  placeholder="Kupon Kodunu Giriniz (Örn: FIRSAT-1TVL)"
+                  placeholder="Kupon kodunu giriniz"
                   placeholderTextColor={muted}
                   autoCapitalize="characters"
                   style={[
@@ -586,9 +586,14 @@ export function PostPackagesStep({
             {campaignInfo && campaignInfo.discountMinor > 0 ? (
               <View style={styles.summaryRow}>
                 <View style={styles.summaryCouponBadgeRow}>
-                  <Ionicons name="sparkles" size={15} color={success} />
+                  <Ionicons name="sparkles" size={15} color={success} style={styles.summaryBadgeIcon} />
                   <Text style={[styles.summaryLabel, { color: success, fontWeight: '600' }]}>
-                    Kampanya İndirimi ({campaignInfo.campaign.name})
+                    Kampanya İndirimi
+                    {campaignInfo.campaign.name ? (
+                      <Text style={[styles.summarySubLabel, { color: success }]}>
+                        {` (${campaignInfo.campaign.name})`}
+                      </Text>
+                    ) : null}
                   </Text>
                 </View>
                 <Text style={[styles.summaryVal, { color: success, fontWeight: '700' }]}>
@@ -600,9 +605,14 @@ export function PostPackagesStep({
             {couponInfo && couponInfo.discountMinor > 0 ? (
               <View style={styles.summaryRow}>
                 <View style={styles.summaryCouponBadgeRow}>
-                  <Ionicons name="ticket" size={15} color={success} />
+                  <Ionicons name="ticket" size={15} color={success} style={styles.summaryBadgeIcon} />
                   <Text style={[styles.summaryLabel, { color: success, fontWeight: '600' }]}>
-                    Kupon İndirimi ({couponInfo.coupon.code})
+                    Kupon İndirimi
+                    {couponInfo.coupon.code ? (
+                      <Text style={[styles.summarySubLabel, { color: success }]}>
+                        {` (${couponInfo.coupon.code})`}
+                      </Text>
+                    ) : null}
                   </Text>
                 </View>
                 <Text style={[styles.summaryVal, { color: success, fontWeight: '700' }]}>
@@ -614,7 +624,7 @@ export function PostPackagesStep({
             {!campaignInfo && !couponInfo && totalDiscountMinor > 0 ? (
               <View style={styles.summaryRow}>
                 <View style={styles.summaryCouponBadgeRow}>
-                  <Ionicons name="pricetag" size={15} color={success} />
+                  <Ionicons name="pricetag" size={15} color={success} style={styles.summaryBadgeIcon} />
                   <Text style={[styles.summaryLabel, { color: success, fontWeight: '600' }]}>
                     İndirim Tutarı
                   </Text>
@@ -680,7 +690,8 @@ const styles = StyleSheet.create({
   /* Campaigns Banner */
   campaignBanner: {
     flex: 1,
-    minWidth: 280,
+    flexBasis: 260,
+    minWidth: 0,
     borderRadius: 16,
     borderWidth: 1,
     padding: Spacing.md,
@@ -706,17 +717,21 @@ const styles = StyleSheet.create({
   campaignItemTop: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 8,
   },
   campaignName: {
     ...Typography.small,
     fontWeight: '700',
+    flex: 1,
+    minWidth: 0,
   },
   campaignBadge: {
     backgroundColor: '#f59e0b',
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
+    flexShrink: 0,
   },
   campaignBadgeText: {
     color: '#ffffff',
@@ -730,7 +745,8 @@ const styles = StyleSheet.create({
   /* Coupon Section */
   couponSection: {
     flex: 1,
-    minWidth: 280,
+    flexBasis: 260,
+    minWidth: 0,
     borderRadius: 16,
     borderWidth: 1,
     padding: Spacing.md,
@@ -748,14 +764,17 @@ const styles = StyleSheet.create({
   },
   couponInputWrapper: {
     gap: 8,
+    width: '100%',
   },
   couponInputRow: {
     flexDirection: 'row',
     gap: 8,
     alignItems: 'center',
+    width: '100%',
   },
   couponTextInput: {
     flex: 1,
+    minWidth: 0,
     height: 44,
     borderWidth: 1,
     borderRadius: 10,
@@ -764,8 +783,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   applyCouponBtn: {
+    flexShrink: 0,
     height: 44,
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -787,6 +807,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 8,
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
@@ -796,13 +817,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     flex: 1,
+    minWidth: 0,
   },
   appliedTextCol: {
     gap: 2,
+    flex: 1,
+    minWidth: 0,
   },
   appliedCodeRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 8,
   },
   appliedCode: {
@@ -823,6 +848,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   removeCouponBtn: {
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -1015,18 +1041,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 10,
   },
   summaryLabel: {
     ...Typography.body,
+    flex: 1,
+    minWidth: 0,
   },
   summaryVal: {
     ...Typography.body,
     fontWeight: '600',
+    flexShrink: 0,
+    textAlign: 'right',
   },
   summaryCouponBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flex: 1,
+    minWidth: 0,
+  },
+  summaryBadgeIcon: {
+    flexShrink: 0,
+  },
+  summarySubLabel: {
+    fontSize: 13,
+    fontWeight: '400',
   },
   summaryDivider: {
     height: 1,
@@ -1036,10 +1076,14 @@ const styles = StyleSheet.create({
     ...Typography.body,
     fontWeight: '700',
     fontSize: 16,
+    flex: 1,
+    minWidth: 0,
   },
   summaryTotalVal: {
     fontSize: 22,
     fontWeight: '800',
+    flexShrink: 0,
+    textAlign: 'right',
   },
 });
 
