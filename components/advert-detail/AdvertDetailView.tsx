@@ -956,6 +956,7 @@ export function AdvertDetailView({
               <AdvertPedigree
                 pedigree={horse?.pedigree}
                 horseName={horse?.registeredName || detail?.title}
+                horseTjkNumber={horse?.tjkNumber}
                 sireFallback={horse?.sire}
                 damFallback={horse?.dam}
                 damsireFallback={horse?.damsire}

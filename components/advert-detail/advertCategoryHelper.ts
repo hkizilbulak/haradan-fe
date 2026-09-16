@@ -656,7 +656,14 @@ export function buildAdvertInfoRows(detail: AdvertDetail): AdvertInfoRow[] {
     }
   } else if (categoryKind === 'stud') {
     const studInfo = parseStudInfo(detail);
-    if (studInfo.name) list.push({ label: 'Aygır Adı', value: studInfo.name, icon: 'star-outline' });
+    if (studInfo.name) {
+      list.push({
+        label: 'Aygır Adı',
+        value: studInfo.name,
+        icon: 'star-outline',
+        onPress: () => openTjkHorseSearch(studInfo.name, detail.horse?.tjkNumber),
+      });
+    }
     if (studInfo.breed) list.push({ label: 'At Irkı', value: studInfo.breed, icon: 'ribbon-outline' });
     if (studInfo.age) list.push({ label: 'Yaş', value: studInfo.age, icon: 'hourglass-outline' });
     list.push({ label: 'Cinsiyet', value: studInfo.gender || 'Erkek', icon: 'male-female-outline' });
@@ -714,6 +721,7 @@ export function buildAdvertInfoRows(detail: AdvertDetail): AdvertInfoRow[] {
       label: 'At Adı',
       value: horseInfo.name,
       icon: 'star-outline',
+      onPress: horseInfo.name && horseInfo.name !== '-' ? () => openTjkHorseSearch(horseInfo.name, detail.horse?.tjkNumber) : undefined,
     });
 
     // Baba Adı

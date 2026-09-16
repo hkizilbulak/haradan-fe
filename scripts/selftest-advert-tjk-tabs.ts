@@ -196,27 +196,45 @@ assert.equal(mappedAdvert.horse.detailProfile?.owner, 'HÜSEYİN KÖKLÜ (%100)'
 
 console.log('✓ mapPublishedDetailToAdvert populated AdvertDetail.horse with rich TJK data.');
 
-// 4. Test getTjkHorseUrl for direct TJK querying
-import { getTjkHorseUrl } from '../utils/tjkLinks';
+// 4. Test getTjkHorseUrl and getTjkHorseDetailUrl
+import { getTjkHorseUrl, getTjkHorseDetailUrl } from '../utils/tjkLinks';
 
 assert.equal(
+  getTjkHorseDetailUrl('99137'),
+  'https://www.tjk.org/TR/YarisSever/Query/ConnectedPage/AtKosuBilgileri?1=1&QueryParameter_AtId=99137'
+);
+assert.equal(getTjkHorseDetailUrl(null), null);
+assert.equal(getTjkHorseDetailUrl('-'), null);
+
+// Passing AtId directly to getTjkHorseUrl produces direct detail page
+assert.equal(
+  getTjkHorseUrl('TURBO', '99137'),
+  'https://www.tjk.org/TR/YarisSever/Query/ConnectedPage/AtKosuBilgileri?1=1&QueryParameter_AtId=99137'
+);
+assert.equal(
+  getTjkHorseUrl('99137'),
+  'https://www.tjk.org/TR/YarisSever/Query/ConnectedPage/AtKosuBilgileri?1=1&QueryParameter_AtId=99137'
+);
+
+// Fallback to name search when AtId is absent (includes QueryParameter_OLDUFLG=on for deceased ancestors)
+assert.equal(
   getTjkHorseUrl('SRI PEKAN'),
-  'https://www.tjk.org/TR/YarisSever/Query/Page/Atlar?1=1&QueryParameter_AtIsmi=SRI%20PEKAN'
+  'https://www.tjk.org/TR/YarisSever/Query/Page/Atlar?1=1&QueryParameter_AtIsmi=SRI%20PEKAN&QueryParameter_OLDUFLG=on'
 );
 assert.equal(
   getTjkHorseUrl('SRI PEKAN (USA) d a (1992)'),
-  'https://www.tjk.org/TR/YarisSever/Query/Page/Atlar?1=1&QueryParameter_AtIsmi=SRI%20PEKAN'
+  'https://www.tjk.org/TR/YarisSever/Query/Page/Atlar?1=1&QueryParameter_AtIsmi=SRI%20PEKAN&QueryParameter_OLDUFLG=on'
 );
 assert.equal(
   getTjkHorseUrl('AĞA KARACA k a (1995)'),
-  'https://www.tjk.org/TR/YarisSever/Query/Page/Atlar?1=1&QueryParameter_AtIsmi=A%C4%9EA%20KARACA'
+  'https://www.tjk.org/TR/YarisSever/Query/Page/Atlar?1=1&QueryParameter_AtIsmi=A%C4%9EA%20KARACA&QueryParameter_OLDUFLG=on'
 );
 assert.equal(
   getTjkHorseUrl('ADAGÜLÜ kk (2004)'),
-  'https://www.tjk.org/TR/YarisSever/Query/Page/Atlar?1=1&QueryParameter_AtIsmi=ADAG%C3%9CL%C3%9C'
+  'https://www.tjk.org/TR/YarisSever/Query/Page/Atlar?1=1&QueryParameter_AtIsmi=ADAG%C3%9CL%C3%9C&QueryParameter_OLDUFLG=on'
 );
 assert.equal(getTjkHorseUrl('-'), null);
 assert.equal(getTjkHorseUrl(''), null);
-console.log('✓ getTjkHorseUrl correctly cleans names and generates official TJK query URLs.');
+console.log('✓ getTjkHorseUrl and getTjkHorseDetailUrl correctly generate official TJK detail and query URLs.');
 
 console.log('\nAll TJK data mapping and synchronization tests PASSED! 🎉');

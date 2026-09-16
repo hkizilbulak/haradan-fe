@@ -555,6 +555,7 @@ export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
                   <AdvertPedigree
                     pedigree={detail.horse?.pedigree}
                     horseName={detail.horse?.registeredName || detail.title}
+                    horseTjkNumber={detail.horse?.tjkNumber}
                     sireFallback={detail.horse?.sire}
                     damFallback={detail.horse?.dam}
                     damsireFallback={detail.horse?.damsire}

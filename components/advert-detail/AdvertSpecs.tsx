@@ -29,8 +29,8 @@ import {
   parseTransportInfo,
 } from './advertCategoryHelper';
 
-import { getTjkHorseUrl, openTjkHorseSearch } from '@/utils/tjkLinks';
-export { getTjkHorseUrl, openTjkHorseSearch };
+import { getTjkHorseUrl, getTjkHorseDetailUrl, openTjkHorseSearch } from '@/utils/tjkLinks';
+export { getTjkHorseUrl, getTjkHorseDetailUrl, openTjkHorseSearch };
 
 export type SpecsSubTab = 'specs' | 'pedigree' | 'siblings' | 'statistics';
 
@@ -520,6 +520,7 @@ export const AdvertSpecs = memo(function AdvertSpecs({
         <AdvertPedigree
           pedigree={horse?.pedigree}
           horseName={horse?.registeredName || detail?.title}
+          horseTjkNumber={horse?.tjkNumber}
           sireFallback={horse?.sire}
           damFallback={horse?.dam}
           damsireFallback={horse?.damsire}

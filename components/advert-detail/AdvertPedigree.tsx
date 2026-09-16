@@ -17,6 +17,7 @@ import { openTjkHorseSearch } from './AdvertSpecs';
 type AdvertPedigreeProps = {
   pedigree?: PedigreeEntry[];
   horseName?: string;
+  horseTjkNumber?: string;
   sireFallback?: string;
   damFallback?: string;
   damsireFallback?: string;
@@ -93,6 +94,7 @@ function parsePedigreeNode(
 export const AdvertPedigree = memo(function AdvertPedigree({
   pedigree,
   horseName,
+  horseTjkNumber,
   sireFallback,
   damFallback,
   damsireFallback,
@@ -208,10 +210,12 @@ export const AdvertPedigree = memo(function AdvertPedigree({
 
     const hasMeta = Boolean(node.year || node.coat || node.country);
 
+    const isClickable = isValid && (!isRoot || Boolean(horseTjkNumber));
+
     return (
       <Pressable
-        onPress={() => isValid && !isRoot && openTjkHorseSearch(node.name || node.raw)}
-        disabled={!isValid || isRoot}
+        onPress={() => isClickable && openTjkHorseSearch(node.name || node.raw, isRoot ? horseTjkNumber : undefined)}
+        disabled={!isClickable}
         accessibilityRole="button"
         accessibilityLabel={`${node.role}: ${node.name}`}
         style={({ pressed }) => [
@@ -225,7 +229,7 @@ export const AdvertPedigree = memo(function AdvertPedigree({
             borderColor: isValid ? cardBorderColor : border,
             opacity: isValid ? 1 : 0.45,
           },
-          isValid && !isRoot && {
+          isClickable && {
             borderLeftWidth: 3,
             borderLeftColor: accentColor,
             ...Platform.select({
@@ -236,7 +240,7 @@ export const AdvertPedigree = memo(function AdvertPedigree({
               default: {},
             }),
           },
-          pressed && isValid && !isRoot && {
+          pressed && isClickable && {
             transform: [{ scale: 0.98 }],
             opacity: 0.85,
           },
@@ -270,7 +274,7 @@ export const AdvertPedigree = memo(function AdvertPedigree({
             <Text style={[styles.dGenBadge, { color: textSecondary }]}>%25</Text>
           )}
 
-          {isValid && !isRoot ? (
+          {isClickable ? (
             <Ionicons
               name="open-outline"
               size={9.5}
