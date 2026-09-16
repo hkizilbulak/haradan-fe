@@ -28,6 +28,7 @@
     "selftest:listings-requests": "npx --yes tsx scripts/selftest-listings-requests.ts",
     "selftest:favorites": "npx --yes tsx scripts/selftest-favorites.ts",
     "selftest:my-listings": "npx --yes tsx scripts/selftest-my-listings.ts",
+    "selftest:my-listings-no-districts-spam": "npx --yes tsx scripts/selftest-my-listings-no-districts-spam.ts",
     "selftest:adverts-search": "npx --yes tsx scripts/selftest-adverts-search.ts",
     "selftest:advert-properties": "npx --yes tsx scripts/selftest-advert-properties.ts",
     "selftest:advert-detail-specs": "npx --yes tsx scripts/selftest-advert-detail-specs.ts",

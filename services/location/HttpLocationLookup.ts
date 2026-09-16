@@ -161,6 +161,7 @@ export class HttpLocationLookup implements ILocationLookup {
       });
       this.provinces = items;
       this.provincesFetchedAt = Date.now();
+      this.notifyListeners();
       return items;
     } catch {
       return await this.staticLookup.listProvinces();
@@ -211,15 +212,16 @@ export class HttpLocationLookup implements ILocationLookup {
         this.districtNames.set(d.id.toLowerCase(), d.name);
         this.staticLookup.registerDistrict(d.id, d.name, d.provinceId);
       });
+      const resolved = items.length > 0 ? items : await this.staticLookup.listDistricts(cleanId);
+      this.districtsByProvince.set(targetProvinceId, resolved);
+      this.districtsByProvince.set(cleanId, resolved);
       this.notifyListeners();
-      if (items.length > 0) {
-        this.districtsByProvince.set(targetProvinceId, items);
-        this.districtsByProvince.set(cleanId, items);
-        return items;
-      }
-      return await this.staticLookup.listDistricts(cleanId);
+      return resolved;
     } catch {
-      return await this.staticLookup.listDistricts(cleanId);
+      const fallback = await this.staticLookup.listDistricts(cleanId);
+      this.districtsByProvince.set(targetProvinceId, fallback);
+      this.districtsByProvince.set(cleanId, fallback);
+      return fallback;
     }
   }
 }

@@ -147,7 +147,6 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
     (contentWidth - pad * 2 - gap * (cols - 1)) / cols
   );
 
-  const [locationTick, setLocationTick] = useState(0);
   const allItems = useMemo(
     () => [
       ...byTab.published,
@@ -164,27 +163,8 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
   }, [remember, allItems]);
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const provinces = await locationLookup.listProvinces();
-        const needed = new Set(
-          allItems.map((i) => i.provinceId).filter(Boolean)
-        );
-        await Promise.all(
-          provinces
-            .filter((p) => needed.has(p.id))
-            .map((p) => locationLookup.listDistricts(p.id))
-        );
-        if (!cancelled) setLocationTick((n) => n + 1);
-      } catch {
-        /* konum isimleri opsiyonel */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [allItems]);
+    void locationLookup.listProvinces().catch(() => {});
+  }, []);
 
   const postAd = () => {
     prepareListingWizardEntry();
@@ -308,7 +288,7 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
 
     return (
       <FeaturedListingCard
-        key={`${item.id}-${locationTick}`}
+        key={item.id}
         product={item}
         width={colWidth}
         compact={!isWide}

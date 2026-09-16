@@ -45,7 +45,10 @@ export function useAdvertLocation(input?: AdvertLocationInput | null): string {
       Boolean(input.districtName?.trim());
 
     if (!hasNames && input.provinceId) {
-      void locationLookup.listDistricts(input.provinceId).catch(() => {});
+      void locationLookup.listProvinces().catch(() => {});
+      if (input.districtId) {
+        void locationLookup.listDistricts(input.provinceId).catch(() => {});
+      }
     }
 
     if (locationLookup.subscribe) {

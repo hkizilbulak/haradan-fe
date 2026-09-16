@@ -50,6 +50,7 @@ export function getListingCardAttributes(
       gender: null,
       age: null,
       breed: null,
+      height: null,
       serviceCategory: null,
     };
   }
@@ -340,7 +341,7 @@ export function useListingCardAttributes(
     if (!product) return;
 
     if (!product.provinceName && product.provinceId) {
-      void locationLookup.listDistricts(product.provinceId).catch(() => {});
+      void locationLookup.listProvinces().catch(() => {});
     }
 
     if (locationLookup.subscribe) {
