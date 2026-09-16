@@ -232,7 +232,7 @@ export function AdvertDetailView({
         borderColor: 'rgba(239, 68, 68, 0.35)',
         bgColor: 'rgba(239, 68, 68, 0.08)',
         iconCircleBg: 'rgba(239, 68, 68, 0.16)',
-        showEditAction: true,
+        showEditAction: false,
       };
     }
 
@@ -249,7 +249,7 @@ export function AdvertDetailView({
         borderColor: 'rgba(245, 158, 11, 0.35)',
         bgColor: 'rgba(245, 158, 11, 0.08)',
         iconCircleBg: 'rgba(245, 158, 11, 0.16)',
-        showEditAction: true,
+        showEditAction: false,
       };
     }
 
