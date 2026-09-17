@@ -261,6 +261,7 @@ export class MockMyListingsRepository implements IMyListingsRepository {
       ...items[index],
       status: 'sold',
       backendStatus: 'ARCHIVED',
+      rejectionReason: 'Kullanıcı kendi kaldırmıştır',
       updatedAt: now,
       version: currentVersion + 1,
     };

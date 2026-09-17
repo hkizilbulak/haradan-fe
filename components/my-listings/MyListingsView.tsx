@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -66,6 +69,7 @@ type MyListingsViewProps = {
 export function MyListingsView({ accessToken }: MyListingsViewProps) {
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const [refreshing, setRefreshing] = useState(false);
   const isWide = useIsWideLayout();
   const safeInsets = useSafeInsets();
   const dockPad = mobileDockScrollInset(safeInsets.bottom);
@@ -170,6 +174,51 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
     prepareListingWizardEntry();
     router.push('/post');
   };
+
+  const spinAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (refreshing) {
+      const loop = Animated.loop(
+        Animated.timing(spinAnim, {
+          toValue: 1,
+          duration: 750,
+          easing: Easing.linear,
+          useNativeDriver: Platform.OS !== 'web',
+        })
+      );
+      loop.start();
+      return () => {
+        loop.stop();
+        spinAnim.setValue(0);
+      };
+    } else {
+      spinAnim.setValue(0);
+    }
+  }, [refreshing, spinAnim]);
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const handleRefresh = useCallback(async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    setDeleteError(null);
+    setSoldError(null);
+    try {
+      await Promise.all([
+        published.refetch(),
+        pending.refetch(),
+        rejected.refetch(),
+        drafts.refetch(),
+        sold.refetch(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshing, published, pending, rejected, drafts, sold]);
 
   const requestRemoveItem = useCallback(
     (id: AdvertId) => {
@@ -437,9 +486,31 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
               </Text>
             </View>
             <View style={styles.headerBtnWrapper}>
-              <Button onPress={postAd} variant="primary" size="md">
-                + Yeni İlan Ver
-              </Button>
+              <Pressable
+                onPress={handleRefresh}
+                disabled={refreshing}
+                accessibilityRole="button"
+                accessibilityLabel="Sayfayı yenile"
+                style={({ pressed }) => [
+                  styles.refreshBtn,
+                  {
+                    backgroundColor: surface,
+                    borderColor: border,
+                  },
+                  pressed && { opacity: 0.7, backgroundColor: border },
+                  Platform.select({
+                    web: {
+                      cursor: refreshing ? 'default' : 'pointer',
+                      transition: 'all 0.2s ease',
+                    } as any,
+                    default: {},
+                  }),
+                ]}
+              >
+                <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                  <Ionicons name="refresh" size={20} color={text} />
+                </Animated.View>
+              </Pressable>
             </View>
           </View>
 
@@ -555,6 +626,14 @@ const styles = StyleSheet.create({
   },
   headerBtnWrapper: {
     paddingBottom: Spacing.xs,
+  },
+  refreshBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   kicker: {
     ...Typography.caption,

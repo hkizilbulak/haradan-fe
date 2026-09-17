@@ -222,10 +222,8 @@ export function AdvertDetailView({
     if (isRejected) {
       return {
         type: 'rejected',
-        title: 'Bu İlan Reddedilmiştir',
-        subtitle: rejectionReason
-          ? `Reddedilme Nedeni: ${rejectionReason}`
-          : 'İlanınız moderasyon incelemesinde kurallara uygun bulunmadığı için onaylanmamıştır. İlan detaylarını düzenleyerek tekrar onaya gönderebilirsiniz.',
+        title: 'Red Nedeni',
+        subtitle: rejectionReason || 'Bu ilan moderasyon tarafından onaylanmadı.',
         icon: 'close-circle' as const,
         iconColor: '#ef4444',
         accentColor: '#ef4444',
@@ -833,9 +831,58 @@ export function AdvertDetailView({
             ))}
           </View>
 
-          <Text style={[styles.title, { color: text }]}>{detail.title}</Text>
+          {/* Başlık ve Masaüstü Red Nedeni / Üst Aksiyon */}
+          <View style={styles.desktopTitleRow}>
+            <View style={styles.desktopTitleCol}>
+              <Text style={[styles.title, { color: text, marginBottom: 0 }]}>
+                {detail.title}
+              </Text>
+            </View>
+            {(isRejected || isChangesRequested) && noticeBannerConfig ? (
+              <View style={styles.desktopTitleActionCol}>
+                <View
+                  style={[
+                    styles.unpublishedNoticeBanner,
+                    styles.rejectionReasonBanner,
+                    {
+                      borderColor: noticeBannerConfig.borderColor,
+                      backgroundColor: noticeBannerConfig.bgColor,
+                    },
+                  ]}
+                >
+                  <View style={styles.rejectionReasonHeader}>
+                    <Ionicons
+                      name={noticeBannerConfig.icon}
+                      size={16}
+                      color={noticeBannerConfig.iconColor}
+                    />
+                    <Text
+                      style={[
+                        styles.rejectionReasonTitle,
+                        { color: noticeBannerConfig.accentColor },
+                      ]}
+                    >
+                      {isRejected ? 'Red Nedeni' : 'Düzeltme Talebi'}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.rejectionReasonText,
+                      { color: text },
+                    ]}
+                  >
+                    {rejectionReason ||
+                      detail.rejectionReason ||
+                      (isRejected
+                        ? 'Bu ilan moderasyon tarafından onaylanmadı.'
+                        : 'Lütfen ilan detaylarını düzenleyiniz.')}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+          </View>
 
-          {noticeBannerConfig ? (
+          {noticeBannerConfig && !isRejected && !isChangesRequested ? (
             <View
               style={[
                 styles.unpublishedNoticeBanner,
@@ -1601,6 +1648,50 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#9ca3af',
     lineHeight: 18,
+  },
+  desktopTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: Spacing.xl,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  desktopTitleCol: {
+    flex: 1.15,
+    minWidth: 0,
+    justifyContent: 'flex-end',
+  },
+  desktopTitleActionCol: {
+    flex: 0.85,
+    minWidth: 0,
+  },
+  rejectionReasonBanner: {
+    marginTop: 0,
+    marginBottom: 0,
+    flex: 1,
+    height: '100%',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  rejectionReasonHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  rejectionReasonTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  rejectionReasonText: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500',
   },
   unpublishedNoticeBannerMobile: {
     flexDirection: 'row',
