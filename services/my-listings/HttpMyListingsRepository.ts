@@ -102,8 +102,11 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
       backendStatus: dto.status,
       rejectionReason:
         (dto as any).rejectionReason ??
+        (dto as any).suspensionReason ??
         (dto.properties as any)?.rejectionReason ??
         (dto.properties as any)?.rejection_reason ??
+        (dto.properties as any)?.suspensionReason ??
+        (dto.properties as any)?.suspension_reason ??
         (dto.properties as any)?.rejectReason ??
         null,
     };

@@ -283,11 +283,20 @@ export function AdvertDetailView({
       };
     }
 
-    // ARCHIVED / Yayından Kaldırılmıştır
+    // ARCHIVED / SUSPENDED - Yayından Kaldırılmıştır
+    const isPackageExpired = Boolean(
+      rejectionReason?.toLowerCase().includes('paket süresi') ||
+      rejectionReason?.toLowerCase().includes('package_expired')
+    );
+
     return {
       type: 'archived',
       title: 'Bu İlan Yayından Kaldırılmıştır',
-      subtitle: 'İlan şu an tamamen gizlidir; arama sonuçlarında, vitrinde ve kategori listelerinde kimseye görünmez. Yalnızca siz görüntüleyebilirsiniz.',
+      subtitle: isPackageExpired
+        ? 'Paket süresi bitmiştir. İlanınızın yayın süresi dolduğu için otomatik olarak yayından kaldırılmıştır.'
+        : rejectionReason
+        ? `Yayından Kaldırılma Nedeni: ${rejectionReason}`
+        : 'İlan şu an tamamen gizlidir; arama sonuçlarında, vitrinde ve kategori listelerinde kimseye görünmez. Yalnızca siz görüntüleyebilirsiniz.',
       icon: 'eye-off' as const,
       iconColor: '#ef4444',
       accentColor: '#ef4444',
@@ -1162,7 +1171,11 @@ export function AdvertDetailView({
               </View>
               <View style={styles.buyCol}>
                 <AdvertBuyBox
-                  detail={detail}
+                  detail={{
+                    ...detail,
+                    rejectionReason: rejectionReason || detail.rejectionReason,
+                    backendStatus: backendStatus || detail.backendStatus,
+                  }}
                   variant="default"
                   favorite={favorite}
                   isOwner={isOwner}
