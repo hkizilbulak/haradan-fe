@@ -2,6 +2,8 @@ import { isAllowedImageFormat, resolveImageMimeType } from '../utils/mediaValida
 import { detailsErrors, detailsStepComplete } from '../services/listing/validateListingDraft';
 import type { ListingDraft } from '../types/listing';
 
+import { createEmptyDraft } from '../services/listing/listingDraftStore';
+
 function assert(condition: boolean, msg: string) {
   if (!condition) throw new Error(`Assertion failed: ${msg}`);
   console.log(`ok  ${msg}`);
@@ -23,20 +25,21 @@ assert(resolveImageMimeType(undefined, 'x.webp') === 'image/webp', 'Filename ext
 assert(resolveImageMimeType(undefined, 'x.png') === 'image/png', 'Filename extension png resolved');
 
 const draftWithGif: ListingDraft = {
-  advertId: null,
-  type: 'satilik-yaris-ati',
-  breed: null,
-  selectedPackage: null,
-  packageCode: 'STANDARD',
-  tjkApplied: false,
+  ...createEmptyDraft(),
+  type: {
+    categoryId: 'cat-1',
+    categorySlug: 'satilik-yaris-ati',
+    categoryName: 'Satılık Yarış Atı',
+    parentSlug: null,
+  },
   details: {
+    ...createEmptyDraft().details,
     title: 'Test Başlık',
     description: 'Açıklama',
     priceTl: '150000',
     provinceId: '34',
     districtId: '123',
     address: 'Açık adres burada',
-    gender: null,
     sellerPhone: '5551112233',
     phoneCountryIso: 'TR',
   },

@@ -134,8 +134,8 @@ export function AdvertDetailView({
   const isArchived =
     backendStatus === 'ARCHIVED' ||
     backendStatus === 'SUSPENDED' ||
-    detail.status === 'archived' ||
-    detail.status === 'suspended' ||
+    backendStatus === 'archived' ||
+    backendStatus === 'suspended' ||
     (!isPublished && !isRejected && !isPendingReview && !isChangesRequested && !isSoldStatus && backendStatus !== 'DRAFT');
   const canTogglePublish =
     (isPublished || backendStatus === 'ARCHIVED') &&

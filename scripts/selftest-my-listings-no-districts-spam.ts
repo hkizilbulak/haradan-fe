@@ -67,7 +67,7 @@ async function runTest() {
       provinceId: 'c6cb4581-16fa-5faf-a4be-4c903baea061', // Afyonkarahisar
       districtId: 'dist-03-mer',
     },
-  ];
+  ] as unknown as CatalogProductCard[];
 
   // 1. Trigger listProvinces once as MyListingsView does
   await lookup.listProvinces();

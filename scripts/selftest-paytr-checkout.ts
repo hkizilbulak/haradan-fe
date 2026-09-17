@@ -1,8 +1,5 @@
-/**
- * PayTR checkout contract self-test (FE types + wizard flag wiring).
- * Run: npm run selftest:paytr-checkout
- */
 import fs from 'fs';
+import path from 'path';
 import { isPaytrCheckoutEnabled } from '../constants/Paytr';
 import type { PaytrChargeStatus, PaytrCheckoutResult } from '../types/paytr';
 
@@ -48,7 +45,7 @@ const status: PaytrChargeStatus = {
 assert(status.status === 'SUCCEEDED', 'succeeded status');
 
 const paytrConst = fs.readFileSync(
-  new URL('../constants/Paytr.ts', import.meta.url),
+  path.resolve(process.cwd(), 'constants/Paytr.ts'),
   'utf8'
 );
 assert(
@@ -57,20 +54,20 @@ assert(
 );
 assert(
   !/export function isPaytrCheckoutEnabled\(\)[\s\S]*?return false;/.test(
-    paytrConst
+    String(paytrConst)
   ),
   'checkout is not hard-disabled'
 );
 
 const paymentStep = fs.readFileSync(
-  new URL('../components/post/PostPaymentStep.tsx', import.meta.url),
+  path.resolve(process.cwd(), 'components/post/PostPaymentStep.tsx'),
   'utf8'
 );
 assert(paymentStep.includes('paytriframe'), 'payment step embeds PayTR iframe');
 assert(paymentStep.includes('amountMinor'), 'payment step shows amount');
 
 const wizard = fs.readFileSync(
-  new URL('../hooks/useListingWizard.ts', import.meta.url),
+  path.resolve(process.cwd(), 'hooks/useListingWizard.ts'),
   'utf8'
 );
 assert(wizard.includes('startPaytrCheckout'), 'wizard starts PayTR checkout');

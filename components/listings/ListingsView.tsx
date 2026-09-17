@@ -86,6 +86,7 @@ export type ListingsQuery = {
   min?: string | null;
   max?: string | null;
   urgent?: string | null;
+  showcase?: string | null;
   period?: string | null;
   facilities?: string | null;
   breeds?: string | null;

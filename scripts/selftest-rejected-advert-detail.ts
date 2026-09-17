@@ -67,12 +67,13 @@ assert.strictEqual(fallbackName, 'Satılık Yarış Atı', 'Fallback category de
 console.log('ok  even with empty categoryId, breadcrumb parsing filters out İlanlarım');
 
 // 5. Action logic checks
-const isPublished = detail.backendStatus === 'PUBLISHED';
-const isRejected = detail.backendStatus === 'REJECTED';
-const isPendingReview = detail.backendStatus === 'PENDING_REVIEW';
-const isChangesRequested = detail.backendStatus === 'CHANGES_REQUESTED';
-const isArchived = detail.backendStatus === 'ARCHIVED';
-const isSold = detail.backendStatus === 'SOLD';
+const backendStatus = detail.backendStatus as string | null;
+const isPublished = backendStatus === 'PUBLISHED';
+const isRejected = backendStatus === 'REJECTED';
+const isPendingReview = backendStatus === 'PENDING_REVIEW';
+const isChangesRequested = backendStatus === 'CHANGES_REQUESTED';
+const isArchived = backendStatus === 'ARCHIVED';
+const isSold = backendStatus === 'SOLD';
 const canTogglePublish = (isPublished || isArchived) && !isRejected && !isPendingReview && !isChangesRequested && !isSold;
 
 assert.strictEqual(isPublished, false, 'Rejected advert is not published');

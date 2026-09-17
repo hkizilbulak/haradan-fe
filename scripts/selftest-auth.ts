@@ -117,6 +117,10 @@ const registered = await repo.register({
   password: 'Password1',
   firstName: 'Ada',
   lastName: 'Lovelace',
+  termsAccepted: true,
+  kvkkAccepted: true,
+  channel: 'web',
+  userAgent: 'test',
 });
 assertEqual(
   registered.message,
@@ -129,8 +133,8 @@ const registerBody = JSON.parse(String(registerCall?.init.body));
 assertEqual(registerBody.password, 'Password1', 'register sends password');
 assertEqual(
   Object.keys(registerBody).sort().join(','),
-  'email,firstName,lastName,password',
-  'register body matches OpenAPI (no extra fields)'
+  'channel,email,firstName,kvkkAccepted,lastName,password,termsAccepted,userAgent',
+  'register body matches OpenAPI'
 );
 
 calls.length = 0;
@@ -143,6 +147,10 @@ const duplicate = await repo.register({
   password: 'Password1',
   firstName: 'Ada',
   lastName: 'Lovelace',
+  termsAccepted: true,
+  kvkkAccepted: true,
+  channel: 'web',
+  userAgent: 'test',
 });
 assertEqual(duplicate.message, registered.message, 'duplicate register still 201');
 
@@ -307,6 +315,10 @@ try {
     password: 'short',
     firstName: 'A',
     lastName: 'B',
+    termsAccepted: true,
+    kvkkAccepted: true,
+    channel: 'web',
+    userAgent: 'test',
   });
   assert(false, 'short password should throw');
 } catch (err) {

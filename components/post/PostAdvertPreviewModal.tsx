@@ -127,14 +127,14 @@ function buildSpecsFromDraft(draft: ListingDraft): AdvertSpecGroup[] {
     if (d.companyName) rows.push({ label: 'Firma Adı', value: d.companyName });
     if (d.websiteUrl) rows.push({ label: 'Web Sitesi', value: d.websiteUrl });
   } else if (isStud) {
-    if (d.studHorseName || d.registeredName) rows.push({ label: 'Aygır Adı', value: d.studHorseName || d.registeredName });
-    if (d.studBreed || d.breed) rows.push({ label: 'At Irkı', value: d.studBreed || d.breed });
+    if (d.studHorseName || d.registeredName) rows.push({ label: 'Aygır Adı', value: String(d.studHorseName || d.registeredName) });
+    if (d.studBreed || d.breed) rows.push({ label: 'At Irkı', value: String(d.studBreed || d.breed) });
     if (d.studAge || d.age) rows.push({ label: 'Yaş', value: String(d.studAge || d.age) });
     rows.push({ label: 'Cinsiyet', value: 'Erkek' });
-    if (d.studCoatColor || d.coatColor) rows.push({ label: 'Donu', value: d.studCoatColor || d.coatColor });
-    if (d.studSire || d.sire) rows.push({ label: 'Baba Adı', value: d.studSire || d.sire });
-    if (d.studDam || d.dam) rows.push({ label: 'Anne Adı', value: d.studDam || d.dam });
-    if (d.studDamsire || d.damsire) rows.push({ label: 'Annesinin Baba Adı', value: d.studDamsire || d.damsire || '' });
+    if (d.studCoatColor || d.coatColor) rows.push({ label: 'Donu', value: String(d.studCoatColor || d.coatColor) });
+    if (d.studSire || d.sire) rows.push({ label: 'Baba Adı', value: String(d.studSire || d.sire) });
+    if (d.studDam || d.dam) rows.push({ label: 'Anne Adı', value: String(d.studDam || d.dam) });
+    if (d.studDamsire || d.damsire) rows.push({ label: 'Annesinin Baba Adı', value: String(d.studDamsire || d.damsire || '') });
   } else if (isHorse) {
     if (d.registeredName) rows.push({ label: 'At Adı', value: d.registeredName });
     if (d.tjkNumber) rows.push({ label: 'TJK No', value: d.tjkNumber });

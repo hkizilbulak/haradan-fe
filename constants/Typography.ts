@@ -20,6 +20,11 @@ export const Typography = {
     fontWeight: '600',
     lineHeight: 26,
   },
+  h4: {
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 24,
+  },
   h5: {
     fontSize: 15,
     fontWeight: '600',

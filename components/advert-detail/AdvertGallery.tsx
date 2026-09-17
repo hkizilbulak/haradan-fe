@@ -179,7 +179,7 @@ export const AdvertGallery = memo(function AdvertGallery({
                 styles.slide,
                 { width: slideWidth, height: '100%' },
                 Platform.select({
-                  web: { cursor: 'zoom-in' as const },
+                  web: { cursor: 'zoom-in' as any },
                   default: {},
                 }),
               ]}
