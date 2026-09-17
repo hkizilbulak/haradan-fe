@@ -56,13 +56,16 @@ assert(soldCardFallback.soldAt !== null, 'soldAt fallback to updatedAt when DTO 
 assert(toMyListingTab('SOLD') === 'sold', 'SOLD → sold tab');
 assert(toMyListingTab('PUBLISHED') === 'published', 'PUBLISHED → published tab');
 assert(toMyListingTab('ARCHIVED') === 'sold', 'ARCHIVED → sold tab (Yayından Kaldırılanlar)');
+assert(toMyListingTab('SUSPENDED') === 'sold', 'SUSPENDED → sold tab (Yayından Kaldırılanlar)');
 
 // ── backendStatusesForTab ─────────────────────────────────────────────────
 
 assert(backendStatusesForTab('sold').includes('SOLD'), 'sold tab fetches SOLD status');
 assert(backendStatusesForTab('sold').includes('ARCHIVED'), 'sold tab fetches ARCHIVED status');
+assert(backendStatusesForTab('sold').includes('SUSPENDED'), 'sold tab fetches SUSPENDED status');
 assert(backendStatusesForTab('published').includes('PUBLISHED'), 'published tab fetches PUBLISHED');
 assert(!backendStatusesForTab('published').includes('SOLD'), 'published tab does NOT fetch SOLD');
+assert(!backendStatusesForTab('published').includes('SUSPENDED'), 'published tab does NOT fetch SUSPENDED');
 
 // ── MockMyListingsRepository.markSold ─────────────────────────────────────
 

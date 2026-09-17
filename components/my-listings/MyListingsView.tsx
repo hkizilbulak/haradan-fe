@@ -328,8 +328,7 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
       isDraftTab ||
       item.status === 'draft' ||
       item.backendStatus === 'DRAFT' ||
-      item.backendStatus === 'CHANGES_REQUESTED' ||
-      item.backendStatus === 'SUSPENDED';
+      item.backendStatus === 'CHANGES_REQUESTED';
     const isRejected =
       isRejectedTab ||
       item.status === 'rejected' ||

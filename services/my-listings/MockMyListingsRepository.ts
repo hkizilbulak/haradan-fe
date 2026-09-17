@@ -16,6 +16,7 @@ import type {
   MyListingEditPayload,
 } from './MyListingsRepository';
 import { mapAdvertToListingDraft } from './mapAdvertToListingDraft';
+import { toMyListingTab } from './statusTabs';
 import {
   getOrCreateMockDraft,
   isBrowserStore,
@@ -100,7 +101,13 @@ export class MockMyListingsRepository implements IMyListingsRepository {
     const items = this.getItems();
     return {
       items: items
-        .filter((item) => item.status === status)
+        .filter((item) => {
+          const tab = item.backendStatus ? toMyListingTab(item.backendStatus) : item.status;
+          if (status === 'sold') {
+            return tab === 'sold' || (item as any).status === 'archived' || (item as any).status === 'suspended';
+          }
+          return tab === status;
+        })
         .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)),
     };
   }

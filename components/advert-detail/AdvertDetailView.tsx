@@ -130,10 +130,15 @@ export function AdvertDetailView({
   const isRejected = backendStatus === 'REJECTED';
   const isPendingReview = backendStatus === 'PENDING_REVIEW';
   const isChangesRequested = backendStatus === 'CHANGES_REQUESTED';
-  const isArchived = backendStatus === 'ARCHIVED';
   const isSoldStatus = backendStatus === 'SOLD';
+  const isArchived =
+    backendStatus === 'ARCHIVED' ||
+    backendStatus === 'SUSPENDED' ||
+    detail.status === 'archived' ||
+    detail.status === 'suspended' ||
+    (!isPublished && !isRejected && !isPendingReview && !isChangesRequested && !isSoldStatus && backendStatus !== 'DRAFT');
   const canTogglePublish =
-    (isPublished || isArchived) &&
+    (isPublished || backendStatus === 'ARCHIVED') &&
     !isRejected &&
     !isPendingReview &&
     !isChangesRequested &&
@@ -235,12 +240,15 @@ export function AdvertDetailView({
     }
 
     if (isChangesRequested) {
+      const cleanChangesReason = (rejectionReason || detail.rejectionReason || '')
+        .replace(/^Talep Edilen Düzeltme:\s*/i, '')
+        .trim();
       return {
         type: 'changes_requested',
-        title: 'İlanınız İçin Düzeltme İstendi',
-        subtitle: rejectionReason
-          ? `Talep Edilen Düzeltme: ${rejectionReason}`
-          : 'Moderatörlerimiz ilanınızda bazı değişiklikler yapmanızı istedi. Lütfen ilanı düzenleyip tekrar onaya gönderin.',
+        title: 'Düzeltme Talebi',
+        subtitle:
+          cleanChangesReason ||
+          'Moderatörlerimiz ilanınızda bazı değişiklikler yapmanızı istedi. Lütfen ilanı düzenleyip tekrar onaya gönderin.',
         icon: 'alert-circle' as const,
         iconColor: '#f59e0b',
         accentColor: '#f59e0b',
@@ -286,15 +294,21 @@ export function AdvertDetailView({
       rejectionReason?.toLowerCase().includes('paket süresi') ||
       rejectionReason?.toLowerCase().includes('package_expired')
     );
+    const cleanReason = (rejectionReason || detail.rejectionReason || '')
+      .replace(/^Yayından Kaldırılma Nedeni:\s*/i, '')
+      .trim();
 
     return {
       type: 'archived',
-      title: 'Bu İlan Yayından Kaldırılmıştır',
+      title: isPackageExpired
+        ? 'Yayın Süresi Doldu'
+        : cleanReason
+        ? 'Yayından Kaldırılma Nedeni'
+        : 'Bu İlan Yayından Kaldırılmıştır',
       subtitle: isPackageExpired
         ? 'Paket süresi bitmiştir. İlanınızın yayın süresi dolduğu için otomatik olarak yayından kaldırılmıştır.'
-        : rejectionReason
-        ? `Yayından Kaldırılma Nedeni: ${rejectionReason}`
-        : 'İlan şu an tamamen gizlidir; arama sonuçlarında, vitrinde ve kategori listelerinde kimseye görünmez. Yalnızca siz görüntüleyebilirsiniz.',
+        : cleanReason ||
+          'İlan yayından kaldırılmıştır; yalnızca siz görüntüleyebilirsiniz.',
       icon: 'eye-off' as const,
       iconColor: '#ef4444',
       accentColor: '#ef4444',
@@ -303,7 +317,7 @@ export function AdvertDetailView({
       iconCircleBg: 'rgba(239, 68, 68, 0.16)',
       showEditAction: false,
     };
-  }, [isOwner, isPublished, isRejected, isChangesRequested, isPendingReview, isSoldStatus, rejectionReason]);
+  }, [isOwner, isPublished, isRejected, isChangesRequested, isPendingReview, isSoldStatus, rejectionReason, detail.rejectionReason]);
 
   const galleryHeight = isWide
     ? 440
@@ -831,14 +845,14 @@ export function AdvertDetailView({
             ))}
           </View>
 
-          {/* Başlık ve Masaüstü Red Nedeni / Üst Aksiyon */}
+          {/* Başlık ve Masaüstü Red / Düzeltme / Yayından Kaldırılma Nedeni */}
           <View style={styles.desktopTitleRow}>
             <View style={styles.desktopTitleCol}>
               <Text style={[styles.title, { color: text, marginBottom: 0 }]}>
                 {detail.title}
               </Text>
             </View>
-            {(isRejected || isChangesRequested) && noticeBannerConfig ? (
+            {(isRejected || isChangesRequested || isArchived) && noticeBannerConfig ? (
               <View style={styles.desktopTitleActionCol}>
                 <View
                   style={[
@@ -862,7 +876,7 @@ export function AdvertDetailView({
                         { color: noticeBannerConfig.accentColor },
                       ]}
                     >
-                      {isRejected ? 'Red Nedeni' : 'Düzeltme Talebi'}
+                      {noticeBannerConfig.title}
                     </Text>
                   </View>
                   <Text
@@ -871,18 +885,14 @@ export function AdvertDetailView({
                       { color: text },
                     ]}
                   >
-                    {rejectionReason ||
-                      detail.rejectionReason ||
-                      (isRejected
-                        ? 'Bu ilan moderasyon tarafından onaylanmadı.'
-                        : 'Lütfen ilan detaylarını düzenleyiniz.')}
+                    {noticeBannerConfig.subtitle}
                   </Text>
                 </View>
               </View>
             ) : null}
           </View>
 
-          {noticeBannerConfig && !isRejected && !isChangesRequested ? (
+          {noticeBannerConfig && !isRejected && !isChangesRequested && !isArchived ? (
             <View
               style={[
                 styles.unpublishedNoticeBanner,
@@ -1413,7 +1423,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   title: {
     fontSize: 28,
@@ -1426,7 +1436,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xl,
-    marginTop: Spacing.sm,
+    marginTop: Spacing.xs,
     marginBottom: Spacing.md,
   },
   desktopTopTabsCol: {
@@ -1651,16 +1661,16 @@ const styles = StyleSheet.create({
   },
   desktopTitleRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: Spacing.xl,
-    marginTop: Spacing.xs,
-    marginBottom: Spacing.sm,
+    marginTop: 0,
+    marginBottom: Spacing.xs,
   },
   desktopTitleCol: {
     flex: 1.15,
     minWidth: 0,
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
   },
   desktopTitleActionCol: {
     flex: 0.85,
@@ -1670,13 +1680,12 @@ const styles = StyleSheet.create({
     marginTop: 0,
     marginBottom: 0,
     flex: 1,
-    height: '100%',
     flexDirection: 'column',
     alignItems: 'flex-start',
     justifyContent: 'center',
-    gap: 4,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: 3,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
   rejectionReasonHeader: {
     flexDirection: 'row',
@@ -1684,13 +1693,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   rejectionReasonTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
   rejectionReasonText: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 16,
     fontWeight: '500',
   },
   unpublishedNoticeBannerMobile: {

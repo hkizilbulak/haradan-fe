@@ -107,14 +107,15 @@ function FeaturedListingCardComponent({
   }, [onMarkSold, product.id]);
 
   const isSold = (product as { backendStatus?: string }).backendStatus === 'SOLD';
-  const isArchived = (product as { backendStatus?: string }).backendStatus === 'ARCHIVED';
+  const isArchived =
+    (product as { backendStatus?: string }).backendStatus === 'ARCHIVED' ||
+    (product as { backendStatus?: string }).backendStatus === 'SUSPENDED';
   const isRejected =
     (product as { backendStatus?: string }).backendStatus === 'REJECTED' ||
     (product as { status?: string }).status === 'rejected';
   const isDraft =
     (product as { backendStatus?: string }).backendStatus === 'DRAFT' ||
     (product as { backendStatus?: string }).backendStatus === 'CHANGES_REQUESTED' ||
-    (product as { backendStatus?: string }).backendStatus === 'SUSPENDED' ||
     (product as { status?: string }).status === 'draft';
   const shouldShowFavorite =
     !isRejected &&

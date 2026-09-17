@@ -19,13 +19,14 @@ export function toMyListingTab(backendStatus: string): MyListingStatus {
       return 'published';
     case 'ARCHIVED':
     case 'SOLD':
+    case 'SUSPENDED':
       return 'sold';
     case 'PENDING_REVIEW':
       return 'pending';
     case 'REJECTED':
       return 'rejected';
     default:
-      // DRAFT | CHANGES_REQUESTED | SUSPENDED
+      // DRAFT | CHANGES_REQUESTED
       return 'draft';
   }
 }
@@ -41,12 +42,12 @@ export function backendStatusesForTab(tab: MyListingStatus): string[] {
     case 'published':
       return ['PUBLISHED'];
     case 'sold':
-      return ['ARCHIVED', 'SOLD'];
+      return ['ARCHIVED', 'SOLD', 'SUSPENDED'];
     case 'pending':
       return ['PENDING_REVIEW'];
     case 'rejected':
       return ['REJECTED'];
     case 'draft':
-      return ['DRAFT', 'CHANGES_REQUESTED', 'SUSPENDED'];
+      return ['DRAFT', 'CHANGES_REQUESTED'];
   }
 }
