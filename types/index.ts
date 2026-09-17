@@ -119,3 +119,4 @@ export type {
 } from './coupon';
 
 
+export type * from './notification';

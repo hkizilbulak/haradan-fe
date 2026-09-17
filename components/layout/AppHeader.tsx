@@ -24,6 +24,7 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useLiveAdvertSearch } from '@/hooks/useLiveAdvertSearch';
 import { SearchDropdown } from '@/components/search';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { prepareListingWizardEntry } from '@/services/listing';
 import {
   HEADER_FLEX_SLOT_POINTER_EVENTS,
@@ -367,6 +368,7 @@ export function AppHeader({
               onSignupPress={onSignupPress}
               onProfilePress={openAccount}
             />
+            {isLoggedIn && <NotificationBell />}
             <View>
               <HeaderIcon
                 name="heart-outline"

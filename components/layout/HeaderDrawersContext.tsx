@@ -13,15 +13,17 @@ import { FavoritesDrawer } from '@/components/layout/FavoritesDrawer';
 import { ProfileDrawer } from '@/components/layout/ProfileDrawer';
 import type { ProfileDrawerAction } from '@/components/layout/ProfileDrawer';
 import { SettingsDrawer } from '@/components/layout/SettingsDrawer';
+import { NotificationsDrawer } from '@/components/layout/NotificationsDrawer';
 import { SideDrawer } from '@/components/layout/SideDrawer';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useNotifications } from '@/hooks/useNotifications';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { prepareListingWizardEntry } from '@/services/listing';
 import type { AdvertId } from '@/types/advertId';
 
-type DrawerPanel = 'none' | 'profile' | 'favorites' | 'settings';
+type DrawerPanel = 'none' | 'profile' | 'favorites' | 'settings' | 'notifications';
 
 type HeaderDrawersValue = {
   openProfile: () => void;
@@ -30,9 +32,12 @@ type HeaderDrawersValue = {
   closeFavorites: () => void;
   openSettings: (opts?: { fromProfile?: boolean }) => void;
   closeSettings: () => void;
+  openNotifications: () => void;
+  closeNotifications: () => void;
   profileOpen: boolean;
   favoritesOpen: boolean;
   settingsOpen: boolean;
+  notificationsOpen: boolean;
 };
 
 const HeaderDrawersContext = createContext<HeaderDrawersValue | null>(null);
@@ -41,7 +46,7 @@ export function useHeaderDrawers(): HeaderDrawersValue | null {
   return useContext(HeaderDrawersContext);
 }
 
-/** Tüm sayfalarda ortak profil + favori + ayarlar çekmecesi. */
+/** Tüm sayfalarda ortak profil + favori + ayarlar + bildirimler çekmecesi. */
 export function HeaderDrawersProvider({
   children,
 }: {
@@ -51,13 +56,14 @@ export function HeaderDrawersProvider({
   const { session, isLoggedIn } = useAuthSession();
   const { logout } = useAuth();
   const { items: favoriteItems, remove } = useFavorites();
+  const { unreadCount } = useNotifications();
   const textMuted = useThemeColor('textMuted');
 
   const [panel, setPanel] = useState<DrawerPanel>('none');
   const [fromProfile, setFromProfile] = useState(false);
-  const lastPanel = useRef<'profile' | 'favorites' | 'settings'>('profile');
+  const lastPanel = useRef<'profile' | 'favorites' | 'settings' | 'notifications'>('profile');
 
-  if (panel === 'profile' || panel === 'favorites' || panel === 'settings') {
+  if (panel !== 'none') {
     lastPanel.current = panel;
   }
 
@@ -106,8 +112,19 @@ export function HeaderDrawersProvider({
     setFromProfile(false);
   }, []);
 
+  const openNotifications = useCallback(() => {
+    if (!isLoggedIn) return;
+    setFromProfile(false);
+    setPanel('notifications');
+  }, [isLoggedIn]);
+
+  const closeNotifications = useCallback(() => {
+    setPanel('none');
+    setFromProfile(false);
+  }, []);
+
   useEffect(() => {
-    if (!isLoggedIn && (panel === 'favorites' || panel === 'settings')) {
+    if (!isLoggedIn && (panel === 'favorites' || panel === 'settings' || panel === 'notifications')) {
       setPanel('none');
       setFromProfile(false);
     }
@@ -166,18 +183,21 @@ export function HeaderDrawersProvider({
   const drawerTitle = useMemo(() => {
     if (shown === 'profile') return 'Profil';
     if (shown === 'favorites') return 'Favoriler';
+    if (shown === 'notifications') return 'Bildirimler';
     return 'Ayarlar';
   }, [shown]);
 
   const drawerKicker = useMemo(() => {
     if (shown === 'profile') return 'Hesap';
     if (shown === 'favorites') return 'Kayıtlı';
+    if (shown === 'notifications') return 'Hesap';
     return 'Hesap';
   }, [shown]);
 
   const drawerA11y = useMemo(() => {
     if (shown === 'profile') return 'Profil menüsü';
     if (shown === 'favorites') return 'Favori ilanlar';
+    if (shown === 'notifications') return 'Bildirimler';
     return 'Hesap ayarları';
   }, [shown]);
 
@@ -189,11 +209,14 @@ export function HeaderDrawersProvider({
       closeFavorites,
       openSettings,
       closeSettings,
+      openNotifications,
+      closeNotifications,
       profileOpen: panel === 'profile',
       favoritesOpen: panel === 'favorites',
       settingsOpen: panel === 'settings',
+      notificationsOpen: panel === 'notifications',
     }),
-    [openProfile, closeProfile, openFavorites, closeFavorites, openSettings, closeSettings, panel]
+    [openProfile, closeProfile, openFavorites, closeFavorites, openSettings, closeSettings, openNotifications, closeNotifications, panel]
   );
 
   const showBackButton =
@@ -215,6 +238,10 @@ export function HeaderDrawersProvider({
             <Text style={{ fontSize: 13, fontWeight: '500', color: textMuted }}>
               {favoriteItems.length}
             </Text>
+          ) : shown === 'notifications' && unreadCount > 0 ? (
+            <Text style={{ fontSize: 13, fontWeight: '500', color: '#ef4444' }}>
+              {unreadCount} yeni
+            </Text>
           ) : null
         }
       >
@@ -230,6 +257,8 @@ export function HeaderDrawersProvider({
             onItemPress={onFavoriteItemPress}
             onRemove={remove}
           />
+        ) : shown === 'notifications' ? (
+          <NotificationsDrawer />
         ) : (
           <SettingsDrawer user={session?.user ?? null} />
         )}
@@ -237,3 +266,4 @@ export function HeaderDrawersProvider({
     </HeaderDrawersContext.Provider>
   );
 }
+
