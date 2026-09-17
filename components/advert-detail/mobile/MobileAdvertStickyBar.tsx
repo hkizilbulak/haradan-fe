@@ -37,6 +37,7 @@ export const MobileAdvertStickyBar = memo(function MobileAdvertStickyBar({
   const insets = useSafeInsets();
   const header = useThemeColor('header');
   const surface = useThemeColor('surface');
+  const border = useThemeColor('border');
   const backendStatus = detail.backendStatus;
   const isRejected = backendStatus === 'REJECTED';
   const isPendingReview = backendStatus === 'PENDING_REVIEW';
