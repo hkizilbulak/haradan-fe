@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
+import { AuthBanner } from './AuthBanner';
 import { AuthSubmitButton } from './AuthSubmitButton';
 import { AuthTextField } from './AuthTextField';
 import { useAuthTheme } from './AuthThemeContext';
@@ -16,6 +17,7 @@ export function ForgotPasswordForm() {
   const [doneMessage, setDoneMessage] = useState<string | null>(null);
 
   const handleSubmit = async () => {
+    if (loading) return;
     clearError();
     setDoneMessage(null);
     const result = await forgotPassword(email.trim());
@@ -27,10 +29,7 @@ export function ForgotPasswordForm() {
     <View style={styles.wrap}>
       <Text style={[styles.title, { color: tokens.text }]}>Parolamı unuttum</Text>
       <Text style={[styles.sub, { color: tokens.textSecondary }]}>
-        E-posta adresinizi girin; hesap varsa sıfırlama talimatı gönderilir.{' '}
-        <Link href="/auth/login" style={[styles.link, { color: tokens.text }]}>
-          Girişe dön
-        </Link>
+        E-posta adresinizi girin; hesap varsa sıfırlama talimatı gönderilir.
       </Text>
 
       <AuthTextField
@@ -51,17 +50,18 @@ export function ForgotPasswordForm() {
       />
 
       {error ? (
-        <Text style={[styles.banner, { color: tokens.error }]}>{error}</Text>
+        <AuthBanner message={error} variant="error" />
       ) : null}
+
       {doneMessage ? (
-        <Text style={[styles.banner, { color: tokens.text }]}>{doneMessage}</Text>
+        <AuthBanner message={doneMessage} variant="success" />
       ) : null}
 
       <AuthSubmitButton
         label="Sıfırlama bağlantısı gönder"
         onPress={handleSubmit}
         loading={loading}
-        disabled={!email.trim()}
+        disabled={loading || !email.trim()}
       />
 
       <Link href="/auth/login" style={[styles.link, { color: tokens.text }]}>
@@ -95,8 +95,5 @@ const styles = StyleSheet.create({
       web: { cursor: 'pointer' as const },
       default: {},
     }),
-  },
-  banner: {
-    ...Typography.small,
   },
 });

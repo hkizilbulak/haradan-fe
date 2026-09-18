@@ -78,10 +78,7 @@ export function ResetPasswordForm({
     <View style={styles.wrap}>
       <Text style={[styles.title, { color: tokens.text }]}>Yeni Şifre Belirle</Text>
       <Text style={[styles.sub, { color: tokens.textSecondary }]}>
-        Lütfen hesabınız için yeni ve güvenli bir şifre girin.{' '}
-        <Link href="/auth/login" style={[styles.link, { color: tokens.text }]}>
-          Girişe dön
-        </Link>
+        Lütfen hesabınız için yeni ve güvenli bir şifre girin.
       </Text>
 
       {!initialToken ? (

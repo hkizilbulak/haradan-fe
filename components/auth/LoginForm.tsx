@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { AuthBanner } from './AuthBanner';
@@ -78,8 +78,11 @@ function LoginFormBody({ onSuccess }: LoginFormProps) {
   };
 
   const handleResend = async () => {
+    if (loading) return;
     const result = await resendVerification(email.trim());
-    if (result) setResendNote(result.message);
+    if (result) {
+      setResendNote(result.message);
+    }
   };
 
   const needsVerify = errorCode === 'EMAIL_NOT_VERIFIED';
@@ -154,7 +157,7 @@ function LoginFormBody({ onSuccess }: LoginFormProps) {
             label="Doğrulama e-postasını tekrar gönder"
             onPress={handleResend}
             loading={loading}
-            disabled={!email.trim()}
+            disabled={!email.trim() || loading}
             variant="secondary"
           />
         </View>

@@ -113,8 +113,12 @@ export class MockAuthRepository implements IAuthRepository {
     if (!isValidEmail(email)) {
       throw new AuthError('Geçerli bir e-posta girin.', 422, 'VALIDATION_ERROR');
     }
+    const user = mockUserDirectory.findByEmail(email);
+    if (!user) {
+      throw new AuthError('Bu e-posta adresi ile kayıtlı bir hesap bulunamadı.', 404, 'NOT_FOUND');
+    }
     return {
-      message: 'Bu e-posta ile bir hesap varsa sıfırlama talimatı gönderildi.',
+      message: 'Sıfırlama talimatı e-posta adresinize gönderildi.',
     };
   }
 
