@@ -9,6 +9,7 @@ import { setAuthSession } from '@/services/auth/sessionStore';
 import type {
   AuthSession,
   GenericAuthMessageResponse,
+  LoginResult,
   MyProfileResponse,
 } from '@/types';
 
@@ -47,16 +48,18 @@ export function useAuth(repo: IAuthRepository = authRepository) {
   );
 
   const login = useCallback(
-    async (email: string, password: string): Promise<AuthSession | null> => {
-      const session = await run(() =>
+    async (email: string, password: string): Promise<LoginResult | null> => {
+      const result = await run(() =>
         repo.login({
           email: email.trim(),
           password,
           clientContext: resolveFeClientContext(Platform.OS),
         })
       );
-      if (session) setAuthSession(session);
-      return session;
+      if (result && !('requirePasswordChange' in result && result.requirePasswordChange)) {
+        setAuthSession(result as AuthSession);
+      }
+      return result;
     },
     [repo, run]
   );

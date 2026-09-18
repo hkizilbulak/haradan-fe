@@ -62,8 +62,19 @@ function LoginFormBody({ onSuccess }: LoginFormProps) {
   const handleSubmit = async () => {
     clearError();
     setResendNote(null);
-    const session = await login(email.trim(), password);
-    if (!session) return;
+    const result = await login(email.trim(), password);
+    if (!result) return;
+    if ('requirePasswordChange' in result && result.requirePasswordChange) {
+      router.push({
+        pathname: '/auth/reset-password',
+        params: {
+          token: result.token || '',
+          email: result.email,
+          autoLogin: 'true',
+        },
+      });
+      return;
+    }
     if (remember && typeof localStorage !== 'undefined') {
       try {
         localStorage.setItem('haradan.rememberEmail', email.trim());

@@ -10,14 +10,20 @@ function first(raw: string | string[] | undefined): string {
 }
 
 export default function AuthResetPasswordScreen() {
-  const params = useLocalSearchParams<{ token?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    token?: string | string[];
+    email?: string | string[];
+    autoLogin?: string | string[];
+  }>();
   const token = first(params.token).trim();
+  const email = first(params.email).trim();
+  const autoLogin = first(params.autoLogin) === 'true';
 
   return (
     <>
       {Platform.OS === 'web' ? (
         <Head>
-          <title>Şifre Sıfırla | Haradan.com</title>
+          <title>Şifrenizi Belirleyin | Haradan.com</title>
           <meta
             name="description"
             content="Haradan.com hesabınız için yeni şifrenizi belirleyin."
@@ -25,7 +31,11 @@ export default function AuthResetPasswordScreen() {
         </Head>
       ) : null}
       <AuthLayout formKey="reset" variant="luxury">
-        <ResetPasswordForm token={token} />
+        <ResetPasswordForm
+          token={token}
+          email={email}
+          autoLogin={autoLogin}
+        />
       </AuthLayout>
     </>
   );

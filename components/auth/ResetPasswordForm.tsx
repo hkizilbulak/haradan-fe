@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { AuthSubmitButton } from './AuthSubmitButton';
@@ -12,15 +12,19 @@ import { useAuth } from '@/hooks/useAuth';
 
 type ResetPasswordFormProps = {
   token?: string;
+  email?: string;
+  autoLogin?: boolean;
   onSuccess?: (message: string) => void;
 };
 
 export function ResetPasswordForm({
   token: initialToken = '',
+  email = '',
+  autoLogin = false,
   onSuccess,
 }: ResetPasswordFormProps) {
   const router = useRouter();
-  const { resetPassword, loading, error, clearError } = useAuth();
+  const { resetPassword, login, loading, error, clearError } = useAuth();
   const { tokens } = useAuthTheme();
 
   const [token, setToken] = useState(initialToken);
@@ -29,6 +33,12 @@ export function ResetPasswordForm({
   const [showPassword, setShowPassword] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [doneMessage, setDoneMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialToken) {
+      setToken(initialToken);
+    }
+  }, [initialToken]);
 
   const handleSubmit = async () => {
     clearError();
@@ -52,6 +62,17 @@ export function ResetPasswordForm({
 
     const result = await resetPassword(cleanToken, newPassword);
     if (!result) return;
+
+    if (autoLogin && email) {
+      const loginResult = await login(email, newPassword);
+      if (loginResult && !('requirePasswordChange' in loginResult)) {
+        if (onSuccess) {
+          onSuccess('Şifreniz belirlendi ve giriş yapıldı.');
+        }
+        router.replace('/');
+        return;
+      }
+    }
 
     setDoneMessage(result.message || 'Şifreniz başarıyla güncellendi.');
     if (onSuccess) {

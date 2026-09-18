@@ -7,6 +7,7 @@ import type {
   GenericAuthMessageResponse,
   GoogleLoginRequest,
   LoginRequest,
+  LoginResult,
   MyProfileResponse,
   RefreshSessionRequest,
   RegisterUserRequest,
@@ -33,7 +34,7 @@ import type {
  * POST /v1/me/email/change-request Bearer (AUTH-13)
  */
 export interface IAuthRepository {
-  login(payload: LoginRequest): Promise<AuthSession>;
+  login(payload: LoginRequest): Promise<LoginResult>;
   loginWithGoogle(payload: GoogleLoginRequest): Promise<AuthSession>;
   register(payload: RegisterUserRequest): Promise<GenericAuthMessageResponse>;
   forgotPassword(payload: EmailRequest): Promise<GenericAuthMessageResponse>;

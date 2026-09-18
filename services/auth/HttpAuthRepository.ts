@@ -8,6 +8,7 @@ import type {
   GenericAuthMessageResponse,
   GoogleLoginRequest,
   LoginRequest,
+  LoginResult,
   MyProfileResponse,
   RefreshSessionRequest,
   RegisterUserRequest,
@@ -30,15 +31,22 @@ export class HttpAuthRepository implements IAuthRepository {
     this.http = new HttpClient(baseUrl);
   }
 
-  async login(payload: LoginRequest): Promise<AuthSession> {
+  async login(payload: LoginRequest): Promise<LoginResult> {
     const tokens = await this.guard(() =>
       this.http.request<AuthTokenResponse>('/v1/auth/login', {
         method: 'POST',
         body: JSON.stringify(payload),
       })
     );
+    if (tokens.requirePasswordChange) {
+      return {
+        requirePasswordChange: true,
+        email: tokens.email || payload.email.trim(),
+        token: tokens.token || '',
+      };
+    }
     try {
-      const user = await this.getMe(tokens.accessToken);
+      const user = await this.getMe(tokens.accessToken || '');
       return combineSession(tokens, user);
     } catch (err) {
       if (err instanceof AuthError && (err.status === 401 || err.status === 403)) {

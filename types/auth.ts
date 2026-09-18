@@ -37,12 +37,23 @@ export type RegisterUserRequest = {
 
 /** OpenAPI: AuthTokenResponse — user yok; profil GET /v1/me. */
 export type AuthTokenResponse = {
+  requirePasswordChange?: boolean;
+  email?: string;
+  token?: string;
   accessToken: string;
   refreshToken: string;
   tokenType: 'Bearer';
   expiresIn: number;
   clientContext?: ClientContext;
 };
+
+export type RequirePasswordChangeResult = {
+  requirePasswordChange: true;
+  email: string;
+  token?: string;
+};
+
+export type LoginResult = AuthSession | RequirePasswordChangeResult;
 
 /** OpenAPI: GenericAuthMessageResponse */
 export type GenericAuthMessageResponse = {

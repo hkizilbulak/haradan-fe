@@ -178,11 +178,13 @@ responses['GET /api/v1/me'] = {
     status: 'ACTIVE',
   },
 };
-const logged = await repo.login({
+const loggedResult = await repo.login({
   email: 'ada@example.com',
   password: 'Password1',
   clientContext: 'PUBLIC_WEB',
 });
+assert(!('requirePasswordChange' in loggedResult), 'login returns session');
+const logged = loggedResult as import('@/types').AuthSession;
 assertEqual(logged.accessToken, 'acc-1', 'login access token');
 assertEqual(logged.refreshToken, 'ref-1', 'login refresh token');
 assertEqual(logged.user.firstName, 'Ada', 'login hydrates profile');
@@ -205,6 +207,23 @@ assert(
   !('user' in (responses['POST /api/v1/auth/login'].body as object) && logged.user.id === ''),
   'profile not expected on token response'
 );
+
+responses['POST /api/v1/auth/login'] = {
+  status: 200,
+  body: {
+    requirePasswordChange: true,
+    email: 'nopass@example.com',
+    token: 'setup-tok-123',
+  },
+};
+const nullPassResult = await repo.login({
+  email: 'nopass@example.com',
+  password: 'AnyPassword123!',
+  clientContext: 'PUBLIC_WEB',
+});
+assert('requirePasswordChange' in nullPassResult && nullPassResult.requirePasswordChange === true, 'null password returns requirePasswordChange');
+assertEqual(nullPassResult.email, 'nopass@example.com', 'null password preserves email');
+assertEqual(nullPassResult.token, 'setup-tok-123', 'null password includes token');
 
 calls.length = 0;
 responses['POST /api/v1/auth/refresh'] = {
@@ -265,7 +284,7 @@ const resetRes = await repo.resetPassword({
 assert(resetRes.message.includes('güncellendi'), 'reset password message');
 const resetCall = calls.find((c) => c.url.endsWith('/v1/auth/password/reset'));
 assert(resetCall != null, 'reset uses /v1/auth/password/reset');
-const resetBody = JSON.parse(resetCall.init?.body as string);
+const resetBody = JSON.parse(String(resetCall?.init?.body));
 assertEqual(resetBody.token, 'tok-123', 'reset sends token');
 assertEqual(resetBody.newPassword, 'NewPassword123!', 'reset sends newPassword');
 

@@ -81,7 +81,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
     onSuccess?.(result.message);
 
     const session = await login(email.trim(), password);
-    if (session) {
+    if (session && !('requirePasswordChange' in session)) {
       setAuthSession(session);
       router.replace('/(tabs)');
     } else {
