@@ -12,6 +12,7 @@ import type {
   RefreshSessionRequest,
   RegisterUserRequest,
   RequestEmailChangeRequest,
+  ResetPasswordRequest,
   TokenRequest,
   UpdateMyProfileRequest,
 } from '@/types';
@@ -89,6 +90,15 @@ export class HttpAuthRepository implements IAuthRepository {
   forgotPassword(payload: EmailRequest): Promise<GenericAuthMessageResponse> {
     return this.guard(() =>
       this.http.request<GenericAuthMessageResponse>('/v1/auth/password/forgot', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+    );
+  }
+
+  resetPassword(payload: ResetPasswordRequest): Promise<GenericAuthMessageResponse> {
+    return this.guard(() =>
+      this.http.request<GenericAuthMessageResponse>('/v1/auth/password/reset', {
         method: 'POST',
         body: JSON.stringify(payload),
       })

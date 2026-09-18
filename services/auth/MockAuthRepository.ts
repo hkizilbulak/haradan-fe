@@ -10,6 +10,7 @@ import type {
   RefreshSessionRequest,
   RegisterUserRequest,
   RequestEmailChangeRequest,
+  ResetPasswordRequest,
   TokenRequest,
   UpdateMyProfileRequest,
 } from '@/types';
@@ -115,6 +116,23 @@ export class MockAuthRepository implements IAuthRepository {
     return {
       message: 'Bu e-posta ile bir hesap varsa sıfırlama talimatı gönderildi.',
     };
+  }
+
+  async resetPassword(
+    payload: ResetPasswordRequest
+  ): Promise<GenericAuthMessageResponse> {
+    await delay(LATENCY_MS);
+    if (!payload.token?.trim()) {
+      throw new AuthError('Sıfırlama jetonu geçersiz.', 400, 'TOKEN_INVALID');
+    }
+    if (!payload.newPassword || payload.newPassword.length < 8) {
+      throw new AuthError(
+        'Yeni şifre en az 8 karakter olmalıdır.',
+        422,
+        'VALIDATION_ERROR'
+      );
+    }
+    return { message: 'Şifreniz başarıyla güncellendi.' };
   }
 
   async refresh(payload: RefreshSessionRequest): Promise<AuthSession> {

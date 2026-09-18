@@ -254,6 +254,22 @@ assert(
 );
 
 calls.length = 0;
+responses['POST /api/v1/auth/password/reset'] = {
+  status: 200,
+  body: { message: 'Şifreniz başarıyla güncellendi.' },
+};
+const resetRes = await repo.resetPassword({
+  token: 'tok-123',
+  newPassword: 'NewPassword123!',
+});
+assert(resetRes.message.includes('güncellendi'), 'reset password message');
+const resetCall = calls.find((c) => c.url.endsWith('/v1/auth/password/reset'));
+assert(resetCall != null, 'reset uses /v1/auth/password/reset');
+const resetBody = JSON.parse(resetCall.init?.body as string);
+assertEqual(resetBody.token, 'tok-123', 'reset sends token');
+assertEqual(resetBody.newPassword, 'NewPassword123!', 'reset sends newPassword');
+
+calls.length = 0;
 responses['POST /api/v1/auth/login'] = {
   status: 401,
   body: {

@@ -120,6 +120,18 @@ export function useAuth(repo: IAuthRepository = authRepository) {
     [repo, run]
   );
 
+  const resetPassword = useCallback(
+    async (
+      token: string,
+      newPassword: string
+    ): Promise<GenericAuthMessageResponse | null> => {
+      return run(() =>
+        repo.resetPassword({ token: token.trim(), newPassword })
+      );
+    },
+    [repo, run]
+  );
+
   const resendVerification = useCallback(
     async (email: string): Promise<GenericAuthMessageResponse | null> => {
       return run(() => repo.resendVerification({ email: email.trim() }));
@@ -199,6 +211,7 @@ export function useAuth(repo: IAuthRepository = authRepository) {
     loginWithGoogle,
     register,
     forgotPassword,
+    resetPassword,
     resendVerification,
     verifyEmail,
     confirmEmailChange,

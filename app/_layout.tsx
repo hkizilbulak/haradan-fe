@@ -113,6 +113,13 @@ export default function RootLayout() {
                 }}
               />
               <Stack.Screen
+                name="reset-password"
+                options={{
+                  headerShown: false,
+                  title: 'Şifre Sıfırla | Haradan.com',
+                }}
+              />
+              <Stack.Screen
                 name="+not-found"
                 options={{ title: 'Sayfa bulunamadı' }}
               />

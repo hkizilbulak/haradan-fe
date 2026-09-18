@@ -11,6 +11,7 @@ import type {
   RefreshSessionRequest,
   RegisterUserRequest,
   RequestEmailChangeRequest,
+  ResetPasswordRequest,
   TokenRequest,
   UpdateMyProfileRequest,
 } from '@/types';
@@ -23,6 +24,7 @@ import type {
  * POST /v1/auth/refresh
  * POST /v1/auth/logout          Bearer
  * POST /v1/auth/password/forgot
+ * POST /v1/auth/password/reset
  * POST /v1/auth/resend-verification
  * POST /v1/auth/verify-email
  * GET  /v1/me                  Bearer
@@ -35,6 +37,7 @@ export interface IAuthRepository {
   loginWithGoogle(payload: GoogleLoginRequest): Promise<AuthSession>;
   register(payload: RegisterUserRequest): Promise<GenericAuthMessageResponse>;
   forgotPassword(payload: EmailRequest): Promise<GenericAuthMessageResponse>;
+  resetPassword(payload: ResetPasswordRequest): Promise<GenericAuthMessageResponse>;
   refresh(payload: RefreshSessionRequest): Promise<AuthSession>;
   logout(accessToken: string): Promise<void>;
   getMe(accessToken: string): Promise<AuthUser>;

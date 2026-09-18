@@ -59,6 +59,12 @@ export type TokenRequest = {
   token: string;
 };
 
+/** OpenAPI: ResetPasswordRequest (AUTH-11) */
+export type ResetPasswordRequest = {
+  token: string;
+  newPassword: string;
+};
+
 /** OpenAPI: RefreshSessionRequest */
 export type RefreshSessionRequest = {
   refreshToken: string;
