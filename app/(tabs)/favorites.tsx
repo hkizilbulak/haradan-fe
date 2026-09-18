@@ -53,7 +53,7 @@ export default function FavoritesScreen() {
               ? 'Yükleniyor…'
               : items.length > 0
                 ? `${items.length} ilan`
-                : 'Listeniz boş'
+                : undefined
           }
         />
       ) : null}
