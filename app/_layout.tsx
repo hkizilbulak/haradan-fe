@@ -2,25 +2,22 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme, View } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { HeaderDrawersProvider } from '@/components/layout/HeaderDrawersContext';
 import { MobileDockHost } from '@/components/layout/MobileDockHost';
 import { ToastProvider } from '@/components/ui';
 import { Colors } from '@/constants/Colors';
-import { useIsHydrated } from '@/hooks/useIsHydrated';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 export default function RootLayout() {
-  const hydrated = useIsHydrated();
-  const colorScheme = useColorScheme();
-  const scheme =
-    hydrated && colorScheme === 'dark' ? 'dark' : 'light';
-  const palette = Colors[scheme];
+  const { resolvedTheme, isDark } = useAppTheme();
+  const palette = Colors[resolvedTheme];
 
   const navTheme = {
-    ...(scheme === 'dark' ? DarkTheme : DefaultTheme),
+    ...(isDark ? DarkTheme : DefaultTheme),
     colors: {
-      ...(scheme === 'dark' ? DarkTheme.colors : DefaultTheme.colors),
+      ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
       primary: palette.primary,
       background: palette.background,
       card: palette.surface,
@@ -58,6 +55,15 @@ export default function RootLayout() {
                 * {
                   -ms-overflow-style: none !important;
                   scrollbar-width: none !important;
+                }
+                /* Prevent browser password autofill from forcing light/blue background */
+                input:-webkit-autofill,
+                input:-webkit-autofill:hover, 
+                input:-webkit-autofill:focus, 
+                input:-webkit-autofill:active {
+                  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+                  -webkit-text-fill-color: inherit !important;
+                  transition: background-color 5000s ease-in-out 0s;
                 }
               `}</style>
             </Head>

@@ -14,9 +14,9 @@ import {
   StyleSheet,
   Text,
   View,
-  useColorScheme,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { useSafeInsets } from '@/hooks/useSafeInsets';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
@@ -71,8 +71,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const translateY = useRef(new Animated.Value(-100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const safeInsets = useSafeInsets();
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const { isDark } = useAppTheme();
 
   const hideToast = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);

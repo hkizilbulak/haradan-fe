@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Spacing } from '@/constants/Spacing';
+import { useAppTheme, type ThemePreference } from '@/hooks/useAppTheme';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthSession } from '@/hooks/useAuthSession';
@@ -27,7 +28,34 @@ type SettingsDrawerProps = {
 };
 
 /* ─── Expandable setting item key ─── */
-type SettingKey = 'password' | 'email' | 'name' | 'phone';
+type SettingKey = 'password' | 'email' | 'name' | 'phone' | 'theme';
+
+/* ─── Theme options list ─── */
+const THEME_OPTIONS: Array<{
+  key: ThemePreference;
+  label: string;
+  desc: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}> = [
+  {
+    key: 'system',
+    label: 'Sistem Varsayılanı',
+    desc: 'Cihazınızın tema ayarlarını takip eder',
+    icon: 'phone-portrait-outline',
+  },
+  {
+    key: 'light',
+    label: 'Açık Tema',
+    desc: 'Aydınlık ve ferah görünüm',
+    icon: 'sunny-outline',
+  },
+  {
+    key: 'dark',
+    label: 'Karanlık Mod',
+    desc: 'Gece kullanımı ve göz rahatlığı',
+    icon: 'moon-outline',
+  },
+];
 
 /* ─── Inline row component (same pattern as ProfileDrawer) ─── */
 type RowProps = {
@@ -37,9 +65,10 @@ type RowProps = {
   expanded?: boolean;
   text: string;
   textMuted: string;
+  badge?: string;
 };
 
-function SettingsRow({ icon, label, onPress, expanded, text, textMuted }: RowProps) {
+function SettingsRow({ icon, label, onPress, expanded, text, textMuted, badge }: RowProps) {
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -67,6 +96,11 @@ function SettingsRow({ icon, label, onPress, expanded, text, textMuted }: RowPro
     >
       <Ionicons name={icon} size={18} color={text} />
       <Text style={[styles.rowLabel, { color: text }]}>{label}</Text>
+      {badge ? (
+        <View style={styles.rowBadge}>
+          <Text style={[styles.rowBadgeText, { color: textMuted }]}>{badge}</Text>
+        </View>
+      ) : null}
       <Ionicons
         name={expanded ? 'chevron-down' : 'chevron-forward'}
         size={14}
@@ -84,6 +118,7 @@ type FieldProps = {
   secureTextEntry?: boolean;
   keyboardType?: TextInput['props']['keyboardType'];
   autoCapitalize?: TextInput['props']['autoCapitalize'];
+  autoComplete?: TextInput['props']['autoComplete'];
   border: string;
   text: string;
   textMuted: string;
@@ -96,6 +131,7 @@ function InlineField({
   secureTextEntry,
   keyboardType,
   autoCapitalize,
+  autoComplete,
   border,
   text,
   textMuted,
@@ -117,9 +153,11 @@ function InlineField({
         placeholderTextColor={textMuted}
         value={value}
         onChangeText={onChangeText}
-        secureTextEntry={hidden}
+        secureTextEntry={secureTextEntry ? hidden : false}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize ?? 'none'}
+        autoComplete={autoComplete ?? (secureTextEntry ? 'new-password' : 'off')}
+        textContentType={secureTextEntry ? 'none' : undefined}
       />
       {secureTextEntry && (
         <Pressable
@@ -130,7 +168,7 @@ function InlineField({
           style={styles.eyeBtn}
         >
           <Ionicons
-            name={hidden ? 'eye-off-outline' : 'eye-outline'}
+            name={hidden ? 'eye-outline' : 'eye-off-outline'}
             size={20}
             color={textMuted}
           />
@@ -159,15 +197,22 @@ function ActionButton({ label, onPress, loading, disabled, primary }: ActionBtnP
       style={({ pressed }) => [
         styles.actionBtn,
         {
-          backgroundColor: disabled ? `${primary}66` : primary,
-          opacity: pressed ? 0.85 : 1,
+          backgroundColor: disabled ? `${primary}33` : primary,
+          opacity: disabled ? 0.55 : (pressed ? 0.85 : 1),
+          ...Platform.select({
+            web: {
+              cursor: (disabled ? 'not-allowed' : 'pointer') as any,
+              transition: 'all 180ms ease',
+            },
+            default: {},
+          }),
         },
       ]}
     >
       {loading ? (
         <ActivityIndicator size="small" color="#fff" />
       ) : (
-        <Text style={styles.actionBtnText}>{label}</Text>
+        <Text style={[styles.actionBtnText, disabled && { opacity: 0.75 }]}>{label}</Text>
       )}
     </Pressable>
   );
@@ -198,6 +243,7 @@ export const SettingsDrawer = memo(function SettingsDrawer({
   const textMuted = useThemeColor('textMuted');
   const border = useThemeColor('border');
   const primary = useThemeColor('primary');
+  const { themePreference, resolvedTheme, isDark, setThemePreference } = useAppTheme();
 
   const { session } = useAuthSession();
   const {
@@ -216,12 +262,24 @@ export const SettingsDrawer = memo(function SettingsDrawer({
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
 
-  // Email form state
-  const [newEmail, setNewEmail] = useState('');
-
   // Name form state
   const [firstName, setFirstName] = useState(user?.firstName ?? '');
   const [lastName, setLastName] = useState(user?.lastName ?? '');
+
+  const initialFirstName = (user?.firstName ?? '').trim();
+  const initialLastName = (user?.lastName ?? '').trim();
+  const isNameChanged =
+    firstName.trim() !== initialFirstName ||
+    lastName.trim() !== initialLastName;
+  const isNameValid = firstName.trim().length > 0 && lastName.trim().length > 0;
+
+  // Email form state
+  const [newEmail, setNewEmail] = useState('');
+  const initialEmail = (user?.email ?? '').trim().toLowerCase();
+  const isEmailChanged =
+    newEmail.trim().length > 0 &&
+    newEmail.trim().toLowerCase() !== initialEmail;
+  const isEmailValid = isEmailChanged && newEmail.includes('@');
 
   // Phone form state
   const [phoneInput, setPhoneInput] = useState(() => {
@@ -230,6 +288,12 @@ export const SettingsDrawer = memo(function SettingsDrawer({
     }
     return '';
   });
+
+  const initialPhoneDigits = digitsOnly(
+    user?.phone ? parseInternationalPhone(user.phone).national : ''
+  );
+  const isPhoneChanged = digitsOnly(phoneInput) !== initialPhoneDigits;
+  const isPhoneValid = isValidNationalPhone('TR', phoneInput);
 
   useEffect(() => {
     if (user?.firstName !== undefined) setFirstName(user.firstName ?? '');
@@ -243,9 +307,13 @@ export const SettingsDrawer = memo(function SettingsDrawer({
     (key: SettingKey) => {
       clearError();
       setSuccessMsg(null);
+      if (key === 'password' && expanded !== 'password') {
+        setCurrentPw('');
+        setNewPw('');
+      }
       setExpanded((prev) => (prev === key ? null : key));
     },
-    [clearError]
+    [clearError, expanded]
   );
 
   const accessToken = session?.accessToken ?? '';
@@ -379,7 +447,7 @@ export const SettingsDrawer = memo(function SettingsDrawer({
             label="İsmi Güncelle"
             onPress={handleUpdateName}
             loading={loading}
-            disabled={!firstName.trim() || !lastName.trim()}
+            disabled={!isNameValid || !isNameChanged}
             primary={primary}
           />
         </View>
@@ -418,7 +486,7 @@ export const SettingsDrawer = memo(function SettingsDrawer({
             label="E-posta Adresini Değiştir"
             onPress={handleChangeEmail}
             loading={loading}
-            disabled={!newEmail.trim()}
+            disabled={!isEmailValid}
             primary={primary}
           />
         </View>
@@ -464,7 +532,7 @@ export const SettingsDrawer = memo(function SettingsDrawer({
             label="Telefon Numarasını Güncelle"
             onPress={handleUpdatePhone}
             loading={loading}
-            disabled={!isValidNationalPhone('TR', phoneInput)}
+            disabled={!isPhoneValid || !isPhoneChanged}
             primary={primary}
           />
         </View>
@@ -514,6 +582,96 @@ export const SettingsDrawer = memo(function SettingsDrawer({
           />
         </View>
       )}
+
+      {/* ── 5. Karanlık Mod ── */}
+      <SettingsRow
+        icon={resolvedTheme === 'dark' ? 'moon-outline' : 'sunny-outline'}
+        label="Karanlık Mod"
+        badge={
+          themePreference === 'dark'
+            ? 'Koyu'
+            : themePreference === 'light'
+            ? 'Açık'
+            : 'Sistem'
+        }
+        onPress={() => toggle('theme')}
+        expanded={expanded === 'theme'}
+        text={text}
+        textMuted={textMuted}
+      />
+      {expanded === 'theme' && (
+        <View style={[styles.formWrap, { borderColor: border }]}>
+          <Text style={[styles.hint, { color: textMuted }]}>
+            Görünüm ve renk temasını seçin:
+          </Text>
+          <View style={styles.themeOptionsGrid}>
+            {THEME_OPTIONS.map((opt) => {
+              const isSelected = themePreference === opt.key;
+              return (
+                <Pressable
+                  key={opt.key}
+                  onPress={() => setThemePreference(opt.key)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={opt.label}
+                  style={({ pressed }) => [
+                    styles.themeOptionCard,
+                    {
+                      borderColor: isSelected ? primary : border,
+                      backgroundColor: isSelected
+                        ? (isDark ? 'rgba(239, 68, 68, 0.14)' : 'rgba(239, 68, 68, 0.06)')
+                        : (isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)'),
+                      opacity: pressed ? 0.85 : 1,
+                      ...Platform.select({
+                        web: {
+                          cursor: 'pointer' as const,
+                          transition: 'all 180ms ease',
+                        },
+                        default: {},
+                      }),
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.themeOptionIconWrap,
+                      {
+                        backgroundColor: isSelected
+                          ? primary
+                          : (isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)'),
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={opt.icon}
+                      size={18}
+                      color={isSelected ? '#ffffff' : text}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        styles.themeOptionLabel,
+                        { color: isSelected ? (isDark ? '#ffffff' : primary) : text },
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                    <Text style={[styles.themeOptionDesc, { color: textMuted }]}>
+                      {opt.desc}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={isSelected ? 'radio-button-on' : 'radio-button-off'}
+                    size={20}
+                    color={isSelected ? primary : textMuted}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 });
@@ -537,6 +695,46 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     letterSpacing: -0.15,
+  },
+  rowBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: 'rgba(150, 150, 150, 0.1)',
+  },
+  rowBadgeText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  themeOptionsGrid: {
+    gap: 8,
+    marginTop: 2,
+  },
+  themeOptionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  themeOptionIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeOptionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+  },
+  themeOptionDesc: {
+    fontSize: 12,
+    marginTop: 1,
+    lineHeight: 16,
   },
   formWrap: {
     marginHorizontal: 10,

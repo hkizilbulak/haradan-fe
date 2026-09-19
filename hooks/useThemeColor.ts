@@ -1,12 +1,10 @@
-import { useColorScheme } from 'react-native';
 import { Colors } from '@/constants/Colors';
-import { useIsHydrated } from '@/hooks/useIsHydrated';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 export function useThemeColor(
   colorName: keyof typeof Colors.light
 ): string {
-  const hydrated = useIsHydrated();
-  const scheme = useColorScheme();
-  const resolved = !hydrated ? 'light' : (scheme ?? 'light');
-  return Colors[resolved][colorName];
+  const { resolvedTheme } = useAppTheme();
+  return Colors[resolvedTheme][colorName];
 }
+

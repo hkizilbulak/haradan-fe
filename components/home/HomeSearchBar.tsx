@@ -11,12 +11,12 @@ import {
   TextInput,
   UIManager,
   View,
-  useColorScheme,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { useLayoutWidth } from '@/hooks/useLayoutWidth';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useLiveAdvertSearch } from '@/hooks/useLiveAdvertSearch';
@@ -200,8 +200,7 @@ export const HomeSearchBar = memo(function HomeSearchBar({
     }
   };
 
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const { isDark } = useAppTheme();
 
   const surface = useThemeColor('surface');
   const text = useThemeColor('text');

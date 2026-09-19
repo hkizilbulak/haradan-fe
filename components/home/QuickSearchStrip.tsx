@@ -6,11 +6,11 @@ import {
   StyleSheet,
   Text,
   View,
-  useColorScheme,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Spacing } from '@/constants/Spacing';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { navigateToListings } from '@/services/navigation';
 import { DEFAULT_QUICK_LINKS, type QuickSearchTag } from './HomeSearchBar';
@@ -30,8 +30,7 @@ export const QuickSearchStrip = memo(function QuickSearchStrip({
   variant = 'default',
 }: QuickSearchStripProps) {
   const router = useRouter();
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const { isDark } = useAppTheme();
   const isGlass = variant === 'glass';
 
   const text = useThemeColor('text');

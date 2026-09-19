@@ -127,9 +127,8 @@ export function ResetPasswordForm({
           setNewPassword(v);
         }}
         secureTextEntry={!showPassword}
-        showPasswordToggle
-        isPasswordVisible={showPassword}
-        onTogglePasswordVisibility={() => setShowPassword((p) => !p)}
+        rightIcon={showPassword ? 'eye-off' : 'eye'}
+        onRightIconPress={() => setShowPassword((p) => !p)}
         autoCapitalize="none"
         autoComplete="new-password"
       />
