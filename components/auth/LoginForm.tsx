@@ -111,6 +111,8 @@ function LoginFormBody({ onSuccess }: LoginFormProps) {
       <View style={[styles.fields, isGlass && styles.fieldsGlass]}>
         <AuthTextField
           label="E-posta"
+          name="email"
+          id="login-email"
           placeholder="ornek@email.com"
           value={email}
           onChangeText={(v) => {
@@ -126,8 +128,10 @@ function LoginFormBody({ onSuccess }: LoginFormProps) {
           returnKeyType="next"
         />
         <AuthTextField
-          label="Parola"
-          placeholder="••••••••"
+          label="Şifre"
+          name="password"
+          id="login-password"
+          placeholder="Şifrenizi girin"
           value={password}
           onChangeText={(v) => {
             clearError();
@@ -135,7 +139,7 @@ function LoginFormBody({ onSuccess }: LoginFormProps) {
           }}
           leftIcon="lock-closed-outline"
           secureTextEntry={!showPassword}
-          autoComplete="password"
+          autoComplete="current-password"
           textContentType="password"
           returnKeyType="done"
           onSubmitEditing={handleSubmit}
@@ -154,7 +158,7 @@ function LoginFormBody({ onSuccess }: LoginFormProps) {
           href="/auth/forgot-password"
           style={[styles.forgot, { color: tokens.primary }]}
         >
-          Parolamı unuttum
+          Şifremi unuttum
         </Link>
       </View>
 

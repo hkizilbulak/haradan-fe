@@ -1,5 +1,6 @@
 import React, { memo, useState } from 'react';
 import {
+  Linking,
   Platform,
   Pressable,
   StyleSheet,
@@ -16,11 +17,11 @@ type NewsletterBlogSectionProps = {
   onSubscribe?: (email: string) => void;
 };
 
-const SOCIAL: { name: keyof typeof Ionicons.glyphMap; label: string }[] = [
-  { name: 'logo-instagram', label: 'Instagram' },
-  { name: 'logo-facebook', label: 'Facebook' },
-  { name: 'logo-youtube', label: 'YouTube' },
-  { name: 'paper-plane-outline', label: 'Telegram' },
+const SOCIAL: { name: keyof typeof Ionicons.glyphMap; label: string; url: string }[] = [
+  { name: 'logo-twitter', label: 'Twitter (X)', url: 'https://x.com/haradancom' },
+  { name: 'logo-facebook', label: 'Facebook', url: 'https://www.facebook.com/haradancom' },
+  { name: 'logo-instagram', label: 'Instagram', url: 'https://www.instagram.com/haradancoom' },
+  { name: 'logo-youtube', label: 'YouTube', url: 'https://www.youtube.com/@haradan8211' },
 ];
 
 /** Bülten — çerçevesiz, premium. */
@@ -86,12 +87,26 @@ export const NewsletterBlogSection = memo(function NewsletterBlogSection({
           {SOCIAL.map((item) => (
             <Pressable
               key={item.name}
-              accessibilityRole="button"
+              onPress={
+                Platform.OS !== 'web'
+                  ? () => Linking.openURL(item.url).catch(() => {})
+                  : undefined
+              }
+              accessibilityRole="link"
               accessibilityLabel={item.label}
               style={({ pressed }) => [
                 styles.socialBtn,
                 { opacity: pressed ? 0.55 : 1 },
               ]}
+              {...(Platform.OS === 'web'
+                ? ({
+                    href: item.url,
+                    hrefAttrs: {
+                      target: '_blank',
+                      rel: 'noopener noreferrer',
+                    },
+                  } as object)
+                : null)}
             >
               <Ionicons name={item.name} size={16} color={textMuted} />
             </Pressable>

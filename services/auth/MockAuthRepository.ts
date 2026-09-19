@@ -44,7 +44,7 @@ export class MockAuthRepository implements IAuthRepository {
     const user = mockUserDirectory.findByEmail(email);
     if (!user || user.password !== payload.password) {
       throw new AuthError(
-        'E-posta veya parola hatalı.',
+        'E-posta veya şifre hatalı.',
         401,
         'UNAUTHENTICATED'
       );
@@ -81,7 +81,7 @@ export class MockAuthRepository implements IAuthRepository {
     }
     if (payload.password.length < 8) {
       throw new AuthError(
-        'Parola en az 8 karakter olmalıdır.',
+        'Şifre en az 8 karakter olmalıdır.',
         422,
         'VALIDATION_ERROR'
       );

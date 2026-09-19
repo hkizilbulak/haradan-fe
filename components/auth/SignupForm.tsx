@@ -45,11 +45,11 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
     setFieldError(null);
     setLegalError(null);
     if (password !== confirm) {
-      setFieldError('Parolalar eşleşmiyor.');
+      setFieldError('Şifreler eşleşmiyor.');
       return;
     }
     if (password.length < 8) {
-      setFieldError('Parola en az 8 karakter olmalıdır.');
+      setFieldError('Şifre en az 8 karakter olmalıdır.');
       return;
     }
     if (firstName.trim().length > 100 || lastName.trim().length > 100) {
@@ -145,6 +145,8 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
         </View>
         <AuthTextField
           label="E-posta"
+          name="email"
+          id="signup-email"
           placeholder="ornek@email.com"
           value={email}
           onChangeText={(v) => {
@@ -161,7 +163,9 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
         />
         <View>
           <AuthTextField
-            label="Parola"
+            label="Şifre"
+            name="password"
+            id="signup-password"
             placeholder="En az 8 karakter"
             value={password}
             onChangeText={(v) => {
@@ -179,8 +183,10 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
           <PasswordStrengthBar password={password} />
         </View>
         <AuthTextField
-          label="Parola tekrar"
-          placeholder="Parolayı tekrar girin"
+          label="Şifre tekrar"
+          name="confirm-password"
+          id="signup-confirm-password"
+          placeholder="Şifreyi tekrar girin"
           value={confirm}
           onChangeText={(v) => {
             setFieldError(null);
@@ -193,7 +199,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
           returnKeyType="done"
           onSubmitEditing={handleSubmit}
           error={
-            confirm && password !== confirm ? 'Parolalar eşleşmiyor.' : null
+            confirm && password !== confirm ? 'Şifreler eşleşmiyor.' : null
           }
         />
       </View>

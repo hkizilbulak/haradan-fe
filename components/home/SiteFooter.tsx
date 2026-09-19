@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Linking,
   Platform,
   Pressable,
   StyleSheet,
@@ -24,10 +25,11 @@ const NAV = [
   { key: 'privacy', label: 'Gizlilik' },
 ] as const;
 
-const SOCIAL: { name: keyof typeof Ionicons.glyphMap; label: string }[] = [
-  { name: 'logo-instagram', label: 'Instagram' },
-  { name: 'logo-facebook', label: 'Facebook' },
-  { name: 'logo-youtube', label: 'YouTube' },
+const SOCIAL: { name: keyof typeof Ionicons.glyphMap; label: string; url: string }[] = [
+  { name: 'logo-twitter', label: 'Twitter (X)', url: 'https://x.com/haradancom' },
+  { name: 'logo-facebook', label: 'Facebook', url: 'https://www.facebook.com/haradancom' },
+  { name: 'logo-instagram', label: 'Instagram', url: 'https://www.instagram.com/haradancoom' },
+  { name: 'logo-youtube', label: 'YouTube', url: 'https://www.youtube.com/@haradan8211' },
 ];
 
 type SiteFooterProps = {
@@ -36,11 +38,10 @@ type SiteFooterProps = {
 };
 
 /** Footer — header ile aynı siyah bar, genişlik ve tipografi. */
-export function SiteFooter({ onNavPress, onPostAdPress }: SiteFooterProps) {
+export function SiteFooter({ onNavPress }: SiteFooterProps) {
   const router = useRouter();
   const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
-  const showPostAdLabel = width >= 640;
 
   const header = useThemeColor('header');
   const headerMuted = useThemeColor('headerMuted');
@@ -105,6 +106,11 @@ export function SiteFooter({ onNavPress, onPostAdPress }: SiteFooterProps) {
             {SOCIAL.map((s) => (
               <Pressable
                 key={s.name}
+                onPress={
+                  Platform.OS !== 'web'
+                    ? () => Linking.openURL(s.url).catch(() => {})
+                    : undefined
+                }
                 accessibilityRole="link"
                 accessibilityLabel={s.label}
                 hitSlop={6}
@@ -112,37 +118,19 @@ export function SiteFooter({ onNavPress, onPostAdPress }: SiteFooterProps) {
                   styles.iconHit,
                   { opacity: pressed ? 0.55 : 1 },
                 ]}
+                {...(Platform.OS === 'web'
+                  ? ({
+                      href: s.url,
+                      hrefAttrs: {
+                        target: '_blank',
+                        rel: 'noopener noreferrer',
+                      },
+                    } as object)
+                  : null)}
               >
                 <Ionicons name={s.name} size={16} color={headerMuted} />
               </Pressable>
             ))}
-            <Pressable
-              onPress={onPostAdPress}
-              accessibilityRole="button"
-              accessibilityLabel="İlan ver"
-              style={({ pressed }) => [
-                styles.postAdBtn,
-                !showPostAdLabel && styles.postAdBtnCompact,
-                {
-                  opacity: pressed ? 0.9 : 1,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                  ...Platform.select({
-                    web: {
-                      boxShadow: pressed
-                        ? '0 4px 12px rgba(0,0,0,0.12)'
-                        : '0 6px 18px rgba(0,0,0,0.14)',
-                      cursor: 'pointer' as const,
-                    },
-                    default: {},
-                  }),
-                },
-              ]}
-            >
-              <Ionicons name="add" size={showPostAdLabel ? 17 : 16} color="#0c0c0e" />
-              {showPostAdLabel ? (
-                <Text style={styles.postAdLabel}>İlan Ver</Text>
-              ) : null}
-            </Pressable>
           </View>
         </View>
 
@@ -256,28 +244,6 @@ const styles = StyleSheet.create({
     height: 34,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  postAdBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 10,
-    minHeight: 38,
-    marginLeft: 4,
-  },
-  postAdBtnCompact: {
-    paddingHorizontal: 10,
-    minWidth: 38,
-  },
-  postAdLabel: {
-    ...Typography.small,
-    fontWeight: '700',
-    color: '#0c0c0e',
-    letterSpacing: 0.1,
   },
   copyRow: {
     marginTop: 8,

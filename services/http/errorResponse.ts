@@ -53,7 +53,7 @@ export function userFacingBeMessage(
   if (field) return field;
   if (body?.message?.trim()) return body.message.trim();
   if (fallback) return fallback;
-  if (status === 401) return 'E-posta veya parola hatalı.';
+  if (status === 401) return 'E-posta veya şifre hatalı.';
   if (status === 403) return 'Bu işlem için yetkiniz yok.';
   if (status === 429) return 'Çok fazla deneme. Lütfen biraz sonra tekrar deneyin.';
   if (status === 503) return 'Servis şu anda kullanılamıyor.';

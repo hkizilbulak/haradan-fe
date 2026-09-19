@@ -1,14 +1,11 @@
-import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
+import React, { memo, useMemo } from 'react';
 import {
   Platform,
-  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { HomeContentContainer } from '@/components/layout';
 import { LazySection } from '@/components/ui/LazySection';
 import { SkeletonPulse } from '@/components/ui/Skeleton';
@@ -53,7 +50,7 @@ type HomeFeedProps = {
   onProductPress: (id: AdvertId) => void;
   onBannerPress: (slide: ActiveBannerItem) => void;
   onCategorySelect: (cat: CategoryTreeNode) => void;
-  onPostAdPress: () => void;
+  onPostAdPress?: () => void;
   onToggleFavorite?: (product: CatalogProductCard) => void;
 };
 
@@ -68,37 +65,23 @@ function HomeFeedComponent({
   onProductPress,
   onBannerPress,
   onCategorySelect,
-  onPostAdPress,
   onToggleFavorite,
 }: HomeFeedProps) {
   const width = useLayoutWidth();
   const isWide = width >= HOME_DESKTOP_BREAKPOINT;
   const safeInsets = useSafeInsets();
   const mobileDockPad = mobileDockScrollInset(safeInsets.bottom);
-  const scrollRef = useRef<ScrollView>(null);
-  const [showTop, setShowTop] = useState(false);
 
   const primary = useThemeColor('primary');
-  const surface = useThemeColor('surface');
-  const text = useThemeColor('text');
-  const border = useThemeColor('border');
 
   const campaignBanners = useMemo(
     () => selectHomeHeroBanners(data?.banners ?? []),
     [data?.banners]
   );
 
-  const onScroll = useCallback((y: number) => {
-    setShowTop((prev) => {
-      const next = y > 480;
-      return prev === next ? prev : next;
-    });
-  }, []);
-
   return (
     <View style={styles.flex}>
       <ScrollView
-        ref={scrollRef}
         style={styles.flex}
         contentContainerStyle={[
           styles.content,
@@ -106,9 +89,7 @@ function HomeFeedComponent({
           !isWide && styles.contentMobile,
         ]}
         showsVerticalScrollIndicator={false}
-        scrollEventThrottle={32}
         removeClippedSubviews={Platform.OS !== 'web'}
-        onScroll={(e) => onScroll(e.nativeEvent.contentOffset.y)}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -195,27 +176,8 @@ function HomeFeedComponent({
           </HomeContentContainer>
         )}
 
-        {isWide ? <SiteFooter onPostAdPress={onPostAdPress} /> : null}
+        {isWide ? <SiteFooter /> : null}
       </ScrollView>
-
-      {showTop ? (
-        <Pressable
-          onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
-          accessibilityRole="button"
-          accessibilityLabel="Yukarı çık"
-          style={[
-            styles.topBtn,
-            !isWide && styles.topBtnMobile,
-            !isWide && { bottom: mobileDockPad - 4 },
-            { backgroundColor: surface, borderColor: border },
-          ]}
-        >
-          <Ionicons name="chevron-up" size={16} color={text} />
-          {isWide ? (
-            <Text style={[styles.topLabel, { color: text }]}>TOP</Text>
-          ) : null}
-        </Pressable>
-      ) : null}
     </View>
   );
 }
@@ -231,22 +193,4 @@ const styles = StyleSheet.create({
   contentMobile: {
     paddingTop: 0,
   },
-  topBtn: {
-    position: 'absolute',
-    right: 16,
-    bottom: 24,
-    width: 44,
-    height: 52,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
-  topBtnMobile: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  topLabel: { fontSize: 9, fontWeight: '700' },
 });

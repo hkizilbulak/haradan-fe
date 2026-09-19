@@ -71,7 +71,6 @@ for (const f of safeFiles) {
 console.log('\n── mobile chrome per screen ──');
 const homeFeed = read('components/home/HomeFeed.tsx');
 assert(!homeFeed.includes('SiteFooter') || homeFeed.includes('isWide ?'), 'home hides footer mobile');
-assert(homeFeed.includes('topBtnMobile'), 'home mobile top btn');
 assert(homeFeed.includes('HomeHeroSection'), 'home hero section');
 
 const listingsView = read('components/listings/ListingsView.tsx');

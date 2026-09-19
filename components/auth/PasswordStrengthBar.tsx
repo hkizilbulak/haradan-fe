@@ -28,7 +28,7 @@ export function PasswordStrengthBar({ password }: PasswordStrengthBarProps) {
   if (!password) return null;
 
   return (
-    <View style={styles.wrap} accessibilityLabel={`Parola gücü: ${LABELS[score]}`}>
+    <View style={styles.wrap} accessibilityLabel={`Şifre gücü: ${LABELS[score]}`}>
       <View style={styles.segments}>
         {[1, 2, 3, 4].map((i) => (
           <View

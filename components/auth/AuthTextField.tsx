@@ -22,6 +22,8 @@ type AuthTextFieldProps = Omit<TextInputProps, 'style'> & {
   leftIcon?: keyof typeof Ionicons.glyphMap;
   rightIcon?: 'eye' | 'eye-off' | null;
   onRightIconPress?: () => void;
+  name?: string;
+  id?: string;
 };
 
 const EASE = Easing.bezier(0.22, 1, 0.36, 1);
@@ -34,6 +36,8 @@ export function AuthTextField({
   leftIcon,
   rightIcon,
   onRightIconPress,
+  name,
+  id,
   onFocus,
   onBlur,
   ...inputProps
@@ -99,7 +103,8 @@ export function AuthTextField({
         ) : null}
         <TextInput
           {...inputProps}
-          placeholderTextColor={tokens.textMuted}
+          {...(Platform.OS === 'web' && (name || id) ? ({ name, id } as object) : null)}
+          placeholderTextColor={tokens.textSecondary}
           onFocus={(e) => {
             setFocused(true);
             onFocus?.(e);
@@ -117,7 +122,7 @@ export function AuthTextField({
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel={
-              rightIcon === 'eye' ? 'Parolayı göster' : 'Parolayı gizle'
+              rightIcon === 'eye' ? 'Şifreyi göster' : 'Şifreyi gizle'
             }
             style={({ pressed }) => [
               styles.iconBtn,

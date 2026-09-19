@@ -56,14 +56,37 @@ export default function RootLayout() {
                   -ms-overflow-style: none !important;
                   scrollbar-width: none !important;
                 }
-                /* Prevent browser password autofill from forcing light/blue background */
+                /* Prevent browser password autofill from making text invisible */
                 input:-webkit-autofill,
                 input:-webkit-autofill:hover, 
                 input:-webkit-autofill:focus, 
                 input:-webkit-autofill:active {
-                  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
-                  -webkit-text-fill-color: inherit !important;
-                  transition: background-color 5000s ease-in-out 0s;
+                  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+                  -webkit-text-fill-color: #1d2129 !important;
+                  color: #1d2129 !important;
+                  caret-color: #1d2129 !important;
+                }
+                /* Explicit placeholder contrast and opacity */
+                input::placeholder,
+                textarea::placeholder {
+                  color: #6c727f !important;
+                  opacity: 1 !important;
+                }
+                input::-webkit-input-placeholder {
+                  color: #6c727f !important;
+                  opacity: 1 !important;
+                }
+                input:-moz-placeholder {
+                  color: #6c727f !important;
+                  opacity: 1 !important;
+                }
+                input::-moz-placeholder {
+                  color: #6c727f !important;
+                  opacity: 1 !important;
+                }
+                input:-ms-input-placeholder {
+                  color: #6c727f !important;
+                  opacity: 1 !important;
                 }
               `}</style>
             </Head>

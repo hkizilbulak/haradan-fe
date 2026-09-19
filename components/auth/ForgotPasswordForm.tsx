@@ -27,14 +27,14 @@ export function ForgotPasswordForm() {
 
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.title, { color: tokens.text }]}>Parolamı unuttum</Text>
+      <Text style={[styles.title, { color: tokens.text }]}>Şifremi unuttum</Text>
       <Text style={[styles.sub, { color: tokens.textSecondary }]}>
         E-posta adresinizi girin; hesap varsa sıfırlama talimatı gönderilir.
       </Text>
 
       <AuthTextField
         label="E-posta"
-        placeholder="E-posta"
+        placeholder="ornek@email.com"
         value={email}
         onChangeText={(v) => {
           clearError();

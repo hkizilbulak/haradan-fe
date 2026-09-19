@@ -127,6 +127,12 @@ export function GoogleSignInButton({
             locale: 'tr',
           });
         }
+        // Google One Tap oturum açma kutucuğunu otomatik tetikle
+        try {
+          window.google.accounts.id.prompt();
+        } catch {
+          /* ignore prompt error */
+        }
       } catch {
         /* ignore GSI init error */
       }

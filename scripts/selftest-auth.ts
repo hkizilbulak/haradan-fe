@@ -42,13 +42,13 @@ assertEqual(resolveApiBaseUrl(undefined), null, 'undefined url is null');
 
 const unauth = parseBeErrorBody({
   code: 'UNAUTHENTICATED',
-  message: 'E-posta veya parola hatalı.',
+  message: 'E-posta veya şifre hatalı.',
   traceId: 't1',
 });
 assertEqual(unauth?.code, 'UNAUTHENTICATED', 'parse unauthenticated code');
 assertEqual(
   userFacingBeMessage(401, unauth),
-  'E-posta veya parola hatalı.',
+  'E-posta veya şifre hatalı.',
   'user message from BE'
 );
 
@@ -56,11 +56,11 @@ const validation = parseBeErrorBody({
   code: 'VALIDATION_ERROR',
   message: 'Geçersiz istek.',
   traceId: 't2',
-  fieldErrors: [{ field: 'password', message: 'Parola en az 8 karakter olmalıdır.' }],
+  fieldErrors: [{ field: 'password', message: 'Şifre en az 8 karakter olmalıdır.' }],
 });
 assertEqual(
   userFacingBeMessage(422, validation),
-  'Parola en az 8 karakter olmalıdır.',
+  'Şifre en az 8 karakter olmalıdır.',
   'field error preferred'
 );
 
@@ -293,7 +293,7 @@ responses['POST /api/v1/auth/login'] = {
   status: 401,
   body: {
     code: 'UNAUTHENTICATED',
-    message: 'E-posta veya parola hatalı.',
+    message: 'E-posta veya şifre hatalı.',
     traceId: 't-login',
   },
 };
@@ -309,7 +309,7 @@ try {
   const ae = err as AuthError;
   assertEqual(ae.status, 401, 'bad login status');
   assertEqual(ae.code, 'UNAUTHENTICATED', 'bad login code');
-  assertEqual(ae.message, 'E-posta veya parola hatalı.', 'bad login message');
+  assertEqual(ae.message, 'E-posta veya şifre hatalı.', 'bad login message');
 }
 
 calls.length = 0;
@@ -341,7 +341,7 @@ responses['POST /api/v1/auth/register'] = {
     code: 'VALIDATION_ERROR',
     message: 'Geçersiz istek.',
     traceId: 't-reg',
-    fieldErrors: [{ field: 'password', message: 'Parola en az 8 karakter olmalıdır.' }],
+    fieldErrors: [{ field: 'password', message: 'Şifre en az 8 karakter olmalıdır.' }],
   },
 };
 try {
@@ -360,7 +360,7 @@ try {
   const ae = err as AuthError;
   assertEqual(ae.status, 422, 'register validation status');
   assertEqual(ae.code, 'VALIDATION_ERROR', 'register validation code');
-  assertEqual(ae.message, 'Parola en az 8 karakter olmalıdır.', 'register field message');
+  assertEqual(ae.message, 'Şifre en az 8 karakter olmalıdır.', 'register field message');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
