@@ -65,12 +65,15 @@ export function useAuth(repo: IAuthRepository = authRepository) {
   );
 
   const loginWithGoogle = useCallback(
-    async (credentialOrIdToken: string, code?: string): Promise<AuthSession | null> => {
+    async (payload: { idToken?: string; credential?: string; code?: string; termsAccepted?: boolean; kvkkAccepted?: boolean; marketingConsent?: boolean }): Promise<AuthSession | null> => {
       const session = await run(() =>
         repo.loginWithGoogle({
-          idToken: credentialOrIdToken,
-          credential: credentialOrIdToken,
-          code,
+          idToken: payload.idToken,
+          credential: payload.credential,
+          code: payload.code,
+          termsAccepted: payload.termsAccepted ?? false,
+          kvkkAccepted: payload.kvkkAccepted ?? false,
+          marketingConsent: payload.marketingConsent ?? false,
           clientContext: resolveFeClientContext(Platform.OS),
         })
       );

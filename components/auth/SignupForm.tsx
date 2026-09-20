@@ -271,6 +271,10 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
           router.replace('/');
         }}
         onError={(err) => setGoogleError(err)}
+        termsAccepted={termsAccepted}
+        kvkkAccepted={kvkkAccepted}
+        marketingConsent={campaignAccepted}
+        onConsentError={(msg) => setLegalError(msg)}
       />
 
       {googleError ? <AuthBanner message={googleError} variant="error" /> : null}

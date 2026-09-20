@@ -9,6 +9,7 @@ import { MobileDockHost } from '@/components/layout/MobileDockHost';
 import { ToastProvider } from '@/components/ui';
 import { Colors } from '@/constants/Colors';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { GlobalConsentModal } from '@/components/auth/GlobalConsentModal';
 
 export default function RootLayout() {
   const { resolvedTheme, isDark } = useAppTheme();
@@ -154,6 +155,7 @@ export default function RootLayout() {
               />
             </Stack>
             <MobileDockHost />
+            <GlobalConsentModal />
           </View>
           <StatusBar style="auto" />
         </HeaderDrawersProvider>

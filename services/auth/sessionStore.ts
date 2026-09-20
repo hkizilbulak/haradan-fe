@@ -15,6 +15,7 @@ function normalizeSession(raw: AuthSession): AuthSession {
       lastName: raw.user?.lastName ?? '',
       phone: raw.user?.phone ?? null,
       emailVerified: raw.user?.emailVerified === true,
+      hasPendingConsents: raw.user?.hasPendingConsents,
     },
   };
 }

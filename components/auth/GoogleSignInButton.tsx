@@ -52,8 +52,12 @@ const DEFAULT_CLIENT_ID =
 type GoogleSignInButtonProps = {
   onSuccess?: (session: AuthSession) => void;
   onError?: (error: string) => void;
-  actionText?: 'login' | 'signup';
+  actionText?: 'login' | 'signup' | 'signin' | 'signin_with' | 'signup_with';
   disabled?: boolean;
+  termsAccepted?: boolean;
+  kvkkAccepted?: boolean;
+  marketingConsent?: boolean;
+  onConsentError?: (error: string) => void;
 };
 
 export function GoogleSignInButton({
@@ -61,6 +65,10 @@ export function GoogleSignInButton({
   onError,
   actionText = 'login',
   disabled = false,
+  termsAccepted = true,
+  kvkkAccepted = true,
+  marketingConsent = false,
+  onConsentError,
 }: GoogleSignInButtonProps) {
   const { loginWithGoogle } = useAuth();
   const { tokens } = useAuthTheme();
@@ -76,9 +84,18 @@ export function GoogleSignInButton({
       onError?.('Google ile kimlik doğrulanamadı.');
       return;
     }
+    if (!termsAccepted || !kvkkAccepted) {
+      onConsentError?.('Lütfen Üyelik Sözleşmesi ve KVKK onayı veriniz.');
+      return;
+    }
     setSigningIn(true);
     try {
-      const session = await loginWithGoogle(response.credential);
+      const session = await loginWithGoogle({
+        idToken: response.credential,
+        termsAccepted,
+        kvkkAccepted,
+        marketingConsent,
+      });
       if (session) {
         onSuccess?.(session);
       } else {
@@ -120,7 +137,7 @@ export function GoogleSignInButton({
             type: 'standard',
             theme: 'outline',
             size: 'large',
-            text: actionText === 'signup' ? 'signup_with' : 'signin_with',
+            text: actionText === 'signup' || actionText === 'signup_with' ? 'signup_with' : 'signin_with',
             shape: 'rectangular',
             logo_alignment: 'left',
             width: 320,
@@ -169,6 +186,10 @@ export function GoogleSignInButton({
 
   const handleManualClick = () => {
     if (disabled || signingIn) return;
+    if (!termsAccepted || !kvkkAccepted) {
+      onConsentError?.('Lütfen Üyelik Sözleşmesi ve KVKK onayı veriniz.');
+      return;
+    }
     if (Platform.OS === 'web' && window.google?.accounts?.id) {
       try {
         window.google.accounts.id.prompt();
@@ -179,7 +200,7 @@ export function GoogleSignInButton({
   };
 
   const label =
-    actionText === 'signup'
+    actionText === 'signup' || actionText === 'signup_with'
       ? 'Google ile kayıt ol'
       : 'Google ile giriş yap';
 
@@ -187,41 +208,63 @@ export function GoogleSignInButton({
     <View style={styles.container}>
       {/* Official Google Identity Services button container on Web */}
       {Platform.OS === 'web' && (
-        <div
-          ref={buttonContainerRef as unknown as React.RefObject<HTMLDivElement>}
-          style={{
-            display: signingIn ? 'none' : 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: '100%',
-            minHeight: 44,
-          }}
-        />
+        <View style={styles.container}>
+          <div
+            ref={buttonContainerRef as unknown as React.RefObject<HTMLDivElement>}
+            style={{
+              display: signingIn ? 'none' : 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '100%',
+              minHeight: 44,
+              pointerEvents: (!termsAccepted || !kvkkAccepted) ? 'none' : 'auto',
+              opacity: (!termsAccepted || !kvkkAccepted) ? 0.6 : 1,
+            }}
+          />
+          {(!termsAccepted || !kvkkAccepted) && (
+            <Pressable
+              style={[StyleSheet.absoluteFill, { zIndex: 10 }]}
+              onPress={() => {
+                onConsentError?.('Lütfen Üyelik Sözleşmesi ve KVKK onayı veriniz.');
+              }}
+            />
+          )}
+        </View>
       )}
 
       {/* Fallback / Loading Custom Button */}
       {(!scriptLoaded || signingIn || Platform.OS !== 'web') && (
-        <Pressable
-          onPress={handleManualClick}
-          disabled={disabled || signingIn}
-          style={({ pressed }) => [
-            styles.customButton,
-            {
-              borderColor: tokens.border,
-              backgroundColor: pressed ? tokens.surfaceElevated : tokens.surface,
-              opacity: disabled ? 0.6 : 1,
-            },
-          ]}
-        >
-          {signingIn ? (
-            <ActivityIndicator size="small" color={tokens.primary} />
-          ) : (
-            <Ionicons name="logo-google" size={18} color="#EA4335" />
+        <View style={styles.container}>
+          <Pressable
+            onPress={handleManualClick}
+            disabled={disabled || signingIn}
+            style={({ pressed }) => [
+              styles.customButton,
+              {
+                borderColor: tokens.border,
+                backgroundColor: pressed ? tokens.surfaceElevated : tokens.surface,
+                opacity: disabled || (!termsAccepted || !kvkkAccepted) ? 0.6 : 1,
+              },
+            ]}
+          >
+            {signingIn ? (
+              <ActivityIndicator size="small" color={tokens.primary} />
+            ) : (
+              <Ionicons name="logo-google" size={18} color="#EA4335" />
+            )}
+            <Text style={[styles.customButtonText, { color: tokens.text }]}>
+              {signingIn ? 'Giriş yapılıyor...' : label}
+            </Text>
+          </Pressable>
+          {(!termsAccepted || !kvkkAccepted) && (
+            <Pressable
+              style={[StyleSheet.absoluteFill, { zIndex: 10 }]}
+              onPress={() => {
+                onConsentError?.('Lütfen Üyelik Sözleşmesi ve KVKK onayı veriniz.');
+              }}
+            />
           )}
-          <Text style={[styles.customButtonText, { color: tokens.text }]}>
-            {signingIn ? 'Giriş yapılıyor...' : label}
-          </Text>
-        </Pressable>
+        </View>
       )}
     </View>
   );

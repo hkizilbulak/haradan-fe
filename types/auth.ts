@@ -17,6 +17,9 @@ export type GoogleLoginRequest = {
   code?: string;
   redirectUri?: string;
   clientContext: FeClientContext;
+  termsAccepted: boolean;
+  kvkkAccepted: boolean;
+  marketingConsent: boolean;
 };
 
 /** OpenAPI: RegisterUserRequest */
@@ -93,6 +96,7 @@ export type AuthUser = {
   phone?: string | null;
   emailVerified?: boolean;
   channel?: string;
+  hasPendingConsents?: boolean;
 };
 
 /** OpenAPI: MyProfileResponse (ACCOUNT-01) */
@@ -103,9 +107,10 @@ export type MyProfileResponse = {
   firstName: string;
   lastName: string;
   phone?: string | null;
-  role: string;
-  status: string;
+  role: 'USER' | 'ADMIN';
+  status: 'ACTIVE' | 'BANNED' | 'UNVERIFIED' | 'PASSIVE';
   channel?: string;
+  hasPendingConsents?: boolean;
 };
 
 export type AuthSession = AuthTokenResponse & {

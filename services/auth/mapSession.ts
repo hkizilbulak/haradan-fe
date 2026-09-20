@@ -9,6 +9,7 @@ export function mapProfileToUser(profile: {
   lastName: string;
   phone?: string | null;
   emailVerified?: boolean;
+  hasPendingConsents?: boolean;
 }): AuthUser {
   return {
     id: profile.id,
@@ -17,6 +18,7 @@ export function mapProfileToUser(profile: {
     lastName: profile.lastName,
     phone: profile.phone ?? null,
     emailVerified: profile.emailVerified === true,
+    hasPendingConsents: profile.hasPendingConsents,
   };
 }
 
