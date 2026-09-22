@@ -949,16 +949,22 @@ export function PostDetailsStep({
         onRequestClose={() => setAiModalVisible(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={[styles.modalContent, { backgroundColor: surface }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <Ionicons name="sparkles" size={20} color={primary} />
-              <Text style={[styles.modalTitle, { color: text }]}>Yapay Zeka Önerisi</Text>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setAiModalVisible(false)} />
+          <View style={[styles.modalContent, { backgroundColor: surface, maxHeight: '90%' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="sparkles" size={20} color={primary} />
+                <Text style={[styles.modalTitle, { color: text }]}>Yapay Zeka Önerisi</Text>
+              </View>
+              <Pressable onPress={() => setAiModalVisible(false)} style={{ padding: 4, marginRight: -4 }}>
+                <Ionicons name="close" size={24} color={muted} />
+              </Pressable>
             </View>
             <Text style={[styles.modalDesc, { color: secondary }]}>
               Seçtiğiniz at için aşağıdaki ilan detayları oluşturuldu. İstediğiniz gibi düzenleyebilir veya doğrudan kullanabilirsiniz.
             </Text>
             
-            <View style={{ gap: 12, marginTop: 16 }}>
+            <ScrollView style={{ marginTop: 16 }} contentContainerStyle={{ gap: 12, paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Text style={[styles.fieldLabel, { color: text, marginBottom: 0 }]}>Başlık</Text>
                 <Pressable onPress={() => setAiTitleSelected(!aiTitleSelected)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -986,9 +992,9 @@ export function PostDetailsStep({
                   onChange={setEditingAiDesc}
                 />
               </View>
-            </View>
+            </ScrollView>
 
-            <View style={styles.modalActions}>
+            <View style={[styles.modalActions, { marginTop: 8 }]}>
               <Pressable
                 onPress={() => setAiModalVisible(false)}
                 style={[styles.modalBtn, styles.modalBtnGhost, { borderColor: border }]}
