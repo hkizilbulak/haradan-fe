@@ -98,8 +98,9 @@ export class HttpListingRepository implements IListingRepository {
     draft: ListingDraft,
     accessToken: string
   ): Promise<DraftPersistResult> {
+    const isNewAdvert = !draft.advertId;
     const shell = await this.upsertDraftShell(draft, accessToken);
-    this.startMediaPipeline(draft, accessToken, shell);
+    this.startMediaPipeline(draft, accessToken, shell, isNewAdvert);
     return shell;
   }
 
@@ -227,8 +228,8 @@ export class HttpListingRepository implements IListingRepository {
             advertId,
             version: draft.serverVersion ?? 1,
             mediaVersion: draft.mediaVersion ?? 1,
-            status: 'DRAFT',
-          });
+            status: backendStatus ?? 'DRAFT',
+          }, false);
           version = synced.version;
         }
       }
@@ -366,10 +367,11 @@ export class HttpListingRepository implements IListingRepository {
   private startMediaPipeline(
     draft: ListingDraft,
     accessToken: string,
-    shell: DraftPersistResult
+    shell: DraftPersistResult,
+    isNewAdvert = false
   ): void {
     const advertId = shell.advertId;
-    const promise = this.syncMediaNow(draft, accessToken, shell).finally(() => {
+    const promise = this.syncMediaNow(draft, accessToken, shell, isNewAdvert).finally(() => {
       if (this.mediaPipeline?.advertId === advertId) {
         // keep resolved promise for awaiters; replace only on new start
       }
@@ -380,7 +382,8 @@ export class HttpListingRepository implements IListingRepository {
   private async syncMediaNow(
     draft: ListingDraft,
     accessToken: string,
-    shell: DraftPersistResult
+    shell: DraftPersistResult,
+    isNewAdvert = false
   ): Promise<{ version: number; mediaVersion: number }> {
     const uploaded = await Promise.all(
       draft.media.map(async (slot) => {
@@ -393,26 +396,71 @@ export class HttpListingRepository implements IListingRepository {
           },
           accessToken
         );
+        slot.assetId = res.assetId;
         return { ...slot, assetId: res.assetId } satisfies ListingMediaSlot;
       })
     );
 
     let mediaVersion = shell.mediaVersion;
-    const alreadyAttached = new Set<string>();
-    // Best-effort: if we know prior media from a previous shell, skip re-attach.
-    // Fresh create has empty media; re-entry uses attach idempotency on BE.
+    let existingMediaOnServer: { assetId: string; displayOrder: number; isCover: boolean; lifecycleStatus?: string }[] = [];
+
+    if (!isNewAdvert) {
+      try {
+        const serverAdvert = await this.http.request<OwnerAdvertResponse>(
+          `/v1/me/adverts/${shell.advertId}`,
+          {
+            method: 'GET',
+            accessToken,
+          }
+        );
+        if (Array.isArray(serverAdvert.media)) {
+          existingMediaOnServer = serverAdvert.media;
+        }
+        if (typeof serverAdvert.mediaVersion === 'number') {
+          mediaVersion = serverAdvert.mediaVersion;
+        }
+      } catch {
+        // best-effort
+      }
+    }
+
+    const desiredAssetIds = new Set(
+      uploaded.map((m) => m.assetId).filter((id): id is string => Boolean(id))
+    );
+    const serverAssetIds = new Set(
+      existingMediaOnServer.map((m) => m.assetId).filter((id): id is string => Boolean(id))
+    );
+
+    // Detach any server media not in current desired draft media
+    for (const existing of existingMediaOnServer) {
+      if (!desiredAssetIds.has(existing.assetId)) {
+        try {
+          const res = await this.http.request<AdvertMediaCollectionResponse>(
+            `/v1/me/adverts/${shell.advertId}/media/${encodeURIComponent(existing.assetId)}?expectedMediaVersion=${mediaVersion}`,
+            {
+              method: 'DELETE',
+              accessToken,
+            }
+          );
+          if (res && typeof res.mediaVersion === 'number') {
+            mediaVersion = res.mediaVersion;
+          }
+        } catch {
+          // best-effort
+        }
+      }
+    }
 
     const ordered = [
       ...uploaded.filter((m) => m.isCover),
       ...uploaded.filter((m) => !m.isCover),
     ];
     const coverSlot = uploaded.find((m) => m.isCover) ?? uploaded[0];
-    // Cover-first order: first attach becomes cover on BE — skip redundant cover PUT.
     const coverIsFirst =
       Boolean(coverSlot?.assetId) && ordered[0]?.assetId === coverSlot?.assetId;
 
     for (const slot of ordered) {
-      if (!slot.assetId || alreadyAttached.has(slot.assetId)) continue;
+      if (!slot.assetId || serverAssetIds.has(slot.assetId)) continue;
       const attached = await this.http.request<AdvertMediaCollectionResponse>(
         `/v1/me/adverts/${shell.advertId}/media`,
         {
@@ -425,22 +473,29 @@ export class HttpListingRepository implements IListingRepository {
         }
       );
       mediaVersion = attached.mediaVersion;
-      alreadyAttached.add(slot.assetId);
+      serverAssetIds.add(slot.assetId);
     }
 
-    if (coverSlot?.assetId && !coverIsFirst) {
-      const covered = await this.http.request<AdvertMediaCollectionResponse>(
-        `/v1/me/adverts/${shell.advertId}/media/cover`,
-        {
-          method: 'PUT',
-          accessToken,
-          body: JSON.stringify({
-            assetId: coverSlot.assetId,
-            expectedMediaVersion: mediaVersion,
-          }),
+    if (coverSlot?.assetId && (!coverIsFirst || existingMediaOnServer.length > 0)) {
+      const currentCover = existingMediaOnServer.find((m) => m.isCover);
+      if (currentCover?.assetId !== coverSlot.assetId) {
+        try {
+          const covered = await this.http.request<AdvertMediaCollectionResponse>(
+            `/v1/me/adverts/${shell.advertId}/media/cover`,
+            {
+              method: 'PUT',
+              accessToken,
+              body: JSON.stringify({
+                assetId: coverSlot.assetId,
+                expectedMediaVersion: mediaVersion,
+              }),
+            }
+          );
+          mediaVersion = covered.mediaVersion;
+        } catch {
+          // best-effort
         }
-      );
-      mediaVersion = covered.mediaVersion;
+      }
     }
 
     return { version: shell.version, mediaVersion };

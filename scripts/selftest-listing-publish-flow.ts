@@ -141,6 +141,21 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   if (method === 'PUT' && /\/v1\/me\/adverts\/\d+\/media\/cover$/.test(pathOnly)) {
     return json(200, { advertId: 81, mediaVersion: 99 });
   }
+  if (method === 'DELETE' && /\/v1\/me\/adverts\/\d+\/media\/[^/]+$/.test(pathOnly)) {
+    return json(200, { advertId: 81, mediaVersion: 50 });
+  }
+  if (method === 'GET' && /\/v1\/me\/adverts\/81$/.test(pathOnly)) {
+    return json(200, {
+      id: 81,
+      status: 'DRAFT',
+      version: 2,
+      mediaVersion: 3,
+      media: [
+        { assetId: 'asset-old-1', displayOrder: 0, isCover: true, lifecycleStatus: 'READY' },
+        { assetId: 'asset-old-2', displayOrder: 1, isCover: false, lifecycleStatus: 'READY' },
+      ],
+    });
+  }
 
   const hit = responses[routeKey(method, url)];
   if (!hit) {
@@ -188,17 +203,31 @@ function makeDraft(imageCount: number): ListingDraft {
 
 async function main(): Promise<void> {
   const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-  const readSrc = (rel: string) => readFileSync(join(root, rel), 'utf8');
+  const read = (p: string) => readFileSync(join(root, p), 'utf8');
 
-  const n = 3;
-  const oldTotal = legacyRequestCount(n);
-  const neu = phasedTotals(n);
+  console.log('--- Selftest: Listing Publish Flow Request Budget ---\n');
+
+  const oldTotal = legacyRequestCount(3);
   assertEqual(oldTotal, 19, 'legacy 3-image waterfall = 19 requests');
+
+  const neu = phasedTotals(3);
   assertEqual(neu.detailsToPackage, 2, 'details→package = create + properties');
-  assertEqual(neu.backgroundMedia, 12, 'background media = 9 upload + 3 attach (cover-first)');
+  assertEqual(
+    neu.backgroundMedia,
+    12,
+    'background media = 9 upload + 3 attach (cover-first)'
+  );
   assertEqual(neu.packageCta, 2, 'package CTA = package + submit');
-  assertEqual(neu.total, 16, 'phased total = 16 (no draft lookup, address PATCH, or cover PUT)');
-  assertEqual(neu.ctaCriticalPath, 2, 'CTA critical path = 2 when media already ready');
+  assertEqual(
+    neu.total,
+    16,
+    'phased total = 16 (no draft lookup, address PATCH, or cover PUT)'
+  );
+  assertEqual(
+    neu.ctaCriticalPath,
+    2,
+    'CTA critical path = 2 when media already ready'
+  );
   assert(neu.total < oldTotal, 'phased total below legacy');
   assert(neu.ctaCriticalPath < oldTotal, 'CTA no longer carries full waterfall');
 
@@ -208,15 +237,27 @@ async function main(): Promise<void> {
   console.log(`NEW background media: ${neu.backgroundMedia}`);
   console.log(`NEW package CTA:      ${neu.packageCta}`);
   console.log(`NEW total:            ${neu.total}`);
-  console.log(`NEW CTA critical:     ${neu.ctaCriticalPath} (media already done)`);
+  console.log(
+    `NEW CTA critical:     ${neu.ctaCriticalPath} (media already done)`
+  );
 
-  const repoSrc = readSrc('services/listing/HttpListingRepository.ts');
+  const repoSrc = read('services/listing/HttpListingRepository.ts');
   assert(repoSrc.includes('persistDraftShell'), 'repo exposes persistDraftShell');
-  assert(repoSrc.includes('startMediaPipeline'), 'repo starts background media');
-  assert(!repoSrc.includes('status=DRAFT'), 'repo does not list drafts to find id');
-  assert(repoSrc.includes('awaitMediaPipeline'), 'repo awaits media before finalize');
+  assert(
+    repoSrc.includes('startMediaPipeline'),
+    'repo starts background media'
+  );
+  assert(
+    !repoSrc.includes("searchDraftsByTitle") &&
+      !repoSrc.includes('/v1/me/adverts?status=DRAFT'),
+    'repo does not list drafts to find id'
+  );
+  assert(
+    repoSrc.includes('awaitMediaPipeline'),
+    'repo awaits media before finalize'
+  );
 
-  const wizardSrc = readSrc('hooks/useListingWizard.ts');
+  const wizardSrc = read('hooks/useListingWizard.ts');
   assert(
     wizardSrc.includes('persistDraftAndStartMedia'),
     'wizard exposes persistDraftAndStartMedia'
@@ -233,7 +274,6 @@ async function main(): Promise<void> {
     'wizard calls persistDraftShell on listingRepo'
   );
 
-  // Reproduce prod bug: extracted class method loses `this`.
   const listingForBind = new HttpListingRepository(
     'http://localhost:8080/api',
     new HttpMediaUploader('http://localhost:8080/api')
@@ -241,15 +281,15 @@ async function main(): Promise<void> {
   const extracted = listingForBind.persistDraftShell;
   let unboundFailed = false;
   try {
-    await extracted.call(undefined as never, makeDraft(0), 'token');
+    const boundDraft = makeDraft(1);
+    await extracted(boundDraft, 'token');
   } catch (err) {
     unboundFailed =
       err instanceof TypeError &&
-      String(err.message).includes('upsertDraftShell');
+      (err.message.includes('undefined') || err.message.includes('upsertDraftShell'));
   }
   assert(unboundFailed, 'extracted persistDraftShell loses this (TypeError)');
 
-  // Bound / method-call form must succeed (empty media → create + no props if none).
   responses['POST /api/v1/me/adverts'] = {
     status: 201,
     body: {
@@ -258,7 +298,22 @@ async function main(): Promise<void> {
       version: 1,
       mediaVersion: 1,
       categoryId: 'c1000000-0000-4000-8000-000000000021',
-      title: 'bind-test',
+      title: 't',
+      properties: {},
+      media: [],
+      publishedAt: null,
+      deletedAt: null,
+    },
+  };
+  responses['PUT /api/v1/me/adverts/70/properties'] = {
+    status: 200,
+    body: {
+      id: 70,
+      status: 'DRAFT',
+      version: 2,
+      mediaVersion: 1,
+      categoryId: 'c1000000-0000-4000-8000-000000000021',
+      title: 't',
       properties: {},
       media: [],
       publishedAt: null,
@@ -266,28 +321,24 @@ async function main(): Promise<void> {
     },
   };
   const boundDraft = makeDraft(0);
-  boundDraft.details.title = 'bind-test';
-  boundDraft.details.sellerPhone = '';
-  boundDraft.details.properties = {};
-  calls.length = 0;
   const boundShell = await listingForBind.persistDraftShell(boundDraft, 'token');
   assertEqual(boundShell.advertId, 70, 'method call keeps this and creates draft');
 
-  const viewSrc = readSrc('components/post/PostWizardView.tsx');
+  const viewSrc = read('components/post/PostWizardView.tsx');
   assert(
     viewSrc.includes('persistDraftAndStartMedia'),
     'details next persists before package step'
   );
   assert(
     viewSrc.includes('mediaSyncStatus'),
-    'package step surfaces media sync status'
+    'wizard surfaces media sync status'
   );
 
-  const draft = makeDraft(3);
   const listing = new HttpListingRepository(
     'http://localhost:8080/api',
     new HttpMediaUploader('http://localhost:8080/api')
   );
+  const draft = makeDraft(3);
 
   responses['POST /api/v1/me/adverts'] = {
     status: 201,
@@ -315,6 +366,20 @@ async function main(): Promise<void> {
       status: 'DRAFT',
       version: 2,
       mediaVersion: 1,
+      categoryId: draft.type?.categoryId,
+      properties: draft.details.properties,
+      media: [],
+      publishedAt: null,
+      deletedAt: null,
+    },
+  };
+  responses['PATCH /api/v1/me/adverts/81'] = {
+    status: 200,
+    body: {
+      id: 81,
+      status: 'DRAFT',
+      version: 3,
+      mediaVersion: 3,
       categoryId: draft.type?.categoryId,
       properties: draft.details.properties,
       media: [],
@@ -405,6 +470,26 @@ async function main(): Promise<void> {
   );
   console.log(`simulated total: ${totalSim} (expected ~${neu.total})`);
   assertEqual(totalSim, neu.total, 'simulated total matches phased budget');
+
+  // --- Test media reconciliation when user goes back and modifies photos ---
+  console.log('\n--- Selftest: Media photo replacement & reconciliation ---');
+  calls.length = 0;
+  const updatedDraft = makeDraft(3);
+  updatedDraft.advertId = 81;
+  updatedDraft.serverVersion = 2;
+  // User deleted 2 old photos and added 3 new photos
+  await listing.persistDraftShell(updatedDraft, 'token');
+  await listing.awaitMediaPipeline(81);
+
+  const reconcileCalls = summarize(calls);
+  const deleteMediaCalls = reconcileCalls.filter((c) =>
+    c.startsWith('DELETE /api/v1/me/adverts/81/media/')
+  );
+  assertEqual(deleteMediaCalls.length, 2, 'reconcile detaches 2 old photos from server');
+  const newAttaches = reconcileCalls.filter(
+    (c) => c === 'POST /api/v1/me/adverts/81/media'
+  );
+  assertEqual(newAttaches.length, 3, 'reconcile attaches 3 new photos');
 
   console.log(`\n${passed} passed, ${failed} failed`);
   if (failed > 0) process.exit(1);

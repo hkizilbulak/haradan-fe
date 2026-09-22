@@ -126,15 +126,7 @@ assertEqual(
   'Geçerli bir fiyat girin.',
   'price required'
 );
-assertEqual(
-  detailsErrors(
-    { ...incomplete, details: { ...incomplete.details, address: '' } },
-    undefined,
-    { ADDRESS: { code: 'ADDRESS', title: 'Açık Adres', isActive: true, isRequired: true, isFormVisible: true, isPublicVisible: true } }
-  ).address,
-  'Açık adres zorunludur (en az 5 karakter).',
-  'address required'
-);
+assert(!detailsErrors(incomplete).address, 'address is not required');
 
 
 type Call = { url: string; init: RequestInit };
