@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { AdvertCard } from '@/components/advert';
 import { Spacing } from '@/constants/Spacing';
@@ -27,9 +27,13 @@ export function AdvertGridSection({
   maxItems = 6,
 }: AdvertGridSectionProps) {
   const { width } = useWindowDimensions();
+  const [containerWidth, setContainerWidth] = useState(0);
   const gap = Spacing.sm;
   const pad = Spacing.md;
-  const colWidth = (width - pad * 2 - gap) / 2;
+  const colWidth = useMemo(() => {
+    const available = containerWidth > 0 ? containerWidth : width - pad * 2 - 20;
+    return Math.floor((available - gap - 1) / 2);
+  }, [containerWidth, width, pad, gap]);
 
   const rows = useMemo(() => {
     const items = adverts.slice(0, maxItems);
@@ -60,7 +64,10 @@ export function AdvertGridSection({
   return (
     <View style={styles.wrap}>
       <SectionHeader title={title} onActionPress={onViewAll} />
-      <View style={styles.grid}>
+      <View
+        style={styles.grid}
+        onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width - Spacing.md * 2)}
+      >
         {rows.map((pair, rowIndex) => (
           <View key={`row-${rowIndex}`} style={[styles.row, { gap }]}>
             {pair.map(renderCard)}

@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FeaturedListingCard } from '@/components/product/FeaturedListingCard';
@@ -36,8 +36,16 @@ export const NewArrivalsSection = memo(function NewArrivalsSection({
   const cols = isWide ? 4 : 2;
   const gap = isWide ? Spacing.lg : Spacing.md;
   const pad = homeContentPadding(isWide);
-  const contentWidth = Math.min(width, HOME_CONTENT_MAX_WIDTH) - pad * 2;
-  const colWidth = (contentWidth - gap * (cols - 1)) / cols;
+
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  const colWidth = useMemo(() => {
+    const available =
+      containerWidth > 0
+        ? containerWidth
+        : Math.min(width, HOME_CONTENT_MAX_WIDTH) - pad * 2 - 20;
+    return Math.floor((available - gap * (cols - 1) - 1) / cols);
+  }, [containerWidth, width, isWide, pad, gap, cols]);
 
   // STRICT check for urgent products: DO NOT show section if empty!
   const urgentItems = useMemo(() => {
@@ -60,7 +68,10 @@ export const NewArrivalsSection = memo(function NewArrivalsSection({
         onActionPress={onViewAll}
       />
 
-      <View style={[styles.grid, { gap, rowGap: isWide ? 28 : Spacing.md }]}>
+      <View
+        style={[styles.grid, { gap, rowGap: isWide ? 28 : Spacing.md }]}
+        onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
+      >
         {urgentItems.map((p) => (
           <FeaturedListingCard
             key={p.id}

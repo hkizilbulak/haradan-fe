@@ -129,9 +129,9 @@ async function main(): Promise<void> {
   const data = await home.getHomepage();
   assertEqual(data.urgentAdverts.length, 1, 'homepage urgent feed');
   assert(data.urgentAdverts[0]?.isUrgent, 'urgent feed item is urgent');
-  assertEqual(data.trending.length, 1, 'homepage featured → trending');
-  assert(data.trending[0]?.isFeatured, 'featured feed item is featured');
-  assertEqual(data.specialOffers.length, 0, 'empty showcase does not use mock adverts');
+  assertEqual(data.trending.length, 0, 'empty showcase → empty trending');
+  assertEqual(data.specialOffers.length, 1, 'homepage featured → specialOffers');
+  assert(data.specialOffers[0]?.isFeatured, 'featured feed item is featured');
   assertEqual(data.categories.length, 0, 'empty catalog is not replaced with mock categories');
   assertEqual(
     calls.filter((c) => c.url.includes('/v1/homepage')).length,

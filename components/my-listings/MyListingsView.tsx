@@ -141,15 +141,19 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
     ]
   );
 
+  const [containerWidth, setContainerWidth] = useState(0);
   const cols = isWide ? 3 : 2;
   const gap = isWide ? Spacing.lg : Spacing.sm;
   const pad = isWide ? homeContentPadding(isWide) : Spacing.md;
-  const contentWidth = isWide
-    ? Math.min(width, HOME_CONTENT_MAX_WIDTH)
-    : width;
-  const colWidth = Math.floor(
-    (contentWidth - pad * 2 - gap * (cols - 1)) / cols
-  );
+  const colWidth = useMemo(() => {
+    const available =
+      containerWidth > 0
+        ? containerWidth
+        : (isWide ? Math.min(width, HOME_CONTENT_MAX_WIDTH) : width) -
+          pad * 2 -
+          20;
+    return Math.floor((available - gap * (cols - 1) - 1) / cols);
+  }, [containerWidth, isWide, width, pad, gap, cols]);
 
   const allItems = useMemo(
     () => [
@@ -550,7 +554,12 @@ export function MyListingsView({ accessToken }: MyListingsViewProps) {
               {showPostCta ? <Button onPress={postAd}>İlan Ver</Button> : null}
             </View>
           ) : (
-            <View style={[styles.grid, { gap }]}>{listingCards}</View>
+            <View
+              style={[styles.grid, { gap }]}
+              onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
+            >
+              {listingCards}
+            </View>
           )}
         </HomeContentContainer>
       </ScrollView>

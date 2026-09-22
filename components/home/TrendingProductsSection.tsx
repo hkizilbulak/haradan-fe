@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,8 +34,16 @@ export const TrendingProductsSection = memo(function TrendingProductsSection({
   const cols = isWide ? 4 : 2;
   const gap = isWide ? Spacing.lg : Spacing.md;
   const pad = homeContentPadding(isWide);
-  const contentWidth = Math.min(width, HOME_CONTENT_MAX_WIDTH) - pad * 2;
-  const colWidth = (contentWidth - gap * (cols - 1)) / cols;
+
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  const colWidth = useMemo(() => {
+    const available =
+      containerWidth > 0
+        ? containerWidth
+        : Math.min(width, HOME_CONTENT_MAX_WIDTH) - pad * 2 - 20;
+    return Math.floor((available - gap * (cols - 1) - 1) / cols);
+  }, [containerWidth, width, isWide, pad, gap, cols]);
 
   const items = useMemo(() => products.slice(0, 7), [products]);
 
@@ -47,9 +55,6 @@ export const TrendingProductsSection = memo(function TrendingProductsSection({
   // If no showcase products, hide section completely!
   if (items.length === 0) return null;
 
-  // Insert banner ad card at position index 2 (or middle of list)
-  const bannerInsertIndex = Math.min(2, items.length);
-
   return (
     <View style={styles.wrap}>
       <SectionHeader
@@ -57,14 +62,17 @@ export const TrendingProductsSection = memo(function TrendingProductsSection({
         actionLabel="Tümünü gör"
         onActionPress={onViewAll}
       />
-      <View style={[styles.grid, { gap, rowGap: isWide ? 28 : Spacing.md }]}>
+      <View
+        style={[styles.grid, { gap, rowGap: isWide ? 28 : Spacing.md }]}
+        onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
+      >
         {items.map((p) => (
           <FeaturedListingCard
             key={p.id}
             product={p}
             width={colWidth}
             compact={!isWide}
-            badge="featured"
+            badge="auto"
             onPress={onProductPress}
             onToggleFavorite={onToggleFavorite}
           />

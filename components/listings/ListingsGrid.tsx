@@ -64,10 +64,10 @@ export const ListingsGrid = memo(function ListingsGrid({
   const colWidth = useMemo(() => {
     if (railWidth <= 0) {
       const fallback =
-        Math.min(width, HOME_CONTENT_MAX_WIDTH) - pad * 2 - (isWide ? 272 : 0);
-      return Math.floor((fallback - gap * (cols - 1)) / cols);
+        Math.min(width, HOME_CONTENT_MAX_WIDTH) - pad * 2 - (isWide ? 272 : 0) - 20;
+      return Math.floor((fallback - gap * (cols - 1) - 1) / cols);
     }
-    return Math.floor((railWidth - gap * (cols - 1)) / cols);
+    return Math.floor((railWidth - gap * (cols - 1) - 1) / cols);
   }, [railWidth, gap, cols, width, pad, isWide]);
 
   if (items.length === 0) {

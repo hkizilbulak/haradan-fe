@@ -93,9 +93,9 @@ export class HttpHomepageRepository implements IHomepageRepository {
       (items ?? []).map((item) => mapPublishedCardToCatalog(item, this.apiBase));
 
     const urgentAdverts = mapItems(bootstrap.urgent?.items);
-    const trending = mapItems(bootstrap.featured?.items);
-    const newAdverts = mapItems(bootstrap.newAdverts?.items);
     const showcaseItems = mapItems(bootstrap.showcase?.items);
+    const featuredAdverts = mapItems(bootstrap.featured?.items);
+    const newAdverts = mapItems(bootstrap.newAdverts?.items);
     const categories = filterCategories(bootstrap.categories?.items);
     const liveBanners = (bootstrap.banners?.items ?? []).map((item) =>
       normalizeBannerItem(item, this.apiBase)
@@ -109,8 +109,8 @@ export class HttpHomepageRepository implements IHomepageRepository {
         items: showcaseItems,
       },
       newAdverts,
-      trending,
-      specialOffers: showcaseItems,
+      trending: showcaseItems,
+      specialOffers: featuredAdverts,
       urgentAdverts,
       macPromo: {
         title: '',
