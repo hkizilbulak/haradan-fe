@@ -2,6 +2,7 @@ export type LocalImageFile = {
   uri: string;
   mimeType: string;
   fileName: string;
+  file?: File;
 };
 
 export type UploadedMedia = {

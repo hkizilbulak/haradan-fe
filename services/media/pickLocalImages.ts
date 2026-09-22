@@ -77,6 +77,7 @@ function pickWeb(remaining: number): Promise<PickImagesResult> {
           uri: URL.createObjectURL(file),
           mimeType: resolveImageMimeType(file.type, file.name),
           fileName: file.name || 'photo.jpg',
+          file,
         })),
         error,
       });

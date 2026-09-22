@@ -142,6 +142,7 @@ function normalizeContentType(raw: string): string {
 }
 
 async function readFileBlob(file: LocalImageFile): Promise<Blob> {
+  if (file.file) return file.file;
   const res = await fetch(file.uri);
   return res.blob();
 }
