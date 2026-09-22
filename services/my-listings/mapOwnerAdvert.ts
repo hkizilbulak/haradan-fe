@@ -79,6 +79,25 @@ export function mapOwnerAdvertToCard(
     (dto.properties as any)?.rejection_reason ??
     (dto.properties as any)?.rejectReason ??
     null;
+  const rawProps = (dto.properties || {}) as Record<string, any>;
+  const districtName =
+    dto.districtName ??
+    (rawProps.ilce as string) ??
+    (rawProps.districtName as string) ??
+    null;
+  const provinceName =
+    dto.provinceName ??
+    (rawProps.sehir as string) ??
+    (rawProps.provinceName as string) ??
+    null;
+  const locationName =
+    dto.locationName ??
+    (provinceName
+      ? districtName
+        ? `${districtName}, ${provinceName}`
+        : provinceName
+      : null);
+
   return {
     id: dto.id,
     title: (dto.title ?? '').trim() || 'Başlıksız ilan',
@@ -87,6 +106,9 @@ export function mapOwnerAdvertToCard(
     categoryId: dto.categoryId ?? '',
     districtId: dto.districtId ?? '',
     provinceId: dto.provinceId ?? '',
+    districtName,
+    provinceName,
+    locationName,
     horseId: dto.horseId,
     cover: pickCover(dto.media, opts.apiBase),
     isFavorite: false,
@@ -103,6 +125,7 @@ export function mapOwnerAdvertToCard(
     oldPrice: null,
     available: null,
     brand: null,
+    properties: rawProps,
     status: toMyListingTab(dto.status),
     backendStatus: dto.status,
     version: dto.version,

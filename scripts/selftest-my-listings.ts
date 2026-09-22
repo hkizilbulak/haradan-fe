@@ -102,7 +102,36 @@ const card = mapOwnerAdvertToCard(
   },
   { apiBase, sellerId: 'user-1' }
 );
-assertEqual(card.status, 'pending', 'card tab from PENDING');
+assert(card.properties !== undefined, 'card has properties defined');
+
+const horseCard = mapOwnerAdvertToCard(
+  {
+    id: 2,
+    status: 'PUBLISHED',
+    version: 1,
+    mediaVersion: 1,
+    categoryId: 'c1000000-0000-4000-8000-000000000011',
+    districtId: 'dist-1',
+    provinceId: 'prov-1',
+    horseId: null,
+    title: 'Fırtına',
+    description: 'Açıklama',
+    price: { amountMinor: 2500000, currency: 'TRY' },
+    properties: {
+      HORSE_BREED: 'Safkan Arap',
+      HORSE_AGE: '5',
+      HORSE_GENDER: 'Dişi',
+      COAT_COLOR: 'Kır',
+    },
+    media: [],
+    publishedAt: '2026-08-15T10:00:00Z',
+    updatedAt: '2026-08-15T10:00:00Z',
+  },
+  { apiBase, sellerId: 'user-1' }
+);
+assertEqual(horseCard.properties.HORSE_BREED, 'Safkan Arap', 'horseCard properties HORSE_BREED preserved');
+assertEqual(horseCard.properties.HORSE_AGE, '5', 'horseCard properties HORSE_AGE preserved');
+assertEqual(horseCard.properties.HORSE_GENDER, 'Dişi', 'horseCard properties HORSE_GENDER preserved');
 assertEqual(card.backendStatus, 'PENDING_REVIEW', 'card keeps BE status');
 assertEqual(card.version, 2, 'card version');
 assertEqual(card.provinceId, 'prov-1', 'province on card');

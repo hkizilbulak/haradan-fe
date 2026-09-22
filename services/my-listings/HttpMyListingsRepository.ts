@@ -68,6 +68,64 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
       }
     }
 
+    // Collect horseIds that need enrichment
+    const horseIdsToFetch = new Set<string>();
+    for (const item of merged.values()) {
+      if (item.horseId) {
+        const props = item.properties || {};
+        const hasColor = Boolean(props.COAT_COLOR || props.coatColor || props['Donu (Renk)']);
+        const hasAge = Boolean(props.HORSE_AGE || props.age || props['Yaş']);
+        const hasBreed = Boolean(props.HORSE_BREED || props.breed || props['At Irkı']);
+        const hasGender = Boolean(props.HORSE_GENDER || props.gender || props['Cinsiyet']);
+        if (!hasColor || !hasAge || !hasBreed || !hasGender) {
+          horseIdsToFetch.add(item.horseId);
+        }
+      }
+    }
+
+    if (horseIdsToFetch.size > 0) {
+      await Promise.allSettled(
+        Array.from(horseIdsToFetch).map(async (hId) => {
+          try {
+            const h = await this.tjkRepo.getById(hId);
+            if (h) {
+              for (const item of merged.values()) {
+                if (item.horseId === hId) {
+                  const props = item.properties ? { ...item.properties } : {};
+                  if (!props.COAT_COLOR && !props.coatColor && h.coatColor) {
+                    props.COAT_COLOR = h.coatColor;
+                    props.coatColor = h.coatColor;
+                  }
+                  if (!props.HORSE_BREED && !props.breed && h.breed) {
+                    props.HORSE_BREED = h.breed;
+                    props.breed = h.breed;
+                  }
+                  if (!props.HORSE_GENDER && !props.gender && h.gender) {
+                    props.HORSE_GENDER = h.gender;
+                    props.gender = h.gender;
+                  }
+                  if (
+                    (props.HORSE_AGE == null || props.HORSE_AGE === 0) &&
+                    (props.age == null || props.age === 0) &&
+                    h.age
+                  ) {
+                    props.HORSE_AGE = h.age;
+                    props.age = h.age;
+                  }
+                  if (!item.brand && h.breed) {
+                    item.brand = h.breed;
+                  }
+                  item.properties = props;
+                }
+              }
+            }
+          } catch {
+            /* ignore */
+          }
+        })
+      );
+    }
+
     const items = [...merged.values()].sort((a, b) =>
       a.updatedAt < b.updatedAt ? 1 : -1
     );

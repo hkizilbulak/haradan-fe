@@ -302,49 +302,55 @@ function FeaturedListingCardComponent({
           ) : (
             <View style={styles.boxesRow}>
               {/* Kutucuk 1: Cinsiyet */}
-              <View style={[styles.boxItem, compact && styles.boxItemCompact, { backgroundColor: chipBg }]}>
-                <Ionicons
-                  name={
-                    attrs.gender === 'Dişi'
-                      ? 'female'
-                      : attrs.gender === 'İğdiş'
-                        ? 'male-female'
-                        : 'male'
-                  }
-                  size={compact ? 11 : 13}
-                  color={textSecondary}
-                  style={styles.boxIcon}
-                />
-                <Text style={[styles.boxText, compact && styles.boxTextCompact, { color: textSecondary }]} numberOfLines={1}>
-                  {attrs.gender || 'Erkek'}
-                </Text>
-              </View>
+              {attrs.gender ? (
+                <View style={[styles.boxItem, compact && styles.boxItemCompact, { backgroundColor: chipBg }]}>
+                  <Ionicons
+                    name={
+                      attrs.gender === 'Dişi'
+                        ? 'female'
+                        : attrs.gender === 'İğdiş'
+                          ? 'male-female'
+                          : 'male'
+                    }
+                    size={compact ? 11 : 13}
+                    color={textSecondary}
+                    style={styles.boxIcon}
+                  />
+                  <Text style={[styles.boxText, compact && styles.boxTextCompact, { color: textSecondary }]} numberOfLines={1}>
+                    {attrs.gender}
+                  </Text>
+                </View>
+              ) : null}
 
               {/* Kutucuk 2: Yaş */}
-              <View style={[styles.boxItem, compact && styles.boxItemCompact, { backgroundColor: chipBg }]}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={compact ? 11 : 13}
-                  color={textSecondary}
-                  style={styles.boxIcon}
-                />
-                <Text style={[styles.boxText, compact && styles.boxTextCompact, { color: textSecondary }]} numberOfLines={1}>
-                  {attrs.age || '4 yaş'}
-                </Text>
-              </View>
+              {attrs.age ? (
+                <View style={[styles.boxItem, compact && styles.boxItemCompact, { backgroundColor: chipBg }]}>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={compact ? 11 : 13}
+                    color={textSecondary}
+                    style={styles.boxIcon}
+                  />
+                  <Text style={[styles.boxText, compact && styles.boxTextCompact, { color: textSecondary }]} numberOfLines={1}>
+                    {attrs.age}
+                  </Text>
+                </View>
+              ) : null}
 
               {/* Kutucuk 3: Irk */}
-              <View style={[styles.boxItem, compact && styles.boxItemCompact, { backgroundColor: chipBg }]}>
-                <FontAwesome5
-                  name="horse-head"
-                  size={compact ? 10 : 12}
-                  color={textSecondary}
-                  style={styles.boxIcon}
-                />
-                <Text style={[styles.boxText, compact && styles.boxTextCompact, { color: textSecondary }]} numberOfLines={1}>
-                  {attrs.breed || 'Arap'}
-                </Text>
-              </View>
+              {attrs.breed ? (
+                <View style={[styles.boxItem, compact && styles.boxItemCompact, { backgroundColor: chipBg }]}>
+                  <FontAwesome5
+                    name="horse-head"
+                    size={compact ? 10 : 12}
+                    color={textSecondary}
+                    style={styles.boxIcon}
+                  />
+                  <Text style={[styles.boxText, compact && styles.boxTextCompact, { color: textSecondary }]} numberOfLines={1}>
+                    {attrs.breed}
+                  </Text>
+                </View>
+              ) : null}
 
               {/* Kutucuk 4: Boy / Cidago (Varsa) */}
               {attrs.height ? (

@@ -251,49 +251,55 @@ function UrgentListingCardComponent({
           ) : (
             <View style={styles.tileBoxesRow}>
               {/* Kutucuk 1: Cinsiyet */}
-              <View style={[styles.tileBoxItem, { backgroundColor: chipBg }]}>
-                <Ionicons
-                  name={
-                    attrs.gender === 'Dişi'
-                      ? 'female'
-                      : attrs.gender === 'İğdiş'
-                        ? 'male-female'
-                        : 'male'
-                  }
-                  size={12}
-                  color={textSecondary}
-                  style={styles.tileBoxIcon}
-                />
-                <Text style={[styles.tileBoxText, { color: textSecondary }]} numberOfLines={1}>
-                  {attrs.gender || 'Erkek'}
-                </Text>
-              </View>
+              {attrs.gender ? (
+                <View style={[styles.tileBoxItem, { backgroundColor: chipBg }]}>
+                  <Ionicons
+                    name={
+                      attrs.gender === 'Dişi'
+                        ? 'female'
+                        : attrs.gender === 'İğdiş'
+                          ? 'male-female'
+                          : 'male'
+                    }
+                    size={12}
+                    color={textSecondary}
+                    style={styles.tileBoxIcon}
+                  />
+                  <Text style={[styles.tileBoxText, { color: textSecondary }]} numberOfLines={1}>
+                    {attrs.gender}
+                  </Text>
+                </View>
+              ) : null}
 
               {/* Kutucuk 2: Yaş */}
-              <View style={[styles.tileBoxItem, { backgroundColor: chipBg }]}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={12}
-                  color={textSecondary}
-                  style={styles.tileBoxIcon}
-                />
-                <Text style={[styles.tileBoxText, { color: textSecondary }]} numberOfLines={1}>
-                  {attrs.age || '4 yaş'}
-                </Text>
-              </View>
+              {attrs.age ? (
+                <View style={[styles.tileBoxItem, { backgroundColor: chipBg }]}>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={12}
+                    color={textSecondary}
+                    style={styles.tileBoxIcon}
+                  />
+                  <Text style={[styles.tileBoxText, { color: textSecondary }]} numberOfLines={1}>
+                    {attrs.age}
+                  </Text>
+                </View>
+              ) : null}
 
               {/* Kutucuk 3: Irk */}
-              <View style={[styles.tileBoxItem, { backgroundColor: chipBg }]}>
-                <FontAwesome5
-                  name="horse-head"
-                  size={11}
-                  color={textSecondary}
-                  style={styles.tileBoxIcon}
-                />
-                <Text style={[styles.tileBoxText, { color: textSecondary }]} numberOfLines={1}>
-                  {attrs.breed || 'Arap'}
-                </Text>
-              </View>
+              {attrs.breed ? (
+                <View style={[styles.tileBoxItem, { backgroundColor: chipBg }]}>
+                  <FontAwesome5
+                    name="horse-head"
+                    size={11}
+                    color={textSecondary}
+                    style={styles.tileBoxIcon}
+                  />
+                  <Text style={[styles.tileBoxText, { color: textSecondary }]} numberOfLines={1}>
+                    {attrs.breed}
+                  </Text>
+                </View>
+              ) : null}
 
               {/* Kutucuk 4: Boy / Cidago (Varsa) */}
               {attrs.height ? (
