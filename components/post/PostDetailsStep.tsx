@@ -117,12 +117,9 @@ export function PostDetailsStep({
     try {
       const horseDataToPass = item ? JSON.stringify(item) : horseId;
       const response = await AiRepository.generateAdvert({ horseData: horseDataToPass });
-      if (response && (response.title || response.description)) {
+      if (response && response.description) {
         setAiSuggestion(response);
-        setEditingAiTitle(response.title || '');
-        
         setEditingAiDesc(response.description || '');
-        setAiTitleSelected(true);
         setAiDescSelected(true);
         setAiModalVisible(true);
       } else {
@@ -965,20 +962,6 @@ export function PostDetailsStep({
             </Text>
             
             <ScrollView style={{ marginTop: 16 }} contentContainerStyle={{ gap: 12, paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={[styles.fieldLabel, { color: text, marginBottom: 0 }]}>Başlık</Text>
-                <Pressable onPress={() => setAiTitleSelected(!aiTitleSelected)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={{ color: muted, fontSize: 13 }}>Seç</Text>
-                  <Ionicons name={aiTitleSelected ? "checkmark-circle" : "ellipse-outline"} size={22} color={aiTitleSelected ? primary : muted} />
-                </Pressable>
-              </View>
-              <TextInput
-                style={[styles.modalInput, { color: text, borderColor: border, opacity: aiTitleSelected ? 1 : 0.5 }]}
-                value={editingAiTitle}
-                onChangeText={setEditingAiTitle}
-                editable={aiTitleSelected}
-              />
-              
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
                 <Text style={[styles.fieldLabel, { color: text, marginBottom: 0 }]}>Açıklama</Text>
                 <Pressable onPress={() => setAiDescSelected(!aiDescSelected)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -1001,10 +984,9 @@ export function PostDetailsStep({
               >
                 <Text style={[styles.modalBtnLabel, { color: text }]}>Vazgeç</Text>
               </Pressable>
-              <Pressable
+                <Pressable
                 onPress={() => {
                   const updates: any = {};
-                  if (aiTitleSelected) updates.title = editingAiTitle;
                   if (aiDescSelected) updates.description = editingAiDesc;
                   onUpdate(updates);
                   setAiModalVisible(false);
