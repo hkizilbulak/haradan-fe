@@ -27,7 +27,32 @@ function pickWeb(remaining: number): Promise<PickImagesResult> {
     input.type = 'file';
     input.accept = ACCEPTED_IMAGE_TYPES;
     input.multiple = remaining > 1;
+    input.style.display = 'none';
+
+    // Cleanup function to remove input and event listeners
+    let isHandled = false;
+    const cleanup = () => {
+      if (isHandled) return;
+      isHandled = true;
+      if (document.body.contains(input)) {
+        document.body.removeChild(input);
+      }
+      window.removeEventListener('focus', handleFocus);
+    };
+
+    // Handle user cancelling the file picker
+    const handleFocus = () => {
+      // Small delay to allow 'change' event to fire first if a file was actually selected
+      setTimeout(() => {
+        if (!isHandled) {
+          cleanup();
+          resolve({ items: [], error: null });
+        }
+      }, 300);
+    };
+
     input.onchange = () => {
+      cleanup();
       const allFiles = Array.from(input.files ?? []);
       const validFiles: File[] = [];
       let rejected = 0;
@@ -56,6 +81,10 @@ function pickWeb(remaining: number): Promise<PickImagesResult> {
         error,
       });
     };
+
+    // Append to body, listen for focus to handle cancellation, then click
+    document.body.appendChild(input);
+    window.addEventListener('focus', handleFocus);
     input.click();
   });
 }
