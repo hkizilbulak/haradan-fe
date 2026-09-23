@@ -245,56 +245,55 @@ export function parseHorseInfo(detail: AdvertDetail): ParsedHorseInfo {
     return '';
   };
 
+  const propName = getProp(['atadi', 'aygiradi', 'isim', 'registeredname', 'horsename', 'studhorsename', 'studhorse']);
   const name =
-    (horse?.registeredName && horse.registeredName !== 'Başlıksız ilan' && horse.registeredName !== '-'
-      ? horse.registeredName
-      : '') ||
-    getProp(['atadi', 'aygiradi', 'isim', 'registeredname', 'horsename', 'studhorsename', 'studhorse']) ||
-    title ||
-    '-';
+    (propName && propName !== 'Başlıksız ilan' && propName !== '-')
+      ? propName
+      : (horse?.registeredName && horse.registeredName !== 'Başlıksız ilan' && horse.registeredName !== '-'
+        ? horse.registeredName
+        : title || '-');
 
-  const sire =
-    (horse?.sire && horse.sire !== '-' ? horse.sire : '') ||
-    getProp(['baba', 'sire', 'babaadi', 'babasire', 'studsire']) ||
-    '-';
+  const propSire = getProp(['baba', 'sire', 'babaadi', 'babasire', 'studsire']);
+  const sire = (propSire && propSire !== '-')
+    ? propSire
+    : (horse?.sire && horse.sire !== '-' ? horse.sire : '-');
 
-  const dam =
-    (horse?.dam && horse.dam !== '-' ? horse.dam : '') ||
-    getProp(['anne', 'dam', 'anneadi', 'annedam', 'studdam']) ||
-    '-';
+  const propDam = getProp(['anne', 'dam', 'anneadi', 'annedam', 'studdam']);
+  const dam = (propDam && propDam !== '-')
+    ? propDam
+    : (horse?.dam && horse.dam !== '-' ? horse.dam : '-');
 
-  const damsire =
-    (horse?.damsire && horse.damsire !== '-' ? horse.damsire : '') ||
-    getProp([
-      'annesininbabasi',
-      'kisrakbabasi',
-      'damsire',
-      'studdamsire',
-      'studdamsire',
-      'anneninbabasidamsire',
-      'anneninbabasi',
-    ]) ||
-    '-';
+  const propDamsire = getProp([
+    'annesininbabasi',
+    'kisrakbabasi',
+    'damsire',
+    'studdamsire',
+    'anneninbabasidamsire',
+    'anneninbabasi',
+  ]);
+  const damsire = (propDamsire && propDamsire !== '-')
+    ? propDamsire
+    : (horse?.damsire && horse.damsire !== '-' ? horse.damsire : '-');
 
-  const breed =
-    (horse?.breed && horse.breed !== 'Bilinmiyor' && horse.breed !== '-' ? horse.breed : '') ||
-    getProp(['atirki', 'irk', 'ırk', 'safkan', 'breed', 'horsebreed', 'studbreed', 'stallionbreed']) ||
-    'İngiliz';
+  const propBreed = getProp(['atirki', 'irk', 'ırk', 'safkan', 'breed', 'horsebreed', 'studbreed', 'stallionbreed']);
+  const breed = (propBreed && propBreed !== 'Bilinmiyor' && propBreed !== '-')
+    ? propBreed
+    : (horse?.breed && horse.breed !== 'Bilinmiyor' && horse.breed !== '-' ? horse.breed : 'İngiliz');
 
   const categoryKind = getAdvertCategoryKind(detail);
   const isStud =
     categoryKind === 'stud' ||
     Boolean(getProp(['studbreed', 'stallionbreed', 'studhorse', 'studhorsename', 'studsire', 'studdam', 'studage', 'studcoatcolor']));
 
-  const gender =
-    (horse?.gender && (horse.gender as string) !== '-' ? horse.gender : '') ||
-    getProp(['cinsiyet', 'gender', 'horsegender']) ||
-    (isStud ? 'Erkek' : '-');
+  const propGender = getProp(['cinsiyet', 'gender', 'horsegender']);
+  const gender = (propGender && propGender !== '-')
+    ? propGender
+    : (horse?.gender && (horse.gender as string) !== '-' ? horse.gender : (isStud ? 'Erkek' : '-'));
 
-  const coatColor =
-    (horse?.coatColor && horse.coatColor !== 'Bilinmiyor' && horse.coatColor !== '-' ? horse.coatColor : '') ||
-    getProp(['donu', 'don', 'donurenk', 'coatcolor', 'studcoatcolor']) ||
-    '-';
+  const propCoatColor = getProp(['donu', 'don', 'donurenk', 'coatcolor', 'studcoatcolor']);
+  const coatColor = (propCoatColor && propCoatColor !== 'Bilinmiyor' && propCoatColor !== '-')
+    ? propCoatColor
+    : (horse?.coatColor && horse.coatColor !== 'Bilinmiyor' && horse.coatColor !== '-' ? horse.coatColor : '-');
 
   const rawPropAge = getProp(['yas', 'yaş', 'age', 'horseage', 'studage', 'stallionage']);
   const rawAge =
@@ -398,77 +397,137 @@ export type ParsedPansiyonInfo = {
   trainingTrack: string;
 };
 
+function normalizePansiyonKey(str: string): string {
+  return str
+    .replace(/İ/g, 'i')
+    .replace(/I/g, 'i')
+    .replace(/ı/g, 'i')
+    .replace(/ğ/g, 'g')
+    .replace(/Ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/Ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/Ş/g, 's')
+    .replace(/ö/g, 'o')
+    .replace(/Ö/g, 'o')
+    .replace(/ç/g, 'c')
+    .replace(/Ç/g, 'c')
+    .toLowerCase()
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[-_\s]/g, '');
+}
+
 export function parsePansiyonInfo(detail: AdvertDetail): ParsedPansiyonInfo {
-  const specMap: Record<string, string> = {};
+  const isTruthy = (v: unknown): boolean => {
+    if (v === true) return true;
+    if (v === false || v == null) return false;
+    const s = String(v).trim().toLowerCase();
+    return (
+      s === 'true' ||
+      s === 'evet' ||
+      s === 'var' ||
+      s === 'mevcut' ||
+      s === '1' ||
+      (s !== '' && s !== 'hayır' && s !== 'hayir' && s !== 'false' && s !== '0' && s !== 'yok')
+    );
+  };
+
+  const isExplicitlyFalse = (v: unknown): boolean => {
+    if (v === false) return true;
+    if (v == null) return false;
+    const s = String(v).trim().toLowerCase();
+    return s === 'hayır' || s === 'hayir' || s === 'false' || s === '0' || s === 'yok';
+  };
+
+  const map: Record<string, unknown> = {};
+
+  // 1. Read from properties / rawProperties
+  const rawProps = (detail as any).properties || (detail as any).rawProperties || {};
+  if (Array.isArray(rawProps)) {
+    for (const p of rawProps) {
+      if (!p) continue;
+      if (p.code) map[normalizePansiyonKey(p.code)] = p.value ?? p.displayValue;
+      if (p.title) map[normalizePansiyonKey(p.title)] = p.displayValue ?? p.value;
+    }
+  } else if (typeof rawProps === 'object') {
+    for (const [k, v] of Object.entries(rawProps)) {
+      map[normalizePansiyonKey(k)] = v;
+    }
+  }
+
+  // 2. Read from specs
   (detail.specs ?? []).forEach((g) => {
     g.rows.forEach((r) => {
-      specMap[r.label.toLowerCase()] = r.value;
+      map[normalizePansiyonKey(r.label)] = r.value;
     });
   });
 
-  const text = `${detail.title} ${detail.description} ${JSON.stringify(
-    detail.specs ?? []
-  )}`.toLowerCase();
-
-  const isSpecTrue = (key: string) => {
-    const val = specMap[key]?.toLowerCase();
-    return val === 'true' || val === 'evet' || val === 'var' || val === 'mevcut';
+  const checkKeys = (keys: string[]): boolean | null => {
+    for (const k of keys) {
+      const nk = normalizePansiyonKey(k);
+      if (map[nk] !== undefined) {
+        if (isTruthy(map[nk])) return true;
+        if (isExplicitlyFalse(map[nk])) return false;
+      }
+    }
+    return null;
   };
+
+  const text = `${detail.title || ''} ${detail.description || ''}`.toLowerCase();
+
+  const resolveBool = (keys: string[], textKeywords: string[]): boolean => {
+    const keyResult = checkKeys(keys);
+    if (keyResult !== null) return keyResult;
+    return textKeywords.some((w) => text.includes(w));
+  };
+
+  const grass = resolveBool(
+    ['çim padok', 'grasspaddock', 'facilitygrasspaddock'],
+    ['çim padok', 'cim padok']
+  );
+  const sand = resolveBool(
+    ['kum padok', 'sandpaddock', 'facilitysandpaddock'],
+    ['kum padok']
+  );
+  const stallion = resolveBool(
+    ['aygır padoğu', 'aygir padogu', 'stallionpaddock', 'facilitystallionpaddock'],
+    ['aygır padoğu', 'aygir padogu']
+  );
+  const vet = resolveBool(
+    ['veteriner', 'veteriner hekim', 'vet', 'veterinarian', 'facilityveterinarian'],
+    ['veteriner hekim', 'veteriner']
+  );
+  const farrier = resolveBool(
+    ['nalbant', 'farrier', 'facilityfarrier'],
+    ['nalbant']
+  );
+  const foaling = resolveBool(
+    ['doğumhane', 'dogumhane', 'foalingbarn', 'facilityfoalingbarn', 'maternity'],
+    ['doğumhane', 'dogumhane']
+  );
+  const track = resolveBool(
+    ['idman pisti', 'idmanpisti', 'trainingtrack', 'facilitytrainingtrack'],
+    ['idman pisti']
+  );
+
+  const rawTrackVal =
+    map[normalizePansiyonKey('idman pisti')] ??
+    map[normalizePansiyonKey('trainingtrack')] ??
+    map[normalizePansiyonKey('facilitytrainingtrack')];
+  const trackStr = rawTrackVal != null && typeof rawTrackVal !== 'boolean' ? String(rawTrackVal) : '';
 
   return {
-    hasGrassPaddock:
-      isSpecTrue('çim padok') ||
-      isSpecTrue('grasspaddock') ||
-      isSpecTrue('facilitygrasspaddock') ||
-      text.includes('çim padok') ||
-      text.includes('cim padok') ||
-      text.includes('çim'),
-    hasSandPaddock:
-      isSpecTrue('kum padok') ||
-      isSpecTrue('sandpaddock') ||
-      isSpecTrue('facilitysandpaddock') ||
-      text.includes('kum padok') ||
-      text.includes('kum'),
-    hasStallionPaddock:
-      isSpecTrue('aygır padoğu') ||
-      isSpecTrue('stallionpaddock') ||
-      isSpecTrue('facilitystallionpaddock') ||
-      text.includes('aygır padoğu') ||
-      text.includes('aygir padogu'),
-    hasVeterinarian:
-      isSpecTrue('veteriner') ||
-      isSpecTrue('vet') ||
-      isSpecTrue('facilityveterinarian') ||
-      text.includes('veteriner') ||
-      text.includes('hekim'),
-    hasFarrier:
-      isSpecTrue('nalbant') ||
-      isSpecTrue('farrier') ||
-      isSpecTrue('facilityfarrier') ||
-      text.includes('nalbant') ||
-      text.includes('nal'),
-    hasFoalingBarn:
-      isSpecTrue('doğumhane') ||
-      isSpecTrue('foalingbarn') ||
-      isSpecTrue('facilityfoalingbarn') ||
-      text.includes('doğumhane') ||
-      text.includes('dogumhane') ||
-      text.includes('doğum'),
-    hasTrainingTrack:
-      isSpecTrue('idman pisti') ||
-      isSpecTrue('idmanpisti') ||
-      isSpecTrue('trainingtrack') ||
-      isSpecTrue('facilitytrainingtrack') ||
-      Boolean(specMap['idman pisti'] || specMap['trainingtrack'] || specMap['facilitytrainingtrack']) ||
-      text.includes('idman pisti') ||
-      text.includes('kum pist'),
-    trainingTrack:
-      specMap['idman pisti'] ||
-      specMap['trainingtrack'] ||
-      specMap['facilitytrainingtrack'] ||
-      '',
+    hasGrassPaddock: grass,
+    hasSandPaddock: sand,
+    hasStallionPaddock: stallion,
+    hasVeterinarian: vet,
+    hasFarrier: farrier,
+    hasFoalingBarn: foaling,
+    hasTrainingTrack: track,
+    trainingTrack: trackStr,
   };
 }
+
 
 export type ParsedTransportInfo = {
   companyName: string;
@@ -547,6 +606,7 @@ export function getRowIcon(label: string): keyof typeof Ionicons.glyphMap {
   if (l.includes('padok')) return 'leaf-outline';
   if (l.includes('doğumhane') || l.includes('pansiyon')) return 'home-outline';
   if (l.includes('nalbant')) return 'hammer-outline';
+  if (l.includes('sıcak') || l.includes('sicak')) return 'flame-outline';
   if (l.includes('veteriner')) return 'medkit-outline';
   if (l.includes('aşım') || l.includes('aygır')) return 'trophy-outline';
   if (l.includes('kapasite') || l.includes('araç')) return 'car-outline';
@@ -600,17 +660,17 @@ export function buildAdvertInfoRows(detail: AdvertDetail): AdvertInfoRow[] {
     list.push({ label: 'Veteriner Hekim', value: pansiyonInfo.hasVeterinarian ? 'Evet' : 'Hayır', icon: 'medkit-outline', isBoolean: true });
     list.push({ label: 'İdman Pisti', value: (pansiyonInfo.hasTrainingTrack || !!pansiyonInfo.trainingTrack) ? 'Evet' : 'Hayır', icon: 'fitness-outline', isBoolean: true });
 
-    const seenLabels = new Set<string>([
-      'çim padok', 'kum padok', 'aygır padoğu', 'doğumhane', 'nalbant', 'veteriner hekim', 'idman pisti',
-      'grasspaddock', 'sandpaddock', 'stallionpaddock', 'foalingbarn', 'farrier', 'veterinarian', 'trainingtrack',
+    const seenNormKeys = new Set<string>([
+      'cimpadok', 'kumpadok', 'aygirpadogu', 'dogumhane', 'nalbant', 'veteriner', 'veterinerhekim', 'idmanpisti',
+      'grasspaddock', 'sandpaddock', 'stallionpaddock', 'foalingbarn', 'farrier', 'veterinarian', 'trainingtrack', 'maternity', 'vet',
+      'facilitygrasspaddock', 'facilitysandpaddock', 'facilitystallionpaddock', 'facilityfoalingbarn', 'facilityfarrier', 'facilityveterinarian', 'facilitytrainingtrack',
       'telefon', 'sellerphone', 'phone'
     ]);
     for (const group of detail.specs ?? []) {
       for (const row of group.rows ?? []) {
         const l = row.label.trim();
-        const lower = l.toLowerCase();
-        const norm = lower.replace(/[-_\s]/g, '');
-        if (seenLabels.has(lower) || seenLabels.has(norm)) continue;
+        const norm = normalizePansiyonKey(l);
+        if (seenNormKeys.has(norm)) continue;
         const v = String(row.value).trim();
         if (!v) continue;
         const isBool = v.toLowerCase() === 'evet' || v.toLowerCase() === 'hayır' || v.toLowerCase() === 'true' || v.toLowerCase() === 'false';
@@ -621,8 +681,7 @@ export function buildAdvertInfoRows(detail: AdvertDetail): AdvertInfoRow[] {
           icon: getRowIcon(l),
           isBoolean: isBool,
         });
-        seenLabels.add(lower);
-        seenLabels.add(norm);
+        seenNormKeys.add(norm);
       }
     }
   } else if (categoryKind === 'transport') {
@@ -696,7 +755,47 @@ export function buildAdvertInfoRows(detail: AdvertDetail): AdvertInfoRow[] {
         onPress: studInfo.damsire !== '-' ? () => openTjkHorseSearch(studInfo.damsire) : undefined,
       });
     }
-  } else if (categoryKind === 'farrier' || categoryKind === 'service') {
+  } else if (categoryKind === 'farrier') {
+    const propMap: Record<string, any> = (detail as any).properties || (detail as any).rawProperties || {};
+    const specMap: Record<string, string> = {};
+    (detail.specs ?? []).forEach((g) => {
+      g.rows.forEach((r) => {
+        specMap[r.label.toLowerCase()] = r.value;
+      });
+    });
+    const rawHot = propMap.SICAK_UYGULAMA ?? propMap.sicakUygulama ?? propMap.sicak_uygulama ?? propMap['sıcak uygulama'] ?? propMap['sicak'] ?? specMap['sıcak uygulama'] ?? specMap['sicak uygulama'] ?? specMap['sıcak'] ?? specMap['sicak'];
+    const isHotShoeing = rawHot === true || rawHot === 'true' || rawHot === 'Evet' || rawHot === 1 || rawHot === '1';
+    list.push({
+      label: 'Sıcak Uygulama',
+      value: isHotShoeing ? 'Evet' : 'Hayır',
+      icon: 'flame-outline',
+      isBoolean: true,
+    });
+    list.push({ label: 'Hizmet Türü', value: 'Nalbantlar', icon: 'hammer-outline' });
+
+    const seenLabels = new Set<string>([
+      'sıcak uygulama', 'sicak uygulama', 'sicak_uygulama', 'sicakuygulama', 'hizmet türü', 'hizmetturu', 'telefon', 'phone', 'sellerphone'
+    ]);
+    for (const group of detail.specs ?? []) {
+      for (const row of group.rows ?? []) {
+        const l = row.label.trim();
+        const lower = l.toLowerCase();
+        if (seenLabels.has(lower) || seenLabels.has(lower.replace(/[-_\s]/g, ''))) continue;
+        const v = String(row.value).trim();
+        if (!v) continue;
+        const isBool = v.toLowerCase() === 'evet' || v.toLowerCase() === 'hayır' || v.toLowerCase() === 'true' || v.toLowerCase() === 'false';
+        const formattedVal = v.toLowerCase() === 'true' ? 'Evet' : v.toLowerCase() === 'false' ? 'Hayır' : v;
+        list.push({
+          label: l.charAt(0).toLocaleUpperCase('tr-TR') + l.slice(1),
+          value: formattedVal,
+          icon: getRowIcon(l),
+          isBoolean: isBool,
+        });
+        seenLabels.add(lower);
+        seenLabels.add(lower.replace(/[-_\s]/g, ''));
+      }
+    }
+  } else if (categoryKind === 'service') {
     const seenLabels = new Set<string>();
     for (const group of detail.specs ?? []) {
       for (const row of group.rows ?? []) {
@@ -797,6 +896,58 @@ export function buildAdvertInfoRows(detail: AdvertDetail): AdvertInfoRow[] {
         .replace(/ö/g, 'o')
         .replace(/ç/g, 'c');
 
+    const findBooleanProp = (codes: string[], defaultVal: boolean | null = null): string | null => {
+      const rawProps = (detail as any)?.properties || (detail as any)?.rawProperties || {};
+      const normCodes = codes.map(normText);
+
+      const toBooleanString = (val: unknown): string | null => {
+        if (val === true || val === 1) return 'Evet';
+        if (val === false || val === 0) return 'Hayır';
+        if (typeof val === 'string') {
+          const s = val.trim().toLowerCase();
+          if (s === 'true' || s === 'evet' || s === '1') return 'Evet';
+          if (s === 'false' || s === 'hayır' || s === 'hayir' || s === '0') return 'Hayır';
+        }
+        return null;
+      };
+
+      for (const c of codes) {
+        const val =
+          rawProps[c] ??
+          rawProps[c.toLowerCase()] ??
+          rawProps[c.toUpperCase()] ??
+          (detail as any)?.[c] ??
+          (detail as any)?.[c.toLowerCase()] ??
+          (detail as any)?.horse?.[c] ??
+          (detail as any)?.horse?.[c.toLowerCase()] ??
+          (detail as any)?.details?.[c] ??
+          (detail as any)?.details?.[c.toLowerCase()];
+        const res = toBooleanString(val);
+        if (res != null) return res;
+      }
+
+      for (const [k, val] of Object.entries(rawProps)) {
+        const kNorm = normText(k);
+        if (normCodes.includes(kNorm)) {
+          const res = toBooleanString(val);
+          if (res != null) return res;
+        }
+      }
+
+      for (const g of detail.specs ?? []) {
+        for (const r of g.rows ?? []) {
+          const lNorm = normText(r.label || '');
+          if (normCodes.includes(lNorm)) {
+            const res = toBooleanString(r.value);
+            if (res != null) return res;
+          }
+        }
+      }
+
+      if (defaultVal === null) return null;
+      return defaultVal ? 'Evet' : 'Hayır';
+    };
+
     const findProp = (codes: string[], defaultVal: boolean | string | null = null): string | null => {
       const rawProps = (detail as any)?.properties || (detail as any)?.rawProperties || {};
       for (const c of codes) {
@@ -825,7 +976,7 @@ export function buildAdvertInfoRows(detail: AdvertDetail): AdvertInfoRow[] {
       for (const [k, val] of Object.entries(rawProps)) {
         if (val != null && val !== '' && val !== 'null' && val !== 'undefined') {
           const kNorm = normText(k);
-          if (normCodes.some((c) => kNorm === c || kNorm.includes(c) || c.includes(kNorm))) {
+          if (normCodes.some((c) => kNorm === c || (kNorm.length >= 4 && c.length >= 4 && (kNorm.startsWith(c) || c.startsWith(kNorm))))) {
             if (typeof val === 'boolean') return val ? 'Evet' : 'Hayır';
             if (typeof val === 'string') {
               const lower = val.toLowerCase().trim();
@@ -841,7 +992,7 @@ export function buildAdvertInfoRows(detail: AdvertDetail): AdvertInfoRow[] {
         for (const r of g.rows ?? []) {
           if (r.value != null && r.value !== '' && r.value !== 'null' && r.value !== 'undefined') {
             const lNorm = normText(r.label || '');
-            if (normCodes.some((c) => lNorm === c || lNorm.includes(c) || c.includes(lNorm))) {
+            if (normCodes.some((c) => lNorm === c || (lNorm.length >= 4 && c.length >= 4 && (lNorm.startsWith(c) || c.startsWith(lNorm))))) {
               const v = String(r.value).trim();
               const lower = v.toLowerCase();
               if (lower === 'true' || lower === 'evet') return 'Evet';
@@ -859,28 +1010,28 @@ export function buildAdvertInfoRows(detail: AdvertDetail): AdvertInfoRow[] {
     if (isRaceHorse) {
       list.push({
         label: 'İdmanda mı',
-        value: findProp(['IN_TRAINING', 'inTraining', 'idmanda'], true) ?? 'Evet',
+        value: findBooleanProp(['IN_TRAINING', 'inTraining', 'idmanda', 'idmandaMi', 'idmanda_mi'], false)!,
         icon: 'fitness-outline',
         isBoolean: true,
       });
 
       list.push({
         label: 'Koşar durumda mı',
-        value: findProp(['IS_RACE_READY', 'isRaceReady', 'kosar', 'koşar'], true) ?? 'Evet',
+        value: findBooleanProp(['IS_RACE_READY', 'isRaceReady', 'kosar', 'koşar', 'kosarDurumdaMi', 'kosardurumda'], false)!,
         icon: 'flash-outline',
         isBoolean: true,
       });
 
       list.push({
         label: 'Kiralık mı',
-        value: findProp(['IS_FOR_RENT', 'isForRent', 'kiralik', 'kiralık'], false) ?? 'Hayır',
+        value: findBooleanProp(['IS_FOR_RENT', 'isForRent', 'kiralik', 'kiralık', 'kiralikMi', 'kiralik_mi'], false)!,
         icon: 'key-outline',
         isBoolean: true,
       });
     }
 
     // Kısrak Gebelik Durumu
-    const isPregnant = findProp(['IS_PREGNANT', 'isPregnant', 'gebe', 'gebemi', 'gebe mi'], null);
+    const isPregnant = findBooleanProp(['IS_PREGNANT', 'isPregnant', 'gebe', 'gebemi', 'gebe mi'], null);
     if (isPregnant != null) {
       list.push({
         label: 'Gebe mi',
