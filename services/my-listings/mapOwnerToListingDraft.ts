@@ -71,6 +71,9 @@ export function mapOwnerToListingDraft(
 
   return {
     ...draft,
+    advertId: dto.id,
+    serverVersion: dto.version,
+    mediaVersion: dto.mediaVersion,
     type: node
       ? {
           categoryId: node.id,

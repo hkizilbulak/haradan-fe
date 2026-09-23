@@ -255,16 +255,23 @@ export function prepareListingWizardEntry(): void {
 /**
  * Mevcut taslağı sihirbaza aktarır.
  */
-export function loadDraftIntoWizard(draft: ListingDraft, advertId: AdvertId): void {
+export function loadDraftIntoWizard(
+  draft: ListingDraft,
+  advertId: AdvertId,
+  backendStatus?: string | null
+): void {
   emit({
     ...createInitialState(),
     step: 'details',
     typePhase: 'category',
     selectedRootSlug: draft.type?.parentSlug ?? null,
     draftAdvertId: advertId,
+    submittedStatus: backendStatus ?? null,
     draft: {
       ...draft,
       advertId,
+      serverVersion: draft.serverVersion ?? null,
+      mediaVersion: draft.mediaVersion ?? null,
     },
   });
 }

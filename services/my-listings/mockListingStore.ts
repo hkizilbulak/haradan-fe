@@ -114,7 +114,6 @@ export function removeMockVersionFromStore(id: AdvertId): void {
 }
 
 export function addMockListingFromDraft(draft: ListingDraft): PublishListingResult {
-  const newId = Date.now();
   const coverSlot = draft.media?.find((m) => m.isCover) ?? draft.media?.[0];
   const title = draft.details.title.trim() || 'Yeni İlan';
   const pkgCode = draft.packageCode?.trim() || 'STANDARD';
@@ -122,6 +121,37 @@ export function addMockListingFromDraft(draft: ListingDraft): PublishListingResu
   const isUltimate = pkgCode === 'ULTIMATE';
   const now = new Date().toISOString();
 
+  const items = readMockItems();
+  if (draft.advertId) {
+    const existingIndex = items.findIndex((it) => it.id === draft.advertId);
+    if (existingIndex >= 0) {
+      const existing = items[existingIndex];
+      const updatedCard: MyListingCard = {
+        ...existing,
+        packageCode: pkgCode,
+        packageDisplayName: isUltimate ? 'Ultimate' : isPremium ? 'Premium' : 'Standart',
+        packageBadgeText: isPremium ? 'Önerilen' : null,
+        isUrgent: isPremium || isUltimate,
+        urgentActivatedAt: isPremium || isUltimate ? now : existing.urgentActivatedAt,
+        isFeatured: isPremium || isUltimate,
+        featuredUntil: isUltimate
+          ? new Date(Date.now() + 30 * 86400000).toISOString()
+          : isPremium
+            ? new Date(Date.now() + 7 * 86400000).toISOString()
+            : null,
+        updatedAt: now,
+      };
+      items[existingIndex] = updatedCard;
+      writeMockItems(items);
+      writeMockDraft(draft.advertId, draft);
+      return {
+        advertId: draft.advertId,
+        status: existing.backendStatus || 'PUBLISHED',
+      };
+    }
+  }
+
+  const newId = Date.now();
   const card: MyListingCard = {
     id: newId,
     title,
@@ -169,7 +199,6 @@ export function addMockListingFromDraft(draft: ListingDraft): PublishListingResu
     sellerId: 'user-demo',
   };
 
-  const items = readMockItems();
   items.unshift(card);
   writeMockItems(items);
   writeMockDraft(newId, draft);

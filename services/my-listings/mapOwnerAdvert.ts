@@ -39,6 +39,9 @@ export type OwnerAdvertDto = {
   isFeatured?: boolean;
   featuredUntil?: string | null;
   rejectionReason?: string | null;
+  districtName?: string | null;
+  provinceName?: string | null;
+  locationName?: string | null;
 };
 
 export type OwnerAdvertListDto = {

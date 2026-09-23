@@ -209,29 +209,47 @@ export class HttpListingRepository implements IListingRepository {
     backendStatus?: string | null
   ): Promise<PublishListingResult> {
     let advertId = draft.advertId;
-    let version: number;
+    let version = draft.serverVersion ?? 1;
+    let currentStatus = backendStatus;
 
     if (!advertId) {
       const created = await this.createDraft(draft, accessToken);
       advertId = created.advertId;
       version = created.version;
+      currentStatus = created.status;
     } else {
-      if (backendStatus && backendStatus !== 'DRAFT' && backendStatus !== 'CHANGES_REQUESTED') {
-        version = draft.serverVersion ?? 1;
-      } else {
-        const media = await this.awaitMediaPipeline(advertId);
-        if (media) {
-          version = media.version;
-        } else {
-          // Pipeline missing (reload) — sync media now.
-          const synced = await this.syncMediaNow(draft, accessToken, {
-            advertId,
-            version: draft.serverVersion ?? 1,
-            mediaVersion: draft.mediaVersion ?? 1,
-            status: backendStatus ?? 'DRAFT',
-          }, false);
-          version = synced.version;
+      const media = await this.awaitMediaPipeline(advertId);
+      if (media) {
+        version = media.version;
+        if (!currentStatus) {
+          currentStatus = 'DRAFT';
         }
+      } else if (!currentStatus) {
+        try {
+          const serverAdvert = await this.http.request<OwnerAdvertResponse>(
+            `/v1/me/adverts/${advertId}`,
+            { method: 'GET', accessToken }
+          );
+          if (serverAdvert?.status) {
+            currentStatus = serverAdvert.status;
+            version = serverAdvert.version;
+          }
+        } catch {
+          // best-effort fallback
+        }
+      }
+
+      if (currentStatus && currentStatus !== 'DRAFT' && currentStatus !== 'CHANGES_REQUESTED') {
+        version = draft.serverVersion ?? version;
+      } else if (!media) {
+        // Pipeline missing (reload) — sync media now.
+        const synced = await this.syncMediaNow(draft, accessToken, {
+          advertId,
+          version: draft.serverVersion ?? version,
+          mediaVersion: draft.mediaVersion ?? 1,
+          status: currentStatus ?? 'DRAFT',
+        }, false);
+        version = synced.version;
       }
     }
 
@@ -242,10 +260,6 @@ export class HttpListingRepository implements IListingRepository {
         accessToken,
         body: JSON.stringify({ packageCode }),
       });
-    }
-
-    if (backendStatus && backendStatus !== 'DRAFT' && backendStatus !== 'CHANGES_REQUESTED') {
-      return { advertId, status: backendStatus };
     }
 
     const submitted = await this.http.request<OwnerAdvertResponse>(

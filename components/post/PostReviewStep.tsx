@@ -52,6 +52,8 @@ export function PostReviewStep({
     }
   }, [displayId]);
 
+  const isAlreadyPublished = status === 'PUBLISHED' || status === 'published';
+
   return (
     <View style={styles.container}>
       {/* ── 1. Hero / Header (Kompakt & Zarif) ── */}
@@ -63,10 +65,12 @@ export function PostReviewStep({
         </View>
 
         <Text style={[styles.title, { color: text }]}>
-          İlanınız İncelemeye Alındı
+          {isAlreadyPublished ? 'Paketiniz Başarıyla Güncellendi' : 'İlanınız İncelemeye Alındı'}
         </Text>
         <Text style={[styles.subtitle, { color: secondary }]}>
-          İlanınız editör ekibimize ulaştı. Kontroller tamamlandıktan sonra en kısa sürede yayına alınacaktır.
+          {isAlreadyPublished
+            ? 'İlanınızın yeni yayın paketi ve öne çıkarma ayrıcalıkları aktif edildi.'
+            : 'İlanınız editör ekibimize ulaştı. Kontroller tamamlandıktan sonra en kısa sürede yayına alınacaktır.'}
         </Text>
       </View>
 
@@ -142,12 +146,31 @@ export function PostReviewStep({
 
           {/* Durum Satırı (Minimalist) */}
           <View style={[styles.statusRow, { borderColor: border }]}>
-            <View style={styles.statusBadge}>
-              <View style={styles.statusDot} />
-              <Text style={styles.statusText}>Editör Onayında</Text>
+            <View
+              style={[
+                styles.statusBadge,
+                isAlreadyPublished && { backgroundColor: 'rgba(16, 185, 129, 0.12)' },
+              ]}
+            >
+              <View
+                style={[
+                  styles.statusDot,
+                  isAlreadyPublished && { backgroundColor: '#10b981' },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.statusText,
+                  isAlreadyPublished && { color: '#10b981' },
+                ]}
+              >
+                {isAlreadyPublished ? 'Yayında' : 'Editör Onayında'}
+              </Text>
             </View>
             <Text style={[styles.statusHint, { color: muted }]}>
-              Ortalama 1-2 saat içinde onaylanır
+              {isAlreadyPublished
+                ? 'Ayrıcalıklarınız anında tanımlandı'
+                : 'Ortalama 1-2 saat içinde onaylanır'}
             </Text>
           </View>
         </View>

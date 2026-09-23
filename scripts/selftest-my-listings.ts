@@ -129,9 +129,9 @@ const horseCard = mapOwnerAdvertToCard(
   },
   { apiBase, sellerId: 'user-1' }
 );
-assertEqual(horseCard.properties.HORSE_BREED, 'Safkan Arap', 'horseCard properties HORSE_BREED preserved');
-assertEqual(horseCard.properties.HORSE_AGE, '5', 'horseCard properties HORSE_AGE preserved');
-assertEqual(horseCard.properties.HORSE_GENDER, 'Dişi', 'horseCard properties HORSE_GENDER preserved');
+assertEqual(horseCard.properties?.HORSE_BREED, 'Safkan Arap', 'horseCard properties HORSE_BREED preserved');
+assertEqual(horseCard.properties?.HORSE_AGE, '5', 'horseCard properties HORSE_AGE preserved');
+assertEqual(horseCard.properties?.HORSE_GENDER, 'Dişi', 'horseCard properties HORSE_GENDER preserved');
 assertEqual(card.backendStatus, 'PENDING_REVIEW', 'card keeps BE status');
 assertEqual(card.version, 2, 'card version');
 assertEqual(card.provinceId, 'prov-1', 'province on card');

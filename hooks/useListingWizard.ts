@@ -819,8 +819,8 @@ export function useListingWizard(deps: Deps = {}) {
     }));
   }, []);
 
-  const loadDraft = useCallback((loadedDraft: ListingDraft, advertId: AdvertId) => {
-    loadDraftIntoWizard(loadedDraft, advertId);
+  const loadDraft = useCallback((loadedDraft: ListingDraft, advertId: AdvertId, backendStatus?: string | null) => {
+    loadDraftIntoWizard(loadedDraft, advertId, backendStatus);
   }, []);
 
   return {

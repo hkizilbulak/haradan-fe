@@ -432,15 +432,34 @@ export function AdvertDetailView({
     try {
       const payload = await myListingsRepository.getEditDraft(detail.id, accessToken);
       if (payload?.draft) {
-        loadDraftIntoWizard(payload.draft, detail.id);
-        setListingWizardState((prev) => ({ ...prev, step: 'package' }));
+        const effectiveStatus = payload.backendStatus ?? backendStatus ?? detail.backendStatus ?? 'PUBLISHED';
+        const activePackageCode = detail.packageCode || payload.draft.packageCode || 'STANDARD';
+        loadDraftIntoWizard(
+          {
+            ...payload.draft,
+            packageCode: activePackageCode as any,
+          },
+          detail.id,
+          effectiveStatus
+        );
+        setListingWizardState((prev) => ({
+          ...prev,
+          step: 'package',
+          submittedStatus: effectiveStatus,
+          draft: {
+            ...prev.draft,
+            packageCode: activePackageCode as any,
+            serverVersion: payload.version ?? prev.draft.serverVersion,
+            mediaVersion: payload.mediaVersion ?? prev.draft.mediaVersion,
+          },
+        }));
         router.push('/post');
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'İlan bilgileri alınamadı.';
       toast.error(msg);
     }
-  }, [detail.id, accessToken, router]);
+  }, [detail.id, detail.packageCode, backendStatus, detail.backendStatus, accessToken, router]);
 
   const scrollToAnchor = useCallback(
     (anchor: React.RefObject<View | null>, nativeId: string, attempt = 0) => {
