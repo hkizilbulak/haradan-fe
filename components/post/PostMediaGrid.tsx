@@ -3,10 +3,14 @@ import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import { pickLocalImages } from '@/services/media';
 import { MAX_LISTING_IMAGES, type ListingMediaSlot } from '@/types/listing';
+import { ImageCropperModal } from './ImageCropperModal';
 import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
+
+// Web İlan Detay Galerisi kalıbı (694.6 / 440 ≈ 1.5786)
+const WEB_GALLERY_ASPECT_RATIO = 694.6 / 440;
 
 type PostMediaGridProps = {
   items: ListingMediaSlot[];
@@ -29,8 +33,27 @@ export function PostMediaGrid({
   const header = useThemeColor('header');
   const errorColor = useThemeColor('error');
   const [localError, setLocalError] = useState<string | null>(null);
+  const [editingSlot, setEditingSlot] = useState<ListingMediaSlot | null>(null);
   const remaining = MAX_LISTING_IMAGES - items.length;
   const activeError = localError || error;
+
+  const handleCropSave = (croppedUri: string, croppedFile?: File) => {
+    if (!editingSlot) return;
+    const updated = items.map((item) => {
+      if (item.localId === editingSlot.localId) {
+        return {
+          ...item,
+          uri: croppedUri,
+          file: croppedFile || item.file,
+          mimeType: 'image/jpeg',
+          assetId: null,
+        };
+      }
+      return item;
+    });
+    onChange(updated);
+    setEditingSlot(null);
+  };
 
   const add = async () => {
     setLocalError(null);
@@ -93,8 +116,38 @@ export function PostMediaGrid({
         <>
           <View style={styles.grid}>
             {items.map((slot) => (
-              <View key={slot.localId} style={[styles.cell, { backgroundColor: surface, borderColor: border }]}>
-                <Image source={{ uri: slot.uri }} style={styles.image} resizeMode="cover" />
+              <View key={slot.localId} style={[styles.cell, { backgroundColor: '#0a0d14', borderColor: border }]}>
+                {/* Bokeh backdrop for non-standard aspect ratio photos */}
+                <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                  <Image
+                    source={{ uri: slot.uri }}
+                    style={[
+                      StyleSheet.absoluteFillObject,
+                      {
+                        transform: [{ scale: 1.25 }],
+                        opacity: 0.85,
+                        ...(Platform.OS === 'web' ? ({ filter: 'blur(16px)' } as any) : {}),
+                      },
+                    ]}
+                    resizeMode="cover"
+                    blurRadius={Platform.OS === 'web' ? 16 : 12}
+                  />
+                  <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0, 0, 0, 0.25)' }]} />
+                </View>
+
+                {/* Net fotoğraf - contain ile ilandaki gibi tam kadraj */}
+                <Image source={{ uri: slot.uri }} style={styles.image} resizeMode="contain" />
+
+                {/* Edit / Crop button */}
+                <Pressable
+                  onPress={() => setEditingSlot(slot)}
+                  style={styles.editBtn}
+                  hitSlop={4}
+                  accessibilityLabel="Fotoğrafı kırp ve düzenle"
+                >
+                  <Ionicons name="crop" size={11} color="#fff" />
+                  <Text style={styles.editBtnText}>Düzenle</Text>
+                </Pressable>
 
                 {/* Cover badge or button */}
                 <Pressable
@@ -173,6 +226,17 @@ export function PostMediaGrid({
           <Text style={[styles.errorText, { color: errorColor }]}>{activeError}</Text>
         </View>
       ) : null}
+
+      {/* Image Cropper Modal */}
+      {editingSlot && (
+        <ImageCropperModal
+          visible={Boolean(editingSlot)}
+          imageUri={editingSlot.uri}
+          fileName={editingSlot.fileName}
+          onClose={() => setEditingSlot(null)}
+          onSave={handleCropSave}
+        />
+      )}
     </View>
   );
 }
@@ -230,16 +294,44 @@ const styles = StyleSheet.create({
   },
   cell: {
     width: '31%',
-    minWidth: 96,
-    aspectRatio: 1,
+    minWidth: 110,
+    aspectRatio: WEB_GALLERY_ASPECT_RATIO,
     borderRadius: 14,
     overflow: 'hidden',
     position: 'relative',
     borderWidth: 1,
+    backgroundColor: '#0a0d14',
+  },
+  editBtn: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 7,
+    paddingVertical: 3.5,
+    backgroundColor: 'rgba(12, 12, 14, 0.75)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3.5,
+    zIndex: 2,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer' as const,
+        transition: 'background-color 150ms ease',
+      },
+      default: {},
+    }),
+  },
+  editBtnText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '700',
   },
   image: {
     width: '100%',
     height: '100%',
+    backgroundColor: 'transparent',
+    zIndex: 1,
   },
   coverBadge: {
     position: 'absolute',
@@ -270,8 +362,8 @@ const styles = StyleSheet.create({
   },
   addSlot: {
     width: '31%',
-    minWidth: 96,
-    aspectRatio: 1,
+    minWidth: 110,
+    aspectRatio: WEB_GALLERY_ASPECT_RATIO,
     borderRadius: 14,
     borderWidth: 1.5,
     borderStyle: 'dashed',

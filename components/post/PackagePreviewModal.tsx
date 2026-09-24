@@ -120,7 +120,7 @@ function PreviewAdvertCard({
     age = '1.5 yaş';
   }
 
-  let rawBreed = draft?.details?.breed || draft?.breed?.name || null;
+  let rawBreed = draft?.details?.breed || draft?.breed?.label || (draft?.breed as any)?.name || null;
   let breed: string | null = null;
   if (rawBreed) {
     const bLower = rawBreed.toLowerCase();
@@ -148,7 +148,7 @@ function PreviewAdvertCard({
         <Image
           source={{ uri: resolvedImg }}
           style={styles.previewCardImage}
-          contentFit="cover"
+          contentFit="contain"
         />
 
         {/* Sol Üst Rozet: ● ACİL veya ★ Öne Çıkan */}
@@ -1205,11 +1205,12 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 19,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: '#e2e8f0',
+    backgroundColor: '#ffffff',
   },
   previewCardImage: {
     width: '100%',
     height: '100%',
+    backgroundColor: '#ffffff',
   },
   previewUrgentBadge: {
     position: 'absolute',

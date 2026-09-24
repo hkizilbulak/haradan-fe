@@ -60,8 +60,8 @@ function FavoriteListCardComponent({
     >
       <Image
         source={product.cover?.publicUrl}
-        style={[styles.image, { backgroundColor: skeleton }]}
-        contentFit="cover"
+        style={[styles.image, { backgroundColor: '#ffffff' }]}
+        contentFit="contain"
         transition={220}
         recyclingKey={String(product.id)}
       />

@@ -264,11 +264,11 @@ const FeaturedSlideCard = memo(function FeaturedSlideCard({
         },
       ]}
     >
-      <View style={styles.imageWrap}>
+      <View style={[styles.imageWrap, { backgroundColor: '#ffffff' }]}>
         <Image
           source={product.cover?.publicUrl}
-          style={[styles.image, { backgroundColor: skeleton }]}
-          contentFit="cover"
+          style={[styles.image, { backgroundColor: '#ffffff' }]}
+          contentFit="contain"
           transition={260}
           recyclingKey={String(product.id)}
           priority="low"
@@ -385,8 +385,9 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: '#ffffff',
   },
-  image: { width: '100%', height: '100%' },
+  image: { width: '100%', height: '100%', backgroundColor: '#ffffff' },
   urgent: {
     position: 'absolute',
     top: 14,

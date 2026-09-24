@@ -62,6 +62,7 @@ export type ListingMediaSlot = {
   fileName: string;
   isCover: boolean;
   assetId: string | null;
+  file?: File;
 };
 
 export type ListingDraftDetails = {

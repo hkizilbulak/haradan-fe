@@ -188,14 +188,32 @@ function FeaturedListingCardComponent({
         ]}
       >
         {/* Görsel Alanı */}
-        <View style={[styles.imageWrap, compact && styles.imageWrapCompact]}>
+        <View style={[styles.imageWrap, compact && styles.imageWrapCompact, { backgroundColor: '#0a0d14' }]}>
+          {coverSource ? (
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
+              <Image
+                source={coverSource}
+                style={[
+                  StyleSheet.absoluteFillObject,
+                  {
+                    transform: [{ scale: 1.2 }],
+                    opacity: 0.85,
+                    ...(Platform.OS === 'web' ? ({ filter: 'blur(20px)' } as any) : {}),
+                  },
+                ]}
+                contentFit="cover"
+                blurRadius={Platform.OS === 'web' ? 20 : 16}
+              />
+              <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0, 0, 0, 0.2)' }]} />
+            </View>
+          ) : null}
           <Animated.View
-            style={[styles.imageInner, { transform: [{ scale: imgScale }] }]}
+            style={[styles.imageInner, { transform: [{ scale: imgScale }], backgroundColor: 'transparent' }]}
           >
             <Image
               source={coverSource}
-              style={[styles.image, { backgroundColor: skeleton }]}
-              contentFit="cover"
+              style={styles.image}
+              contentFit="contain"
               transition={240}
               recyclingKey={String(product.id)}
               priority="low"
@@ -410,19 +428,23 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 19,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: '#0a0d14',
   },
   imageWrapCompact: {
     aspectRatio: 4 / 3,
     borderTopLeftRadius: 13,
     borderTopRightRadius: 13,
+    backgroundColor: '#0a0d14',
   },
   imageInner: {
     width: '100%',
     height: '100%',
+    backgroundColor: 'transparent',
   },
   image: {
     width: '100%',
     height: '100%',
+    zIndex: 1,
   },
   scrim: {
     ...StyleSheet.absoluteFillObject,

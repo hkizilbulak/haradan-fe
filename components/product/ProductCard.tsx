@@ -54,7 +54,7 @@ function ProductCardComponent({
       >
         <Image
           source={product.cover?.publicUrl}
-          style={[styles.compactImg, { backgroundColor: skeleton }]}
+          style={[styles.compactImg, { backgroundColor: '#ffffff' }]}
           contentFit="contain"
           transition={200}
         />
@@ -84,10 +84,10 @@ function ProductCardComponent({
         { opacity: pressed ? 0.96 : 1 },
       ]}
     >
-      <View style={[styles.imageWrap, { backgroundColor: surface, borderColor: border }]}>
+      <View style={[styles.imageWrap, { backgroundColor: '#ffffff', borderColor: border }]}>
         <Image
           source={product.cover?.publicUrl}
-          style={[styles.image, { backgroundColor: skeleton }]}
+          style={[styles.image, { backgroundColor: '#ffffff' }]}
           contentFit="contain"
           transition={200}
           recyclingKey={String(product.id)}

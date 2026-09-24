@@ -33,6 +33,9 @@ type AdvertGalleryProps = {
   showExpandButton?: boolean;
 };
 
+// Web İlan Detay Galerisi kalıbı (694.6 / 440 ≈ 1.5786)
+const WEB_GALLERY_ASPECT_RATIO = 694.6 / 440;
+
 export const AdvertGallery = memo(function AdvertGallery({
   items,
   height = 420,
@@ -128,6 +131,10 @@ export const AdvertGallery = memo(function AdvertGallery({
   if (!items || items.length === 0) return null;
 
   const bleed = fullBleed;
+  // Masaüstünde web detay galerisinin en-boy oranını (694.6 / 440 ≈ 1.5786) korur
+  const effectiveHeight = !isMobile && slideWidth > 0
+    ? Math.round(slideWidth / WEB_GALLERY_ASPECT_RATIO)
+    : height;
 
   return (
     <View
@@ -142,7 +149,7 @@ export const AdvertGallery = memo(function AdvertGallery({
       <View
         style={[
           styles.main,
-          { height, backgroundColor: surface },
+          { height: effectiveHeight, backgroundColor: '#0a0d14' },
           bleed && styles.mainBleed,
         ]}
         onLayout={(e) => {
@@ -184,12 +191,28 @@ export const AdvertGallery = memo(function AdvertGallery({
                 }),
               ]}
             >
+              {/* Buğulu Arka Plan (Beyaz zemin yerine fotoğrafın yumuşak bokeh efekti) */}
+              <View style={styles.blurWrap} pointerEvents="none">
+                <AuthMediaImage
+                  uri={item.publicUrl}
+                  accessToken={accessToken}
+                  style={styles.blurBackdrop}
+                  transition={280}
+                  priority={i === 0 ? 'high' : 'low'}
+                  contentFit="cover"
+                  blurRadius={Platform.OS === 'web' ? 24 : 20}
+                />
+                <View style={styles.blurDim} />
+              </View>
+
+              {/* Net Ön Plan Fotoğrafı */}
               <AuthMediaImage
                 uri={item.publicUrl}
                 accessToken={accessToken}
-                style={[styles.mainImg, { backgroundColor: skeleton }]}
+                style={styles.mainImg}
                 transition={280}
                 priority={i === 0 ? 'high' : 'low'}
+                contentFit="contain"
               />
             </Pressable>
           ))}
@@ -211,15 +234,17 @@ export const AdvertGallery = memo(function AdvertGallery({
         {/* Noktalar göstergesi */}
         {items.length > 1 ? (
           <View style={styles.dotsOverlay} pointerEvents="none">
-            {items.map((item, i) => (
-              <View
-                key={item.assetId || i}
-                style={[
-                  styles.dot,
-                  i === index ? styles.dotActive : styles.dotIdle,
-                ]}
-              />
-            ))}
+            <View style={styles.dotsPill}>
+              {items.map((item, i) => (
+                <View
+                  key={item.assetId || i}
+                  style={[
+                    styles.dot,
+                    i === index ? styles.dotActive : styles.dotIdle,
+                  ]}
+                />
+              ))}
+            </View>
           </View>
         ) : null}
       </View>
@@ -252,10 +277,26 @@ export const AdvertGallery = memo(function AdvertGallery({
                   },
                 ]}
               >
+                {/* Buğulu Arka Plan (Ana görsel ile aynı yumuşak bokeh efekti) */}
+                <View style={styles.thumbBlurWrap} pointerEvents="none">
+                  <AuthMediaImage
+                    uri={item.publicUrl}
+                    accessToken={accessToken}
+                    style={styles.thumbBlurBackdrop}
+                    transition={180}
+                    priority="low"
+                    contentFit="cover"
+                    blurRadius={Platform.OS === 'web' ? 14 : 10}
+                  />
+                  <View style={styles.blurDim} />
+                </View>
+
+                {/* Net Ön Plan Fotoğrafı - Ana görselle birebir aynı boşluklar ve oran */}
                 <AuthMediaImage
                   uri={item.publicUrl}
                   accessToken={accessToken}
-                  style={[styles.thumbImg, { backgroundColor: skeleton }]}
+                  style={styles.thumbImg}
+                  contentFit="contain"
                   transition={180}
                   priority="low"
                 />
@@ -283,22 +324,27 @@ function AuthMediaImage({
   style,
   transition,
   priority,
+  contentFit = 'contain',
+  blurRadius,
 }: {
   uri: string;
   accessToken?: string | null;
-  style: object;
+  style: any;
   transition: number;
   priority: 'low' | 'high' | 'normal';
+  contentFit?: 'contain' | 'cover';
+  blurRadius?: number;
 }) {
   const source = useMediaImageSource(uri, accessToken);
   return (
     <Image
       source={source}
       style={style}
-      contentFit="cover"
+      contentFit={contentFit}
       transition={transition}
       priority={priority}
       cachePolicy={accessToken ? 'memory' : 'memory-disk'}
+      blurRadius={blurRadius}
     />
   );
 }
@@ -310,6 +356,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sheet,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: '#0a0d14',
   },
   mainBleed: {
     borderRadius: 0,
@@ -325,20 +372,71 @@ const styles = StyleSheet.create({
   slide: {
     height: '100%',
     overflow: 'hidden',
+    backgroundColor: '#0a0d14',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
   },
-  mainImg: { width: '100%', height: '100%' },
+  blurWrap: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  blurBackdrop: {
+    width: '100%',
+    height: '100%',
+    transform: [{ scale: 1.2 }],
+    opacity: 0.88,
+    ...(Platform.OS === 'web'
+      ? ({
+        filter: 'blur(30px)',
+        WebkitFilter: 'blur(30px)',
+      } as any)
+      : {}),
+  },
+  blurDim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+  },
+  mainImg: {
+    width: '100%',
+    height: '100%',
+    zIndex: 1,
+  },
   thumbs: {
     flexDirection: 'row',
     gap: 10,
     paddingVertical: 2,
   },
   thumb: {
-    width: 72,
-    height: 72,
-    borderRadius: 12,
+    width: 90,
+    height: 57,
+    aspectRatio: WEB_GALLERY_ASPECT_RATIO,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#0a0d14',
+    position: 'relative',
+  },
+  thumbBlurWrap: {
+    ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
   },
-  thumbImg: { width: '100%', height: '100%' },
+  thumbBlurBackdrop: {
+    width: '100%',
+    height: '100%',
+    transform: [{ scale: 1.25 }],
+    opacity: 0.88,
+    ...(Platform.OS === 'web'
+      ? ({
+        filter: 'blur(16px)',
+        WebkitFilter: 'blur(16px)',
+      } as any)
+      : {}),
+  },
+  thumbImg: {
+    width: '100%',
+    height: '100%',
+    zIndex: 1,
+  },
   dotsOverlay: {
     position: 'absolute',
     bottom: 14,
@@ -346,8 +444,16 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 6,
     zIndex: 5,
+  },
+  dotsPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
   },
   dot: {
     height: 6,

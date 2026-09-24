@@ -68,8 +68,8 @@ export const AdvertStickyCta = memo(function AdvertStickyCta({
     >
       <Image
         source={thumbSource}
-        style={[styles.thumb, { backgroundColor: skeleton }]}
-        contentFit="cover"
+        style={[styles.thumb, { backgroundColor: '#ffffff' }]}
+        contentFit="contain"
         transition={200}
         cachePolicy={accessToken ? 'memory' : 'memory-disk'}
       />

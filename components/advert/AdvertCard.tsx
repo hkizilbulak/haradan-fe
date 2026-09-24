@@ -1,5 +1,6 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import {
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -84,8 +85,8 @@ function AdvertCardComponent({
       >
         <Image
           source={advert.cover?.publicUrl}
-          style={[styles.compactImage, { backgroundColor: skeleton }]}
-          contentFit="cover"
+          style={[styles.compactImage, { backgroundColor: '#ffffff' }]}
+          contentFit="contain"
           transition={200}
         />
         <View style={styles.compactBody}>
@@ -124,11 +125,29 @@ function AdvertCardComponent({
         },
       ]}
     >
-      <View style={styles.imageWrap}>
+      <View style={[styles.imageWrap, { backgroundColor: '#0a0d14' }]}>
+        {advert.cover?.publicUrl ? (
+          <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            <Image
+              source={advert.cover?.publicUrl}
+              style={[
+                StyleSheet.absoluteFillObject,
+                {
+                  transform: [{ scale: 1.2 }],
+                  opacity: 0.85,
+                  ...(Platform.OS === 'web' ? ({ filter: 'blur(20px)' } as any) : {}),
+                },
+              ]}
+              contentFit="cover"
+              blurRadius={Platform.OS === 'web' ? 20 : 16}
+            />
+            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0, 0, 0, 0.2)' }]} />
+          </View>
+        ) : null}
         <Image
           source={advert.cover?.publicUrl}
-          style={[styles.image, { backgroundColor: skeleton }]}
-          contentFit="cover"
+          style={styles.image}
+          contentFit="contain"
           transition={200}
           recyclingKey={String(advert.id)}
         />
@@ -190,10 +209,13 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     width: '100%',
     position: 'relative',
+    backgroundColor: '#0a0d14',
   },
   image: {
     width: '100%',
     height: '100%',
+    backgroundColor: 'transparent',
+    zIndex: 1,
   },
   badgeRow: {
     position: 'absolute',
@@ -257,6 +279,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: Radius.input,
+    backgroundColor: '#ffffff',
   },
   compactBody: {
     flex: 1,

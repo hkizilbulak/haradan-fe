@@ -122,11 +122,11 @@ function UrgentListingCardComponent({
           },
         ]}
       >
-        <Animated.View style={[styles.featuredInner, { opacity: fade }]}>
+        <Animated.View style={[styles.featuredInner, { opacity: fade, backgroundColor: '#ffffff' }]}>
           <Image
             source={product.cover?.publicUrl}
-            style={[styles.featuredImg, { backgroundColor: skeleton }]}
-            contentFit="cover"
+            style={[styles.featuredImg, { backgroundColor: '#ffffff' }]}
+            contentFit="contain"
             transition={400}
             recyclingKey={String(product.id)}
             priority="high"
@@ -193,10 +193,28 @@ function UrgentListingCardComponent({
         ]}
       >
         <View style={styles.tileImageWrap}>
+          {product.cover?.publicUrl ? (
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
+              <Image
+                source={product.cover?.publicUrl}
+                style={[
+                  StyleSheet.absoluteFillObject,
+                  {
+                    transform: [{ scale: 1.2 }],
+                    opacity: 0.85,
+                    ...(Platform.OS === 'web' ? ({ filter: 'blur(20px)' } as any) : {}),
+                  },
+                ]}
+                contentFit="cover"
+                blurRadius={Platform.OS === 'web' ? 20 : 16}
+              />
+              <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0, 0, 0, 0.2)' }]} />
+            </View>
+          ) : null}
           <Image
             source={product.cover?.publicUrl}
-            style={[styles.tileImage, { backgroundColor: skeleton }]}
-            contentFit="cover"
+            style={styles.tileImage}
+            contentFit="contain"
             transition={220}
             recyclingKey={String(product.id)}
             priority="low"
@@ -349,8 +367,8 @@ function UrgentListingCardComponent({
       <View style={[styles.thumbWrap, compact && styles.thumbWrapCompact]}>
         <Image
           source={product.cover?.publicUrl}
-          style={[styles.thumb, { backgroundColor: skeleton }]}
-          contentFit="cover"
+          style={[styles.thumb, { backgroundColor: '#ffffff' }]}
+          contentFit="contain"
           transition={220}
           recyclingKey={String(product.id)}
           priority="low"
@@ -529,15 +547,18 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     overflow: 'hidden',
     flexShrink: 0,
+    backgroundColor: '#0a0d14',
   },
   thumbWrapCompact: {
     width: 68,
     height: 68,
     borderRadius: 14,
+    backgroundColor: '#0a0d14',
   },
   thumb: {
     width: '100%',
     height: '100%',
+    backgroundColor: 'transparent',
   },
   urgentMini: {
     position: 'absolute',
@@ -630,10 +651,13 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 19,
     borderTopRightRadius: 19,
     overflow: 'hidden',
+    backgroundColor: '#0a0d14',
   },
   tileImage: {
     width: '100%',
     height: '100%',
+    backgroundColor: 'transparent',
+    zIndex: 1,
   },
   tileUrgent: {
     position: 'absolute',

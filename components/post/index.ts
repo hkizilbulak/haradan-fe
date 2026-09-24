@@ -9,3 +9,4 @@ export { PostReviewStep } from './PostReviewStep';
 export { PostPlaceSheet } from './PostPlaceSheet';
 export { PostSelectSheet } from './PostSelectSheet';
 export { PostFormShell } from './PostFormShell';
+export { ImageCropperModal } from './ImageCropperModal';

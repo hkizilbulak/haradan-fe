@@ -71,12 +71,12 @@ function SearchDropdownItem({
         },
       ]}
     >
-      <View style={[styles.thumbWrap, { backgroundColor: 'rgba(0,0,0,0.04)' }]}>
+      <View style={[styles.thumbWrap, { backgroundColor: '#ffffff' }]}>
         {advert.cover?.publicUrl ? (
           <Image
             source={{ uri: advert.cover.publicUrl }}
-            style={styles.thumbImage}
-            contentFit="cover"
+            style={[styles.thumbImage, { backgroundColor: '#ffffff' }]}
+            contentFit="contain"
             transition={150}
           />
         ) : (
