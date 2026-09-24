@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Radius } from '@/constants/Radius';
 import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
@@ -43,6 +43,7 @@ type CardPreviewProps = {
   badgeType?: 'urgent' | 'showcase' | 'featured' | null;
   badgeLabel?: string;
   isUnlocked?: boolean;
+  draft?: ListingDraft;
 };
 
 function PreviewAdvertCard({
@@ -53,16 +54,10 @@ function PreviewAdvertCard({
   location,
   badgeType,
   badgeLabel,
-  isUnlocked = true,
+  draft,
 }: CardPreviewProps) {
-  const surface = useThemeColor('surface');
-  const border = useThemeColor('border');
-  const text = useThemeColor('text');
-  const textSecondary = useThemeColor('textSecondary');
-  const textMuted = useThemeColor('textMuted');
-  const skeleton = useThemeColor('skeleton');
-
   const isVitrin = badgeType === 'showcase' || badgeType === 'featured';
+  const isUrgent = badgeType === 'urgent';
 
   const resolvedImg =
     coverUri ||
@@ -75,120 +70,186 @@ function PreviewAdvertCard({
       ? displayTitle
       : isVitrin
         ? 'ABATHAN'
-        : 'ABARİS'
+        : 'ADA AĞASI'
   ).toUpperCase();
 
-  const resolvedLocation =
+  const cityLabel =
     location && location !== 'Konum Belirtilmedi'
-      ? location
+      ? location.split(',').pop()?.trim() || location
       : isVitrin
-        ? 'Bozkurt, Denizli'
-        : 'Çay, Afyonkarahisar';
+        ? 'Denizli'
+        : 'Amasya';
 
   const resolvedPrice =
     displayPrice && displayPrice !== 'Fiyat Belirtilmedi'
       ? displayPrice
       : isVitrin
         ? '₺2.600.000'
-        : '₺250.000';
+        : '₺200.000';
 
-  // Vitrin / Öne Çıkan Görünümü (Kullanıcının ABATHAN ekran görüntüsü)
-  if (isVitrin) {
-    return (
-      <View style={styles.mockVitrinCard}>
-        {/* Görsel Alanı (Geniş yuvarlatılmış köşeler) */}
-        <View style={[styles.mockVitrinImageWrap, { backgroundColor: skeleton }]}>
-          <Image
-            source={{ uri: resolvedImg }}
-            style={styles.mockCardImage}
-            contentFit="cover"
-          />
-
-          {/* Rozet (Ekran görüntüsündeki gibi: ★ Öne çıkan) */}
-          <View style={styles.mockVitrinBadge}>
-            <Ionicons name="star" size={9.5} color="#ffffff" />
-            <Text style={styles.mockVitrinBadgeText}>
-              {badgeLabel || 'Öne çıkan'}
-            </Text>
-          </View>
-
-          {/* Favori Kalp Butonu (Ekran görüntüsündeki sağ üst beyaz çizgi kalp) */}
-          <View style={styles.mockVitrinFavBtn}>
-            <Ionicons name="heart-outline" size={21} color="#ffffff" />
-          </View>
-        </View>
-
-        {/* Kart Gövdesi (Başlık -> Konum İkonu + Konum -> Fiyat) */}
-        <View style={styles.mockVitrinBody}>
-          <Text style={[styles.mockVitrinTitle, { color: text }]} numberOfLines={1}>
-            {resolvedTitle}
-          </Text>
-
-          <View style={styles.mockVitrinMetaRow}>
-            <Ionicons name="location-outline" size={12} color={textMuted} />
-            <Text style={[styles.mockVitrinLocation, { color: textMuted }]} numberOfLines={1}>
-              {resolvedLocation}
-            </Text>
-          </View>
-
-          <Text style={[styles.mockVitrinPrice, { color: text }]}>
-            {resolvedPrice}
-          </Text>
-        </View>
-      </View>
-    );
+  // Attributes
+  const catName = (draft?.type?.categoryName || categoryName || '').toLowerCase();
+  let serviceCategory: string | null = null;
+  if (catName.includes('pansiyon') || catName.includes('hara')) {
+    serviceCategory = 'Pansiyon / Hara';
+  } else if (catName.includes('nakliye')) {
+    serviceCategory = 'At Nakliyesi';
+  } else if (catName.includes('nalbant')) {
+    serviceCategory = 'Nalbant';
+  } else if (catName.includes('ekipman') || catName.includes('tesis')) {
+    serviceCategory = 'Ekipman / Tesis';
   }
 
-  // Acil / Standart Görünümü
-  const badgeColor =
-    badgeType === 'urgent'
-      ? URGENT_RED
-      : null;
+  let gender = draft?.details?.gender || null;
+  if (!gender && !serviceCategory) {
+    if (catName.includes('kısrak') || catName.includes('kisrak') || resolvedTitle.includes('KISRAK')) {
+      gender = 'Dişi';
+    } else if (catName.includes('aygır') || catName.includes('aygir') || catName.includes('asim')) {
+      gender = 'Erkek';
+    } else {
+      gender = 'Erkek';
+    }
+  }
+
+  let age = draft?.details?.age?.trim() || null;
+  if (age) {
+    if (!age.toLowerCase().includes('yaş') && !age.toLowerCase().includes('yas')) {
+      age = `${age} yaş`;
+    }
+  } else if (!serviceCategory) {
+    age = '1.5 yaş';
+  }
+
+  let rawBreed = draft?.details?.breed || draft?.breed?.name || null;
+  let breed: string | null = null;
+  if (rawBreed) {
+    const bLower = rawBreed.toLowerCase();
+    if (bLower.includes('arap')) breed = 'Arap';
+    else if (bLower.includes('ingiliz') || bLower.includes('thoroughbred')) breed = 'İngiliz';
+    else if (bLower.includes('haflinger')) breed = 'Haflinger';
+    else if (bLower.includes('shetland')) breed = 'Shetland';
+    else if (bLower.includes('warmblood')) breed = 'Warmblood';
+    else if (bLower.includes('pony')) breed = 'Pony';
+    else breed = rawBreed.split(/[\s\n]+/)[0];
+  } else if (!serviceCategory) {
+    if (catName.includes('ingiliz')) breed = 'İngiliz';
+    else breed = 'Arap';
+  }
+
+  let height: string | null = null;
+  if (draft?.details?.heightCm?.trim()) {
+    height = `${draft.details.heightCm.trim()} cm`;
+  }
 
   return (
-    <View
-      style={[
-        styles.mockCard,
-        {
-          backgroundColor: '#161922',
-          borderColor: border,
-        },
-      ]}
-    >
+    <View style={styles.previewCard}>
       {/* Görsel Alanı */}
-      <View style={[styles.mockCardImageWrap, { backgroundColor: skeleton }]}>
+      <View style={styles.previewCardImageWrap}>
         <Image
           source={{ uri: resolvedImg }}
-          style={styles.mockCardImage}
+          style={styles.previewCardImage}
           contentFit="cover"
         />
 
-        {/* Rozet (Ekran görüntüsündeki gibi: Acil) */}
-        {badgeLabel && badgeColor ? (
-          <View style={[styles.mockCardBadge, { backgroundColor: badgeColor }]}>
-            <Text style={styles.mockCardBadgeText}>{badgeLabel}</Text>
+        {/* Sol Üst Rozet: ● ACİL veya ★ Öne Çıkan */}
+        {isUrgent ? (
+          <View style={styles.previewUrgentBadge}>
+            <View style={styles.previewUrgentDot} />
+            <Text style={styles.previewUrgentText}>ACİL</Text>
+          </View>
+        ) : isVitrin ? (
+          <View style={styles.previewFeaturedBadge}>
+            <Ionicons name="star" size={10} color="#f59e0b" />
+            <Text style={styles.previewFeaturedText}>Öne çıkan</Text>
           </View>
         ) : null}
 
-        {/* Favori Kalp Butonu (Ekran görüntüsündeki sağ üst pembe kalp) */}
-        <View style={styles.mockFavBtn}>
-          <Ionicons name="heart" size={17} color="#f43f5e" />
+        {/* Sağ Üst: Yuvarlak Beyaz Favori Butonu */}
+        <View style={styles.previewWishBtn}>
+          <Ionicons name="heart-outline" size={16} color="#1d2129" />
         </View>
       </View>
 
-      {/* Kart Gövdesi (Başlık -> Konum -> Fiyat) */}
-      <View style={styles.mockCardBody}>
-        <Text style={[styles.mockCardTitle, { color: text }]} numberOfLines={1}>
+      {/* Kart Gövdesi */}
+      <View style={styles.previewCardBody}>
+        {/* 1. Başlık */}
+        <Text style={styles.previewCardTitle} numberOfLines={1}>
           {resolvedTitle}
         </Text>
 
-        <Text style={[styles.mockCardLocation, { color: textMuted }]} numberOfLines={1}>
-          {resolvedLocation}
-        </Text>
+        {/* 2. Fiyat ve İl Satırı */}
+        <View style={styles.previewPriceLocationRow}>
+          <Text style={styles.previewPrice} numberOfLines={1}>
+            {resolvedPrice}
+          </Text>
+          <View style={styles.previewDivider} />
+          <View style={styles.previewLocationWrap}>
+            <Ionicons name="location-outline" size={13} color="#6c727f" />
+            <Text style={styles.previewLocationText} numberOfLines={1}>
+              {cityLabel}
+            </Text>
+          </View>
+        </View>
 
-        <Text style={[styles.mockCardPrice, { color: text }]}>
-          {resolvedPrice}
-        </Text>
+        {/* 3. İkonlu Kutucuklar (Cinsiyet, Yaş, Irk, Boy) */}
+        <View style={styles.previewBoxesRow}>
+          {serviceCategory ? (
+            <View style={styles.previewBoxItem}>
+              <Ionicons name="briefcase-outline" size={12} color="#6c727f" />
+              <Text style={styles.previewBoxText} numberOfLines={1}>
+                {serviceCategory}
+              </Text>
+            </View>
+          ) : (
+            <>
+              {gender ? (
+                <View style={styles.previewBoxItem}>
+                  <Ionicons
+                    name={
+                      gender === 'Dişi'
+                        ? 'female'
+                        : gender === 'İğdiş'
+                          ? 'male-female'
+                          : 'male'
+                    }
+                    size={12}
+                    color="#6c727f"
+                  />
+                  <Text style={styles.previewBoxText} numberOfLines={1}>
+                    {gender}
+                  </Text>
+                </View>
+              ) : null}
+
+              {age ? (
+                <View style={styles.previewBoxItem}>
+                  <Ionicons name="calendar-outline" size={12} color="#6c727f" />
+                  <Text style={styles.previewBoxText} numberOfLines={1}>
+                    {age}
+                  </Text>
+                </View>
+              ) : null}
+
+              {breed ? (
+                <View style={styles.previewBoxItem}>
+                  <FontAwesome5 name="horse-head" size={11} color="#6c727f" />
+                  <Text style={styles.previewBoxText} numberOfLines={1}>
+                    {breed}
+                  </Text>
+                </View>
+              ) : null}
+
+              {height ? (
+                <View style={styles.previewBoxItem}>
+                  <MaterialCommunityIcons name="ruler" size={12} color="#6c727f" />
+                  <Text style={styles.previewBoxText} numberOfLines={1}>
+                    {height}
+                  </Text>
+                </View>
+              ) : null}
+            </>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -582,6 +643,7 @@ export const PackagePreviewModal = memo(function PackagePreviewModal({
           badgeType={currentPlacement.badgeType}
           badgeLabel={currentPlacement.badgeLabel}
           isUnlocked={true}
+          draft={draft}
         />
       </View>
     </View>
@@ -1114,143 +1176,188 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: 4,
   },
-  mockCard: {
+  previewCard: {
     width: 250,
     maxWidth: '100%',
     alignSelf: 'center',
-    borderRadius: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#e3e9ef',
+    backgroundColor: '#ffffff',
     overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
     ...Platform.select({
       web: {
-        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
+        boxShadow: '0 4px 18px -2px rgba(15, 23, 42, 0.08)',
       },
       default: {
-        elevation: 6,
+        shadowColor: '#0f172a',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.07,
+        shadowRadius: 10,
+        elevation: 3,
       },
     }),
   },
-  mockCardImageWrap: {
+  previewCardImageWrap: {
     width: '100%',
-    aspectRatio: 1,
+    aspectRatio: 4 / 3,
+    borderTopLeftRadius: 19,
+    borderTopRightRadius: 19,
+    overflow: 'hidden',
     position: 'relative',
+    backgroundColor: '#e2e8f0',
   },
-  mockCardImage: {
+  previewCardImage: {
     width: '100%',
     height: '100%',
   },
-  mockCardBadge: {
+  previewUrgentBadge: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
+    top: 10,
+    left: 10,
+    backgroundColor: '#e11d48',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 4.5,
+    borderRadius: 999,
+    zIndex: 2,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 8px rgba(225, 29, 72, 0.35)',
+      },
+      default: {
+        elevation: 2,
+      },
+    }),
   },
-  mockCardBadgeText: {
+  previewUrgentDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#ffffff',
+  },
+  previewUrgentText: {
     color: '#ffffff',
     fontSize: 9.5,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  mockFavBtn: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  mockCardBody: {
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 14,
-    gap: 3,
-  },
-  mockCardTitle: {
-    fontSize: 13.5,
     fontWeight: '800',
-    letterSpacing: -0.2,
+    letterSpacing: 1.1,
   },
-  mockCardLocation: {
-    fontSize: 11,
-    marginTop: 1,
-  },
-  mockCardPrice: {
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-    marginTop: 4,
-  },
-  // Vitrin Kartı Özel Stilleri (ABATHAN ekran görüntüsü ile birebir eşleşme)
-  mockVitrinCard: {
-    width: 250,
-    maxWidth: '100%',
-    alignSelf: 'center',
-    backgroundColor: 'transparent',
-  },
-  mockVitrinImageWrap: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: 26,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  mockVitrinBadge: {
+  previewFeaturedBadge: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 999,
+    top: 10,
+    left: 10,
     backgroundColor: '#0c0c0e',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 4.5,
+    borderRadius: 999,
+    zIndex: 2,
   },
-  mockVitrinBadgeText: {
+  previewFeaturedText: {
     color: '#ffffff',
     fontSize: 9.5,
     fontWeight: '700',
-    letterSpacing: 0.3,
+    letterSpacing: 0.4,
   },
-  mockVitrinFavBtn: {
+  previewWishBtn: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 28,
-    height: 28,
+    top: 10,
+    right: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 2,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+        elevation: 3,
+      },
+    }),
   },
-  mockVitrinBody: {
-    paddingHorizontal: 2,
+  previewCardBody: {
+    paddingHorizontal: 12,
     paddingTop: 10,
-    paddingBottom: 4,
-    gap: 6,
-  },
-  mockVitrinTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-  },
-  mockVitrinMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingBottom: 12,
     gap: 4,
   },
-  mockVitrinLocation: {
-    fontSize: 11.5,
+  previewCardTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    lineHeight: 18,
+    letterSpacing: -0.2,
+    color: '#1d2129',
+  },
+  previewPriceLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 0,
+  },
+  previewPrice: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    color: '#1d2129',
+    flexShrink: 0,
+  },
+  previewDivider: {
+    width: 1,
+    height: 14,
+    marginHorizontal: 8,
+    backgroundColor: '#e3e9ef',
+    opacity: 0.8,
+  },
+  previewLocationWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
     flexShrink: 1,
   },
-  mockVitrinPrice: {
-    fontSize: 15.5,
-    fontWeight: '800',
-    letterSpacing: -0.25,
-    marginTop: 2,
+  previewLocationText: {
+    fontSize: 12.5,
+    fontWeight: '500',
+    letterSpacing: -0.1,
+    color: '#6c727f',
+    flexShrink: 1,
+  },
+  previewBoxesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 4,
+    marginTop: 4,
+  },
+  previewBoxItem: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: '#f3f5f9',
+    gap: 3,
+  },
+  previewBoxText: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#6c727f',
+    letterSpacing: -0.3,
+    textAlign: 'center',
+    flexShrink: 1,
   },
   // Instagram Gönderisi Özel Stilleri (Kompakt ve taşmayan Instagram UI)
   igCard: {
