@@ -32,8 +32,18 @@ const TYPES = {
   '.xml': 'application/xml; charset=utf-8',
 };
 
+function safeDecode(val) {
+  try {
+    return decodeURIComponent(val);
+  } catch {
+    return null;
+  }
+}
+
 function safeJoin(root, urlPath) {
-  const decoded = decodeURIComponent((urlPath.split('?')[0] || '/').replace(/\\/g, '/'));
+  const rawPart = (urlPath.split('?')[0] || '/').replace(/\\/g, '/');
+  const decoded = safeDecode(rawPart);
+  if (decoded === null) return null;
   const rel = decoded.replace(/^\/+/, '');
   const abs = resolve(root, rel);
   const prefix = root.endsWith(sep) ? root : root + sep;
@@ -107,7 +117,9 @@ function tryFile(abs) {
 }
 
 function resolveDynamicRoute(root, urlPath) {
-  const decoded = decodeURIComponent((urlPath.split('?')[0] || '/').replace(/\\/g, '/'));
+  const rawPart = (urlPath.split('?')[0] || '/').replace(/\\/g, '/');
+  const decoded = safeDecode(rawPart);
+  if (decoded === null) return null;
   const segments = decoded.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
   if (!segments.length) return null;
 
@@ -142,47 +154,61 @@ if (!existsSync(ROOT)) {
 }
 
 const server = createServer((req, res) => {
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
-    send(res, 405, 'Method Not Allowed');
-    return;
-  }
+  try {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      send(res, 405, 'Method Not Allowed');
+      return;
+    }
 
-  const urlPath = (req.url || '/').split('?')[0];
-  if (urlPath === '/config.json') {
-    send(
-      res,
-      200,
-      JSON.stringify({ apiUrl: API_BASE || null }),
-      {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': 'no-store',
-      }
-    );
-    return;
-  }
+    const urlPath = (req.url || '/').split('?')[0];
+    if (urlPath === '/config.json') {
+      send(
+        res,
+        200,
+        JSON.stringify({ apiUrl: API_BASE || null }),
+        {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'no-store',
+        }
+      );
+      return;
+    }
 
-  let file = resolvePath(urlPath);
-  let cache = urlPath.startsWith('/_expo/') || urlPath.startsWith('/assets/')
-    ? 'public, max-age=31536000, immutable'
-    : 'no-cache';
+    let file = resolvePath(urlPath);
+    let cache = urlPath.startsWith('/_expo/') || urlPath.startsWith('/assets/')
+      ? 'public, max-age=31536000, immutable'
+      : 'no-cache';
 
-  if (!file) {
-    file = tryFile(join(ROOT, 'index.html'));
-    cache = 'no-cache';
+    if (!file) {
+      file = tryFile(join(ROOT, 'index.html'));
+      cache = 'no-cache';
+    }
+    if (!file) {
+      send(res, 404, 'Not Found');
+      return;
+    }
+    if (req.method === 'HEAD') {
+      res.writeHead(200, {
+        'Content-Type': TYPES[extname(file).toLowerCase()] || 'application/octet-stream',
+        'Cache-Control': cache,
+      });
+      res.end();
+      return;
+    }
+    sendFile(res, file, cache);
+  } catch (err) {
+    console.error('Request handling error:', err);
+    try {
+      send(res, 500, 'Internal Server Error');
+    } catch {
+      // response could already be ended
+    }
   }
-  if (!file) {
-    send(res, 404, 'Not Found');
-    return;
-  }
-  if (req.method === 'HEAD') {
-    res.writeHead(200, {
-      'Content-Type': TYPES[extname(file).toLowerCase()] || 'application/octet-stream',
-      'Cache-Control': cache,
-    });
-    res.end();
-    return;
-  }
-  sendFile(res, file, cache);
+});
+
+server.on('clientError', (err, socket) => {
+  if (err.code === 'ECONNRESET' || !socket.writable) return;
+  socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
 });
 
 server.listen(PORT, HOST, () => {
