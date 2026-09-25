@@ -1200,7 +1200,7 @@ const styles = StyleSheet.create({
   },
   previewCardImageWrap: {
     width: '100%',
-    aspectRatio: 4 / 3,
+    aspectRatio: 694.6 / 440,
     borderTopLeftRadius: 19,
     borderTopRightRadius: 19,
     overflow: 'hidden',

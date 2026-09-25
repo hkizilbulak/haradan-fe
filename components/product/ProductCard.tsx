@@ -150,7 +150,7 @@ export const ProductCard = memo(ProductCardComponent);
 const styles = StyleSheet.create({
   card: { gap: Spacing.sm },
   imageWrap: {
-    aspectRatio: 1,
+    aspectRatio: 694.6 / 440,
     width: '100%',
     borderRadius: Radius.card,
     borderWidth: 1,

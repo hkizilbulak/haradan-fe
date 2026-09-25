@@ -58,11 +58,13 @@ export type TjkHorseProfile = TjkHorseSummary & {
 export type ListingMediaSlot = {
   localId: string;
   uri: string;
+  originalUri?: string;
   mimeType: string;
   fileName: string;
   isCover: boolean;
   assetId: string | null;
   file?: File;
+  originalFile?: File;
 };
 
 export type ListingDraftDetails = {

@@ -131,8 +131,8 @@ export const AdvertGallery = memo(function AdvertGallery({
   if (!items || items.length === 0) return null;
 
   const bleed = fullBleed;
-  // Masaüstünde web detay galerisinin en-boy oranını (694.6 / 440 ≈ 1.5786) korur
-  const effectiveHeight = !isMobile && slideWidth > 0
+  // Web ve mobilde detay galerisinin en-boy oranını (694.6 / 440 ≈ 1.5786) korur
+  const effectiveHeight = slideWidth > 0
     ? Math.round(slideWidth / WEB_GALLERY_ASPECT_RATIO)
     : height;
 

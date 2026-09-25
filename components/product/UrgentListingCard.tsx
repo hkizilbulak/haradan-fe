@@ -25,6 +25,7 @@ export type UrgentListingCardVariant = 'featured' | 'row' | 'tile';
 
 const URGENT_RED = '#e11d48';
 const EASE = Easing.bezier(0.22, 1, 0.36, 1);
+const WEB_GALLERY_ASPECT_RATIO = 694.6 / 440;
 
 type UrgentListingCardProps = {
   product: CatalogProductCard;
@@ -646,7 +647,7 @@ const styles = StyleSheet.create({
   },
   tileImageWrap: {
     width: '100%',
-    aspectRatio: 4 / 3,
+    aspectRatio: WEB_GALLERY_ASPECT_RATIO,
     position: 'relative',
     borderTopLeftRadius: 19,
     borderTopRightRadius: 19,

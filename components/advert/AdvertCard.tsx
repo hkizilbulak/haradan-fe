@@ -24,6 +24,8 @@ import { WishlistButton } from './WishlistButton';
 
 export type AdvertCardVariant = 'grid' | 'rail' | 'compact';
 
+const WEB_GALLERY_ASPECT_RATIO = 694.6 / 440;
+
 type AdvertCardProps = {
   advert: PublishedAdvertCard;
   variant?: AdvertCardVariant;
@@ -206,7 +208,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   imageWrap: {
-    aspectRatio: 1,
+    aspectRatio: WEB_GALLERY_ASPECT_RATIO,
     width: '100%',
     position: 'relative',
     backgroundColor: '#0a0d14',

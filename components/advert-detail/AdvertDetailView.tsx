@@ -321,7 +321,7 @@ export function AdvertDetailView({
 
   const galleryHeight = isWide
     ? 440
-    : Math.min(Math.round(width * 0.78), 420);
+    : Math.round(width / (694.6 / 440));
 
   const horse = detail.horse;
   const categoryKind = useMemo(() => getAdvertCategoryKind(detail), [detail]);

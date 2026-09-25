@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   Modal,
   Platform,
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +19,7 @@ export type AspectRatioOption = 'FREE' | 'WEB';
 interface ImageCropperModalProps {
   visible: boolean;
   imageUri: string;
+  originalUri?: string;
   fileName?: string;
   onClose: () => void;
   onSave: (croppedUri: string, croppedFile?: File) => void;
@@ -36,16 +37,18 @@ const WEB_GALLERY_ASPECT_RATIO = 694.6 / 440;
 
 const PRESETS: { key: AspectRatioOption; label: string; ratio: number | null; icon?: string }[] = [
   { key: 'FREE', label: 'Tüm Fotoğraf (Serbest)', ratio: null },
-  { key: 'WEB', label: 'Web Kalıbı', ratio: WEB_GALLERY_ASPECT_RATIO },
+  { key: 'WEB', label: 'İlan Kalıbı', ratio: WEB_GALLERY_ASPECT_RATIO },
 ];
 
 export function ImageCropperModal({
   visible,
   imageUri,
+  originalUri,
   fileName = 'cropped_image.jpg',
   onClose,
   onSave,
 }: ImageCropperModalProps) {
+  const [activeSourceUri, setActiveSourceUri] = useState<string>(imageUri);
   const [naturalSize, setNaturalSize] = useState<{ width: number; height: number } | null>(null);
   const [rotation, setRotation] = useState<number>(0);
   const [aspectRatio, setAspectRatio] = useState<AspectRatioOption>('FREE');
@@ -63,10 +66,17 @@ export function ImageCropperModal({
     startY: number;
     startBox: CropBox;
   } | null>(null);
+  const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchStartRef = useRef<{ dist: number; startBox: CropBox } | null>(null);
 
-  const windowDim = Dimensions.get('window');
-  const maxDisplayWidth = Math.min(windowDim.width - 48, 540);
-  const maxDisplayHeight = Math.min(windowDim.height * 0.52, 420);
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const maxDisplayWidth = Math.min(windowWidth - 48, 560);
+  const maxDisplayHeight = Math.min(windowHeight * 0.55, 420);
+
+  // Synchronize activeSourceUri when imageUri or visible changes
+  useEffect(() => {
+    setActiveSourceUri(imageUri);
+  }, [visible, imageUri]);
 
   // Clean up created blob URL on unmount
   useEffect(() => {
@@ -80,7 +90,7 @@ export function ImageCropperModal({
 
   // Load natural dimensions and resolve safe blob when image changes or modal opens
   useEffect(() => {
-    if (!visible || !imageUri) {
+    if (!visible || !activeSourceUri) {
       setNaturalSize(null);
       setLoading(true);
       setRotation(0);
@@ -104,13 +114,13 @@ export function ImageCropperModal({
 
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const loadWebImage = async () => {
-        let activeUrl = imageUri;
+        let activeUrl = activeSourceUri;
 
         // Remote URL ise tarayıcı HTTP önbellek ve CORS sorununu önlemek için blob olarak getir
-        if (imageUri.startsWith('http://') || imageUri.startsWith('https://')) {
+        if (activeSourceUri.startsWith('http://') || activeSourceUri.startsWith('https://')) {
           try {
-            const cacheBuster = (imageUri.includes('?') ? '&' : '?') + '_cb=' + Date.now();
-            const res = await fetch(imageUri + cacheBuster, { mode: 'cors' });
+            const cacheBuster = (activeSourceUri.includes('?') ? '&' : '?') + '_cb=' + Date.now();
+            const res = await fetch(activeSourceUri + cacheBuster, { mode: 'cors' });
             if (res.ok) {
               const blob = await res.blob();
               if (isCancelled) return;
@@ -150,7 +160,7 @@ export function ImageCropperModal({
             if (isCancelled) return;
             setLoading(false);
           };
-          fallback.src = imageUri;
+          fallback.src = activeSourceUri;
         };
 
         img.src = activeUrl;
@@ -158,7 +168,7 @@ export function ImageCropperModal({
 
       void loadWebImage();
     } else {
-      setSafeUri(imageUri);
+      setSafeUri(activeSourceUri);
       setNaturalSize({ width: 1200, height: 900 });
       setLoading(false);
     }
@@ -166,25 +176,7 @@ export function ImageCropperModal({
     return () => {
       isCancelled = true;
     };
-  }, [visible, imageUri]);
-
-  // Compute displayed image box dimensions based on rotation and container limits
-  useEffect(() => {
-    if (!naturalSize) return;
-
-    const isFlipped = rotation === 90 || rotation === 270;
-    const currentW = isFlipped ? naturalSize.height : naturalSize.width;
-    const currentH = isFlipped ? naturalSize.width : naturalSize.height;
-
-    const scale = Math.min(maxDisplayWidth / currentW, maxDisplayHeight / currentH, 1);
-    const dispW = Math.max(Math.round(currentW * scale), 160);
-    const dispH = Math.max(Math.round(currentH * scale), 120);
-
-    setDisplaySize({ width: dispW, height: dispH });
-
-    // Initialize or adapt crop box to current aspect ratio
-    initCropBox(dispW, dispH, aspectRatio);
-  }, [naturalSize, rotation, maxDisplayWidth, maxDisplayHeight]);
+  }, [visible, activeSourceUri]);
 
   const initCropBox = useCallback((dispW: number, dispH: number, preset: AspectRatioOption) => {
     const targetPreset = PRESETS.find((p) => p.key === preset);
@@ -222,6 +214,25 @@ export function ImageCropperModal({
     });
   }, []);
 
+  // Compute displayed image box dimensions based on rotation and container limits
+  useEffect(() => {
+    if (!naturalSize) return;
+
+    const isFlipped = rotation === 90 || rotation === 270;
+    const currentW = isFlipped ? naturalSize.height : naturalSize.width;
+    const currentH = isFlipped ? naturalSize.width : naturalSize.height;
+
+    // Scale image up or down to comfortably fit the cropper bounds without being restricted to <= 1
+    const scale = Math.min(maxDisplayWidth / currentW, maxDisplayHeight / currentH);
+    const dispW = Math.max(Math.round(currentW * scale), 200);
+    const dispH = Math.max(Math.round(currentH * scale), 150);
+
+    setDisplaySize({ width: dispW, height: dispH });
+
+    // Initialize or adapt crop box to current aspect ratio
+    initCropBox(dispW, dispH, aspectRatio);
+  }, [naturalSize, rotation, maxDisplayWidth, maxDisplayHeight, initCropBox, aspectRatio]);
+
   const handleSelectPreset = (preset: AspectRatioOption) => {
     setAspectRatio(preset);
     if (displaySize.width > 0 && displaySize.height > 0) {
@@ -229,12 +240,18 @@ export function ImageCropperModal({
     }
   };
 
-  // Drag handling on Web
+  // Drag handling on Web with Pointer Capture & Touch support
   const startDrag = (
     mode: 'move' | 'tl' | 'tr' | 'bl' | 'br' | 't' | 'b' | 'l' | 'r',
     clientX: number,
-    clientY: number
+    clientY: number,
+    event?: any
   ) => {
+    try {
+      if (event?.target?.setPointerCapture && event?.pointerId !== undefined) {
+        event.target.setPointerCapture(event.pointerId);
+      }
+    } catch {}
     dragInfoRef.current = {
       mode,
       startX: clientX,
@@ -246,10 +263,80 @@ export function ImageCropperModal({
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
 
+    const onPointerDownGlobal = (e: PointerEvent) => {
+      activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      // When 2 fingers touch, switch to pinch-to-resize
+      if (activePointersRef.current.size === 2) {
+        const pts = Array.from(activePointersRef.current.values());
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        pinchStartRef.current = { dist, startBox: { ...cropBox } };
+        dragInfoRef.current = null; // Pinch supersedes single-touch drag
+      }
+    };
+
     const onPointerMove = (e: PointerEvent) => {
+      if (activePointersRef.current.has(e.pointerId)) {
+        activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      }
+
+      // Handle 2-finger pinch resize on mobile
+      if (pinchStartRef.current && activePointersRef.current.size >= 2) {
+        e.preventDefault();
+        const pts = Array.from(activePointersRef.current.values());
+        const newDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        if (pinchStartRef.current.dist > 10) {
+          const scale = newDist / pinchStartRef.current.dist;
+          const { startBox } = pinchStartRef.current;
+          const dispW = displaySize.width;
+          const dispH = displaySize.height;
+          const activePreset = PRESETS.find((p) => p.key === aspectRatio);
+          const ratio = activePreset?.ratio;
+
+          const centerX = startBox.x + startBox.width / 2;
+          const centerY = startBox.y + startBox.height / 2;
+
+          let newW = Math.round(startBox.width * scale);
+          let newH = ratio ? Math.round(newW / ratio) : Math.round(startBox.height * scale);
+
+          const minSize = 40;
+          if (newW < minSize) {
+            newW = minSize;
+            if (ratio) newH = Math.round(newW / ratio);
+          }
+          if (newH < minSize) {
+            newH = minSize;
+            if (ratio) newW = Math.round(newH * ratio);
+          }
+
+          if (newW > dispW) {
+            newW = dispW;
+            if (ratio) newH = Math.round(newW / ratio);
+          }
+          if (newH > dispH) {
+            newH = dispH;
+            if (ratio) newW = Math.round(newH * ratio);
+          }
+
+          let newX = Math.round(centerX - newW / 2);
+          let newY = Math.round(centerY - newH / 2);
+
+          newX = Math.max(0, Math.min(dispW - newW, newX));
+          newY = Math.max(0, Math.min(dispH - newH, newY));
+
+          setCropBox({
+            x: newX,
+            y: newY,
+            width: newW,
+            height: newH,
+          });
+        }
+        return;
+      }
+
       const info = dragInfoRef.current;
       if (!info) return;
 
+      e.preventDefault();
       const dx = e.clientX - info.startX;
       const dy = e.clientY - info.startY;
       const { startBox, mode } = info;
@@ -268,8 +355,11 @@ export function ImageCropperModal({
         let newW = Math.max(minSize, Math.min(dispW - startBox.x, startBox.width + dx));
         let newH = startBox.height;
         if (ratio) {
-          newH = Math.min(dispH - startBox.y, newW / ratio);
-          newW = newH * ratio;
+          newH = Math.round(newW / ratio);
+          if (startBox.y + newH > dispH) {
+            newH = dispH - startBox.y;
+            newW = Math.round(newH * ratio);
+          }
         }
         setCropBox((prev) => ({
           ...prev,
@@ -280,8 +370,11 @@ export function ImageCropperModal({
         let newH = Math.max(minSize, Math.min(dispH - startBox.y, startBox.height + dy));
         let newW = startBox.width;
         if (ratio) {
-          newW = Math.min(dispW - startBox.x, newH * ratio);
-          newH = newW / ratio;
+          newW = Math.round(newH * ratio);
+          if (startBox.x + newW > dispW) {
+            newW = dispW - startBox.x;
+            newH = Math.round(newW / ratio);
+          }
         }
         setCropBox((prev) => ({
           ...prev,
@@ -289,42 +382,65 @@ export function ImageCropperModal({
           height: Math.round(newH),
         }));
       } else if (mode === 't') {
-        let newY = Math.max(0, Math.min(startBox.y + startBox.height - minSize, startBox.y + dy));
-        let newH = startBox.height - (newY - startBox.y);
-        let newW = startBox.width;
-        if (ratio) {
-          newW = Math.min(dispW - startBox.x, newH * ratio);
-          newH = newW / ratio;
-          newY = startBox.y + (startBox.height - newH);
+        let newH = Math.max(minSize, startBox.height - dy);
+        let newY = startBox.y + (startBox.height - newH);
+        if (newY < 0) {
+          newH += newY;
+          newY = 0;
         }
-        setCropBox((prev) => ({
-          ...prev,
-          y: Math.round(newY),
-          height: Math.round(newH),
-          width: Math.round(newW),
-        }));
-      } else if (mode === 'l') {
-        let newX = Math.max(0, Math.min(startBox.x + startBox.width - minSize, startBox.x + dx));
-        let newW = startBox.width - (newX - startBox.x);
-        let newH = startBox.height;
+        let newW = startBox.width;
+        let newX = startBox.x;
         if (ratio) {
-          newH = Math.min(dispH - startBox.y, newW / ratio);
-          newW = newH * ratio;
-          newX = startBox.x + (startBox.width - newW);
+          newW = Math.round(newH * ratio);
+          if (startBox.x + newW > dispW) {
+            newW = dispW - startBox.x;
+            newH = Math.round(newW / ratio);
+            newY = startBox.y + (startBox.height - newH);
+          }
         }
         setCropBox((prev) => ({
           ...prev,
           x: Math.round(newX),
+          y: Math.round(newY),
+          width: Math.round(newW),
+          height: Math.round(newH),
+        }));
+      } else if (mode === 'l') {
+        let newW = Math.max(minSize, startBox.width - dx);
+        let newX = startBox.x + (startBox.width - newW);
+        if (newX < 0) {
+          newW += newX;
+          newX = 0;
+        }
+        let newH = startBox.height;
+        let newY = startBox.y;
+        if (ratio) {
+          newH = Math.round(newW / ratio);
+          if (startBox.y + newH > dispH) {
+            newH = dispH - startBox.y;
+            newW = Math.round(newH * ratio);
+            newX = startBox.x + (startBox.width - newW);
+          }
+        }
+        setCropBox((prev) => ({
+          ...prev,
+          x: Math.round(newX),
+          y: Math.round(newY),
           width: Math.round(newW),
           height: Math.round(newH),
         }));
       } else if (mode === 'br') {
-        let newW = Math.max(minSize, Math.min(dispW - startBox.x, startBox.width + dx));
-        let newH = ratio ? newW / ratio : Math.max(minSize, Math.min(dispH - startBox.y, startBox.height + dy));
+        const delta = ratio ? (Math.abs(dx) > Math.abs(dy * ratio) ? dx : dy * ratio) : 0;
+        let newW = ratio ? Math.max(minSize, startBox.width + delta) : Math.max(minSize, Math.min(dispW - startBox.x, startBox.width + dx));
+        let newH = ratio ? Math.round(newW / ratio) : Math.max(minSize, Math.min(dispH - startBox.y, startBox.height + dy));
 
-        if (ratio && startBox.y + newH > dispH) {
+        if (startBox.x + newW > dispW) {
+          newW = dispW - startBox.x;
+          if (ratio) newH = Math.round(newW / ratio);
+        }
+        if (startBox.y + newH > dispH) {
           newH = dispH - startBox.y;
-          newW = newH * ratio;
+          if (ratio) newW = Math.round(newH * ratio);
         }
 
         setCropBox((prev) => ({
@@ -333,8 +449,9 @@ export function ImageCropperModal({
           height: Math.round(newH),
         }));
       } else if (mode === 'tl') {
-        let newW = Math.max(minSize, startBox.width - dx);
-        let newH = ratio ? newW / ratio : Math.max(minSize, startBox.height - dy);
+        const delta = ratio ? (Math.abs(dx) > Math.abs(dy * ratio) ? -dx : -dy * ratio) : 0;
+        let newW = ratio ? Math.max(minSize, startBox.width + delta) : Math.max(minSize, startBox.width - dx);
+        let newH = ratio ? Math.round(newW / ratio) : Math.max(minSize, startBox.height - dy);
 
         let newX = startBox.x + (startBox.width - newW);
         let newY = startBox.y + (startBox.height - newH);
@@ -342,12 +459,15 @@ export function ImageCropperModal({
         if (newX < 0) {
           newW += newX;
           newX = 0;
-          if (ratio) newH = newW / ratio;
+          if (ratio) newH = Math.round(newW / ratio);
         }
         if (newY < 0) {
           newH += newY;
           newY = 0;
-          if (ratio) newW = newH * ratio;
+          if (ratio) {
+            newW = Math.round(newH * ratio);
+            newX = startBox.x + (startBox.width - newW);
+          }
         }
 
         setCropBox({
@@ -357,14 +477,19 @@ export function ImageCropperModal({
           height: Math.round(newH),
         });
       } else if (mode === 'tr') {
-        let newW = Math.max(minSize, Math.min(dispW - startBox.x, startBox.width + dx));
-        let newH = ratio ? newW / ratio : Math.max(minSize, startBox.height - dy);
+        const delta = ratio ? (Math.abs(dx) > Math.abs(dy * ratio) ? dx : -dy * ratio) : 0;
+        let newW = ratio ? Math.max(minSize, startBox.width + delta) : Math.max(minSize, Math.min(dispW - startBox.x, startBox.width + dx));
+        let newH = ratio ? Math.round(newW / ratio) : Math.max(minSize, startBox.height - dy);
         let newY = startBox.y + (startBox.height - newH);
 
+        if (startBox.x + newW > dispW) {
+          newW = dispW - startBox.x;
+          if (ratio) newH = Math.round(newW / ratio);
+        }
         if (newY < 0) {
           newH += newY;
           newY = 0;
-          if (ratio) newW = newH * ratio;
+          if (ratio) newW = Math.round(newH * ratio);
         }
 
         setCropBox((prev) => ({
@@ -374,18 +499,20 @@ export function ImageCropperModal({
           height: Math.round(newH),
         }));
       } else if (mode === 'bl') {
-        let newW = Math.max(minSize, startBox.width - dx);
-        let newH = ratio ? newW / ratio : Math.max(minSize, Math.min(dispH - startBox.y, startBox.height + dy));
+        const delta = ratio ? (Math.abs(dx) > Math.abs(dy * ratio) ? -dx : dy * ratio) : 0;
+        let newW = ratio ? Math.max(minSize, startBox.width + delta) : Math.max(minSize, startBox.width - dx);
+        let newH = ratio ? Math.round(newW / ratio) : Math.max(minSize, Math.min(dispH - startBox.y, startBox.height + dy));
         let newX = startBox.x + (startBox.width - newW);
 
         if (newX < 0) {
           newW += newX;
           newX = 0;
-          if (ratio) newH = newW / ratio;
+          if (ratio) newH = Math.round(newW / ratio);
         }
         if (ratio && startBox.y + newH > dispH) {
           newH = dispH - startBox.y;
-          newW = newH * ratio;
+          newW = Math.round(newH * ratio);
+          newX = startBox.x + (startBox.width - newW);
         }
 
         setCropBox({
@@ -397,15 +524,30 @@ export function ImageCropperModal({
       }
     };
 
-    const onPointerUp = () => {
-      dragInfoRef.current = null;
+    const onPointerUp = (e: PointerEvent) => {
+      activePointersRef.current.delete(e.pointerId);
+      if (activePointersRef.current.size < 2) {
+        pinchStartRef.current = null;
+      }
+      if (e && (e.target as HTMLElement)?.hasPointerCapture?.(e.pointerId)) {
+        try {
+          (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+        } catch {}
+      }
+      if (activePointersRef.current.size === 0) {
+        dragInfoRef.current = null;
+      }
     };
 
-    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerdown', onPointerDownGlobal, { passive: true });
+    window.addEventListener('pointermove', onPointerMove, { passive: false });
     window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
     return () => {
+      window.removeEventListener('pointerdown', onPointerDownGlobal);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
     };
   }, [aspectRatio, displaySize]);
 
@@ -429,7 +571,7 @@ export function ImageCropperModal({
         const realH = Math.max(1, Math.min(currentNaturalH - realY, Math.round(cropBox.height * scaleY)));
 
         // Temiz aynı-köken (blob) veya CORS uyumlu URL çözümle
-        let workingUrl = safeUri || imageUri;
+        let workingUrl = safeUri || activeSourceUri;
         let tempBlobUrl: string | null = null;
 
         if (workingUrl.startsWith('http://') || workingUrl.startsWith('https://')) {
@@ -556,79 +698,81 @@ export function ImageCropperModal({
               <View
                 ref={containerRef}
                 style={[
-                  styles.imageContainer,
+                  styles.cropStage,
                   { width: displaySize.width, height: displaySize.height },
                 ]}
               >
-                {/* The Base Image with Rotation */}
-                {Platform.OS === 'web' ? (
-                  // @ts-ignore
-                  <img
-                    src={safeUri || imageUri}
-                    alt="Kırpılacak görsel"
-                    draggable={false}
-                    crossOrigin="anonymous"
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                      transform: `rotate(${rotation}deg)`,
-                      transformOrigin: 'center center',
-                      userSelect: 'none',
-                      pointerEvents: 'none',
-                      display: 'block',
-                    }}
+                {/* 1. Base Image & Shades (Strictly clipped to image container) */}
+                <View style={styles.clippedMediaLayer}>
+                  {Platform.OS === 'web' ? (
+                    // @ts-ignore
+                    <img
+                      src={safeUri || activeSourceUri}
+                      alt="Kırpılacak görsel"
+                      draggable={false}
+                      crossOrigin="anonymous"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                        transform: `rotate(${rotation}deg)`,
+                        transformOrigin: 'center center',
+                        userSelect: 'none',
+                        pointerEvents: 'none',
+                        display: 'block',
+                      }}
+                    />
+                  ) : (
+                    <View style={{ width: '100%', height: '100%' }} />
+                  )}
+
+                  {/* Dark Shaded Regions around the crop box */}
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.shade,
+                      { top: 0, left: 0, right: 0, height: cropBox.y },
+                    ]}
                   />
-                ) : (
-                  <View style={{ width: '100%', height: '100%' }} />
-                )}
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.shade,
+                      {
+                        top: cropBox.y + cropBox.height,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                      },
+                    ]}
+                  />
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.shade,
+                      {
+                        top: cropBox.y,
+                        left: 0,
+                        width: cropBox.x,
+                        height: cropBox.height,
+                      },
+                    ]}
+                  />
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.shade,
+                      {
+                        top: cropBox.y,
+                        left: cropBox.x + cropBox.width,
+                        right: 0,
+                        height: cropBox.height,
+                      },
+                    ]}
+                  />
+                </View>
 
-                {/* Dark Shaded Regions around the crop box */}
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.shade,
-                    { top: 0, left: 0, right: 0, height: cropBox.y },
-                  ]}
-                />
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.shade,
-                    {
-                      top: cropBox.y + cropBox.height,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                    },
-                  ]}
-                />
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.shade,
-                    {
-                      top: cropBox.y,
-                      left: 0,
-                      width: cropBox.x,
-                      height: cropBox.height,
-                    },
-                  ]}
-                />
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.shade,
-                    {
-                      top: cropBox.y,
-                      left: cropBox.x + cropBox.width,
-                      right: 0,
-                      height: cropBox.height,
-                    },
-                  ]}
-                />
-
-                {/* The Crop Box Overlay */}
+                {/* 2. Crop Box Overlay & Handles (overflow visible so handles are never clipped) */}
                 <View
                   style={[
                     styles.cropBox,
@@ -642,7 +786,10 @@ export function ImageCropperModal({
                   // @ts-ignore Web pointerdown for moving box
                   onPointerDown={(e: any) => {
                     e.stopPropagation();
-                    startDrag('move', e.clientX, e.clientY);
+                    e.preventDefault?.();
+                    const cx = e.clientX ?? e.nativeEvent?.clientX ?? 0;
+                    const cy = e.clientY ?? e.nativeEvent?.clientY ?? 0;
+                    startDrag('move', cx, cy, e);
                   }}
                 >
                   {/* Rule of Thirds Grid Lines */}
@@ -651,79 +798,117 @@ export function ImageCropperModal({
                   <View pointerEvents="none" style={styles.gridV1} />
                   <View pointerEvents="none" style={styles.gridV2} />
 
-                  {/* Corner Handles */}
+                  {/* Corner Handles with large 44x44 touch targets for mobile */}
                   <View
-                    style={[styles.handle, styles.handleTL]}
+                    style={[styles.handleHitArea, styles.handleHitAreaTL]}
                     // @ts-ignore
                     onPointerDown={(e: any) => {
                       e.stopPropagation();
-                      startDrag('tl', e.clientX, e.clientY);
+                      e.preventDefault?.();
+                      const cx = e.clientX ?? e.nativeEvent?.clientX ?? 0;
+                      const cy = e.clientY ?? e.nativeEvent?.clientY ?? 0;
+                      startDrag('tl', cx, cy, e);
                     }}
-                  />
-                  <View
-                    style={[styles.handle, styles.handleTR]}
-                    // @ts-ignore
-                    onPointerDown={(e: any) => {
-                      e.stopPropagation();
-                      startDrag('tr', e.clientX, e.clientY);
-                    }}
-                  />
-                  <View
-                    style={[styles.handle, styles.handleBL]}
-                    // @ts-ignore
-                    onPointerDown={(e: any) => {
-                      e.stopPropagation();
-                      startDrag('bl', e.clientX, e.clientY);
-                    }}
-                  />
-                  <View
-                    style={[styles.handle, styles.handleBR]}
-                    // @ts-ignore
-                    onPointerDown={(e: any) => {
-                      e.stopPropagation();
-                      startDrag('br', e.clientX, e.clientY);
-                    }}
-                  />
+                  >
+                    <View style={styles.handleDot} />
+                  </View>
 
-                  {/* Edge Handles (Kenarlar) - Sadece Serbest modda gösterilir */}
+                  <View
+                    style={[styles.handleHitArea, styles.handleHitAreaTR]}
+                    // @ts-ignore
+                    onPointerDown={(e: any) => {
+                      e.stopPropagation();
+                      e.preventDefault?.();
+                      const cx = e.clientX ?? e.nativeEvent?.clientX ?? 0;
+                      const cy = e.clientY ?? e.nativeEvent?.clientY ?? 0;
+                      startDrag('tr', cx, cy, e);
+                    }}
+                  >
+                    <View style={styles.handleDot} />
+                  </View>
+
+                  <View
+                    style={[styles.handleHitArea, styles.handleHitAreaBL]}
+                    // @ts-ignore
+                    onPointerDown={(e: any) => {
+                      e.stopPropagation();
+                      e.preventDefault?.();
+                      const cx = e.clientX ?? e.nativeEvent?.clientX ?? 0;
+                      const cy = e.clientY ?? e.nativeEvent?.clientY ?? 0;
+                      startDrag('bl', cx, cy, e);
+                    }}
+                  >
+                    <View style={styles.handleDot} />
+                  </View>
+
+                  <View
+                    style={[styles.handleHitArea, styles.handleHitAreaBR]}
+                    // @ts-ignore
+                    onPointerDown={(e: any) => {
+                      e.stopPropagation();
+                      e.preventDefault?.();
+                      const cx = e.clientX ?? e.nativeEvent?.clientX ?? 0;
+                      const cy = e.clientY ?? e.nativeEvent?.clientY ?? 0;
+                      startDrag('br', cx, cy, e);
+                    }}
+                  >
+                    <View style={styles.handleDot} />
+                  </View>
+
+                  {/* Edge Handles with large 40px touch targets - Sadece Serbest modda gösterilir */}
                   {aspectRatio === 'FREE' && (
                     <>
                       <View
-                        style={[styles.edgeHandle, styles.edgeHandleT]}
+                        style={[styles.edgeHandleHitArea, styles.edgeHandleHitAreaT]}
                         // @ts-ignore
                         onPointerDown={(e: any) => {
                           e.stopPropagation();
-                          startDrag('t', e.clientX, e.clientY);
+                          e.preventDefault?.();
+                          const cx = e.clientX ?? e.nativeEvent?.clientX ?? 0;
+                          const cy = e.clientY ?? e.nativeEvent?.clientY ?? 0;
+                          startDrag('t', cx, cy, e);
                         }}
                       >
                         <View style={styles.edgeBarH} />
                       </View>
+
                       <View
-                        style={[styles.edgeHandle, styles.edgeHandleB]}
+                        style={[styles.edgeHandleHitArea, styles.edgeHandleHitAreaB]}
                         // @ts-ignore
                         onPointerDown={(e: any) => {
                           e.stopPropagation();
-                          startDrag('b', e.clientX, e.clientY);
+                          e.preventDefault?.();
+                          const cx = e.clientX ?? e.nativeEvent?.clientX ?? 0;
+                          const cy = e.clientY ?? e.nativeEvent?.clientY ?? 0;
+                          startDrag('b', cx, cy, e);
                         }}
                       >
                         <View style={styles.edgeBarH} />
                       </View>
+
                       <View
-                        style={[styles.edgeHandle, styles.edgeHandleL]}
+                        style={[styles.edgeHandleHitArea, styles.edgeHandleHitAreaL]}
                         // @ts-ignore
                         onPointerDown={(e: any) => {
                           e.stopPropagation();
-                          startDrag('l', e.clientX, e.clientY);
+                          e.preventDefault?.();
+                          const cx = e.clientX ?? e.nativeEvent?.clientX ?? 0;
+                          const cy = e.clientY ?? e.nativeEvent?.clientY ?? 0;
+                          startDrag('l', cx, cy, e);
                         }}
                       >
                         <View style={styles.edgeBarV} />
                       </View>
+
                       <View
-                        style={[styles.edgeHandle, styles.edgeHandleR]}
+                        style={[styles.edgeHandleHitArea, styles.edgeHandleHitAreaR]}
                         // @ts-ignore
                         onPointerDown={(e: any) => {
                           e.stopPropagation();
-                          startDrag('r', e.clientX, e.clientY);
+                          e.preventDefault?.();
+                          const cx = e.clientX ?? e.nativeEvent?.clientX ?? 0;
+                          const cy = e.clientY ?? e.nativeEvent?.clientY ?? 0;
+                          startDrag('r', cx, cy, e);
                         }}
                       >
                         <View style={styles.edgeBarV} />
@@ -761,6 +946,36 @@ export function ImageCropperModal({
                 );
               })}
             </View>
+
+            {/* Orijinal / Kırpılmış Görsel Geçişi */}
+            {Boolean(originalUri && originalUri !== imageUri) && (
+              <Pressable
+                onPress={() =>
+                  setActiveSourceUri((prev) =>
+                    prev === originalUri ? imageUri : (originalUri ?? imageUri)
+                  )
+                }
+                style={[
+                  styles.sourceTogglePill,
+                  activeSourceUri === originalUri && styles.sourceTogglePillActive,
+                ]}
+                hitSlop={6}
+              >
+                <Ionicons
+                  name={activeSourceUri === originalUri ? 'checkmark-circle' : 'refresh-outline'}
+                  size={14}
+                  color={activeSourceUri === originalUri ? '#22c55e' : '#94a3b8'}
+                />
+                <Text
+                  style={[
+                    styles.sourceToggleText,
+                    activeSourceUri === originalUri && styles.sourceToggleTextActive,
+                  ]}
+                >
+                  {activeSourceUri === originalUri ? 'Orijinal Fotoğraf Açık' : 'Orijinalden Kırp'}
+                </Text>
+              </Pressable>
+            )}
           </View>
 
           {/* Footer Actions */}
@@ -875,8 +1090,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#0a0d14',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
+    padding: 24,
     overflow: 'hidden',
+    ...Platform.select({
+      web: {
+        touchAction: 'none' as any,
+        userSelect: 'none' as any,
+      },
+      default: {},
+    }),
   },
   loadingBox: {
     alignItems: 'center',
@@ -889,11 +1111,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
   },
-  imageContainer: {
+  cropStage: {
     position: 'relative',
-    overflow: 'hidden',
-    backgroundColor: '#ffffff',
+    overflow: 'visible',
     borderRadius: 6,
+    ...Platform.select({
+      web: {
+        touchAction: 'none' as any,
+        userSelect: 'none' as any,
+      },
+      default: {},
+    }),
+  },
+  clippedMediaLayer: {
+    width: '100%',
+    height: '100%',
+    overflow: 'hidden',
+    position: 'relative',
+    borderRadius: 6,
+    backgroundColor: '#05070a',
   },
   shade: {
     position: 'absolute',
@@ -901,12 +1137,14 @@ const styles = StyleSheet.create({
   },
   cropBox: {
     position: 'absolute',
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: '#ffffff',
     ...Platform.select({
       web: {
         cursor: 'move' as any,
-        boxShadow: '0 0 0 1px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3)',
+        boxShadow: '0 0 0 1px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,0,0,0.3)',
+        touchAction: 'none' as any,
+        userSelect: 'none' as any,
       },
       default: {},
     }),
@@ -917,7 +1155,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
   },
   gridH2: {
     position: 'absolute',
@@ -925,7 +1163,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
   },
   gridV1: {
     position: 'absolute',
@@ -933,7 +1171,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
   },
   gridV2: {
     position: 'absolute',
@@ -941,122 +1179,147 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
   },
-  handle: {
+  // Generous 44x44 touch hit area for corners on mobile
+  handleHitArea: {
     position: 'absolute',
-    width: 16,
-    height: 16,
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#1e293b',
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 25,
     ...Platform.select({
       web: {
-        boxShadow: '0 2px 5px rgba(0,0,0,0.4)',
+        touchAction: 'none' as any,
+        userSelect: 'none' as any,
       },
       default: {},
     }),
   },
-  handleTL: {
-    top: -8,
-    left: -8,
+  handleHitAreaTL: {
+    top: -22,
+    left: -22,
     ...Platform.select({
       web: { cursor: 'nwse-resize' as any },
       default: {},
     }),
   },
-  handleTR: {
-    top: -8,
-    right: -8,
+  handleHitAreaTR: {
+    top: -22,
+    right: -22,
     ...Platform.select({
       web: { cursor: 'nesw-resize' as any },
       default: {},
     }),
   },
-  handleBL: {
-    bottom: -8,
-    left: -8,
+  handleHitAreaBL: {
+    bottom: -22,
+    left: -22,
     ...Platform.select({
       web: { cursor: 'nesw-resize' as any },
       default: {},
     }),
   },
-  handleBR: {
-    bottom: -8,
-    right: -8,
+  handleHitAreaBR: {
+    bottom: -22,
+    right: -22,
     ...Platform.select({
       web: { cursor: 'nwse-resize' as any },
       default: {},
     }),
   },
-  edgeHandle: {
+  handleDot: {
+    width: 20,
+    height: 20,
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    borderWidth: 2.5,
+    borderColor: '#0f172a',
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 8px rgba(0,0,0,0.6)',
+      },
+      default: {
+        elevation: 6,
+      },
+    }),
+  },
+  // Generous 40px touch hit area for edges on mobile
+  edgeHandleHitArea: {
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 4,
+    zIndex: 20,
+    ...Platform.select({
+      web: {
+        touchAction: 'none' as any,
+        userSelect: 'none' as any,
+      },
+      default: {},
+    }),
   },
-  edgeHandleT: {
-    top: -12,
-    left: 20,
-    right: 20,
-    height: 24,
+  edgeHandleHitAreaT: {
+    top: -20,
+    left: 24,
+    right: 24,
+    height: 40,
     ...Platform.select({
       web: { cursor: 'ns-resize' as any },
       default: {},
     }),
   },
-  edgeHandleB: {
-    bottom: -12,
-    left: 20,
-    right: 20,
-    height: 24,
+  edgeHandleHitAreaB: {
+    bottom: -20,
+    left: 24,
+    right: 24,
+    height: 40,
     ...Platform.select({
       web: { cursor: 'ns-resize' as any },
       default: {},
     }),
   },
-  edgeHandleL: {
-    left: -12,
-    top: 20,
-    bottom: 20,
-    width: 24,
+  edgeHandleHitAreaL: {
+    left: -20,
+    top: 24,
+    bottom: 24,
+    width: 40,
     ...Platform.select({
       web: { cursor: 'ew-resize' as any },
       default: {},
     }),
   },
-  edgeHandleR: {
-    right: -12,
-    top: 20,
-    bottom: 20,
-    width: 24,
+  edgeHandleHitAreaR: {
+    right: -20,
+    top: 24,
+    bottom: 24,
+    width: 40,
     ...Platform.select({
       web: { cursor: 'ew-resize' as any },
       default: {},
     }),
   },
   edgeBarH: {
-    width: 28,
-    height: 5,
+    width: 34,
+    height: 6,
     borderRadius: 3,
     backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#1e293b',
+    borderWidth: 1.5,
+    borderColor: '#0f172a',
     ...Platform.select({
-      web: { boxShadow: '0 1px 4px rgba(0,0,0,0.5)' },
+      web: { boxShadow: '0 2px 6px rgba(0,0,0,0.5)' },
       default: {},
     }),
   },
   edgeBarV: {
-    width: 5,
-    height: 28,
+    width: 6,
+    height: 34,
     borderRadius: 3,
     backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#1e293b',
+    borderWidth: 1.5,
+    borderColor: '#0f172a',
     ...Platform.select({
-      web: { boxShadow: '0 1px 4px rgba(0,0,0,0.5)' },
+      web: { boxShadow: '0 2px 6px rgba(0,0,0,0.5)' },
       default: {},
     }),
   },
@@ -1099,31 +1362,6 @@ const styles = StyleSheet.create({
   presetTextActive: {
     color: '#ffffff',
     fontWeight: '700',
-  },
-  toolsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  toolBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    ...Platform.select({
-      web: {
-        cursor: 'pointer' as const,
-      },
-      default: {},
-    }),
-  },
-  toolBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#cbd5e1',
   },
   footer: {
     flexDirection: 'row',
@@ -1169,6 +1407,34 @@ const styles = StyleSheet.create({
   saveBtnText: {
     color: '#ffffff',
     fontSize: 13.5,
+    fontWeight: '700',
+  },
+  sourceTogglePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radius.pill,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    ...Platform.select({
+      web: { cursor: 'pointer' as const, transition: 'all 160ms ease' },
+      default: {},
+    }),
+  },
+  sourceTogglePillActive: {
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    borderColor: '#22c55e',
+  },
+  sourceToggleText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#94a3b8',
+  },
+  sourceToggleTextActive: {
+    color: '#22c55e',
     fontWeight: '700',
   },
 });

@@ -27,7 +27,7 @@ function SectionTitleSkeleton({ titleWidth = 200 }: { titleWidth?: number }) {
 function ListingCardSkeleton({ width }: { width?: number | `${number}%` }) {
   return (
     <View style={[styles.listingCard, width ? { width } : styles.listingCardFlex]}>
-      <Skeleton width="100%" aspectRatio={1} borderRadius={20} />
+      <Skeleton width="100%" aspectRatio={694.6 / 440} borderRadius={20} />
       <Skeleton width="88%" height={14} borderRadius={6} />
       <Skeleton width="55%" height={11} borderRadius={5} />
       <View style={styles.listingFooter}>

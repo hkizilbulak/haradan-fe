@@ -25,6 +25,7 @@ import type { AdvertId } from '@/types/advertId';
 const URGENT_RED = '#e11d48';
 const FEATURED_INK = '#0c0c0e';
 const EASE = Easing.bezier(0.22, 1, 0.36, 1);
+const WEB_GALLERY_ASPECT_RATIO = 694.6 / 440;
 
 export type FeaturedCardBadge = 'urgent' | 'featured';
 
@@ -423,7 +424,7 @@ const styles = StyleSheet.create({
   },
   imageWrap: {
     width: '100%',
-    aspectRatio: 4 / 3,
+    aspectRatio: WEB_GALLERY_ASPECT_RATIO,
     borderTopLeftRadius: 19,
     borderTopRightRadius: 19,
     overflow: 'hidden',
@@ -431,7 +432,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0a0d14',
   },
   imageWrapCompact: {
-    aspectRatio: 4 / 3,
+    aspectRatio: WEB_GALLERY_ASPECT_RATIO,
     borderTopLeftRadius: 13,
     borderTopRightRadius: 13,
     backgroundColor: '#0a0d14',

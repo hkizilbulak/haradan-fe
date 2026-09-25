@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
-import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Image,
+  LayoutChangeEvent,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+  type DimensionValue,
+  type ViewStyle,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { pickLocalImages } from '@/services/media';
 import { MAX_LISTING_IMAGES, type ListingMediaSlot } from '@/types/listing';
@@ -11,6 +22,7 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 
 // Web İlan Detay Galerisi kalıbı (694.6 / 440 ≈ 1.5786)
 const WEB_GALLERY_ASPECT_RATIO = 694.6 / 440;
+const GAP = 10;
 
 type PostMediaGridProps = {
   items: ListingMediaSlot[];
@@ -25,6 +37,40 @@ export function PostMediaGrid({
   onChange,
   onSetCover,
 }: PostMediaGridProps) {
+  const { width: windowWidth } = useWindowDimensions();
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  const handleLayout = (e: LayoutChangeEvent) => {
+    const w = Math.round(e.nativeEvent.layout.width);
+    if (w > 0 && Math.abs(w - containerWidth) > 1) {
+      setContainerWidth(w);
+    }
+  };
+
+  // Web / geniş ekranda 1 satırda 3 tane, mobilde 1 satırda 2 tane
+  const isWide = containerWidth > 0 ? containerWidth >= 520 : windowWidth >= 640;
+  const cols = isWide ? 3 : 2;
+
+  const colWidth =
+    containerWidth > 0
+      ? Math.max(80, Math.floor((containerWidth - GAP * (cols - 1) - 2) / cols))
+      : 0;
+
+  const webItemWidth = isWide
+    ? `calc((100% - ${GAP * 2}px) / 3 - 0.5px)`
+    : `calc(50% - ${GAP / 2 + 1}px)`;
+
+  const itemStyle: ViewStyle = Platform.select({
+    web: {
+      width: webItemWidth as any,
+      maxWidth: webItemWidth as any,
+      flexBasis: webItemWidth as any,
+    },
+    default: {
+      width: (colWidth > 0 ? colWidth : isWide ? '31%' : '48%') as DimensionValue,
+    },
+  }) as ViewStyle;
+
   const text = useThemeColor('text');
   const secondary = useThemeColor('textSecondary');
   const muted = useThemeColor('textMuted');
@@ -45,6 +91,8 @@ export function PostMediaGrid({
           ...item,
           uri: croppedUri,
           file: croppedFile || item.file,
+          originalUri: item.originalUri || item.uri,
+          originalFile: item.originalFile || item.file,
           mimeType: 'image/jpeg',
           assetId: null,
         };
@@ -66,6 +114,8 @@ export function PostMediaGrid({
       ...items,
       ...result.items.map((p, i) => ({
         ...p,
+        originalUri: p.uri,
+        originalFile: p.file,
         isCover: items.length === 0 && i === 0,
         assetId: null,
       })),
@@ -114,9 +164,19 @@ export function PostMediaGrid({
       ) : (
         /* ─── CASE 2: Photos exist ─── */
         <>
-          <View style={styles.grid}>
+          <View style={styles.grid} onLayout={handleLayout}>
             {items.map((slot) => (
-              <View key={slot.localId} style={[styles.cell, { backgroundColor: '#0a0d14', borderColor: border }]}>
+              <View
+                key={slot.localId}
+                style={[
+                  styles.cell,
+                  itemStyle,
+                  {
+                    backgroundColor: '#0a0d14',
+                    borderColor: border,
+                  },
+                ]}
+              >
                 {/* Bokeh backdrop for non-standard aspect ratio photos */}
                 <View style={StyleSheet.absoluteFill} pointerEvents="none">
                   <Image
@@ -166,7 +226,7 @@ export function PostMediaGrid({
                     size={11}
                     color="#fff"
                   />
-                  <Text style={styles.coverBadgeText}>
+                  <Text style={styles.coverBadgeText} numberOfLines={1}>
                     {slot.isCover ? 'Kapak' : 'Kapak Yap'}
                   </Text>
                 </Pressable>
@@ -189,6 +249,7 @@ export function PostMediaGrid({
                 onPress={add}
                 style={({ pressed }) => [
                   styles.addSlot,
+                  itemStyle,
                   {
                     borderColor: activeError ? errorColor : border,
                     backgroundColor: pressed ? border + '25' : surface,
@@ -232,6 +293,7 @@ export function PostMediaGrid({
         <ImageCropperModal
           visible={Boolean(editingSlot)}
           imageUri={editingSlot.uri}
+          originalUri={editingSlot.originalUri}
           fileName={editingSlot.fileName}
           onClose={() => setEditingSlot(null)}
           onSave={handleCropSave}
@@ -243,6 +305,7 @@ export function PostMediaGrid({
 
 const styles = StyleSheet.create({
   wrap: {
+    width: '100%',
     gap: Spacing.sm,
   },
   dropzone: {
@@ -290,11 +353,10 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: GAP,
+    width: '100%',
   },
   cell: {
-    width: '31%',
-    minWidth: 110,
     aspectRatio: WEB_GALLERY_ASPECT_RATIO,
     borderRadius: 14,
     overflow: 'hidden',
@@ -343,6 +405,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    zIndex: 2,
+    maxWidth: '75%',
   },
   coverBadgeText: {
     color: '#fff',
@@ -359,10 +423,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(12, 12, 14, 0.75)',
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 2,
   },
   addSlot: {
-    width: '31%',
-    minWidth: 110,
     aspectRatio: WEB_GALLERY_ASPECT_RATIO,
     borderRadius: 14,
     borderWidth: 1.5,
