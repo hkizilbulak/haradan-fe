@@ -202,11 +202,10 @@ export function PostMediaGrid({
                 <Pressable
                   onPress={() => setEditingSlot(slot)}
                   style={styles.editBtn}
-                  hitSlop={4}
+                  hitSlop={6}
                   accessibilityLabel="Fotoğrafı kırp ve düzenle"
                 >
-                  <Ionicons name="crop" size={11} color="#fff" />
-                  <Text style={styles.editBtnText}>Düzenle</Text>
+                  <Ionicons name="crop" size={12} color="#fff" />
                 </Pressable>
 
                 {/* Cover badge or button */}
@@ -217,18 +216,21 @@ export function PostMediaGrid({
                     {
                       backgroundColor: slot.isCover ? header : 'rgba(12, 12, 14, 0.65)',
                     },
+                    !slot.isCover && styles.coverBtnUnselected,
                   ]}
-                  hitSlop={4}
+                  hitSlop={6}
                   accessibilityLabel={slot.isCover ? 'Kapak fotoğrafı' : 'Kapak yap'}
                 >
                   <Ionicons
                     name={slot.isCover ? 'star' : 'star-outline'}
-                    size={11}
+                    size={slot.isCover ? 11 : 13}
                     color="#fff"
                   />
-                  <Text style={styles.coverBadgeText} numberOfLines={1}>
-                    {slot.isCover ? 'Kapak' : 'Kapak Yap'}
-                  </Text>
+                  {slot.isCover ? (
+                    <Text style={styles.coverBadgeText} numberOfLines={1}>
+                      Kapak
+                    </Text>
+                  ) : null}
                 </Pressable>
 
                 {/* Delete button */}
@@ -274,8 +276,32 @@ export function PostMediaGrid({
             <Text style={[styles.infoText, { color: secondary }]}>
               {items.length === 1
                 ? '1 fotoğraf seçildi (varsayılan kapak fotoğrafı).'
-                : `${items.length} fotoğraf yüklendi. İstediğiniz görseli kapak yapabilirsiniz.`}
+                : `${items.length} fotoğraf yüklendi.`}
             </Text>
+          </View>
+
+          {/* Icon legend / meanings */}
+          <View style={styles.legendRow}>
+            <View style={styles.legendItem}>
+              <View style={styles.legendIconCircle}>
+                <Ionicons name="crop" size={11} color="#fff" />
+              </View>
+              <Text style={[styles.legendText, { color: secondary }]}>Düzenle / Kırp</Text>
+            </View>
+
+            <View style={styles.legendItem}>
+              <View style={styles.legendIconCircle}>
+                <Ionicons name="star-outline" size={11} color="#fff" />
+              </View>
+              <Text style={[styles.legendText, { color: secondary }]}>Kapak Yap</Text>
+            </View>
+
+            <View style={styles.legendItem}>
+              <View style={styles.legendIconCircle}>
+                <Ionicons name="close" size={11} color="#fff" />
+              </View>
+              <Text style={[styles.legendText, { color: secondary }]}>Sil</Text>
+            </View>
           </View>
         </>
       )}
@@ -368,13 +394,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 6,
     left: 6,
-    borderRadius: Radius.pill,
-    paddingHorizontal: 7,
-    paddingVertical: 3.5,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: 'rgba(12, 12, 14, 0.75)',
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 3.5,
+    justifyContent: 'center',
     zIndex: 2,
     ...Platform.select({
       web: {
@@ -383,11 +408,6 @@ const styles = StyleSheet.create({
       },
       default: {},
     }),
-  },
-  editBtnText: {
-    color: '#ffffff',
-    fontSize: 10,
-    fontWeight: '700',
   },
   image: {
     width: '100%',
@@ -407,6 +427,21 @@ const styles = StyleSheet.create({
     gap: 4,
     zIndex: 2,
     maxWidth: '75%',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer' as const,
+      },
+      default: {},
+    }),
+  },
+  coverBtnUnselected: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   coverBadgeText: {
     color: '#fff',
@@ -457,6 +492,30 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   infoText: {
+    ...Typography.caption,
+    fontSize: 12,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: Spacing.md,
+    marginTop: 6,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendIconCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(12, 12, 14, 0.75)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  legendText: {
     ...Typography.caption,
     fontSize: 12,
   },
