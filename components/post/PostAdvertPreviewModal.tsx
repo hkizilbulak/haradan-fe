@@ -325,6 +325,7 @@ function mapDraftToAdvertDetail(draft: ListingDraft): AdvertDetail {
     urgentActivatedAt: null,
     sellerId: null,
     sellerPhone: d.sellerPhone || null,
+    videoUrl: d.videoUrl?.trim() || null,
     viewCount: 0,
     breadcrumbs,
     horse,
@@ -540,7 +541,12 @@ export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
                 <View style={styles.wideHero}>
                   {/* Sol: Galeri */}
                   <View style={styles.wideGalleryCol}>
-                    <AdvertGallery items={detail.gallery} height={galleryHeight} accessToken={null} />
+                    <AdvertGallery
+                      items={detail.gallery}
+                      height={galleryHeight}
+                      accessToken={null}
+                      videoUrl={detail.videoUrl}
+                    />
                   </View>
                   {/* Sağ: BuyBox (Kategoriye özel tablo + Fiyat + Konum + Açıklama) */}
                   <View style={styles.wideBuyCol}>
@@ -626,6 +632,7 @@ export const PostAdvertPreviewModal = memo(function PostAdvertPreviewModal({
                 height={galleryHeight}
                 fullBleed
                 accessToken={null}
+                videoUrl={detail.videoUrl}
               />
             </View>
 

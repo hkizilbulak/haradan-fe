@@ -171,6 +171,7 @@ export type AdvertDetail = PublishedAdvertCard & {
   slug: string;
   description: string;
   address?: string | null;
+  videoUrl?: string | null;
   rating: number;
   reviewCount: number;
   viewCount: number;

@@ -248,6 +248,8 @@ export function buildDraftProperties(draft: ListingDraft): Record<string, unknow
     'MEDIA',
     'images',
     'IMAGES',
+    'videoUrl',
+    'video_url',
     // Exclude legacy lowercase keys that live backend rejects as undefined category properties
     'age',
     'breed',
@@ -331,5 +333,9 @@ export function mapDraftToCreateAdvert(
   }
   const address = draft.details.address?.trim() || 'Merkez';
   body.address = address;
+  const videoUrl = draft.details.videoUrl?.trim();
+  if (videoUrl) {
+    body.videoUrl = videoUrl;
+  }
   return body;
 }

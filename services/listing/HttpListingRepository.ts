@@ -321,6 +321,7 @@ export class HttpListingRepository implements IListingRepository {
             districtId: createBody.districtId ?? null,
             horseId: createBody.horseId ?? null,
             price: createBody.price ?? null,
+            videoUrl: createBody.videoUrl ?? null,
           }),
         }
       );

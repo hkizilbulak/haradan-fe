@@ -18,6 +18,7 @@ export function mapDraftToUpdate(
     title: draft.details.title.trim(),
     description: draft.details.description.trim(),
     address: draft.details.address.trim() || 'Merkez',
+    videoUrl: draft.details.videoUrl?.trim() || null,
     priceAmountMinor: priceTl != null ? Math.round(priceTl * 100) : null,
     provinceId: draft.details.provinceId ?? '',
     districtId: draft.details.districtId,

@@ -55,6 +55,7 @@ export function mapAdvertToListingDraft(
       provinceId: detail.provinceId,
       districtId: detail.districtId ?? null,
       address: detail.address?.trim() ?? '',
+      videoUrl: detail.videoUrl?.trim() ?? '',
       gender: horse.gender,
       birthDate: horse.birthDate,
       age: propAge ? String(propAge) : (horse.age ? String(horse.age) : ''),

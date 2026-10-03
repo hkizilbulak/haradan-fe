@@ -182,6 +182,7 @@ export class HttpMyListingsRepository implements IMyListingsRepository {
     };
     if (payload.provinceId) body.provinceId = payload.provinceId;
     if (payload.address !== undefined) body.address = payload.address;
+    if (payload.videoUrl !== undefined) body.videoUrl = payload.videoUrl;
     if (payload.districtId) body.districtId = payload.districtId;
     if (payload.horseId) body.horseId = payload.horseId;
     if (payload.priceAmountMinor != null) {

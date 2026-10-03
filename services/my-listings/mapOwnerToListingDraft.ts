@@ -95,6 +95,7 @@ export function mapOwnerToListingDraft(
       provinceId: dto.provinceId ?? null,
       districtId: dto.districtId ?? null,
       address: dto.address?.trim() ?? '',
+      videoUrl: dto.videoUrl?.trim() ?? (typeof props.videoUrl === 'string' ? props.videoUrl.trim() : ''),
       horseId: dto.horseId,
       tjkSkipped: !dto.horseId,
       phoneCountryIso: parsedPhone.iso || 'TR',

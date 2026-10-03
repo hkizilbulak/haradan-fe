@@ -28,6 +28,7 @@ export type UpdateListingRequest = {
   title: string;
   description: string;
   address?: string | null;
+  videoUrl?: string | null;
   priceAmountMinor: number | null;
   provinceId: string;
   districtId: string | null;

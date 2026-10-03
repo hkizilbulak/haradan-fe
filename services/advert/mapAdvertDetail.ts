@@ -66,6 +66,7 @@ export type BePublishedAdvertDetail = {
   phone?: string | null;
   sellerId?: string | null;
   seller?: { phone?: string | null } | null;
+  videoUrl?: string | null;
 };
 
 const EMPTY_HORSE: HorseProfile = {
@@ -320,6 +321,7 @@ function emptyDetailShell(
     | 'districtName'
     | 'locationName'
     | 'backendStatus'
+    | 'videoUrl'
   > & {
     category?: { id: string; name: string; slug?: string } | null;
     rejectionReason?: string | null;
@@ -333,6 +335,7 @@ function emptyDetailShell(
     locationName: null,
     backendStatus: null,
     rejectionReason: null,
+    videoUrl: partial.videoUrl ?? null,
     category: partial.category ?? null,
     ...partial,
     properties: partial.properties ?? {},
@@ -475,6 +478,7 @@ export function mapPublishedDetailToAdvert(
     urgentActivatedAt: dto.urgentActivatedAt ?? null,
     sellerId: sellerId ?? null,
     sellerPhone: sellerPhone || null,
+    videoUrl: dto.videoUrl ?? (propMap.videoUrl as string) ?? null,
     backendStatus: 'PUBLISHED',
     viewCount: dto.viewCount ?? 0,
     breadcrumbs: [
@@ -586,6 +590,7 @@ export function mapOwnerToAdvertDetail(
     urgentActivatedAt: null,
     sellerId,
     backendStatus: dto.status ?? null,
+    videoUrl: dto.videoUrl ?? (propMap.videoUrl as string) ?? null,
     rejectionReason,
     category: catName ? { id: rawCatId, name: catName, slug: rawCatId } : ((dto as any).category ?? null),
     properties: propMap,

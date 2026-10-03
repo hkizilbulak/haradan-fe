@@ -74,6 +74,7 @@ export type ListingDraftDetails = {
   provinceId: string | null;
   districtId: string | null;
   address: string;
+  videoUrl?: string;
   gender: HorseGender | null;
   breed?: string;
   birthDate: string;
@@ -173,6 +174,7 @@ export type CreateAdvertDraftRequest = {
   title?: string | null;
   description?: string | null;
   price?: Money | null;
+  videoUrl?: string | null;
 };
 
 /** OpenAPI: OwnerAdvertResponse (özet) */
@@ -189,6 +191,7 @@ export type OwnerAdvertResponse = {
   title: string | null;
   description: string | null;
   price: Money | null;
+  videoUrl?: string | null;
   properties: Record<string, unknown>;
   media?: {
     assetId: string;

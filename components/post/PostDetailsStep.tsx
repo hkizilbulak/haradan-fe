@@ -3,6 +3,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, View, Modal, TextInp
 import { Ionicons } from '@expo/vector-icons';
 import { PostField } from './PostField';
 import { PostMediaGrid } from './PostMediaGrid';
+import { PostVideoCard } from './PostVideoCard';
 import { PostPhoneField } from './PostPhoneField';
 import { PostPlaceSheet } from './PostPlaceSheet';
 import { PostTjkSheet } from './PostTjkSheet';
@@ -870,7 +871,10 @@ export function PostDetailsStep({
         ) : null}
       </View>
 
-
+      <PostVideoCard
+        value={draft.details.videoUrl}
+        onChange={(url) => onUpdate({ videoUrl: url })}
+      />
 
       <View
         style={[styles.card, { backgroundColor: surface, borderColor: border }]}

@@ -85,7 +85,6 @@ export function AdvertDetailView({
   const mobileScrollInset = mobileDetailScrollInset(safeInsets.bottom);
 
   const [specsSubTab, setSpecsSubTab] = useState<SpecsSubTab>('specs');
-  const [showTop, setShowTop] = useState(false);
   const [backendStatus, setBackendStatus] = useState<string>(
     detail.backendStatus || 'PUBLISHED'
   );
@@ -95,6 +94,7 @@ export function AdvertDetailView({
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isTogglingPublish, setIsTogglingPublish] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isMobileVideoPlaying, setIsMobileVideoPlaying] = useState(false);
 
   useEffect(() => {
     if (detail.backendStatus) {
@@ -633,10 +633,6 @@ export function AdvertDetailView({
           onScroll={(e) => {
             const y = e.nativeEvent.contentOffset.y;
             scrollYRef.current = y;
-            setShowTop((prev) => {
-              const next = y > 520;
-              return prev === next ? prev : next;
-            });
           }}
         >
           <View nativeID="advert-top" style={styles.mobileGalleryWrap}>
@@ -645,14 +641,18 @@ export function AdvertDetailView({
               height={galleryHeight}
               fullBleed
               accessToken={accessToken}
+              videoUrl={detail.videoUrl}
+              onVideoPlayStateChange={setIsMobileVideoPlaying}
             />
-            <MobileAdvertTopBar
-              onBack={() => router.back()}
-              showFavorite={detail.backendStatus !== 'REJECTED' && !isOwner}
-              favorite={favorite}
-              onToggleFavorite={() => toggle(favoriteCard)}
-              onShare={isPublished ? () => setIsShareModalOpen(true) : undefined}
-            />
+            {!isMobileVideoPlaying && (
+              <MobileAdvertTopBar
+                onBack={() => router.back()}
+                showFavorite={detail.backendStatus !== 'REJECTED' && !isOwner}
+                favorite={favorite}
+                onToggleFavorite={() => toggle(favoriteCard)}
+                onShare={isPublished ? () => setIsShareModalOpen(true) : undefined}
+              />
+            )}
           </View>
 
           <HomeContentContainer
@@ -787,22 +787,6 @@ export function AdvertDetailView({
           isTogglingPublish={isTogglingPublish}
         />
 
-        {showTop ? (
-          <Pressable
-            onPress={() =>
-              scrollRef.current?.scrollTo({ y: 0, animated: true })
-            }
-            style={[
-              styles.topBtn,
-              styles.topBtnMobile,
-              { backgroundColor: surface, borderColor: border, bottom: safeInsets.bottom + 16 },
-            ]}
-            accessibilityLabel="Yukarı"
-          >
-            <Ionicons name="chevron-up" size={16} color={text} />
-          </Pressable>
-        ) : null}
-
         <PublishToggleConfirmModal
           visible={isConfirmOpen}
           isPublished={isPublished}
@@ -833,10 +817,6 @@ export function AdvertDetailView({
         onScroll={(e) => {
           const y = e.nativeEvent.contentOffset.y;
           scrollYRef.current = y;
-          setShowTop((prev) => {
-            const next = y > 480;
-            return prev === next ? prev : next;
-          });
         }}
       >
         <HomeContentContainer nativeID="advert-top">
@@ -1229,6 +1209,7 @@ export function AdvertDetailView({
                   items={detail.gallery}
                   height={galleryHeight}
                   accessToken={isOwner ? accessToken : null}
+                  videoUrl={detail.videoUrl}
                 />
                 <View
                   ref={reviewsAnchorRef}
@@ -1339,20 +1320,6 @@ export function AdvertDetailView({
           }}
         />
       </ScrollView>
-
-      {showTop ? (
-        <Pressable
-          onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
-          style={[
-            styles.topBtn,
-            { backgroundColor: surface, borderColor: border },
-          ]}
-          accessibilityLabel="Yukarı"
-        >
-          <Ionicons name="chevron-up" size={16} color={text} />
-          <Text style={[styles.topLabel, { color: text }]}>TOP</Text>
-        </Pressable>
-      ) : null}
 
       <PublishToggleConfirmModal
         visible={isConfirmOpen}
@@ -1617,24 +1584,6 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     gap: Spacing.sm,
   },
-  topBtn: {
-    position: 'absolute',
-    right: 16,
-    bottom: 24,
-    width: 44,
-    height: 52,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
-  topBtnMobile: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  topLabel: { fontSize: 9, fontWeight: '700' },
   unpublishedNoticeBanner: {
     flexDirection: 'row',
     alignItems: 'center',
