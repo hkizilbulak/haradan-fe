@@ -1,4 +1,5 @@
 import { HttpClient } from '@/services/http';
+import { ApiError } from '@/services/http/ApiError';
 import { mediaUploader } from '@/services/media/createMediaUploader';
 import type { IMediaUploader } from '@/services/media/MediaUploader';
 import type {
@@ -112,7 +113,12 @@ export class HttpListingRepository implements IListingRepository {
     if (!this.mediaPipeline || this.mediaPipeline.advertId !== advertId) {
       return null;
     }
-    return this.mediaPipeline.promise;
+    try {
+      return await this.mediaPipeline.promise;
+    } catch (err) {
+      this.mediaPipeline = undefined;
+      return null;
+    }
   }
 
   /**
@@ -262,6 +268,10 @@ export class HttpListingRepository implements IListingRepository {
       });
     }
 
+    if (currentStatus === 'PENDING_REVIEW' || currentStatus === 'PUBLISHED') {
+      return { advertId, status: currentStatus };
+    }
+
     const submitted = await this.http.request<OwnerAdvertResponse>(
       `/v1/me/adverts/${advertId}/submit`,
       {
@@ -269,7 +279,12 @@ export class HttpListingRepository implements IListingRepository {
         accessToken,
         body: JSON.stringify({ expectedVersion: version }),
       }
-    );
+    ).catch(err => {
+        if (err instanceof ApiError && err.status === 409) {
+            return { id: advertId, status: 'PENDING_REVIEW' as const };
+        }
+        throw err;
+    });
     return { advertId: submitted.id, status: submitted.status };
   }
 

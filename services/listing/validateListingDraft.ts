@@ -683,7 +683,7 @@ export function canEnterStep(
     return typeStepComplete(draft) && detailsStepComplete(draft, categoryProperties);
   }
   if (target === 'payment') {
-    if (!isPaytrCheckoutEnabled()) return false;
+    if (!isListingPackageStepEnabled()) return false;
     return (
       typeStepComplete(draft) &&
       detailsStepComplete(draft, categoryProperties) &&

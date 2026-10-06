@@ -6,9 +6,7 @@
  * When off, package step still shows; CTA assigns package + submits for review.
  */
 export function isPaytrCheckoutEnabled(): boolean {
-  return (
-    String(process.env.EXPO_PUBLIC_PAYTR_CHECKOUT_ENABLED ?? '').trim() === '1'
-  );
+  return process.env.EXPO_PUBLIC_PAYTR_CHECKOUT_ENABLED === '1';
 }
 
 /**

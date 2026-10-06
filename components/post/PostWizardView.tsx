@@ -54,6 +54,7 @@ export function PostWizardView() {
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const packageStepEnabled = isListingPackageStepEnabled();
   const paytrEnabled = packageStepEnabled && isPaytrCheckoutEnabled();
+  const [paymentMethod, setPaymentMethod] = useState<'CC' | 'TRANSFER'>(paytrEnabled ? 'CC' : 'TRANSFER');
   const errorColor = useThemeColor('error');
 
   const { back, unwindAndExit } = useListingWizardBack({
@@ -175,7 +176,10 @@ export function PostWizardView() {
       if (paytrEnabled) {
         await wizard.startPaidCheckout(token);
       } else {
-        await wizard.publishListing(token);
+        if (!wizard.draft.advertId && !wizard.draftAdvertId) {
+          await wizard.persistDraftAndStartMedia(token);
+        }
+        wizard.setStep('payment');
       }
     } catch (err) {
       setSubmitError(
@@ -280,11 +284,12 @@ export function PostWizardView() {
     router,
   ]);
 
+  const paymentStepEnabled = packageStepEnabled;
   const nextLabel =
     wizard.step === 'details' && !packageStepEnabled
       ? 'İncelemeye gönder'
       : wizard.step === 'package'
-        ? paytrEnabled
+        ? paymentStepEnabled
           ? 'Ödemeye geç'
           : 'İncelemeye gönder'
         : 'Devam et';
@@ -297,6 +302,10 @@ export function PostWizardView() {
   const showPreview =
     (packageStepEnabled && wizard.step === 'package') ||
     (!packageStepEnabled && wizard.step === 'details');
+
+  const selectedPackage = packages.find((p) => p.code === wizard.draft.packageCode);
+  const pkgPriceMinor = selectedPackage?.price?.amountMinor ?? 0;
+  const calculatedAmountMinor = Math.max(0, pkgPriceMinor - (wizard.appliedCoupon?.discountAmountMinor ?? 0));
 
   return (
     <>
@@ -381,14 +390,13 @@ export function PostWizardView() {
             />
           </View>
         ) : null}
-        {wizard.step === 'payment' && paytrEnabled ? (
+        {wizard.step === 'payment' && paymentStepEnabled ? (
           <PostPaymentStep
             iframeUrl={wizard.paytrIframeUrl}
             packageName={
-              packages.find((p) => p.code === wizard.draft.packageCode)?.name ??
-              wizard.draft.packageCode
+              selectedPackage?.name ?? wizard.draft.packageCode
             }
-            amountMinor={wizard.paytrAmountMinor}
+            amountMinor={wizard.paytrAmountMinor ?? calculatedAmountMinor}
             appliedCoupon={wizard.appliedCoupon}
             error={submitError}
             onRetry={() => {
@@ -397,6 +405,24 @@ export function PostWizardView() {
             }}
             onSuccessClick={() => {
               wizard.setStep('review');
+            }}
+            draftAdvertId={wizard.submittedDraftId || wizard.draftAdvertId}
+            paymentMethod={paymentMethod}
+            onChangePaymentMethod={setPaymentMethod}
+            onTransferConfirm={async () => {
+                setSubmitError(null);
+                setSubmitting(true);
+                try {
+                    const token = await getValidAccessToken();
+                    if (token) {
+                        await wizard.publishListing(token);
+                    }
+                } catch (e) {
+                    console.error('Failed to submit transfer advert', e);
+                    setSubmitError(e instanceof Error ? e.message : 'İlan gönderilemedi.');
+                } finally {
+                    setSubmitting(false);
+                }
             }}
           />
         ) : null}

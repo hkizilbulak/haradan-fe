@@ -49,8 +49,9 @@ export function userFacingBeMessage(
   body: BeErrorBody | null,
   fallback?: string
 ): string {
-  const field = firstFieldErrorMessage(body);
-  if (field) return field;
+  if (body?.fieldErrors && body.fieldErrors.length > 0) {
+    return body.fieldErrors.map(f => f.message).join('\n');
+  }
   if (body?.message?.trim()) return body.message.trim();
   if (fallback) return fallback;
   if (status === 401) return 'E-posta veya şifre hatalı.';

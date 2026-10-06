@@ -34,6 +34,7 @@ type PostWizardShellProps = {
   onBack: () => void;
   onNext: () => void;
   onPressStep: (key: ListingWizardStep) => void;
+  error?: string | null;
 };
 
 export function PostWizardShell({
@@ -52,6 +53,7 @@ export function PostWizardShell({
   onBack,
   onNext,
   onPressStep,
+  error,
 }: PostWizardShellProps) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -60,7 +62,15 @@ export function PostWizardShell({
   const surface = useThemeColor('surface');
   const text = useThemeColor('text');
   const border = useThemeColor('border');
+  const danger = useThemeColor('error');
+  const dangerBg = useThemeColor('errorBg');
   const contentMax = step === 'package' ? 980 : 720;
+
+  React.useEffect(() => {
+    if (error && Platform.OS === 'web') {
+      window.alert(error);
+    }
+  }, [error]);
 
   return (
     <View style={[styles.root, { backgroundColor: bg, paddingTop: insets.top }]}>
@@ -101,6 +111,12 @@ export function PostWizardShell({
         ]}
         keyboardShouldPersistTaps="handled"
       >
+        {error ? (
+          <View style={[styles.errorBox, { backgroundColor: dangerBg }]}>
+            <Ionicons name="alert-circle" size={20} color={danger} />
+            <Text style={[styles.errorText, { color: danger }]}>{error}</Text>
+          </View>
+        ) : null}
         {children}
       </ScrollView>
 
@@ -245,5 +261,18 @@ const styles = StyleSheet.create({
       web: { minWidth: 0 },
       default: {},
     }),
+  },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: 8,
+    marginBottom: Spacing.md,
+  },
+  errorText: {
+    flex: 1,
+    ...Typography.base,
+    fontWeight: '500',
   },
 });

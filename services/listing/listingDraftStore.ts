@@ -120,8 +120,7 @@ const listeners = new Set<() => void>();
 function normalizeStep(raw: unknown): ListingWizardStep {
   if (raw === 'review') return 'review';
   if (raw === 'payment') {
-    if (isPaytrCheckoutEnabled()) return 'payment';
-    return isListingPackageStepEnabled() ? 'package' : 'details';
+    return isListingPackageStepEnabled() ? 'payment' : 'details';
   }
   if (raw === 'package') {
     return isListingPackageStepEnabled() ? 'package' : 'details';

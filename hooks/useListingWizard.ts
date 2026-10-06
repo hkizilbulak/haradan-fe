@@ -279,7 +279,10 @@ export function useListingWizard(deps: Deps = {}) {
 
   const setStep = useCallback((next: ListingWizardStep) => {
     setListingWizardState((prev) => {
-      if (!canEnterStep(prev.draft, next, prev.categoryProperties || undefined)) return prev;
+      if (!canEnterStep(prev.draft, next, prev.categoryProperties || undefined)) {
+        console.warn('Cannot enter step:', next, 'draft:', prev.draft);
+        return prev;
+      }
       return { ...prev, step: next };
     });
   }, []);
