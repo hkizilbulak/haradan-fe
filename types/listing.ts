@@ -150,10 +150,13 @@ export type ListingPackage = {
   allowsUrgent?: boolean;
   showcaseEligible?: boolean;
   featuredDays?: number | null;
+  packageType?: 'INDIVIDUAL' | 'EKURI';
+  horseLimit?: number | null;
 };
 
 export type ListingDraft = {
   advertId?: AdvertId | null;
+  ekuriBundleId?: string | null;
   /** Last known advert.version from BE after persist (optimistic concurrency). */
   serverVersion?: number | null;
   /** Last known advert.mediaVersion after media sync. */
@@ -175,6 +178,7 @@ export type CreateAdvertDraftRequest = {
   description?: string | null;
   price?: Money | null;
   videoUrl?: string | null;
+  ekuriBundleId?: string | null;
 };
 
 /** OpenAPI: OwnerAdvertResponse (özet) */

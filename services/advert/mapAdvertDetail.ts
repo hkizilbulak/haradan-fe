@@ -67,6 +67,7 @@ export type BePublishedAdvertDetail = {
   sellerId?: string | null;
   seller?: { phone?: string | null } | null;
   videoUrl?: string | null;
+  ekuriBundleId?: string | null;
 };
 
 const EMPTY_HORSE: HorseProfile = {
@@ -322,6 +323,7 @@ function emptyDetailShell(
     | 'locationName'
     | 'backendStatus'
     | 'videoUrl'
+    | 'ekuriBundleId'
   > & {
     category?: { id: string; name: string; slug?: string } | null;
     rejectionReason?: string | null;
@@ -476,6 +478,7 @@ export function mapPublishedDetailToAdvert(
     packageBadgeText: dto.packageBadgeText ?? null,
     isUrgent: dto.isUrgent,
     urgentActivatedAt: dto.urgentActivatedAt ?? null,
+    ekuriBundleId: dto.ekuriBundleId ?? null,
     sellerId: sellerId ?? null,
     sellerPhone: sellerPhone || null,
     videoUrl: dto.videoUrl ?? (propMap.videoUrl as string) ?? null,

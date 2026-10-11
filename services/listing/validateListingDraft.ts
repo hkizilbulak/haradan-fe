@@ -318,15 +318,26 @@ export function detailsErrors(
     let requiredProps: any[] = [];
 
     if (categoryProperties !== undefined && Array.isArray(categoryProperties)) {
-      requiredProps = categoryProperties.filter(
-        (p) =>
+      const catIdOrSlug = draft.type.categoryId || draft.type.categorySlug;
+      const clean = catIdOrSlug ? catIdOrSlug.replace(/^cat-/, '') : '';
+      requiredProps = categoryProperties.filter((p) => {
+        const pCatId = (p as any).categoryId;
+        return (
           p &&
           (p as any).isActive !== false &&
           (p as any).is_active !== false &&
           (p as any).isFormVisible !== false &&
           (p as any).is_form_visible !== false &&
-          p.isRequired
-      );
+          p.isRequired &&
+          (!pCatId ||
+            !catIdOrSlug ||
+            pCatId === catIdOrSlug ||
+            pCatId === clean ||
+            pCatId === `cat-${clean}` ||
+            pCatId === draft.type?.categorySlug ||
+            pCatId === draft.type?.categoryId)
+        );
+      });
     } else {
       const catIdOrSlug = draft.type.categoryId || draft.type.categorySlug;
       let allProps: any[] = [];
@@ -530,9 +541,32 @@ export function detailsErrors(
         continue;
       }
 
+      const canonicalKey = getCanonicalKey(prop);
+
+      // Horse & Breeding specific properties should only apply to horse or stud listings
+      if (
+        canonicalKey === 'canonical_stud_name' ||
+        canonicalKey === 'canonical_stud_sire' ||
+        canonicalKey === 'canonical_stud_dam' ||
+        canonicalKey === 'canonical_stud_damsire'
+      ) {
+        if (!isStudServiceListing(draft.type) && !isHorseListing(draft.type)) {
+          continue;
+        }
+      }
+      if (
+        canonicalKey === 'canonical_breed' ||
+        canonicalKey === 'canonical_coat_color' ||
+        canonicalKey === 'canonical_age' ||
+        canonicalKey === 'canonical_gender'
+      ) {
+        if (!isHorseListing(draft.type) && !isStudServiceListing(draft.type)) {
+          continue;
+        }
+      }
+
       let val = findPropertyValue(d.properties, prop);
       if (val === undefined || val === null || val === '' || String(val).trim() === '') {
-        const canonicalKey = getCanonicalKey(prop);
         const norm = code.replace(/[-_]/g, '').toLowerCase();
         const titleNorm = String(prop.title || '').trim().toLowerCase().replace(/[^a-z0-9ğüşıöç]/g, '');
 

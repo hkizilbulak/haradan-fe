@@ -5,7 +5,6 @@ import type { ListingTypePhase } from '@/services/listing';
 import {
   setListingWizardState,
   isListingPackageStepEnabled,
-  isPaytrCheckoutEnabled,
 } from '@/services/listing';
 import type { ListingWizardStep } from '@/types/listing';
 
@@ -22,7 +21,7 @@ function depth(step: ListingWizardStep, typePhase: ListingTypePhase): number {
   if (step === 'package') return 3;
   if (step === 'payment') return 4;
   if (!isListingPackageStepEnabled()) return 3;
-  return isPaytrCheckoutEnabled() ? 5 : 4;
+  return 5;
 }
 
 function isFirstStep(step: ListingWizardStep, typePhase: ListingTypePhase): boolean {

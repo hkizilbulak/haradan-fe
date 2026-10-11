@@ -115,6 +115,18 @@ export class HttpAdvertRepository implements IAdvertRepository {
       return false;
     }
   }
+
+  async getBundleAdverts(bundleId: string) {
+    try {
+      const res = await this.http.request<{ items: any[] }>(
+        `/v1/adverts/bundle/${encodeURIComponent(bundleId)}`,
+        { method: 'GET' }
+      );
+      return res.items ?? [];
+    } catch {
+      return [];
+    }
+  }
 }
 
 export function createHttpAdvertRepository(baseUrl: string): IAdvertRepository {

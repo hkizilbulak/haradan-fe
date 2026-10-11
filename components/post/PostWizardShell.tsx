@@ -63,7 +63,7 @@ export function PostWizardShell({
   const text = useThemeColor('text');
   const border = useThemeColor('border');
   const danger = useThemeColor('error');
-  const dangerBg = useThemeColor('errorBg');
+  const dangerBg = '#fee2e2';
   const contentMax = step === 'package' ? 980 : 720;
 
   React.useEffect(() => {
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     flex: 1,
-    ...Typography.base,
+    ...Typography.body,
     fontWeight: '500',
   },
 });

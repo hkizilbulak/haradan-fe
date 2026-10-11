@@ -32,6 +32,7 @@ export type PublishedAdvertCard = {
   districtName?: string | null;
   locationName?: string | null;
   properties?: Record<string, any> | null;
+  ekuriBundleId?: string | null;
 };
 
 

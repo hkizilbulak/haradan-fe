@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { isListingPackageStepEnabled, isPaytrCheckoutEnabled } from '@/constants/Paytr';
+import { isListingPackageStepEnabled } from '@/constants/Paytr';
 import type { ListingWizardStep } from '@/types/listing';
 
 const ITEMS: { key: ListingWizardStep; label: string }[] = [
@@ -26,7 +26,7 @@ export function PostStepper({ step, onPressStep }: PostStepperProps) {
   const success = useThemeColor('success');
   const items = ITEMS.filter((i) => {
     if (i.key === 'package' && !isListingPackageStepEnabled()) return false;
-    if (i.key === 'payment' && !isPaytrCheckoutEnabled()) return false;
+    if (i.key === 'payment' && !isListingPackageStepEnabled()) return false;
     return true;
   });
   const activeIndex = items.findIndex((i) => i.key === step);

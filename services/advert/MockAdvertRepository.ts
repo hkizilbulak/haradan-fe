@@ -19,6 +19,10 @@ export class MockAdvertRepository implements IAdvertRepository {
     await delay(MOCK_LATENCY_MS);
     return getMockAdvertDetail(id);
   }
+
+  async getBundleAdverts(_bundleId: string) {
+    return [];
+  }
 }
 
 function delay(ms: number): Promise<void> {

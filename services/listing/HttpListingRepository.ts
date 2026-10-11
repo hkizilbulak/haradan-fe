@@ -116,7 +116,7 @@ export class HttpListingRepository implements IListingRepository {
     try {
       return await this.mediaPipeline.promise;
     } catch (err) {
-      this.mediaPipeline = undefined;
+      this.mediaPipeline = null;
       return null;
     }
   }

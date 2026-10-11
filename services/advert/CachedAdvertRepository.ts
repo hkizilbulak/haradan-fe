@@ -44,6 +44,7 @@ export function createCachedAdvertRepository(
       if (!fresh) inflight.set(key, run);
       return run;
     },
+    getBundleAdverts: (bundleId) => inner.getBundleAdverts(bundleId),
   };
 }
 

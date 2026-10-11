@@ -20,5 +20,6 @@ export { ImageLightboxModal } from './ImageLightboxModal';
 export { PublishToggleConfirmModal } from './PublishToggleConfirmModal';
 export { AdvertShareModal } from './AdvertShareModal';
 export { AdvertVideoPreview } from './AdvertVideoPreview';
+export { AdvertEkuriBundleSection } from './AdvertEkuriBundleSection';
 
 

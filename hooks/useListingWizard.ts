@@ -58,7 +58,7 @@ const STEPS_DIRECT: ListingWizardStep[] = ['type', 'details', 'review'];
 
 function wizardSteps(): ListingWizardStep[] {
   if (!isListingPackageStepEnabled()) return STEPS_DIRECT;
-  return isPaytrCheckoutEnabled() ? STEPS_FULL : STEPS_PACKAGE_ONLY;
+  return STEPS_FULL;
 }
 
 function normalizeTjkAge(rawAge: number | string | undefined | null): string {

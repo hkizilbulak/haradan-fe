@@ -95,7 +95,8 @@ export function PostDetailsStep({
   const header = useThemeColor('header');
   const errorColor = useThemeColor('error');
   const d = draft.details;
-  const locked = Boolean(d.horseId);
+  const isTjkEligible = isTjkEligibleListing(draft.type);
+  const locked = Boolean(d.horseId && isTjkEligible);
   const genderMissing = locked && !d.gender;
   const [tjkOpen, setTjkOpen] = useState(false);
   const [tjkMode, setTjkMode] = useState<'ask' | 'search'>('ask');
@@ -297,7 +298,6 @@ export function PostDetailsStep({
   const isStud = isStudServiceListing(draft.type);
   const isPansiyon = isPansiyonListing(draft.type);
   const isTransport = isTransportListing(draft.type);
-  const isTjkEligible = isTjkEligibleListing(draft.type);
 
   useEffect(() => {
     if (isTjkEligible && !tjkPromptSeen) {

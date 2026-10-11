@@ -27,6 +27,7 @@ import {
   MobileAdvertStickyBar,
   PublishToggleConfirmModal,
   AdvertShareModal,
+  AdvertEkuriBundleSection,
   type SpecsSubTab,
 } from '@/components/advert-detail';
 import { myListingsRepository } from '@/services/my-listings';
@@ -555,6 +556,13 @@ export function AdvertDetailView({
 
   const lowerSections = (
     <>
+      {detail.ekuriBundleId ? (
+        <AdvertEkuriBundleSection
+          bundleId={detail.ekuriBundleId}
+          currentAdvertId={detail.id}
+          onPress={onRelatedPress}
+        />
+      ) : null}
       <LazySection
         fallback={
           <View

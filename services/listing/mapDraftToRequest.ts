@@ -337,5 +337,8 @@ export function mapDraftToCreateAdvert(
   if (videoUrl) {
     body.videoUrl = videoUrl;
   }
+  if (draft.ekuriBundleId) {
+    body.ekuriBundleId = draft.ekuriBundleId;
+  }
   return body;
 }

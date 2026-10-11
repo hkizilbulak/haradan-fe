@@ -380,7 +380,10 @@ export function PostCategoryProperties({
               const key = getCanonicalPropertyKey(p);
               if (!seenKeys.has(key)) {
                 seenKeys.add(key);
-                deduplicated.push(p);
+                deduplicated.push({
+                  ...p,
+                  categoryId: (p as any).categoryId || catId,
+                } as CategoryPropertyPublic);
               }
             }
 

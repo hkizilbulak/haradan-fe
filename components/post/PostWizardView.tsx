@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { PostWizardShell } from './PostWizardShell';
 import { PostTypeStep } from './PostTypeStep';
@@ -33,7 +34,11 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import type { CategoryPropertyPublic } from '@/types';
 import type { ListingWizardStep } from '@/types/listing';
 
-export function PostWizardView() {
+type PostWizardViewProps = {
+  onSwitchToEkuri?: () => void;
+};
+
+export function PostWizardView({ onSwitchToEkuri }: PostWizardViewProps = {}) {
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
   const [scrollTrigger, setScrollTrigger] = useState(0);
@@ -49,6 +54,10 @@ export function PostWizardView() {
       wizard.step === 'payment' ||
       wizard.step === 'review',
   });
+
+  const individualPackages = useMemo(() => {
+    return (packages ?? []).filter((p) => p.packageType !== 'EKURI');
+  }, [packages]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
@@ -303,7 +312,7 @@ export function PostWizardView() {
     (packageStepEnabled && wizard.step === 'package') ||
     (!packageStepEnabled && wizard.step === 'details');
 
-  const selectedPackage = packages.find((p) => p.code === wizard.draft.packageCode);
+  const selectedPackage = individualPackages.find((p) => p.code === wizard.draft.packageCode);
   const pkgPriceMinor = selectedPackage?.price?.amountMinor ?? 0;
   const calculatedAmountMinor = Math.max(0, pkgPriceMinor - (wizard.appliedCoupon?.discountAmountMinor ?? 0));
 
@@ -325,6 +334,32 @@ export function PostWizardView() {
         onNext={() => void onNext()}
         onPressStep={(key: ListingWizardStep) => wizard.setStep(key)}
       >
+        {wizard.step === 'type' && onSwitchToEkuri ? (
+          <Pressable
+            onPress={onSwitchToEkuri}
+            style={({ pressed }) => [
+              styles.ekuriSwitchBanner,
+              {
+                opacity: pressed ? 0.9 : 1,
+              },
+            ]}
+          >
+            <View style={styles.ekuriSwitchLeft}>
+              <View style={styles.ekuriIconWrap}>
+                <Ionicons name="ribbon" size={20} color="#6366f1" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.ekuriSwitchTitle}>Eküri / Toplu İlan mı vereceksiniz?</Text>
+                <Text style={styles.ekuriSwitchSubtitle}>
+                  10 ata kadar toplu ilan paketi seçip aynı anda yayınlayın
+                </Text>
+              </View>
+            </View>
+            <View style={styles.ekuriSwitchBtn}>
+              <Text style={styles.ekuriSwitchBtnText}>Eküri İlanı Ver →</Text>
+            </View>
+          </Pressable>
+        ) : null}
         {wizard.step === 'type' ? (
           <PostTypeStep
             phase={wizard.typePhase}
@@ -374,14 +409,14 @@ export function PostWizardView() {
               </Text>
             ) : null}
             <PostPackagesStep
-              packages={packages}
+              packages={individualPackages}
               selected={wizard.draft.packageCode}
               draft={wizard.draft}
               error={submitError ?? packageError ?? catalogError}
               onSelect={wizard.selectPackage}
               appliedCoupon={wizard.appliedCoupon}
               onApplyCoupon={async (code: string) => {
-                const pkg = packages.find((p) => p.code === wizard.draft.packageCode) ?? packages[0];
+                const pkg = individualPackages.find((p) => p.code === wizard.draft.packageCode) ?? individualPackages[0];
                 const spendAmountMinor = pkg ? pkg.price.amountMinor : 0;
                 const token = session?.accessToken;
                 return wizard.applyCoupon(code, pkg?.code ?? '', spendAmountMinor, token);
@@ -396,7 +431,9 @@ export function PostWizardView() {
             packageName={
               selectedPackage?.name ?? wizard.draft.packageCode
             }
+            packagePriceMinor={selectedPackage?.price?.amountMinor}
             amountMinor={wizard.paytrAmountMinor ?? calculatedAmountMinor}
+            currencyCode={selectedPackage?.price?.currency ?? 'TRY'}
             appliedCoupon={wizard.appliedCoupon}
             error={submitError}
             onRetry={() => {
@@ -406,7 +443,13 @@ export function PostWizardView() {
             onSuccessClick={() => {
               wizard.setStep('review');
             }}
-            draftAdvertId={wizard.submittedDraftId || wizard.draftAdvertId}
+            draftAdvertId={
+              wizard.submittedDraftId
+                ? String(wizard.submittedDraftId)
+                : wizard.draftAdvertId
+                  ? String(wizard.draftAdvertId)
+                  : undefined
+            }
             paymentMethod={paymentMethod}
             onChangePaymentMethod={setPaymentMethod}
             onTransferConfirm={async () => {
@@ -478,5 +521,52 @@ const styles = StyleSheet.create({
     ...Typography.body,
     marginBottom: Spacing.sm,
     opacity: 0.75,
+  },
+  ekuriSwitchBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#6366f112',
+    borderColor: '#6366f1',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    gap: Spacing.md,
+  },
+  ekuriSwitchLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    flex: 1,
+  },
+  ekuriIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#6366f122',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ekuriSwitchTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#4f46e5',
+  },
+  ekuriSwitchSubtitle: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  ekuriSwitchBtn: {
+    backgroundColor: '#6366f1',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  ekuriSwitchBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

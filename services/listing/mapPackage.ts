@@ -14,6 +14,8 @@ export type PublicPackage = {
   featuredDays?: number | null;
   searchPriority: number;
   sortOrder: number;
+  packageType?: 'INDIVIDUAL' | 'EKURI';
+  horseLimit?: number | null;
 };
 
 export type PublicPackageListResponse = { items: PublicPackage[] };
@@ -59,6 +61,8 @@ export function mapPublicPackage(pkg: PublicPackage): ListingPackage {
     allowsUrgent: pkg.allowsUrgent,
     showcaseEligible: pkg.showcaseEligible,
     featuredDays: pkg.featuredDays,
+    packageType: pkg.packageType ?? 'INDIVIDUAL',
+    horseLimit: pkg.horseLimit ?? null,
     features: (pkg.benefits ?? []).map((label, index) =>
       parseBenefit(label, index, pkg.code)
     ),
