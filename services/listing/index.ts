@@ -5,7 +5,7 @@ export {
   createListingRepository,
   listingRepository,
 } from './createListingRepository';
-export { LISTING_PACKAGES } from './listingPackages';
+export { LISTING_PACKAGES, DEFAULT_EKURI_PACKAGES } from './listingPackages';
 export { mapPublicPackage } from './mapPackage';
 export {
   isHorseListing,

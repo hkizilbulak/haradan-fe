@@ -554,11 +554,14 @@ export function detailsErrors(
           continue;
         }
       }
-      if (
+      if (canonicalKey === 'canonical_gender') {
+        if (!isHorseListing(draft.type) || isStudServiceListing(draft.type)) {
+          continue;
+        }
+      } else if (
         canonicalKey === 'canonical_breed' ||
         canonicalKey === 'canonical_coat_color' ||
-        canonicalKey === 'canonical_age' ||
-        canonicalKey === 'canonical_gender'
+        canonicalKey === 'canonical_age'
       ) {
         if (!isHorseListing(draft.type) && !isStudServiceListing(draft.type)) {
           continue;

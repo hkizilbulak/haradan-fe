@@ -104,7 +104,7 @@ export function MobileGlassDock() {
 
   const onPost = () => {
     prepareListingWizardEntry();
-    router.push('/post');
+    router.push('/post?mode=single');
   };
 
   const bottomPad = Math.max(insets.bottom, 8);

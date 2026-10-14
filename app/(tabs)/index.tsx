@@ -86,7 +86,7 @@ export default function HomeScreen() {
 
   const onPostAdPress = useCallback(() => {
     prepareListingWizardEntry();
-    router.push('/post');
+    router.push('/post?mode=single');
   }, [router]);
 
   const onLoginPress = useCallback(() => {

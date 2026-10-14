@@ -396,7 +396,7 @@ export function AppHeader({
                   onPostAdPress();
                   return;
                 }
-                router.push('/post');
+                router.push('/post?mode=single');
               }}
               compact={!showPostAdLabel}
             />

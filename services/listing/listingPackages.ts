@@ -1,5 +1,74 @@
 import type { ListingPackage } from '@/types/listing';
 
+/** Eküri paket kataloğu — Eküri toplu ilan akışında kullanılır. */
+export const DEFAULT_EKURI_PACKAGES: ListingPackage[] = [
+  {
+    code: 'EKURI_3',
+    name: "Eküri 3'lü Paket",
+    tagline: '3 İlanlık Toplu Eküri Paketi',
+    price: { amountMinor: 60_000, currency: 'TRY' },
+    durationDays: 45,
+    highlighted: false,
+    allowsUrgent: false,
+    showcaseEligible: false,
+    packageType: 'EKURI',
+    horseLimit: 3,
+    features: [
+      { id: 'ekuri_3-0', label: '3 adet at ilanı hakkı', icon: 'layers-outline', included: true },
+      { id: 'ekuri_3-1', label: '45 gün yayın', icon: 'time-outline', included: true },
+      { id: 'ekuri_3-2', label: 'Her at için 5 görsel + kapak', icon: 'images-outline', included: true },
+      { id: 'ekuri_3-3', label: 'Eküri rozeti ve çapraz ilan vitrini', icon: 'ribbon-outline', included: true },
+      { id: 'ekuri_3-4', label: 'Öne çıkan ilan', icon: 'star-outline', included: false },
+      { id: 'ekuri_3-5', label: 'Anasayfa vitrini', icon: 'trophy-outline', included: false },
+    ],
+  },
+  {
+    code: 'EKURI_5',
+    name: "Eküri 5'li Paket",
+    tagline: '5 İlanlık Toplu Eküri Paketi',
+    price: { amountMinor: 95_000, currency: 'TRY' },
+    durationDays: 60,
+    highlighted: true,
+    allowsUrgent: true,
+    showcaseEligible: false,
+    featuredDays: 7,
+    packageType: 'EKURI',
+    horseLimit: 5,
+    features: [
+      { id: 'ekuri_5-0', label: '5 adet at ilanı hakkı', icon: 'layers-outline', included: true },
+      { id: 'ekuri_5-1', label: '60 gün yayın', icon: 'time-outline', included: true },
+      { id: 'ekuri_5-2', label: 'Her at için 5 görsel + kapak', icon: 'images-outline', included: true },
+      { id: 'ekuri_5-3', label: 'Eküri rozeti ve çapraz ilan vitrini', icon: 'ribbon-outline', included: true },
+      { id: 'ekuri_5-4', label: 'Acil ilan rozeti', icon: 'flash-outline', included: true },
+      { id: 'ekuri_5-5', label: 'Öne çıkan ilan · 7 gün', icon: 'star-outline', included: true },
+      { id: 'ekuri_5-6', label: 'Anasayfa vitrini', icon: 'trophy-outline', included: false },
+    ],
+  },
+  {
+    code: 'EKURI_10',
+    name: "Eküri 10'lu Paket",
+    tagline: '10 İlanlık Kapsamlı Eküri Paketi',
+    price: { amountMinor: 175_000, currency: 'TRY' },
+    durationDays: 90,
+    highlighted: false,
+    allowsUrgent: true,
+    showcaseEligible: true,
+    featuredDays: 30,
+    packageType: 'EKURI',
+    horseLimit: 10,
+    features: [
+      { id: 'ekuri_10-0', label: '10 adet at ilanı hakkı', icon: 'layers-outline', included: true },
+      { id: 'ekuri_10-1', label: '90 gün yayın', icon: 'time-outline', included: true },
+      { id: 'ekuri_10-2', label: 'Her at için 5 görsel + kapak', icon: 'images-outline', included: true },
+      { id: 'ekuri_10-3', label: 'Eküri rozeti ve çapraz ilan vitrini', icon: 'ribbon-outline', included: true },
+      { id: 'ekuri_10-4', label: 'Acil ilan rozeti', icon: 'flash-outline', included: true },
+      { id: 'ekuri_10-5', label: 'Öne çıkan ilan · 30 gün', icon: 'star-outline', included: true },
+      { id: 'ekuri_10-6', label: 'Anasayfa vitrini', icon: 'trophy-outline', included: true },
+      { id: 'ekuri_10-7', label: 'Öncelikli hara desteği', icon: 'headset-outline', included: true },
+    ],
+  },
+];
+
 /** Mock paket kataloğu — HTTP kapalıyken kullanılır. */
 export const LISTING_PACKAGES: ListingPackage[] = [
   {
@@ -9,6 +78,7 @@ export const LISTING_PACKAGES: ListingPackage[] = [
     price: { amountMinor: 25_000, currency: 'TRY' },
     durationDays: 30,
     highlighted: false,
+    packageType: 'INDIVIDUAL',
     features: [
       { id: 'duration', label: '30 gün yayın', icon: 'time-outline', included: true },
       { id: 'photos', label: '5 görsel + kapak', icon: 'images-outline', included: true },
@@ -26,6 +96,7 @@ export const LISTING_PACKAGES: ListingPackage[] = [
     price: { amountMinor: 65_000, currency: 'TRY' },
     durationDays: 45,
     highlighted: true,
+    packageType: 'INDIVIDUAL',
     features: [
       { id: 'duration', label: '45 gün yayın', icon: 'time-outline', included: true },
       { id: 'photos', label: '5 görsel + kapak', icon: 'images-outline', included: true },
@@ -43,6 +114,7 @@ export const LISTING_PACKAGES: ListingPackage[] = [
     price: { amountMinor: 125_000, currency: 'TRY' },
     durationDays: 60,
     highlighted: false,
+    packageType: 'INDIVIDUAL',
     features: [
       { id: 'duration', label: '60 gün yayın', icon: 'time-outline', included: true },
       { id: 'photos', label: '5 görsel + kapak', icon: 'images-outline', included: true },
@@ -53,4 +125,5 @@ export const LISTING_PACKAGES: ListingPackage[] = [
       { id: 'support', label: 'Öncelikli destek', icon: 'headset-outline', included: true },
     ],
   },
+  ...DEFAULT_EKURI_PACKAGES,
 ];

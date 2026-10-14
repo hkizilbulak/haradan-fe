@@ -7,6 +7,6 @@ export function useOpenListingWizard() {
   const router = useRouter();
   return useCallback(() => {
     prepareListingWizardEntry();
-    router.push('/post');
+    router.push('/post?mode=single');
   }, [router]);
 }

@@ -3,33 +3,38 @@ import { Platform } from 'react-native';
 import Head from 'expo-router/head';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PostWizardView, PostEkuriWizardView } from '@/components/post';
-import { hasEkuriDraft } from '@/services/listing';
 
 export default function PostListingScreen() {
   const router = useRouter();
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   const [listingMode, setListingMode] = useState<'single' | 'ekuri'>(() => {
-    if (mode === 'ekuri') return 'ekuri';
-    if (mode === 'single') return 'single';
-    return hasEkuriDraft() ? 'ekuri' : 'single';
+    return mode === 'ekuri' ? 'ekuri' : 'single';
   });
 
   useEffect(() => {
-    if (mode === 'ekuri' && listingMode !== 'ekuri') {
+    if (mode === 'ekuri') {
       setListingMode('ekuri');
-    } else if (mode === 'single' && listingMode !== 'single') {
+    } else {
       setListingMode('single');
     }
   }, [mode]);
 
   const handleSwitchToSingle = () => {
     setListingMode('single');
-    router.setParams({ mode: 'single' });
+    if (Platform.OS === 'web') {
+      router.replace('/post?mode=single');
+    } else {
+      router.setParams({ mode: 'single' });
+    }
   };
 
   const handleSwitchToEkuri = () => {
     setListingMode('ekuri');
-    router.setParams({ mode: 'ekuri' });
+    if (Platform.OS === 'web') {
+      router.replace('/post?mode=ekuri');
+    } else {
+      router.setParams({ mode: 'ekuri' });
+    }
   };
 
   return (

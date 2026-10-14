@@ -164,7 +164,7 @@ export function HeaderDrawersProvider({
       if (action === 'post') {
         closeAll();
         prepareListingWizardEntry();
-        router.push('/post');
+        router.push('/post?mode=single');
         return;
       }
       closeAll();

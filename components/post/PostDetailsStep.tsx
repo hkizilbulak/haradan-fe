@@ -96,8 +96,9 @@ export function PostDetailsStep({
   const errorColor = useThemeColor('error');
   const d = draft.details;
   const isTjkEligible = isTjkEligibleListing(draft.type);
+  const isStud = isStudServiceListing(draft.type);
   const locked = Boolean(d.horseId && isTjkEligible);
-  const genderMissing = locked && !d.gender;
+  const genderMissing = locked && !d.gender && !isStud;
   const [tjkOpen, setTjkOpen] = useState(false);
   const [tjkMode, setTjkMode] = useState<'ask' | 'search'>('ask');
   const [tjkEditMode, setTjkEditMode] = useState(false);
@@ -134,12 +135,12 @@ export function PostDetailsStep({
     }
   };
 
-  // TJK verisi yüklendiğinde cinsiyet boşsa otomatik olarak düzenleme moduna geç
+  // TJK verisi yüklendiğinde cinsiyet boşsa otomatik olarak düzenleme moduna geç (aşım hizmetinde cinsiyet istenmez)
   useEffect(() => {
-    if (locked && !d.gender) {
+    if (locked && !d.gender && !isStud) {
       setTjkEditMode(true);
     }
-  }, [locked, d.gender]);
+  }, [locked, d.gender, isStud]);
 
   const activeConfigs = propGlobalConfigs ?? fallbackConfigs;
 
@@ -295,7 +296,6 @@ export function PostDetailsStep({
   }, [scrollTrigger, errors, scrollToFirstError]);
 
   const isSaleHorse = isSaleHorseListing(draft.type);
-  const isStud = isStudServiceListing(draft.type);
   const isPansiyon = isPansiyonListing(draft.type);
   const isTransport = isTransportListing(draft.type);
 

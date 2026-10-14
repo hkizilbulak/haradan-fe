@@ -104,7 +104,8 @@ function normalizeTjkBreed(rawBreed: string | undefined | null): string {
 
 export function applyTjkProfile(
   details: ListingDraftDetails,
-  horse: TjkHorseProfile
+  horse: TjkHorseProfile,
+  type?: ListingTypeSelection | null
 ): ListingDraftDetails {
   const existingProps = { ...(details.properties || {}) };
 
@@ -117,6 +118,13 @@ export function applyTjkProfile(
   const normalizedAge = normalizeTjkAge(horse.age);
   const normalizedGender = normalizeTjkGender(horse.gender);
   const normalizedBreed = normalizeTjkBreed(horse.breed);
+  const isStud = Boolean(
+    (type && isStudServiceListing(type)) ||
+    details.studHorseName ||
+    details.studBreed ||
+    details.studAge
+  );
+  const resolvedGender = normalizedGender || (isStud ? 'Erkek' : (horse.gender as any));
 
   const stallionBreed = normalizedBreed.includes('Arap')
     ? 'Arap'
@@ -131,8 +139,8 @@ export function applyTjkProfile(
     existingProps['COAT_COLOR'] = horse.coatColor;
     existingProps['studCoatColor'] = horse.coatColor;
   }
-  if (normalizedGender) {
-    existingProps['HORSE_GENDER'] = normalizedGender;
+  if (resolvedGender) {
+    existingProps['HORSE_GENDER'] = resolvedGender;
   }
   if (normalizedAge) {
     existingProps['HORSE_AGE'] = normalizedAge;
@@ -192,7 +200,7 @@ export function applyTjkProfile(
     ...details,
     registeredName: horse.registeredName,
     studHorseName: horse.registeredName,
-    gender: (normalizedGender as any) || horse.gender,
+    gender: (resolvedGender as any) || (isStud ? ('Erkek' as any) : details.gender),
     birthDate: horse.birthDate,
     age: normalizedAge || String(horse.age),
     studAge: stallionAge,
@@ -445,7 +453,8 @@ export function useListingWizard(deps: Deps = {}) {
     const horse = await tjk.getById(horseId);
     if (!horse) return;
     
-    const updatedDetails = applyTjkProfile(getListingWizardState().draft.details, horse);
+    const currentType = getListingWizardState().draft.type;
+    const updatedDetails = applyTjkProfile(getListingWizardState().draft.details, horse, currentType);
     setListingWizardState((prev) => ({
       ...prev,
       tjkPromptSeen: true,

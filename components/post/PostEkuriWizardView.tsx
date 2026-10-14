@@ -23,6 +23,7 @@ import { useAuthSession } from '@/hooks/useAuthSession';
 import { getValidAccessToken } from '@/services/auth';
 import {
   listingRepository,
+  DEFAULT_EKURI_PACKAGES,
   detailsErrors,
   isHorseListing,
   isPansiyonListing,
@@ -168,11 +169,9 @@ export function PostEkuriWizardView({
   }, [items, categoryPropertiesCache]);
 
   // Packages state
-  const [packages, setPackages] = useState<ListingPackage[]>([]);
+  const [packages, setPackages] = useState<ListingPackage[]>(() => DEFAULT_EKURI_PACKAGES);
   const [packagesLoading, setPackagesLoading] = useState(false);
-  const [selectedPackageCode, setSelectedPackageCode] = useState<string | null>(
-    () => initialDraft?.selectedPackageCode || null
-  );
+  const [selectedPackageCode, setSelectedPackageCode] = useState<string | null>(null);
 
   // Checkout state
   const paytrEnabled = isPaytrCheckoutEnabled();
@@ -417,6 +416,19 @@ export function PostEkuriWizardView({
     setResetConfirmVisible(true);
   };
 
+  const handleSwitchToSingle = useCallback(() => {
+    if (modalVisible) {
+      setModalVisible(false);
+    }
+    if (onSwitchToSingle) {
+      onSwitchToSingle();
+    } else if (Platform.OS === 'web') {
+      router.replace('/post?mode=single');
+    } else {
+      router.setParams({ mode: 'single' });
+    }
+  }, [modalVisible, onSwitchToSingle, router]);
+
   // Theme colors
   const text = useThemeColor('text');
   const textMuted = useThemeColor('textMuted');
@@ -513,19 +525,19 @@ export function PostEkuriWizardView({
     }
   }, []);
 
-  // Load Eküri packages
+  // Load Eküri packages (no pre-selected package)
   useEffect(() => {
     let cancelled = false;
-    setPackagesLoading(true);
+    if (packages.length === 0) {
+      setPackagesLoading(true);
+    }
     void listingRepository
       .getPackages()
       .then((pkgs) => {
         if (cancelled) return;
         const ekuriOnly = (pkgs ?? []).filter((p) => p.packageType === 'EKURI');
-        setPackages(ekuriOnly);
-        if (ekuriOnly.length > 0 && !selectedPackageCode) {
-          const valid = ekuriOnly.find((p) => (p.horseLimit ?? 0) >= items.length);
-          setSelectedPackageCode(valid ? valid.code : ekuriOnly[0].code);
+        if (ekuriOnly.length > 0) {
+          setPackages(ekuriOnly);
         }
       })
       .catch(() => {})
@@ -536,7 +548,17 @@ export function PostEkuriWizardView({
     return () => {
       cancelled = true;
     };
-  }, [items.length, selectedPackageCode]);
+  }, []);
+
+  // Invalidate selectedPackageCode if item count exceeds package capacity
+  useEffect(() => {
+    if (selectedPackageCode && packages.length > 0) {
+      const pkg = packages.find((p) => p.code === selectedPackageCode);
+      if (!pkg || (pkg.horseLimit ?? 0) < items.length) {
+        setSelectedPackageCode(null);
+      }
+    }
+  }, [items.length, packages, selectedPackageCode]);
 
   // Open modal for a specific listing
   const openModalFor = useCallback(
@@ -758,7 +780,7 @@ export function PostEkuriWizardView({
         if (!prev) return prev;
         return {
           ...prev,
-          details: applyTjkProfile(prev.details, horse),
+          details: applyTjkProfile(prev.details, horse, prev.type),
         };
       });
       setModalTjkPromptSeen(true);
@@ -841,12 +863,21 @@ export function PostEkuriWizardView({
 
   const proceedToPackages = () => {
     if (!validateAllListings()) return;
+    if (!isSelectedPackageValid) {
+      setSelectedPackageCode(null);
+    }
     setStep('package');
   };
 
+  const isSelectedPackageValid = useMemo(() => {
+    if (!selectedPackageCode) return false;
+    const pkg = packages.find((p) => p.code === selectedPackageCode);
+    return Boolean(pkg && (pkg.horseLimit ?? 0) >= items.length);
+  }, [packages, selectedPackageCode, items.length]);
+
   const proceedToCheckout = () => {
-    if (!selectedPackageCode) {
-      setSubmitError('Lütfen bir eküri paketi seçin.');
+    if (!selectedPackageCode || !isSelectedPackageValid) {
+      setSubmitError('Lütfen ilan sayınıza uygun kapasitede bir eküri paketi seçin.');
       return;
     }
     setSubmitError(null);
@@ -862,14 +893,14 @@ export function PostEkuriWizardView({
     } else if (stepKey === 'package') {
       proceedToPackages();
     } else if (stepKey === 'checkout') {
-      if (selectedPackageCode) {
+      if (isSelectedPackageValid) {
         proceedToCheckout();
       }
     }
   };
 
   const selectedPackage = useMemo(() => {
-    return packages.find((p) => p.code === selectedPackageCode) ?? packages[0];
+    return packages.find((p) => p.code === selectedPackageCode) ?? null;
   }, [packages, selectedPackageCode]);
 
   // Submit all listings in bundle
@@ -1126,8 +1157,32 @@ export function PostEkuriWizardView({
           >
             <Ionicons name="close" size={22} color={text} />
           </Pressable>
-          <Text style={[styles.brand, { color: text }]}>İlan Ver</Text>
-          <View style={styles.close} />
+          <View style={styles.brandContainer} pointerEvents="none">
+            <Text style={[styles.brand, { color: text }]}>İlan Ver</Text>
+          </View>
+          {step !== 'success' ? (
+            <Pressable
+              onPress={handleSwitchToSingle}
+              accessibilityRole="button"
+              accessibilityLabel="Tekil İlan Ver"
+              style={({ pressed, hovered }: any) => [
+                styles.singleModeBtn,
+                {
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.12)',
+                  backgroundColor: pressed
+                    ? isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)'
+                    : hovered
+                    ? isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)'
+                    : isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)',
+                },
+              ]}
+            >
+              <Ionicons name="document-text-outline" size={14} color={primary} />
+              <Text style={[styles.singleModeBtnText, { color: text }]}>Tekil İlan Ver</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.close} />
+          )}
         </View>
 
         {/* Stepper (matching PostStepper layout) */}
@@ -1354,7 +1409,7 @@ export function PostEkuriWizardView({
               </View>
             </View>
 
-            {packagesLoading && (
+            {packagesLoading && packages.length === 0 && (
               <View style={styles.loadingWrap}>
                 <ActivityIndicator size="large" color={primary} />
                 <Text style={[styles.loadingText, { color: textMuted }]}>
@@ -1363,7 +1418,7 @@ export function PostEkuriWizardView({
               </View>
             )}
 
-            {!packagesLoading && (
+            {packages.length > 0 && (
               <View style={[styles.packagesGrid, isWide && styles.packagesGridWide]}>
                 {packages.map((pkg) => {
                   const capacity = pkg.horseLimit ?? 0;
@@ -1499,13 +1554,13 @@ export function PostEkuriWizardView({
               </Pressable>
 
               <Pressable
-                disabled={!selectedPackageCode}
+                disabled={!isSelectedPackageValid}
                 onPress={proceedToCheckout}
                 style={[
                   styles.primaryBtn,
                   {
                     backgroundColor: primary,
-                    opacity: selectedPackageCode ? 1 : 0.5,
+                    opacity: isSelectedPackageValid ? 1 : 0.5,
                   },
                 ]}
               >
@@ -2229,7 +2284,9 @@ export function PostEkuriWizardView({
                                 facilityFoalingBarn: false,
                               }),
                           ...(isStud
-                            ? {}
+                            ? {
+                                gender: 'Erkek' as const,
+                              }
                             : {
                                 studBreed: '',
                                 studAge: '',
@@ -2382,17 +2439,43 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
   },
   topInner: {
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.sm,
+    minHeight: 44,
+  },
+  brandContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   close: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
+  },
+  singleModeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    zIndex: 1,
+  },
+  singleModeBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   brand: {
     ...Typography.h5,
