@@ -8,6 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -65,6 +66,7 @@ import type {
   ListingPackage,
   ListingTypeSelection,
 } from '@/types/listing';
+import type { PublicCampaign, CouponValidationResult } from '@/types/coupon';
 
 export interface EkuriListingItem {
   id: string;
@@ -173,6 +175,233 @@ export function PostEkuriWizardView({
   const [packagesLoading, setPackagesLoading] = useState(false);
   const [selectedPackageCode, setSelectedPackageCode] = useState<string | null>(null);
 
+  // Campaigns & Coupons state
+  const [couponInput, setCouponInput] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponValidationResult | null>(
+    () => (initialDraft as any)?.appliedCoupon || null
+  );
+  const [activeCampaigns, setActiveCampaigns] = useState<PublicCampaign[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const camps = await (listingRepository.getActiveCampaigns
+          ? listingRepository.getActiveCampaigns()
+          : Promise.resolve([]));
+        if (active) {
+          setActiveCampaigns(camps);
+        }
+      } catch {
+        // Non-critical background fetch failure
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const extractCampaignDiscount = (
+    campaign: PublicCampaign,
+    originalMinor: number
+  ): { discountMinor: number; campaignPriceMinor: number } | null => {
+    if (
+      campaign.displayCampaignPriceAmountMinor != null &&
+      campaign.displayCampaignPriceAmountMinor < originalMinor
+    ) {
+      return {
+        discountMinor: originalMinor - campaign.displayCampaignPriceAmountMinor,
+        campaignPriceMinor: campaign.displayCampaignPriceAmountMinor,
+      };
+    }
+
+    const textStr = `${campaign.badgeText || ''} ${campaign.title || ''} ${campaign.name || ''}`;
+
+    const percentMatch = textStr.match(/%\s*(\d+(?:[.,]\d+)?)/) || textStr.match(/(\d+(?:[.,]\d+)?)\s*%/);
+    if (percentMatch) {
+      const pct = parseFloat(percentMatch[1].replace(',', '.'));
+      if (!isNaN(pct) && pct > 0 && pct <= 100) {
+        const discountMinor = Math.round(originalMinor * (pct / 100));
+        return {
+          discountMinor,
+          campaignPriceMinor: Math.max(0, originalMinor - discountMinor),
+        };
+      }
+    }
+
+    const fixedMatch =
+      textStr.match(/[₺TL]\s*(\d+(?:[.,]\d+)?)/i) ||
+      textStr.match(/(\d+(?:[.,]\d+)?)\s*(?:₺|TL)/i);
+    if (fixedMatch) {
+      const amountTL = parseFloat(fixedMatch[1].replace(',', '.'));
+      if (!isNaN(amountTL) && amountTL > 0) {
+        const discountMinor = Math.min(originalMinor, Math.round(amountTL * 100));
+        return {
+          discountMinor,
+          campaignPriceMinor: Math.max(0, originalMinor - discountMinor),
+        };
+      }
+    }
+
+    return null;
+  };
+
+  const getPackageCampaignDiscount = (pkg: ListingPackage) => {
+    const specificCampaign = activeCampaigns.find(
+      (c) =>
+        c.targetPackageCode &&
+        c.targetPackageCode.trim() !== '' &&
+        c.targetPackageCode.toUpperCase() !== 'ALL' &&
+        c.targetPackageCode.toUpperCase() === pkg.code.toUpperCase()
+    );
+
+    if (specificCampaign) {
+      const discount = extractCampaignDiscount(specificCampaign, pkg.price.amountMinor);
+      if (discount && discount.discountMinor > 0) {
+        return {
+          campaign: specificCampaign,
+          ...discount,
+        };
+      }
+    }
+
+    const globalCampaign = activeCampaigns.find(
+      (c) =>
+        !c.targetPackageCode ||
+        c.targetPackageCode.trim() === '' ||
+        c.targetPackageCode.toUpperCase() === 'ALL'
+    );
+
+    if (globalCampaign) {
+      const discount = extractCampaignDiscount(globalCampaign, pkg.price.amountMinor);
+      if (discount && discount.discountMinor > 0) {
+        return {
+          campaign: globalCampaign,
+          ...discount,
+        };
+      }
+    }
+
+    return null;
+  };
+
+  const getNormalizedCoupon = (ac?: CouponValidationResult | null) => {
+    if (!ac?.valid || !ac.coupon) return null;
+    const raw = ac.coupon as any;
+    const code: string = raw.code || raw.Code || '';
+    const name: string = raw.name || raw.Name || code || 'Kupon';
+    const rawType = String(raw.discountType || raw.DiscountType || '').toUpperCase();
+    const isPercentage = rawType.includes('PERCENT');
+    const rawVal = Number(raw.discountValue ?? raw.DiscountValue ?? 0);
+    const applicablePackageCode: string | null =
+      raw.applicablePackageCode || raw.ApplicablePackageCode || null;
+
+    const backendDiscountMinor =
+      typeof ac.discountAmountMinor === 'number' && !isNaN(ac.discountAmountMinor)
+        ? ac.discountAmountMinor
+        : null;
+
+    return {
+      code,
+      name,
+      isPercentage,
+      discountValue: rawVal,
+      applicablePackageCode,
+      backendDiscountMinor,
+    };
+  };
+
+  const getPackageCouponDiscount = (pkg: ListingPackage, baseAmountMinor: number) => {
+    const coupon = getNormalizedCoupon(appliedCoupon);
+    if (!coupon) return null;
+
+    const targetPkg = coupon.applicablePackageCode;
+    if (
+      targetPkg &&
+      targetPkg.trim() !== '' &&
+      targetPkg.toUpperCase() !== 'ALL' &&
+      targetPkg.toUpperCase() !== pkg.code.toUpperCase()
+    ) {
+      return null;
+    }
+
+    if (coupon.isPercentage && coupon.discountValue > 0) {
+      const discountMinor = Math.round(baseAmountMinor * (coupon.discountValue / 100));
+      return {
+        coupon,
+        discountMinor: Math.min(baseAmountMinor, isNaN(discountMinor) ? 0 : discountMinor),
+      };
+    }
+
+    const fixedMinor =
+      coupon.backendDiscountMinor && coupon.backendDiscountMinor > 0
+        ? coupon.backendDiscountMinor
+        : coupon.discountValue > 500
+        ? coupon.discountValue
+        : coupon.discountValue * 100;
+
+    const discountMinor = Math.min(baseAmountMinor, isNaN(fixedMinor) ? 0 : fixedMinor);
+    return {
+      coupon,
+      discountMinor,
+    };
+  };
+
+  const getPackageDiscountedAmount = (pkg: ListingPackage) => {
+    const campaignInfo = getPackageCampaignDiscount(pkg);
+    const baseMinor = campaignInfo ? campaignInfo.campaignPriceMinor : pkg.price.amountMinor;
+    const couponInfo = getPackageCouponDiscount(pkg, baseMinor);
+
+    if (!campaignInfo && !couponInfo) {
+      return null;
+    }
+
+    const finalMinor = couponInfo ? Math.max(0, baseMinor - couponInfo.discountMinor) : baseMinor;
+    return isNaN(finalMinor) ? pkg.price.amountMinor : finalMinor;
+  };
+
+  const handleApplyCoupon = async (codeToApply?: string) => {
+    const code = (codeToApply ?? couponInput).trim();
+    if (!code) {
+      setCouponError('Lütfen bir kupon kodu giriniz.');
+      return;
+    }
+
+    setCouponLoading(true);
+    setCouponError(null);
+    try {
+      if (!listingRepository.validateCoupon) {
+        throw new Error('Kupon doğrulama servisi bulunamadı.');
+      }
+      const targetPkg = selectedPackage || packages[0];
+      const spendAmountMinor = targetPkg?.price?.amountMinor ?? 0;
+      const token = await getValidAccessToken();
+      const res = await listingRepository.validateCoupon(
+        code,
+        spendAmountMinor,
+        selectedPackageCode || undefined,
+        token || undefined
+      );
+      if (!res.valid) {
+        setCouponError(res.message || 'Geçersiz veya süresi dolmuş kupon kodu.');
+      } else {
+        setAppliedCoupon(res);
+        setCouponInput('');
+      }
+    } catch (err) {
+      setCouponError(err instanceof Error ? err.message : 'Kupon uygulanamadı.');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponError(null);
+  };
+
   // Checkout state
   const paytrEnabled = isPaytrCheckoutEnabled();
   const [paymentMethod, setPaymentMethod] = useState<'CC' | 'TRANSFER'>(
@@ -242,6 +471,7 @@ export function PostEkuriWizardView({
     categoryPhase,
     selectedRootSlug,
     modalTjkPromptSeen,
+    appliedCoupon,
   });
 
   stateRef.current = {
@@ -258,6 +488,7 @@ export function PostEkuriWizardView({
     categoryPhase,
     selectedRootSlug,
     modalTjkPromptSeen,
+    appliedCoupon,
   };
 
   // Auto-save draft on every state update
@@ -284,7 +515,8 @@ export function PostEkuriWizardView({
           it.isCompleted
       ) ||
       step !== 'listings' ||
-      selectedPackageCode !== null;
+      selectedPackageCode !== null ||
+      appliedCoupon !== null;
 
     if (!hasContent) {
       clearEkuriDraft();
@@ -305,6 +537,7 @@ export function PostEkuriWizardView({
       categoryPhase,
       selectedRootSlug,
       modalTjkPromptSeen,
+      appliedCoupon,
       updatedAt: Date.now(),
     });
   }, [
@@ -321,6 +554,7 @@ export function PostEkuriWizardView({
     categoryPhase,
     selectedRootSlug,
     modalTjkPromptSeen,
+    appliedCoupon,
   ]);
 
   // Flush pending changes before page unloads or refreshes
@@ -351,7 +585,8 @@ export function PostEkuriWizardView({
             it.isCompleted
         ) ||
         cur.step !== 'listings' ||
-        cur.selectedPackageCode !== null;
+        cur.selectedPackageCode !== null ||
+        cur.appliedCoupon !== null;
 
       if (!hasContent) {
         clearEkuriDraft();
@@ -372,6 +607,7 @@ export function PostEkuriWizardView({
         categoryPhase: cur.categoryPhase,
         selectedRootSlug: cur.selectedRootSlug,
         modalTjkPromptSeen: cur.modalTjkPromptSeen,
+        appliedCoupon: cur.appliedCoupon,
         updatedAt: Date.now(),
       });
     };
@@ -409,6 +645,9 @@ export function PostEkuriWizardView({
     setModalVisible(false);
     setEditingDraft(null);
     setEditingIndex(null);
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponError(null);
     setResetConfirmVisible(false);
   }, []);
 
@@ -568,7 +807,7 @@ export function PostEkuriWizardView({
       clonedDraft.media = (it.draft.media || []).map((slot) => {
         const candidate = (slot as any).file;
         const actualFile = typeof Blob !== 'undefined' && candidate instanceof Blob
-          ? candidate
+          ? (candidate as File)
           : localFileMapRef.current.get(slot.localId);
         return {
           ...slot,
@@ -644,7 +883,7 @@ export function PostEkuriWizardView({
             const preservedMedia = (editingDraft.media || []).map((slot) => {
               const candidate = (slot as any).file;
               const actualFile = typeof Blob !== 'undefined' && candidate instanceof Blob
-                ? candidate
+                ? (candidate as File)
                 : localFileMapRef.current.get(slot.localId);
               return {
                 ...slot,
@@ -700,7 +939,7 @@ export function PostEkuriWizardView({
     const preservedMedia = (editingDraft.media || []).map((slot) => {
       const candidate = (slot as any).file;
       const actualFile = typeof Blob !== 'undefined' && candidate instanceof Blob
-        ? candidate
+        ? (candidate as File)
         : localFileMapRef.current.get(slot.localId);
       if (actualFile) {
         localFileMapRef.current.set(slot.localId, actualFile);
@@ -763,7 +1002,7 @@ export function PostEkuriWizardView({
     for (const slot of media) {
       const candidate = (slot as any).file;
       if (typeof Blob !== 'undefined' && candidate instanceof Blob) {
-        localFileMapRef.current.set(slot.localId, candidate);
+        localFileMapRef.current.set(slot.localId, candidate as File);
       }
     }
     setEditingDraft((prev) => {
@@ -919,6 +1158,25 @@ export function PostEkuriWizardView({
     return packages.find((p) => p.code === selectedPackageCode) ?? null;
   }, [packages, selectedPackageCode]);
 
+  const selectedPackageCampaign = useMemo(() => {
+    return selectedPackage ? getPackageCampaignDiscount(selectedPackage) : null;
+  }, [selectedPackage, activeCampaigns]);
+  const campaignDiscountMinor = selectedPackageCampaign ? selectedPackageCampaign.discountMinor : 0;
+  const campaignName = selectedPackageCampaign?.campaign?.name || null;
+
+  const baseMinor = selectedPackageCampaign
+    ? selectedPackageCampaign.campaignPriceMinor
+    : (selectedPackage?.price?.amountMinor ?? 0);
+  const selectedPackageCoupon = useMemo(() => {
+    return selectedPackage ? getPackageCouponDiscount(selectedPackage, baseMinor) : null;
+  }, [selectedPackage, baseMinor, appliedCoupon]);
+  const couponDiscountMinor = selectedPackageCoupon ? selectedPackageCoupon.discountMinor : 0;
+  const couponCode = selectedPackageCoupon?.coupon?.code || null;
+
+  const originalPriceMinor = selectedPackage?.price?.amountMinor ?? 0;
+  const finalPriceMinor = Math.max(0, originalPriceMinor - campaignDiscountMinor - couponDiscountMinor);
+  const isFreeWithCoupon = selectedPackage != null && finalPriceMinor === 0;
+
   // Submit all listings in bundle
   const handleFinalSubmit = async () => {
     if (!isLoggedIn) {
@@ -1006,6 +1264,12 @@ export function PostEkuriWizardView({
         // Set dynamic properties via buildDraftProperties
         const props = buildDraftProperties(it.draft);
         props.ekuriCode = ekuriCode;
+        if (couponCode) {
+          props.couponCode = couponCode;
+        }
+        if (campaignName) {
+          props.campaignName = campaignName;
+        }
         if (Object.keys(props).length > 0) {
           try {
             const propRes = await http.request<{ id: number; version: number }>(`/v1/me/adverts/${advertId}/properties`, {
@@ -1032,7 +1296,7 @@ export function PostEkuriWizardView({
                 if (slot.assetId) return slot;
                 const candidate = (slot as any).file;
                 const fileObj = typeof Blob !== 'undefined' && candidate instanceof Blob
-                  ? candidate
+                  ? (candidate as File)
                   : localFileMapRef.current.get(slot.localId);
                 const res = await mediaUploader.upload(
                   {
@@ -1428,6 +1692,147 @@ export function PostEkuriWizardView({
               </View>
             </View>
 
+            {/* Active Campaigns & Coupon Section */}
+            <View style={styles.promotionsRow}>
+              {activeCampaigns.length > 0 ? (
+                <View
+                  style={[
+                    styles.campaignBanner,
+                    {
+                      backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                      borderColor: 'rgba(245, 158, 11, 0.3)',
+                    },
+                  ]}
+                >
+                  <View style={styles.campaignHeader}>
+                    <Ionicons name="sparkles" size={18} color="#d97706" />
+                    <Text style={styles.campaignHeaderTitle}>Aktif Kampanyalar & Fırsatlar</Text>
+                  </View>
+                  <View style={styles.campaignList}>
+                    {activeCampaigns.map((camp) => (
+                      <View key={camp.code} style={styles.campaignItem}>
+                        <View style={styles.campaignItemTop}>
+                          <Text style={[styles.campaignName, { color: text }]}>{camp.name}</Text>
+                          {camp.badgeText ? (
+                            <View style={styles.campaignBadge}>
+                              <Text style={styles.campaignBadgeText}>{camp.badgeText}</Text>
+                            </View>
+                          ) : null}
+                        </View>
+                        {camp.description ? (
+                          <Text style={[styles.campaignDesc, { color: textMuted }]}>{camp.description}</Text>
+                        ) : null}
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+
+              {/* Coupon Code Input & Applied Card */}
+              <View style={[styles.couponSection, { backgroundColor: cardBg, borderColor: border }]}>
+                <View style={styles.couponHeaderRow}>
+                  <Ionicons name="ticket-outline" size={20} color={text} />
+                  <Text style={[styles.couponSectionTitle, { color: text }]}>İndirim Kuponu</Text>
+                </View>
+
+                {appliedCoupon?.valid && appliedCoupon.coupon ? (() => {
+                  const coupon = getNormalizedCoupon(appliedCoupon);
+                  if (!coupon) return null;
+                  const fixedTL = Math.round(
+                    (coupon.backendDiscountMinor && coupon.backendDiscountMinor > 0
+                      ? coupon.backendDiscountMinor
+                      : coupon.discountValue > 500
+                      ? coupon.discountValue
+                      : coupon.discountValue * 100) / 100
+                  );
+
+                  return (
+                    <View style={[styles.appliedBox, { backgroundColor: `${success}14`, borderColor: success }]}>
+                      <View style={styles.appliedLeft}>
+                        <Ionicons name="checkmark-circle" size={22} color={success} />
+                        <View style={styles.appliedTextCol}>
+                          <View style={styles.appliedCodeRow}>
+                            <Text style={[styles.appliedCode, { color: text }]}>{coupon.code}</Text>
+                            <View style={[styles.appliedDiscountBadge, { backgroundColor: success }]}>
+                              <Text style={styles.appliedDiscountBadgeText}>
+                                {coupon.isPercentage
+                                  ? `%${coupon.discountValue} İndirim`
+                                  : `${fixedTL} TL İndirim`}
+                              </Text>
+                            </View>
+                          </View>
+                          <Text style={[styles.appliedName, { color: textMuted }]}>
+                            {coupon.name} başarıyla uygulandı
+                          </Text>
+                        </View>
+                      </View>
+                      <Pressable
+                        onPress={handleRemoveCoupon}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel="Kuponu kaldır"
+                        style={({ pressed }) => [
+                          styles.removeCouponBtn,
+                          { opacity: pressed ? 0.7 : 1 },
+                        ]}
+                      >
+                        <Ionicons name="close-circle" size={20} color="#ef4444" />
+                        <Text style={[styles.removeCouponText, { color: '#ef4444' }]}>Kaldır</Text>
+                      </Pressable>
+                    </View>
+                  );
+                })() : (
+                  <View style={styles.couponInputWrapper}>
+                    <View style={styles.couponInputRow}>
+                      <TextInput
+                        value={couponInput}
+                        onChangeText={(val) => {
+                          setCouponInput(val.toUpperCase());
+                          if (couponError) setCouponError(null);
+                        }}
+                        placeholder="Kupon kodunu giriniz"
+                        placeholderTextColor={textMuted}
+                        autoCapitalize="characters"
+                        style={[
+                          styles.couponTextInput,
+                          {
+                            color: text,
+                            borderColor: couponError ? '#ef4444' : border,
+                            backgroundColor: cardBg,
+                          },
+                        ]}
+                        onSubmitEditing={() => handleApplyCoupon()}
+                      />
+                      <Pressable
+                        onPress={() => handleApplyCoupon()}
+                        disabled={couponLoading || !couponInput.trim()}
+                        accessibilityRole="button"
+                        style={({ pressed }) => [
+                          styles.applyCouponBtn,
+                          {
+                            backgroundColor: couponInput.trim() ? primary : border,
+                            opacity: pressed || couponLoading ? 0.8 : 1,
+                          },
+                        ]}
+                      >
+                        {couponLoading ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Text style={styles.applyCouponBtnText}>Uygula</Text>
+                        )}
+                      </Pressable>
+                    </View>
+                    {couponError ? (
+                      <View style={styles.couponErrorRow}>
+                        <Ionicons name="alert-circle-outline" size={16} color="#ef4444" />
+                        <Text style={[styles.couponErrorText, { color: '#ef4444' }]}>{couponError}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                )}
+              </View>
+            </View>
+
             {packagesLoading && packages.length === 0 && (
               <View style={styles.loadingWrap}>
                 <ActivityIndicator size="large" color={primary} />
@@ -1443,8 +1848,17 @@ export function PostEkuriWizardView({
                   const capacity = pkg.horseLimit ?? 0;
                   const isSufficient = capacity >= items.length;
                   const isSelected = selectedPackageCode === pkg.code;
+
+                  const discountedMinor = getPackageDiscountedAmount(pkg);
+                  const hasDiscount = discountedMinor != null && discountedMinor < pkg.price.amountMinor;
+                  const discountPercent =
+                    hasDiscount && pkg.price.amountMinor > 0
+                      ? Math.round(((pkg.price.amountMinor - discountedMinor) / pkg.price.amountMinor) * 100)
+                      : 0;
+
+                  const effectivePriceMinor = discountedMinor != null ? discountedMinor : pkg.price.amountMinor;
                   const pricePerAdvert =
-                    capacity > 0 ? Math.round(pkg.price.amountMinor / 100 / capacity) : null;
+                    capacity > 0 ? Math.round(effectivePriceMinor / 100 / capacity) : null;
 
                   return (
                     <Pressable
@@ -1468,7 +1882,17 @@ export function PostEkuriWizardView({
                       {/* Top Header */}
                       <View style={styles.packageCardTop}>
                         <View style={styles.pkgTitleRow}>
-                          <Text style={[styles.pkgName, { color: text }]}>{pkg.name}</Text>
+                          <View style={styles.pkgTitleWithBadge}>
+                            <Text style={[styles.pkgName, { color: text }]}>{pkg.name}</Text>
+                            {hasDiscount ? (
+                              <View style={styles.discountBadge}>
+                                <Ionicons name="flash" size={11} color="#16a34a" />
+                                <Text style={styles.discountBadgeText}>
+                                  {discountPercent > 0 ? `%${discountPercent} İndirim` : 'İndirimli'}
+                                </Text>
+                              </View>
+                            ) : null}
+                          </View>
                           <Ionicons
                             name={isSelected ? 'radio-button-on' : 'radio-button-off'}
                             size={22}
@@ -1494,10 +1918,24 @@ export function PostEkuriWizardView({
 
                       {/* Price Section */}
                       <View style={styles.pkgPriceSection}>
-                        <Text style={[styles.pkgPrice, { color: primary }]}>
-                          {formatMoney(pkg.price)}
-                        </Text>
-                        {pricePerAdvert && (
+                        {hasDiscount ? (
+                          <View style={styles.discountedPriceContainer}>
+                            <Text style={[styles.originalPriceStrikethrough, { color: textMuted }]}>
+                              {formatMoney(pkg.price)}
+                            </Text>
+                            <Text style={[styles.pkgPrice, { color: success }]}>
+                              {formatMoney({
+                                amountMinor: effectivePriceMinor,
+                                currency: pkg.price.currency,
+                              })}
+                            </Text>
+                          </View>
+                        ) : (
+                          <Text style={[styles.pkgPrice, { color: primary }]}>
+                            {formatMoney(pkg.price)}
+                          </Text>
+                        )}
+                        {pricePerAdvert !== null && (
                           <Text style={[styles.pkgPricePerAd, { color: textMuted }]}>
                             İlan başına ~{pricePerAdvert} ₺
                           </Text>
@@ -1628,18 +2066,82 @@ export function PostEkuriWizardView({
                 </Text>
               </View>
 
+              {campaignDiscountMinor > 0 ? (
+                <View style={styles.summaryRow}>
+                  <Text style={[styles.summaryLabel, { color: success }]}>
+                    Kampanya İndirimi {campaignName ? `(${campaignName})` : ''}
+                  </Text>
+                  <Text style={[styles.summaryVal, { color: success }]}>
+                    -{formatMoney({ amountMinor: campaignDiscountMinor, currency: selectedPackage?.price.currency || 'TRY' })}
+                  </Text>
+                </View>
+              ) : null}
+
+              {couponDiscountMinor > 0 ? (
+                <View style={styles.summaryRow}>
+                  <Text style={[styles.summaryLabel, { color: success }]}>
+                    Kupon İndirimi {couponCode ? `(${couponCode})` : ''}
+                  </Text>
+                  <Text style={[styles.summaryVal, { color: success }]}>
+                    -{formatMoney({ amountMinor: couponDiscountMinor, currency: selectedPackage?.price.currency || 'TRY' })}
+                  </Text>
+                </View>
+              ) : null}
+
               <View style={[styles.summaryDivider, { backgroundColor: border }]} />
 
               <View style={styles.summaryRow}>
                 <Text style={[styles.summaryTotalLabel, { color: text }]}>Toplam Ödenecek</Text>
                 <Text style={[styles.summaryTotalVal, { color: success }]}>
-                  {selectedPackage ? formatMoney(selectedPackage.price) : '0 ₺'}
+                  {finalPriceMinor === 0
+                    ? 'ÜCRETSİZ'
+                    : formatMoney({
+                        amountMinor: finalPriceMinor,
+                        currency: selectedPackage?.price.currency || 'TRY',
+                      })}
                 </Text>
               </View>
             </View>
 
-            {/* Ödeme Yöntemi (Sadece birden fazla ödeme seçeneği aktifse gösterilir) */}
-            {paytrEnabled && (
+            {/* 100% Free Coupon Card */}
+            {isFreeWithCoupon ? (
+              <View style={[styles.freeSuccessCard, { backgroundColor: `${success}14`, borderColor: success }]}>
+                <Ionicons name="checkmark-circle" size={44} color={success} />
+                <Text style={[styles.freeSuccessTitle, { color: text }]}>
+                  %100 Kupon İndirimi Uygulandı!
+                </Text>
+                <Text style={[styles.freeSuccessDesc, { color: textMuted }]}>
+                  {selectedPackage?.name ? `${selectedPackage.name} paketi ` : ''}ücretsiz tanımlandı. İlanlarınızı hemen incelemeye gönderebilirsiniz.
+                </Text>
+                <Pressable
+                  disabled={submitting}
+                  onPress={handleFinalSubmit}
+                  style={[
+                    styles.primaryBtn,
+                    {
+                      backgroundColor: primary,
+                      alignSelf: 'stretch',
+                      justifyContent: 'center',
+                      opacity: submitting ? 0.7 : 1,
+                      marginTop: 8,
+                    },
+                  ]}
+                  accessibilityRole="button"
+                >
+                  {submitting ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <>
+                      <Text style={styles.primaryBtnText}>İlanları Yayına Gönder (Ücretsiz)</Text>
+                      <Ionicons name="arrow-forward" size={18} color="#ffffff" />
+                    </>
+                  )}
+                </Pressable>
+              </View>
+            ) : null}
+
+            {/* Ödeme Yöntemi (Sadece kuponla ücretsiz değilse ve birden fazla ödeme seçeneği aktifse gösterilir) */}
+            {!isFreeWithCoupon && paytrEnabled && (
               <View style={{ gap: 8, marginTop: Spacing.xs }}>
                 <Text style={{ fontSize: 14, fontWeight: '700', color: text }}>Ödeme Yöntemi</Text>
                 <View style={styles.methodToggle}>
@@ -1694,7 +2196,7 @@ export function PostEkuriWizardView({
             )}
 
             {/* Havale / EFT İçeriği */}
-            {paymentMethod === 'TRANSFER' && (
+            {!isFreeWithCoupon && paymentMethod === 'TRANSFER' && (
               <View style={styles.transferSection}>
                 {/* Sade Bilgilendirme Notu */}
                 <View
@@ -1715,7 +2217,10 @@ export function PostEkuriWizardView({
                     <Text style={{ color: isDark ? '#e2e8f0' : '#1e3a8a', fontSize: 13, lineHeight: 20 }}>
                       Aşağıdaki hesaplardan birine{' '}
                       <Text style={{ fontWeight: '700', color: isDark ? '#ffffff' : '#0f172a' }}>
-                        {selectedPackage ? formatMoney(selectedPackage.price) : '0 ₺'}
+                        {formatMoney({
+                          amountMinor: finalPriceMinor,
+                          currency: selectedPackage?.price.currency || 'TRY',
+                        })}
                       </Text>{' '}
                       gönderiniz.
                     </Text>
@@ -1894,7 +2399,7 @@ export function PostEkuriWizardView({
             )}
 
             {/* Online Ödeme / PayTR İçeriği */}
-            {paymentMethod === 'CC' && (
+            {!isFreeWithCoupon && paymentMethod === 'CC' && (
               <View style={styles.transferSection}>
                 <View
                   style={[
@@ -1930,7 +2435,10 @@ export function PostEkuriWizardView({
                   ) : (
                     <>
                       <Text style={styles.primaryBtnText}>
-                        Online Ödeme ile Onayla ({selectedPackage ? formatMoney(selectedPackage.price) : '0 ₺'})
+                        Online Ödeme ile Onayla ({formatMoney({
+                          amountMinor: finalPriceMinor,
+                          currency: selectedPackage?.price.currency || 'TRY',
+                        })})
                       </Text>
                       <Ionicons name="arrow-forward" size={18} color="#ffffff" />
                     </>
@@ -3350,5 +3858,241 @@ const styles = StyleSheet.create({
   resetDraftText: {
     fontSize: 12,
     fontWeight: '500',
+  },
+
+  /* Promotions Row */
+  promotionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.md,
+    alignItems: 'stretch',
+    marginBottom: Spacing.md,
+  },
+
+  /* Campaigns Banner */
+  campaignBanner: {
+    flex: 1,
+    flexBasis: 260,
+    minWidth: 0,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: Spacing.md,
+    gap: 8,
+    justifyContent: 'center',
+  },
+  campaignHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  campaignHeaderTitle: {
+    ...Typography.body,
+    fontWeight: '700',
+    color: '#b45309',
+  },
+  campaignList: {
+    gap: 6,
+  },
+  campaignItem: {
+    gap: 2,
+  },
+  campaignItemTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  campaignName: {
+    ...Typography.small,
+    fontWeight: '700',
+    flex: 1,
+    minWidth: 0,
+  },
+  campaignBadge: {
+    backgroundColor: '#f59e0b',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    flexShrink: 0,
+  },
+  campaignBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  campaignDesc: {
+    ...Typography.caption,
+  },
+
+  /* Coupon Section */
+  couponSection: {
+    flex: 1,
+    flexBasis: 260,
+    minWidth: 0,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: Spacing.md,
+    gap: 12,
+    justifyContent: 'center',
+  },
+  couponHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  couponSectionTitle: {
+    ...Typography.body,
+    fontWeight: '700',
+  },
+  couponInputWrapper: {
+    gap: 8,
+    width: '100%',
+  },
+  couponInputRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    width: '100%',
+  },
+  couponTextInput: {
+    flex: 1,
+    minWidth: 0,
+    height: 44,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  applyCouponBtn: {
+    flexShrink: 0,
+    height: 44,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  applyCouponBtnText: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  couponErrorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  couponErrorText: {
+    ...Typography.small,
+  },
+  appliedBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  appliedLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
+  },
+  appliedTextCol: {
+    gap: 2,
+    flex: 1,
+    minWidth: 0,
+  },
+  appliedCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  appliedCode: {
+    fontWeight: '800',
+    fontSize: 15,
+  },
+  appliedDiscountBadge: {
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  appliedDiscountBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  appliedName: {
+    fontSize: 12,
+  },
+  removeCouponBtn: {
+    flexShrink: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    padding: 6,
+  },
+  removeCouponText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  /* Card Discount Elements */
+  pkgTitleWithBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    flex: 1,
+  },
+  discountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(22, 163, 74, 0.12)',
+    borderColor: 'rgba(22, 163, 74, 0.3)',
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  discountBadgeText: {
+    color: '#16a34a',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  discountedPriceContainer: {
+    flexDirection: 'column',
+    gap: 2,
+  },
+  originalPriceStrikethrough: {
+    fontSize: 13,
+    textDecorationLine: 'line-through',
+    fontWeight: '500',
+  },
+
+  /* Free Coupon Card */
+  freeSuccessCard: {
+    borderWidth: 1,
+    borderRadius: Radius.card,
+    padding: Spacing.lg,
+    alignItems: 'center',
+    gap: 10,
+  },
+  freeSuccessTitle: {
+    ...Typography.h3,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  freeSuccessDesc: {
+    ...Typography.body,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

@@ -1,4 +1,5 @@
 import type { ListingDraft } from '@/types/listing';
+import type { CouponValidationResult } from '@/types/coupon';
 import type { ListingTypePhase } from './listingDraftStore';
 
 export interface EkuriListingItem {
@@ -24,6 +25,7 @@ export interface EkuriDraftState {
   categoryPhase?: ListingTypePhase;
   selectedRootSlug?: string | null;
   modalTjkPromptSeen?: boolean;
+  appliedCoupon?: CouponValidationResult | null;
   updatedAt: number;
 }
 
