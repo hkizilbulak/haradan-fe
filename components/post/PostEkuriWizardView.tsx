@@ -1604,9 +1604,9 @@ export function PostEkuriWizardView({
                           {index + 1}
                         </Text>
                       </View>
-                      <View style={{ flex: 1 }}>
+                      <View style={{ flex: 1, minWidth: 0 }}>
                         <Text style={[styles.listingCardTitle, { color: text }]} numberOfLines={1}>
-                          {index + 1}. İlan {item.draft.details.title ? `· ${item.draft.details.title}` : ''}
+                          {item.draft.details.title?.trim() || 'Başlıksız İlan'}
                         </Text>
                         <Text style={[styles.listingCardSub, { color: textMuted }]} numberOfLines={1}>
                           {item.draft.details.priceTl ? `${item.draft.details.priceTl} ₺` : 'Fiyat girilmedi'} •{' '}
@@ -1619,29 +1619,29 @@ export function PostEkuriWizardView({
                     <View style={styles.cardHeaderRight}>
                       {isComplete ? (
                         <View style={styles.readyBadge}>
-                          <Ionicons name="checkmark-circle" size={15} color="#10b981" />
                           <Text style={styles.readyBadgeText}>Tamamlandı</Text>
                         </View>
                       ) : (
                         <View style={styles.pendingBadge}>
-                          <Ionicons name="time-outline" size={15} color="#f59e0b" />
                           <Text style={styles.pendingBadgeText}>Eksik</Text>
                         </View>
                       )}
-                      {items.length > 2 && (
-                        <Pressable
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            removeItem(item.id);
-                          }}
-                          style={styles.trashBtn}
-                          hitSlop={8}
-                        >
-                          <Ionicons name="trash-outline" size={18} color="#ef4444" />
-                        </Pressable>
-                      )}
-                      <View style={styles.editIconBtn}>
-                        <Ionicons name="create-outline" size={18} color={primary} />
+                      <View style={styles.cardActions}>
+                        {items.length > 2 && (
+                          <Pressable
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              removeItem(item.id);
+                            }}
+                            style={styles.trashBtn}
+                            hitSlop={8}
+                          >
+                            <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                          </Pressable>
+                        )}
+                        <View style={styles.editIconBtn}>
+                          <Ionicons name="create-outline" size={18} color={primary} />
+                        </View>
                       </View>
                     </View>
                   </Pressable>
@@ -3130,13 +3130,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: Spacing.md,
+    paddingVertical: 12,
+    paddingLeft: 8,
+    paddingRight: 4,
   },
   cardHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
     flex: 1,
+    minWidth: 0,
+    marginRight: 6,
   },
   indexCircle: {
     width: 30,
@@ -3144,6 +3148,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   indexText: {
     fontWeight: '700',
@@ -3162,16 +3167,16 @@ const styles = StyleSheet.create({
   cardHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: 8,
+    flexShrink: 0,
   },
   readyBadge: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
     backgroundColor: 'rgba(16, 185, 129, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 8,
   },
   readyBadgeText: {
     color: '#10b981',
@@ -3179,21 +3184,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   pendingBadge: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
     backgroundColor: 'rgba(245, 158, 11, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 8,
   },
   pendingBadgeText: {
     color: '#f59e0b',
     fontSize: 11,
     fontWeight: '700',
   },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
   trashBtn: {
-    padding: 6,
+    padding: 4,
   },
   editIconBtn: {
     padding: 4,
