@@ -142,7 +142,12 @@ function normalizeContentType(raw: string): string {
 }
 
 async function readFileBlob(file: LocalImageFile): Promise<Blob> {
-  if (file.file) return file.file;
-  const res = await fetch(file.uri);
-  return res.blob();
+  if (typeof Blob !== 'undefined' && file.file instanceof Blob) {
+    return file.file;
+  }
+  if (file.uri) {
+    const res = await fetch(file.uri);
+    return res.blob();
+  }
+  throw new Error('Görsel dosyası veya URI bulunamadı.');
 }

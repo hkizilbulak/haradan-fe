@@ -565,10 +565,16 @@ export function PostEkuriWizardView({
     (it: EkuriListingItem, index: number) => {
       setEditingIndex(index);
       const clonedDraft: ListingDraft = JSON.parse(JSON.stringify(it.draft));
-      clonedDraft.media = (it.draft.media || []).map((slot) => ({
-        ...slot,
-        file: (slot as any).file || localFileMapRef.current.get(slot.localId),
-      }));
+      clonedDraft.media = (it.draft.media || []).map((slot) => {
+        const candidate = (slot as any).file;
+        const actualFile = typeof Blob !== 'undefined' && candidate instanceof Blob
+          ? candidate
+          : localFileMapRef.current.get(slot.localId);
+        return {
+          ...slot,
+          file: actualFile,
+        };
+      });
 
       // Auto-fill seller phone from session if empty
       if (session?.user?.phone && !clonedDraft.details.sellerPhone) {
@@ -635,10 +641,16 @@ export function PostEkuriWizardView({
         setItems((prev) => {
           const next = [...prev];
           if (next[editingIndex]) {
-            const preservedMedia = (editingDraft.media || []).map((slot) => ({
-              ...slot,
-              file: (slot as any).file || localFileMapRef.current.get(slot.localId),
-            }));
+            const preservedMedia = (editingDraft.media || []).map((slot) => {
+              const candidate = (slot as any).file;
+              const actualFile = typeof Blob !== 'undefined' && candidate instanceof Blob
+                ? candidate
+                : localFileMapRef.current.get(slot.localId);
+              return {
+                ...slot,
+                file: actualFile,
+              };
+            });
             next[editingIndex] = {
               ...next[editingIndex],
               draft: {
@@ -686,13 +698,16 @@ export function PostEkuriWizardView({
     }
 
     const preservedMedia = (editingDraft.media || []).map((slot) => {
-      const f = (slot as any).file || localFileMapRef.current.get(slot.localId);
-      if (f) {
-        localFileMapRef.current.set(slot.localId, f);
+      const candidate = (slot as any).file;
+      const actualFile = typeof Blob !== 'undefined' && candidate instanceof Blob
+        ? candidate
+        : localFileMapRef.current.get(slot.localId);
+      if (actualFile) {
+        localFileMapRef.current.set(slot.localId, actualFile);
       }
       return {
         ...slot,
-        file: f,
+        file: actualFile,
       };
     });
 
@@ -746,8 +761,9 @@ export function PostEkuriWizardView({
 
   const handleMediaChange = useCallback((media: ListingMediaSlot[]) => {
     for (const slot of media) {
-      if ((slot as any).file) {
-        localFileMapRef.current.set(slot.localId, (slot as any).file);
+      const candidate = (slot as any).file;
+      if (typeof Blob !== 'undefined' && candidate instanceof Blob) {
+        localFileMapRef.current.set(slot.localId, candidate);
       }
     }
     setEditingDraft((prev) => {
@@ -1014,7 +1030,10 @@ export function PostEkuriWizardView({
             const uploadedSlots = await Promise.all(
               it.draft.media.map(async (slot) => {
                 if (slot.assetId) return slot;
-                const fileObj = (slot as any).file || localFileMapRef.current.get(slot.localId);
+                const candidate = (slot as any).file;
+                const fileObj = typeof Blob !== 'undefined' && candidate instanceof Blob
+                  ? candidate
+                  : localFileMapRef.current.get(slot.localId);
                 const res = await mediaUploader.upload(
                   {
                     uri: slot.uri,
