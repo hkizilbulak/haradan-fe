@@ -1461,7 +1461,9 @@ export function PostEkuriWizardView({
               ]}
             >
               <Ionicons name="document-text-outline" size={14} color={primary} />
-              <Text style={[styles.singleModeBtnText, { color: text }]}>Tekil İlan Ver</Text>
+              <Text style={[styles.singleModeBtnText, { color: text }]}>
+                {isWide ? 'Tekil İlan Ver' : 'Tekil'}
+              </Text>
             </Pressable>
           ) : (
             <View style={styles.close} />
@@ -1545,24 +1547,22 @@ export function PostEkuriWizardView({
         {/* STEP 1: LISTINGS OVERVIEW */}
         {step === 'listings' && (
           <View style={styles.stepContainer}>
-            <View style={styles.sectionHeader}>
-              <View>
+            <View style={[styles.sectionHeader, isWide && styles.sectionHeaderWide]}>
+              <View style={styles.sectionHeaderTitleCol}>
                 <Text style={[styles.sectionTitle, { color: text }]}>Eküri İlanlarınızı Ekleyin</Text>
                 <Text style={[styles.sectionSubtitle, { color: textMuted }]}>
                   En az 2, en fazla 10 adet ilan ekleyerek tek seferde avantajlı paketle yayınlayın.
                 </Text>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                {hasAnyDraftContent && (
-                  <Pressable
-                    onPress={handleResetDraft}
-                    style={[styles.resetDraftBtn, { borderColor: border }]}
-                    accessibilityRole="button"
-                  >
-                    <Ionicons name="trash-outline" size={14} color={textMuted} />
-                    <Text style={[styles.resetDraftText, { color: textMuted }]}>Taslağı Sıfırla</Text>
-                  </Pressable>
-                )}
+              <View style={[styles.sectionHeaderActions, !isWide && styles.sectionHeaderActionsMobile]}>
+                <Pressable
+                  onPress={handleResetDraft}
+                  style={[styles.resetDraftBtn, { borderColor: border }]}
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="trash-outline" size={14} color={textMuted} />
+                  <Text style={[styles.resetDraftText, { color: textMuted }]}>Taslağı Sıfırla</Text>
+                </Pressable>
                 <View style={[styles.counterPill, { backgroundColor: `${primary}18` }]}>
                   <Ionicons name="documents-outline" size={16} color={primary} />
                   <Text style={[styles.counterText, { color: primary }]}>
@@ -1683,12 +1683,22 @@ export function PostEkuriWizardView({
         {/* STEP 2: PACKAGES */}
         {step === 'package' && (
           <View style={styles.stepContainer}>
-            <View style={styles.sectionHeader}>
-              <View>
+            <View style={[styles.sectionHeader, isWide && styles.sectionHeaderWide]}>
+              <View style={styles.sectionHeaderTitleCol}>
                 <Text style={[styles.sectionTitle, { color: text }]}>Eküri Paketinizi Seçin</Text>
                 <Text style={[styles.sectionSubtitle, { color: textMuted }]}>
                   Eklediğiniz {items.length} ilan için geçerli eküri paketleri:
                 </Text>
+              </View>
+              <View style={[styles.sectionHeaderActions, !isWide && styles.sectionHeaderActionsMobile]}>
+                <Pressable
+                  onPress={handleResetDraft}
+                  style={[styles.resetDraftBtn, { borderColor: border }]}
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="trash-outline" size={14} color={textMuted} />
+                  <Text style={[styles.resetDraftText, { color: textMuted }]}>Taslağı Sıfırla</Text>
+                </Pressable>
               </View>
             </View>
 
@@ -3067,9 +3077,27 @@ const styles = StyleSheet.create({
     gap: Spacing.lg,
   },
   sectionHeader: {
+    gap: 12,
+  },
+  sectionHeaderWide: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    gap: Spacing.md,
+  },
+  sectionHeaderTitleCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  sectionHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  sectionHeaderActionsMobile: {
+    width: '100%',
+    justifyContent: 'space-between',
   },
   sectionTitle: {
     ...Typography.h3,
