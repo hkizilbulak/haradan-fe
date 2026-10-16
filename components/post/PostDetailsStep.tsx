@@ -34,7 +34,7 @@ import { Spacing } from '@/constants/Spacing';
 import { Typography } from '@/constants/Typography';
 import { useThemeColor } from '@/hooks/useThemeColor';
 
-const FIELD_ORDER: (keyof ListingFieldErrors)[] = [
+export const FIELD_ORDER: (keyof ListingFieldErrors)[] = [
   'title',
   'description',
   'priceTl',
@@ -241,6 +241,7 @@ export function PostDetailsStep({
   const cardMediaY = useRef(0);
   const relativeYMap = useRef<Record<string, number>>({});
   const fieldYMap = useRef<Record<string, number>>({});
+  const fieldRefs = useRef<Record<string, any>>({});
 
   const updateFieldY = useCallback((key: string, relativeY?: number) => {
     if (relativeY != null) {
@@ -248,10 +249,8 @@ export function PostDetailsStep({
     }
     const rel = relativeYMap.current[key] ?? 0;
     let cardY = 0;
-    if (['title', 'description', 'priceTl', 'provinceId', 'districtId', 'address'].includes(key)) {
+    if (['title', 'description', 'priceTl', 'provinceId', 'districtId', 'address', 'sellerPhone'].includes(key)) {
       cardY = card1Y.current;
-    } else if (key === 'sellerPhone') {
-      cardY = cardPhoneY.current;
     } else if (['registeredName', 'gender'].includes(key)) {
       cardY = cardHorseY.current;
     } else if (key === 'media') {
@@ -267,11 +266,98 @@ export function PostDetailsStep({
       Object.keys(errors)[0];
     if (!firstErrorKey) return;
 
-    let y = fieldYMap.current[firstErrorKey];
-    if (y == null) {
-      y = fieldYMap.current.categoryProperties;
+    // 1. Direct web DOM element measurement and scroll
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      let targetDomNode: HTMLElement | null = null;
+
+      // Check direct ref first
+      const fromRef = fieldRefs.current[firstErrorKey];
+      const resolvedRef = (fromRef as any)?.getScrollableNode?.() || (fromRef as any)?._node || fromRef;
+      if (resolvedRef instanceof HTMLElement) {
+        targetDomNode = resolvedRef;
+      }
+
+      // Lookup by ID / nativeID
+      if (!targetDomNode) {
+        targetDomNode =
+          document.getElementById(`field-${firstErrorKey}`) ||
+          (document.querySelector(`[data-field="${firstErrorKey}"]`) as HTMLElement | null);
+      }
+
+      // Semantic lookups by error key
+      if (!targetDomNode) {
+        if (firstErrorKey === 'priceTl') {
+          targetDomNode =
+            (document.querySelector('input[aria-label="Fiyat"]') as HTMLElement | null) ||
+            document.getElementById('field-priceTl') ||
+            (Array.from(document.querySelectorAll('input')).find(
+              (i) => (i as HTMLInputElement).placeholder === '0'
+            ) as HTMLElement | null);
+        } else if (firstErrorKey === 'title') {
+          targetDomNode =
+            document.getElementById('field-title') ||
+            (document.querySelector('input[placeholder="Kısa, net bir başlık"]') as HTMLElement | null);
+        } else if (firstErrorKey === 'sellerPhone') {
+          targetDomNode =
+            document.getElementById('field-sellerPhone') ||
+            (document.querySelector('input[type="tel"]') as HTMLElement | null);
+        } else if (firstErrorKey === 'provinceId' || firstErrorKey === 'districtId') {
+          targetDomNode =
+            document.getElementById('field-provinceId') ||
+            document.getElementById('field-districtId') ||
+            document.getElementById('field-location');
+        } else if (firstErrorKey === 'description') {
+          targetDomNode = document.getElementById('field-description');
+        } else if (firstErrorKey === 'media') {
+          targetDomNode = document.getElementById('field-media');
+        } else {
+          // Dynamic category property
+          targetDomNode =
+            document.getElementById(`field-${firstErrorKey}`) ||
+            (document.querySelector(`[data-field="${firstErrorKey}"]`) as HTMLElement | null);
+        }
+      }
+
+      if (targetDomNode && typeof targetDomNode.scrollIntoView === 'function') {
+        targetDomNode.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest',
+        });
+        const input =
+          targetDomNode.tagName === 'INPUT' || targetDomNode.tagName === 'TEXTAREA'
+            ? targetDomNode
+            : targetDomNode.querySelector('input, textarea, select');
+        if (input && typeof (input as HTMLElement).focus === 'function') {
+          try {
+            (input as HTMLElement).focus({ preventScroll: true });
+          } catch {}
+        }
+        return;
+      }
     }
-    if (y != null && scrollViewRef?.current) {
+
+    // 2. Native measureLayout
+    const targetElement = fieldRefs.current[firstErrorKey];
+    if (targetElement && scrollViewRef?.current && typeof targetElement.measureLayout === 'function') {
+      try {
+        const responder = (scrollViewRef.current as any).getScrollResponder?.() || scrollViewRef.current;
+        targetElement.measureLayout(
+          responder,
+          (_left: number, top: number) => {
+            if (typeof top === 'number' && !isNaN(top)) {
+              scrollViewRef.current?.scrollTo({ y: Math.max(0, top - 30), animated: true });
+            }
+          },
+          () => {}
+        );
+        return;
+      } catch {}
+    }
+
+    // 3. Pre-calculated coordinate fallback (only if valid positive y; never fall back to 0)
+    const y = fieldYMap.current[firstErrorKey];
+    if (y != null && y > 0 && scrollViewRef?.current) {
       scrollViewRef.current.scrollTo({ y: Math.max(0, y - 20), animated: true });
     }
   }, [errors, scrollViewRef]);
@@ -287,10 +373,16 @@ export function PostDetailsStep({
     if (triggerChanged || errorJustAppeared) {
       prevTrigger.current = scrollTrigger;
       prevHasErrors.current = hasErrors;
-      const timer = setTimeout(() => {
+      const t1 = setTimeout(() => {
         scrollToFirstError();
       }, 50);
-      return () => clearTimeout(timer);
+      const t2 = setTimeout(() => {
+        scrollToFirstError();
+      }, 180);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
     }
     prevHasErrors.current = hasErrors;
   }, [scrollTrigger, errors, scrollToFirstError]);
@@ -538,15 +630,17 @@ export function PostDetailsStep({
 
       {/* Standalone category properties — only shown when horse is not locked / non-TJK */}
       {!locked && (
-        <PostCategoryProperties
-          draft={draft}
-          onUpdate={onUpdate}
-          errors={errors}
-          onPropertiesLoaded={onCategoryPropertiesLoaded}
-          onLayoutSection={(_section, y) => {
-            fieldYMap.current.categoryProperties = y;
-          }}
-        />
+        <View ref={(el) => { fieldRefs.current.categoryProperties = el; }}>
+          <PostCategoryProperties
+            draft={draft}
+            onUpdate={onUpdate}
+            errors={errors}
+            onPropertiesLoaded={onCategoryPropertiesLoaded}
+            onLayoutSection={(_section, y) => {
+              fieldYMap.current.categoryProperties = y;
+            }}
+          />
+        </View>
       )}
 
       <View
@@ -573,6 +667,9 @@ export function PostDetailsStep({
         </View>
 
         <View
+          ref={(el) => { fieldRefs.current.title = el; }}
+          nativeID="field-title"
+          accessibilityLabel="field-title"
           style={[styles.fieldRow, { borderTopWidth: 0 }]}
           onLayout={(e) => updateFieldY('title', e.nativeEvent.layout.y)}
         >
@@ -589,6 +686,9 @@ export function PostDetailsStep({
 
         {descConfig.isActive ? (
           <View
+            ref={(el) => { fieldRefs.current.description = el; }}
+            nativeID="field-description"
+            accessibilityLabel="field-description"
             style={[styles.fieldRow, { borderTopColor: border, flexDirection: 'column', gap: 6 }]}
             onLayout={(e) => updateFieldY('description', e.nativeEvent.layout.y)}
           >
@@ -613,6 +713,9 @@ export function PostDetailsStep({
 
         {priceConfig.isActive ? (
           <View
+            ref={(el) => { fieldRefs.current.priceTl = el; }}
+            nativeID="field-priceTl"
+            accessibilityLabel="field-priceTl"
             style={[styles.fieldRow, { borderTopColor: border }]}
             onLayout={(e) => updateFieldY('priceTl', e.nativeEvent.layout.y)}
           >
@@ -632,6 +735,12 @@ export function PostDetailsStep({
 
         {locationConfig.isActive ? (
           <View
+            ref={(el) => {
+              fieldRefs.current.provinceId = el;
+              fieldRefs.current.districtId = el;
+            }}
+            nativeID="field-provinceId"
+            accessibilityLabel="field-location"
             style={[styles.fieldRow, { borderTopColor: border }]}
             onLayout={(e) => {
               const y = e.nativeEvent.layout.y;
@@ -731,6 +840,9 @@ export function PostDetailsStep({
 
         {phoneConfig.isActive ? (
           <View
+            ref={(el) => { fieldRefs.current.sellerPhone = el; }}
+            nativeID="field-sellerPhone"
+            accessibilityLabel="field-sellerPhone"
             style={[styles.fieldRow, { borderTopColor: border }]}
             onLayout={(e) => updateFieldY('sellerPhone', e.nativeEvent.layout.y)}
           >
@@ -877,6 +989,9 @@ export function PostDetailsStep({
       />
 
       <View
+        ref={(el) => { fieldRefs.current.media = el; }}
+        nativeID="field-media"
+        accessibilityLabel="field-media"
         style={[styles.card, { backgroundColor: surface, borderColor: border }]}
         onLayout={(e) => {
           const y = e.nativeEvent.layout.y;

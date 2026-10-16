@@ -45,7 +45,7 @@ import { isPaytrCheckoutEnabled } from '@/constants/Paytr';
 import { useCatalogFacets } from '@/hooks/useCatalogFacets';
 import { getCategoryIcon } from '@/services/catalog/categoryDisplay';
 import { PostTypeStep } from './PostTypeStep';
-import { PostDetailsStep } from './PostDetailsStep';
+import { PostDetailsStep, FIELD_ORDER } from './PostDetailsStep';
 import { createEmptyDraft } from '@/services/listing/listingDraftStore';
 import { buildDraftProperties, mapDraftToCreateAdvert } from '@/services/listing/mapDraftToRequest';
 import { parseInternationalPhone } from '@/services/phone';
@@ -832,11 +832,61 @@ export function PostEkuriWizardView({
         setCategoryPhase('root');
         setSelectedRootSlug(null);
       }
-      setModalFieldErrors({});
-      setModalErrorBanner(null);
+      const catKey = clonedDraft.type?.categorySlug || clonedDraft.type?.categoryId;
+      const activeCategoryProperties = catKey ? categoryPropertiesCache[catKey] : undefined;
+      const initialErrs = clonedDraft.type
+        ? detailsErrors(clonedDraft, activeCategoryProperties, globalConfigs, customGlobalProperties)
+        : {};
+
+      if (Object.keys(initialErrs).length > 0 && validationErrors[it.id]) {
+        setModalFieldErrors(initialErrs);
+        setModalErrorBanner(`Lütfen zorunlu alanları doldurunuz: ${Object.values(initialErrs)[0]}`);
+        setModalScrollTrigger((v) => v + 1);
+
+        if (Platform.OS === 'web' && typeof document !== 'undefined') {
+          const firstKey = FIELD_ORDER.find((k) => Boolean(initialErrs[k])) || Object.keys(initialErrs)[0];
+          const doScroll = () => {
+            let el: HTMLElement | null = null;
+            if (firstKey === 'priceTl') {
+              el =
+                (document.querySelector('input[aria-label="Fiyat"]') as HTMLElement | null) ||
+                document.getElementById('field-priceTl') ||
+                (Array.from(document.querySelectorAll('input')).find(
+                  (i) => (i as HTMLInputElement).placeholder === '0'
+                ) as HTMLElement | null);
+            } else if (firstKey === 'title') {
+              el =
+                document.getElementById('field-title') ||
+                (document.querySelector('input[placeholder="Kısa, net bir başlık"]') as HTMLElement | null);
+            } else if (firstKey === 'sellerPhone') {
+              el =
+                document.getElementById('field-sellerPhone') ||
+                (document.querySelector('input[type="tel"]') as HTMLElement | null);
+            } else if (firstKey === 'provinceId' || firstKey === 'districtId') {
+              el = document.getElementById('field-provinceId') || document.getElementById('field-location');
+            } else if (firstKey === 'description') {
+              el = document.getElementById('field-description');
+            } else if (firstKey === 'media') {
+              el = document.getElementById('field-media');
+            } else {
+              el =
+                document.getElementById(`field-${firstKey}`) ||
+                (document.querySelector(`[data-field="${firstKey}"]`) as HTMLElement | null);
+            }
+            if (el && typeof el.scrollIntoView === 'function') {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          };
+          setTimeout(doScroll, 200);
+          setTimeout(doScroll, 450);
+        }
+      } else {
+        setModalFieldErrors({});
+        setModalErrorBanner(null);
+      }
       setModalVisible(true);
     },
-    [session?.user?.phone]
+    [session?.user?.phone, categoryPropertiesCache, globalConfigs, customGlobalProperties, validationErrors]
   );
 
   const openModal = (index: number) => {
@@ -890,16 +940,43 @@ export function PostEkuriWizardView({
                 file: actualFile,
               };
             });
+            const catKey = editingDraft.type?.categorySlug || editingDraft.type?.categoryId;
+            const itemCatProps = catKey ? categoryPropertiesCache[catKey] : undefined;
+            const draftErrs = editingDraft.type
+              ? detailsErrors(editingDraft, itemCatProps, globalConfigs, customGlobalProperties)
+              : { category: 'Kategori seçilmedi' };
+            const isStillComplete =
+              Object.keys(draftErrs).length === 0 && Boolean(editingDraft.details.title?.trim());
+
             next[editingIndex] = {
               ...next[editingIndex],
               draft: {
                 ...editingDraft,
                 media: preservedMedia,
               },
+              isCompleted: isStillComplete,
             };
           }
           return next;
         });
+
+        const itemId = items[editingIndex]?.id;
+        if (itemId) {
+          setValidationErrors((prev) => {
+            const catKey = editingDraft.type?.categorySlug || editingDraft.type?.categoryId;
+            const itemCatProps = catKey ? categoryPropertiesCache[catKey] : undefined;
+            const draftErrs = editingDraft.type
+              ? detailsErrors(editingDraft, itemCatProps, globalConfigs, customGlobalProperties)
+              : { category: 'Kategori seçilmedi' };
+            if (Object.keys(draftErrs).length === 0 && Boolean(editingDraft.details.title?.trim())) {
+              if (!prev[itemId]) return prev;
+              const copy = { ...prev };
+              delete copy[itemId];
+              return copy;
+            }
+            return prev;
+          });
+        }
       }
     }
 
@@ -932,7 +1009,48 @@ export function PostEkuriWizardView({
       const firstErr = Object.values(rawErrs)[0];
       setModalErrorBanner(`Lütfen zorunlu alanları doldurunuz: ${firstErr}`);
       setModalScrollTrigger((v) => v + 1);
-      modalScrollRef.current?.scrollTo({ y: 0, animated: true });
+
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        const firstKey = FIELD_ORDER.find((k) => Boolean(rawErrs[k])) || Object.keys(rawErrs)[0];
+        const doScroll = () => {
+          let el: HTMLElement | null = null;
+          if (firstKey === 'priceTl') {
+            el =
+              (document.querySelector('input[aria-label="Fiyat"]') as HTMLElement | null) ||
+              document.getElementById('field-priceTl') ||
+              (Array.from(document.querySelectorAll('input')).find(
+                (i) => (i as HTMLInputElement).placeholder === '0'
+              ) as HTMLElement | null);
+          } else if (firstKey === 'title') {
+            el =
+              document.getElementById('field-title') ||
+              (document.querySelector('input[placeholder="Kısa, net bir başlık"]') as HTMLElement | null);
+          } else if (firstKey === 'sellerPhone') {
+            el =
+              document.getElementById('field-sellerPhone') ||
+              (document.querySelector('input[type="tel"]') as HTMLElement | null);
+          } else if (firstKey === 'provinceId' || firstKey === 'districtId') {
+            el = document.getElementById('field-provinceId') || document.getElementById('field-location');
+          } else if (firstKey === 'description') {
+            el = document.getElementById('field-description');
+          } else if (firstKey === 'media') {
+            el = document.getElementById('field-media');
+          } else {
+            el =
+              document.getElementById(`field-${firstKey}`) ||
+              (document.querySelector(`[data-field="${firstKey}"]`) as HTMLElement | null);
+          }
+          if (el && typeof el.scrollIntoView === 'function') {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const input = el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' ? el : el.querySelector('input, textarea, select');
+            if (input && typeof (input as HTMLElement).focus === 'function') {
+              try { (input as HTMLElement).focus({ preventScroll: true }); } catch {}
+            }
+          }
+        };
+        setTimeout(doScroll, 50);
+        setTimeout(doScroll, 180);
+      }
       return;
     }
 
@@ -975,6 +1093,11 @@ export function PostEkuriWizardView({
         if (itemId) delete copy[itemId];
       }
       return copy;
+    });
+    setSubmitError((prev) => {
+      if (!prev) return null;
+      const remaining = Object.keys(validationErrors).filter((id) => id !== items[editingIndex]?.id);
+      return remaining.length === 0 ? null : prev;
     });
 
     setModalVisible(false);
@@ -1073,6 +1196,31 @@ export function PostEkuriWizardView({
       }
     },
     [editingDraft?.type?.categorySlug, editingDraft?.type?.categoryId]
+  );
+
+  // Check if an item is truly complete and valid with no missing required fields
+  const isItemComplete = useCallback(
+    (it: EkuriListingItem): boolean => {
+      if (!it.draft.type || !it.draft.details.title?.trim()) {
+        return false;
+      }
+      if (validationErrors[it.id]) {
+        return false;
+      }
+      const catKey = it.draft.type.categorySlug || it.draft.type.categoryId;
+      const itemCategoryProperties = catKey ? categoryPropertiesCache[catKey] : undefined;
+      const itemErrs = detailsErrors(
+        it.draft,
+        itemCategoryProperties,
+        globalConfigs,
+        customGlobalProperties
+      );
+      if (Object.keys(itemErrs).length > 0) {
+        return false;
+      }
+      return Boolean(it.isCompleted);
+    },
+    [categoryPropertiesCache, globalConfigs, customGlobalProperties, validationErrors]
   );
 
   // Validate all listings before proceeding to packages
@@ -1575,7 +1723,7 @@ export function PostEkuriWizardView({
             {/* List of listing cards */}
             <View style={styles.listingsList}>
               {items.map((item, index) => {
-                const isComplete = item.isCompleted && Boolean(item.draft.details.title?.trim() && item.draft.type);
+                const isComplete = isItemComplete(item);
                 const err = validationErrors[item.id];
 
                 return (
@@ -1586,11 +1734,41 @@ export function PostEkuriWizardView({
                       styles.listingCard,
                       {
                         backgroundColor: cardBg,
-                        borderColor: err ? '#ef4444' : isComplete ? '#10b98135' : border,
+                        borderColor: err
+                          ? '#ef4444'
+                          : isComplete
+                          ? isDark
+                            ? 'rgba(16, 185, 129, 0.45)'
+                            : 'rgba(16, 185, 129, 0.6)'
+                          : isDark
+                          ? 'rgba(245, 158, 11, 0.75)'
+                          : 'rgba(245, 158, 11, 0.85)',
                         opacity: pressed ? 0.92 : 1,
                       },
                     ]}
                   >
+                    {/* Top-border status badge (Tamamlandı / Eksik) */}
+                    <View style={[styles.cardTopBadge, { backgroundColor: bg }]} pointerEvents="none">
+                      <Text
+                        style={[
+                          styles.cardTopBadgeText,
+                          {
+                            color: err
+                              ? '#ef4444'
+                              : isComplete
+                              ? isDark
+                                ? '#34d399'
+                                : '#059669'
+                              : isDark
+                              ? '#fbbf24'
+                              : '#d97706',
+                          },
+                        ]}
+                      >
+                        {isComplete ? 'Tamamlandı' : 'Eksik'}
+                      </Text>
+                    </View>
+
                     <View style={styles.cardHeaderLeft}>
                       <View
                         style={[
@@ -1616,32 +1794,23 @@ export function PostEkuriWizardView({
                       </View>
                     </View>
 
-                    <View style={styles.cardHeaderRight}>
-                      {isComplete ? (
-                        <View style={styles.readyBadge}>
-                          <Text style={styles.readyBadgeText}>Tamamlandı</Text>
-                        </View>
-                      ) : (
-                        <View style={styles.pendingBadge}>
-                          <Text style={styles.pendingBadgeText}>Eksik</Text>
-                        </View>
+                    <View style={styles.cardActions}>
+                      {items.length > 2 && (
+                        <Pressable
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            removeItem(item.id);
+                          }}
+                          style={styles.trashBtn}
+                          hitSlop={8}
+                          accessibilityRole="button"
+                          accessibilityLabel="İlanı Sil"
+                        >
+                          <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                        </Pressable>
                       )}
-                      <View style={styles.cardActions}>
-                        {items.length > 2 && (
-                          <Pressable
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              removeItem(item.id);
-                            }}
-                            style={styles.trashBtn}
-                            hitSlop={8}
-                          >
-                            <Ionicons name="trash-outline" size={18} color="#ef4444" />
-                          </Pressable>
-                        )}
-                        <View style={styles.editIconBtn}>
-                          <Ionicons name="create-outline" size={18} color={primary} />
-                        </View>
+                      <View style={styles.editIconBtn}>
+                        <Ionicons name="create-outline" size={18} color={primary} />
                       </View>
                     </View>
                   </Pressable>
@@ -3130,9 +3299,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingLeft: 8,
-    paddingRight: 4,
+    paddingVertical: 14,
+    paddingLeft: 12,
+    paddingRight: 10,
+    position: 'relative',
+    overflow: 'visible',
+  },
+  cardTopBadge: {
+    position: 'absolute',
+    top: -9,
+    right: 20,
+    paddingHorizontal: 6,
+    zIndex: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardTopBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   cardHeaderLeft: {
     flexDirection: 'row',
@@ -3140,7 +3325,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     flex: 1,
     minWidth: 0,
-    marginRight: 6,
+    marginRight: 12,
   },
   indexCircle: {
     width: 30,
@@ -3164,48 +3349,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  cardHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexShrink: 0,
-  },
-  readyBadge: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  readyBadgeText: {
-    color: '#10b981',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  pendingBadge: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  pendingBadgeText: {
-    color: '#f59e0b',
-    fontSize: 11,
-    fontWeight: '700',
-  },
   cardActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 4,
+    flexShrink: 0,
   },
   trashBtn: {
-    padding: 4,
+    padding: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   editIconBtn: {
-    padding: 4,
+    padding: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   addBtn: {
     flexDirection: 'row',
